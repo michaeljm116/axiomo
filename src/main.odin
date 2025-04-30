@@ -28,19 +28,25 @@ import "core:log"
 import "core:slice"
 import "core:strings"
 
+import "core:mem"
+import "base:intrinsics"
 
 import "core:os"
-import "base:intrinsics"
 import "core:fmt"
 import "core:path/filepath"
 import vk "vendor:vulkan"
 import "vendor:glfw"
 
-main :: proc() {
+track_alloc: mem.Tracking_Allocator
 
+main :: proc() {
+	mem.tracking_allocator_init(&track_alloc, context.allocator)
+	context.allocator = mem.tracking_allocator(&track_alloc)
+	defer leak_detection()
 	load_pmodel("assets/froku.pm")
 
 	context.logger = log.create_console_logger()
+	defer free(context.logger.data)
 	g_ctx = context
 
 	// TODO: update vendor bindings to glfw 3.4 and use this to set a custom allocator.
@@ -429,6 +435,21 @@ main :: proc() {
 	}
 	vk.DeviceWaitIdle(g_device)
 }
+
+leak_detection :: proc()
+{
+	fmt.eprintf("\n")
+	for _, entry in track_alloc.allocation_map {
+		fmt.eprintf("- %v leaked %v bytes\n", entry.location, entry.size)
+	}
+	for entry in track_alloc.bad_free_array {
+		fmt.eprintf("- %v bad free\n", entry.location)
+	}
+	mem.tracking_allocator_destroy(&track_alloc)
+	fmt.eprintf("\n")
+	free_all(context.temp_allocator)
+}
+
 
 @(require_results)
 pick_physical_device :: proc() -> vk.Result {

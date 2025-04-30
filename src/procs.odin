@@ -11,7 +11,6 @@ import "core:bufio"
 import "core:encoding/ini"
 import "core:encoding/xml"
 import "core:mem"
-
 //----------------------------------------------------------------------------\\
 // /LoadModel /lm
 //----------------------------------------------------------------------------\\
@@ -43,8 +42,20 @@ load_pmodel :: proc(file_name : string)
             fmt.print(rune(c))
         }
     }
-  
 
+    // Read the Name, First get the length, then assemble the string
+    total_read, err = os.read(binaryio, mem.ptr_to_bytes(&name_length))
+    log_if_err(err)
+    if name_length > 0 {
+        name_bytes := make([]u8, name_length, context.temp_allocator)
+        total_read, err = os.read(binaryio, name_bytes[:])
+        log_if_err(err)
+        mod.name = string(name_bytes[:])
+    }
+    fmt.print("Model Name: ", mod.name, "\n")
+
+
+    free_all(context.temp_allocator)     
 }
 
 read_i32 :: proc(fd: os.Handle) -> (i32, bool) {
