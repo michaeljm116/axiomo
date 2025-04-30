@@ -1,0 +1,19 @@
+package main
+import math "core:math/linalg"
+import "core:strings"
+import "core:log"
+import "core:os"
+import "core:io"
+import "core:fmt"
+import "core:encoding/csv"
+import "core:bytes"
+import "core:bufio"
+import "core:encoding/ini"
+import "core:encoding/xml"
+import "core:mem"
+
+// /bvh
+bvhbounds_merge :: proc(a,b : BVHBounds) -> BVHBounds
+{
+    return {}
+}
