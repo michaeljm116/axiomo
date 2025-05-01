@@ -18,7 +18,7 @@ import "core:mem"
 Shape :: struct
 {
     name : string,
-    type : int,
+    type : i32,
     center : math.Vector3f32,
     extents : math.Vector3f32
 }

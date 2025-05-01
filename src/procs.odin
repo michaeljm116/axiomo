@@ -50,7 +50,6 @@ load_pmodel :: proc(file_name : string) -> Model
         log_if_err(err)
         mod.name = string(name_bytes[:])
     }
-    fmt.print("Model Name: ", mod.name, "\n")
 
     // Read the unique id and num meshes
     unique_id = read_i32(&binaryio)
@@ -115,21 +114,61 @@ load_pmodel :: proc(file_name : string) -> Model
         }
         m.mesh_id = mesh_id
         mod.meshes[i] = m
-
-        // print everything
-        fmt.println("Mesh Name: ", m.name, " ID: ", mesh_id, " verts: ", num_verts, " faces: ", num_faces, " nodes: ", num_nodes)
-        fmt.println("Center: ", m.center, " Extents: ", m.extents)
-        for mv in 0..<num_verts{
-            //print all teh verts
-            fmt.println("Vert: ", m.verts[mv])
-        }
-        for mf in 0..<num_faces{
-            //print all teh faces
-            fmt.println("Face: ", m.faces[mf])
-        }
     }
+
+    // Now get the shapes
+    num_shapes := read_i32(&binaryio)
+    mod.shapes = make([dynamic]Shape, num_shapes)
+    for s in 0..<num_shapes{
+        shape : Shape
+        s_name_length := read_i32(&binaryio)
+        s_name_bytes := make([]u8, s_name_length)
+        br, err = os.read(binaryio, s_name_bytes[:])
+        log_if_err(err)
+        shape.name = string(s_name_bytes)
+
+        shape.type = read_i32(&binaryio)
+        shape.center = read_vec3(&binaryio)
+        shape.extents = read_vec3(&binaryio)
+        mod.shapes[s] = shape
+    }
+
+    // Get num transforms??? idk why
+    num_transforms := read_i32(&binaryio)
     return mod
 }
+
+destroy_model :: proc(model : ^Model)
+{
+   for &m in model.meshes{
+       delete(m.name)
+       delete(m.faces)
+       delete(m.verts)
+       delete(m.mat.name)
+       delete(m.mat.texture)
+   }
+   delete(model.meshes)
+   delete(model.shapes)
+   delete(model.bvhs)
+   delete(model.name)
+}
+
+print_mesh :: proc(mesh : Mesh)
+{
+    using mesh
+    num_verts := len(verts)
+    num_faces := len(faces)
+
+    fmt.println("Mesh Name: ", name, " ID: ", mesh_id, " verts: ", num_verts, " faces: ", num_faces)
+    fmt.println("Center: ", center, " Extents: ", extents)
+    for mv in 0..<num_verts{
+        fmt.println("Vert: ", verts[mv])
+    }
+    for mf in 0..<num_faces{
+        fmt.println("Face: ", faces[mf])
+    }
+}
+
 read_i32 :: proc(io : ^os.Handle) -> i32
 {
    num : i32

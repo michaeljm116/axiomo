@@ -45,8 +45,7 @@ main :: proc() {
 	defer leak_detection()
 
 	mod := load_pmodel("assets/froku.pm")
-	fmt.print("Model Name: ", mod.name, "\n")
-	delete (mod.name)
+	defer destroy_model(&mod)
 	context.logger = log.create_console_logger()
 	defer free(context.logger.data)
 	g_ctx = context
