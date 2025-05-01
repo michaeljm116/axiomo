@@ -43,8 +43,10 @@ main :: proc() {
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
-	load_pmodel("assets/froku.pm")
 
+	mod := load_pmodel("assets/froku.pm")
+	fmt.print("Model Name: ", mod.name, "\n")
+	delete (mod.name)
 	context.logger = log.create_console_logger()
 	defer free(context.logger.data)
 	g_ctx = context

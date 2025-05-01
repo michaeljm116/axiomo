@@ -68,11 +68,12 @@ ssMaterial :: struct {
     refractive_index : f32,
     texture_id : i32
 }
+Vector4i32 :: [4]i32
 
 //Note: Possible need for BVH Nodes
 Mesh :: struct{
     verts : [dynamic]Vertex,
-    faces : [4]i32,
+    faces : [dynamic]Vector4i32,
     center : math.Vector3f32,
     extents : math.Vector3f32,
     name : string,
