@@ -12,6 +12,10 @@ import "core:encoding/ini"
 import "core:encoding/xml"
 import "core:mem"
 
+vec4i :: [4]i32
+quat :: math.Quaternionf32
+vec3 :: math.Vector3f32
+vec4 :: math.Vector4f32
 //----------------------------------------------------------------------------\\
 // /Structs /st
 //----------------------------------------------------------------------------\\
@@ -19,24 +23,24 @@ Shape :: struct
 {
     name : string,
     type : i32,
-    center : math.Vector3f32,
-    extents : math.Vector3f32
+    center : vec3,
+    extents :vec3
 }
 
 Vertex :: struct{
-    pos : math.Vector3f32,
-    norm : math.Vector3f32,
+    pos : vec3,
+    norm : vec3,
     uv : [2]f32
 }
 
 rVertex :: struct{
-    pos : math.Vector3f32,
-    norm : math.Vector3f32,
+    pos : vec3,
+    norm : vec3,
     uv : [2]f32
 }
 
 Material :: struct{
-    diffuse : math.Vector3f32,
+    diffuse : vec3,
     reflective : f32,
     roughness : f32,
     transparency : f32,
@@ -48,7 +52,7 @@ Material :: struct{
 }
 
 rMaterial :: struct {
-    diffuse : math.Vector3f32,
+    diffuse : vec3,
     reflective : f32,
     roughness : f32,
     transparency : f32,
@@ -61,21 +65,20 @@ rMaterial :: struct {
 }
 
 ssMaterial :: struct {
-    diffuse : math.Vector3f32,
+    diffuse : vec3,
     reflective : f32,
     roughness : f32,
     transparency : f32,
     refractive_index : f32,
     texture_id : i32
 }
-Vector4i32 :: [4]i32
 
 //Note: Possible need for BVH Nodes
 Mesh :: struct{
     verts : [dynamic]Vertex,
-    faces : [dynamic]Vector4i32,
-    center : math.Vector3f32,
-    extents : math.Vector3f32,
+    faces : [dynamic]vec4i,
+    center : vec3,
+    extents : vec3,
     name : string,
     mat : Material,
     mat_id : i32,
@@ -87,8 +90,8 @@ Model :: struct{
     meshes : [dynamic]Mesh,
     shapes : [dynamic]Shape,
     bvhs : [dynamic]BVHNode,
-    center : math.Vector3f32,
-    extents : math.Vector3f32,
+    center : vec3,
+    extents : vec3,
     unique_id : i32,
     skeleton_id : i32,
     triangular : bool
@@ -96,15 +99,15 @@ Model :: struct{
 
 Sqt :: struct
 {
-    rot : math.Quaternionf32,
-    pos : math.Vector4f32,
-    sca : math.Vector4f32
+    rot : quat,
+    pos : vec4,
+    sca : vec4
 }
 
 BVHNode :: struct {
-    upper: math.Vector3f32,
+    upper: vec3,
     offset: i32,
-    lower: math.Vector3f32,
+    lower: vec3,
     numChildren: i32,
 }
 
@@ -124,13 +127,13 @@ rConfig :: struct {
 //----------------------------------------------------------------------------\\
 
 ssBVHNode :: struct {
-    upper : math.Vector3f32,
+    upper : vec3,
     offset : i32,
-    lower : math.Vector3f32,
+    lower : vec3,
     numChildren : i32
 }
 
 BVHBounds :: struct {
-    upper : math.Vector3f32,
-    lower : math.Vector3f32
+    upper : vec3,
+    lower :vec3
 }

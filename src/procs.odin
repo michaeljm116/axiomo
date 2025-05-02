@@ -98,9 +98,9 @@ load_pmodel :: proc(file_name : string) -> Model
         }
 
         //Get The num_faces
-        m.faces = make([dynamic]Vector4i32, num_faces)
+        m.faces = make([dynamic]vec4i, num_faces)
         for f in 0..<num_faces{
-            face : Vector4i32
+            face : vec4i
             br, err = os.read(binaryio, mem.ptr_to_bytes(&face))
             log_if_err(err)
             m.faces[f] = face
@@ -148,6 +148,9 @@ destroy_model :: proc(model : ^Model)
        delete(m.mat.texture)
    }
    delete(model.meshes)
+   for &s in model.shapes{
+       delete(s.name)
+   }
    delete(model.shapes)
    delete(model.bvhs)
    delete(model.name)
@@ -180,9 +183,9 @@ read_i32 :: proc(io : ^os.Handle) -> i32
    return num
 }
 
-read_vec3 :: proc(io : ^os.Handle) -> math.Vector3f32
+read_vec3 :: proc(io : ^os.Handle) -> vec3
 {
-    v : math.Vector3f32
+    v : vec3
     num_bytes,err := os.read(io^, mem.ptr_to_bytes(&v))
     log_if_err(err)
     if(err != os.ERROR_NONE){
