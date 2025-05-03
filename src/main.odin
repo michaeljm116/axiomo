@@ -46,6 +46,11 @@ main :: proc() {
 
 	mod := load_pmodel("assets/froku.pm")
 	defer destroy_model(&mod)
+
+	mats : [dynamic]Material
+	res_load_materials("assets/Materials.xml", &mats)
+	defer delete(mats)
+
 	context.logger = log.create_console_logger()
 	defer free(context.logger.data)
 	g_ctx = context

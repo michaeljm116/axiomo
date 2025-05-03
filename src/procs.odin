@@ -9,8 +9,10 @@ import "core:encoding/csv"
 import "core:bytes"
 import "core:bufio"
 import "core:encoding/ini"
-import "core:encoding/xml"
+import xml "core:encoding/xml"
 import "core:mem"
+import "core:strconv"
+import "extensions/xml2"
 //----------------------------------------------------------------------------\\
 // /LoadModel /lm
 //----------------------------------------------------------------------------\\
@@ -195,5 +197,157 @@ read_vec3 :: proc(io : ^os.Handle) -> vec3
 }
 
 log_if_err :: proc(e : os.Error,  loc := #caller_location){
-    if e != os.ERROR_NONE {fmt.eprintln("Error: ", e, " at location : ", loc)}
+    if e != os.ERROR_NONE {
+        fmt.eprintln("Error: ", e, " at location : ", loc)
+    }
 }
+
+
+
+//----------------------------------------------------------------------------\\
+// /LoadMaterials /lm
+//----------------------------------------------------------------------------\\
+res_load_materials :: proc(file : string, materials : ^[dynamic]Material)
+{
+    doc, err := xml.load_from_file(file)
+    if xml2.log_if_err(err) do return
+    defer xml.destroy(doc)
+
+    // Find the Root
+    //root_id, found : (u32, bool) = (0, true)// xml.find_child_by_ident(doc, 0, "Root")
+    root_id : u32 = 0
+    found : bool = true
+    if xml2.log_if_not_found(found) do return
+
+    // Iterate through the materials
+    nth_mat := 0
+    curr_id := root_id
+    mat_id : xml.Element_ID
+    for found == true {
+        mat_id, found = xml.find_child_by_ident(doc, curr_id, "Material", nth_mat)
+        if xml2.log_if_not_found(found) do return
+        nth_mat += 1
+
+        temp_mat : Material
+        temp_mat.name = xml2.get_str_attr(doc, mat_id, "Name")
+        temp_mat.diffuse = vec3 {
+            xml2.get_f32_attr(doc, mat_id, "DiffuseR"),
+            xml2.get_f32_attr(doc, mat_id, "DiffuseG"),
+            xml2.get_f32_attr(doc, mat_id, "DiffuseB")
+        }
+        temp_mat.reflective = xml2.get_f32_attr(doc, mat_id, "Reflective")
+        temp_mat.roughness = xml2.get_f32_attr(doc, mat_id, "Roughness")
+        temp_mat.transparency = xml2.get_f32_attr(doc, mat_id, "Transparency")
+        temp_mat.refractive_index = xml2.get_f32_attr(doc, mat_id, "Refractive")
+        temp_mat.texture_id = xml2.get_i32_attr(doc, mat_id, "TextureID")
+
+        append(materials, temp_mat)
+    }
+}
+
+
+//----------------------------------------------------------------------------\\
+// /LoadPose /lp
+//----------------------------------------------------------------------------\\
+
+/*res_load_pose :: proc(file_name, prefab : string) -> bool
+{
+    doc, err := xml.load_from_file(file_name)
+    is_err := xml2.log_if_err(err)
+    defer xml.free(doc)
+    if(is_err){
+        return false
+    }
+
+    // Get the root element
+    // Find the root element
+    root_id, found := xml_helpers.find_child_by_ident(doc, 0, "Root")
+    if !found {
+        return false
+    }
+
+    // Prepare pose list
+    pl: rPoseList
+    pl.name = prefab
+    pl.hashVal = xxhash.XXH32([]u8(prefab))
+
+    // Iterate through Pose elements
+    nth_pose := 0
+    for {
+        pose_id, found := xml_helpers.find_child_by_ident(doc, root_id, "Pose", nth_pose)
+        if !found {
+            break
+        }
+        nth_pose += 1
+
+        pose: rPose
+
+        // Get the Name attribute
+        name, name_found := xml_helpers.find_attribute_val_by_key(doc, pose_id, "Name")
+        if name_found {
+            pose.name = name
+            pose.hashVal = xxhash.XXH32([]u8name)
+        }
+
+        // Iterate through Tran elements
+        nth_tran := 0
+        for {
+            tran_id, found := xml_helpers.find_child_by_ident(doc, pose_id, "Tran", nth_tran)
+            if !found {
+                break
+            }
+            nth_tran += 1
+
+            i: int
+            t: sqt
+
+            // Get CN attribute
+            cn_str, cn_found := xml_helpers.find_attribute_val_by_key(doc, tran_id, "CN")
+            if cn_found {
+                i = strings.atoi(cn_str)
+            }
+
+            // Find Pos, Rot, Sca children
+            pos_id, pos_found := xml_helpers.find_child_by_ident(doc, tran_id, "Pos")
+            rot_id, rot_found := xml_helpers.find_child_by_ident(doc, tran_id, "Rot")
+            sca_id, sca_found := xml_helpers.find_child_by_ident(doc, tran_id, "Sca")
+
+            // Read Pos
+            if pos_found {
+                x, _ := xml_helpers.find_attribute_val_by_key(doc, pos_id, "x")
+                y, _ := xml_helpers.find_attribute_val_by_key(doc, pos_id, "y")
+                z, _ := xml_helpers.find_attribute_val_by_key(doc, pos_id, "z")
+                t.position.x = strings.atof(x)
+                t.position.y = strings.atof(y)
+                t.position.z = strings.atof(z)
+            }
+            // Read Rot
+            if rot_found {
+                x, _ := xml_helpers.find_attribute_val_by_key(doc, rot_id, "x")
+                y, _ := xml_helpers.find_attribute_val_by_key(doc, rot_id, "y")
+                z, _ := xml_helpers.find_attribute_val_by_key(doc, rot_id, "z")
+                w, _ := xml_helpers.find_attribute_val_by_key(doc, rot_id, "w")
+                t.rotation.x = strings.atof(x)
+                t.rotation.y = strings.atof(y)
+                t.rotation.z = strings.atof(z)
+                t.rotation.w = strings.atof(w)
+            }
+            // Read Sca
+            if sca_found {
+                x, _ := xml_helpers.find_attribute_val_by_key(doc, sca_id, "x")
+                y, _ := xml_helpers.find_attribute_val_by_key(doc, sca_id, "y")
+                z, _ := xml_helpers.find_attribute_val_by_key(doc, sca_id, "z")
+                t.scale.x = strings.atof(x)
+                t.scale.y = strings.atof(y)
+                t.scale.z = strings.atof(z)
+            }
+
+            pose.pose.append((i, t))
+        }
+
+        pl.poses.append(pose)
+    }
+
+    poses.append(pl) // Make sure 'poses' is defined in your context
+    return true
+    }*/
