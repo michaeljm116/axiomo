@@ -1,5 +1,5 @@
 package main
-import math"core:math/linalg"
+import math "core:math/linalg"
 import "core:strings"
 import "core:log"
 import "core:os"
@@ -13,6 +13,19 @@ import xml "core:encoding/xml"
 import "core:mem"
 import "core:strconv"
 import "extensions/xml2"
+import path "core:path/filepath"
+import path2 "extensions/filepath2"
+//----------------------------------------------------------------------------\\
+// /LoadOthers /lo
+//----------------------------------------------------------------------------\\
+load_directory :: proc(directory: string, models: ^[dynamic]Model) {
+    files := path2.get_dir_files(directory)
+    for f in files{
+        append(models, load_pmodel(f.fullpath))
+    }
+    os.file_info_slice_delete(files)
+}
+
 //----------------------------------------------------------------------------\\
 // /LoadModel /lm
 //----------------------------------------------------------------------------\\
@@ -202,8 +215,6 @@ log_if_err :: proc(e : os.Error,  loc := #caller_location){
     }
 }
 
-
-
 //----------------------------------------------------------------------------\\
 // /LoadMaterials /lm
 //----------------------------------------------------------------------------\\
@@ -213,18 +224,12 @@ res_load_materials :: proc(file : string, materials : ^[dynamic]Material)
     if xml2.log_if_err(err) do return
     defer xml.destroy(doc)
 
-    // Find the Root
-    //root_id, found : (u32, bool) = (0, true)// xml.find_child_by_ident(doc, 0, "Root")
-    root_id : u32 = 0
-    found : bool = true
-    if xml2.log_if_not_found(found) do return
-
     // Iterate through the materials
     nth_mat := 0
-    curr_id := root_id
     mat_id : xml.Element_ID
+    found : bool = true
     for found == true {
-        mat_id, found = xml.find_child_by_ident(doc, curr_id, "Material", nth_mat)
+        mat_id, found = xml.find_child_by_ident(doc, 0, "Material", nth_mat)
         if xml2.log_if_not_found(found) do return
         nth_mat += 1
 
@@ -244,110 +249,3 @@ res_load_materials :: proc(file : string, materials : ^[dynamic]Material)
         append(materials, temp_mat)
     }
 }
-
-
-//----------------------------------------------------------------------------\\
-// /LoadPose /lp
-//----------------------------------------------------------------------------\\
-
-/*res_load_pose :: proc(file_name, prefab : string) -> bool
-{
-    doc, err := xml.load_from_file(file_name)
-    is_err := xml2.log_if_err(err)
-    defer xml.free(doc)
-    if(is_err){
-        return false
-    }
-
-    // Get the root element
-    // Find the root element
-    root_id, found := xml_helpers.find_child_by_ident(doc, 0, "Root")
-    if !found {
-        return false
-    }
-
-    // Prepare pose list
-    pl: rPoseList
-    pl.name = prefab
-    pl.hashVal = xxhash.XXH32([]u8(prefab))
-
-    // Iterate through Pose elements
-    nth_pose := 0
-    for {
-        pose_id, found := xml_helpers.find_child_by_ident(doc, root_id, "Pose", nth_pose)
-        if !found {
-            break
-        }
-        nth_pose += 1
-
-        pose: rPose
-
-        // Get the Name attribute
-        name, name_found := xml_helpers.find_attribute_val_by_key(doc, pose_id, "Name")
-        if name_found {
-            pose.name = name
-            pose.hashVal = xxhash.XXH32([]u8name)
-        }
-
-        // Iterate through Tran elements
-        nth_tran := 0
-        for {
-            tran_id, found := xml_helpers.find_child_by_ident(doc, pose_id, "Tran", nth_tran)
-            if !found {
-                break
-            }
-            nth_tran += 1
-
-            i: int
-            t: sqt
-
-            // Get CN attribute
-            cn_str, cn_found := xml_helpers.find_attribute_val_by_key(doc, tran_id, "CN")
-            if cn_found {
-                i = strings.atoi(cn_str)
-            }
-
-            // Find Pos, Rot, Sca children
-            pos_id, pos_found := xml_helpers.find_child_by_ident(doc, tran_id, "Pos")
-            rot_id, rot_found := xml_helpers.find_child_by_ident(doc, tran_id, "Rot")
-            sca_id, sca_found := xml_helpers.find_child_by_ident(doc, tran_id, "Sca")
-
-            // Read Pos
-            if pos_found {
-                x, _ := xml_helpers.find_attribute_val_by_key(doc, pos_id, "x")
-                y, _ := xml_helpers.find_attribute_val_by_key(doc, pos_id, "y")
-                z, _ := xml_helpers.find_attribute_val_by_key(doc, pos_id, "z")
-                t.position.x = strings.atof(x)
-                t.position.y = strings.atof(y)
-                t.position.z = strings.atof(z)
-            }
-            // Read Rot
-            if rot_found {
-                x, _ := xml_helpers.find_attribute_val_by_key(doc, rot_id, "x")
-                y, _ := xml_helpers.find_attribute_val_by_key(doc, rot_id, "y")
-                z, _ := xml_helpers.find_attribute_val_by_key(doc, rot_id, "z")
-                w, _ := xml_helpers.find_attribute_val_by_key(doc, rot_id, "w")
-                t.rotation.x = strings.atof(x)
-                t.rotation.y = strings.atof(y)
-                t.rotation.z = strings.atof(z)
-                t.rotation.w = strings.atof(w)
-            }
-            // Read Sca
-            if sca_found {
-                x, _ := xml_helpers.find_attribute_val_by_key(doc, sca_id, "x")
-                y, _ := xml_helpers.find_attribute_val_by_key(doc, sca_id, "y")
-                z, _ := xml_helpers.find_attribute_val_by_key(doc, sca_id, "z")
-                t.scale.x = strings.atof(x)
-                t.scale.y = strings.atof(y)
-                t.scale.z = strings.atof(z)
-            }
-
-            pose.pose.append((i, t))
-        }
-
-        pl.poses.append(pose)
-    }
-
-    poses.append(pl) // Make sure 'poses' is defined in your context
-    return true
-    }*/
