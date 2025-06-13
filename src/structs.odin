@@ -121,6 +121,21 @@ rConfig :: struct {
     controller_configs : [dynamic]f32
 }
 
+PoseSqt :: struct {
+    id: i32,
+    sqt_data: Sqt,
+}
+
+rPose :: struct{
+   name : string,
+   pose : [dynamic]PoseSqt, // Changed from tuple[int, Sqt]
+}
+
+rPoseList :: struct{
+    name : string,
+    poses : [dynamic]rPose,
+    hash_val : i32
+}
 
 //----------------------------------------------------------------------------\\
 // /BVH

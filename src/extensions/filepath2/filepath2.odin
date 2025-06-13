@@ -18,4 +18,3 @@ get_dir_files :: proc (directory: string) -> []os.File_Info {
     }
     return entries
 }
-

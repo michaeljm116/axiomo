@@ -27,7 +27,7 @@ load_directory :: proc(directory: string, models: ^[dynamic]Model) {
 }
 
 //----------------------------------------------------------------------------\\
-// /LoadModel /lm
+// /LoadModel /pm
 //----------------------------------------------------------------------------\\
 load_pmodel :: proc(file_name : string) -> Model
 {
@@ -248,4 +248,98 @@ res_load_materials :: proc(file : string, materials : ^[dynamic]Material)
 
         append(materials, temp_mat)
     }
+}
+//----------------------------------------------------------------------------\\
+// /Load Animations /la
+//----------------------------------------------------------------------------\\
+res_load_pose :: proc(file_name, prefab_name : string) ->  rPoseList {
+    pl: rPoseList
+    pl.name = prefab_name
+    // Initialize dynamic arrays
+    pl.poses = make([dynamic]rPose)
+
+    doc, err := xml.load_from_file(file_name)
+    if xml2.log_if_err(err) {
+        // If file not found or XML error, return the empty pl 
+        return pl 
+    }
+    defer xml.destroy(doc)
+
+    root_id, root_found := xml.find_child_by_ident(doc, 0, "Root", 0)
+    if !root_found {
+        log.errorf("Could not find <Root> element in %v", file_name)
+        return pl 
+    }
+
+    // Iterate through "Pose" elements
+    nth_pose := 0
+    for { 
+        pose_id, pose_found := xml.find_child_by_ident(doc, root_id, "Pose", nth_pose)
+        if !pose_found {
+            break // No more Pose elements
+        }
+        nth_pose += 1
+
+        temp_pose: rPose
+        temp_pose.name = xml2.get_str_attr(doc, pose_id, "Name")
+        // Initialize dynamic array for PoseSqts
+        temp_pose.pose = make([dynamic]PoseSqt) // Changed here
+
+        // Iterate through "Tran" elements for the current pose
+        nth_tran := 0
+        for { 
+            tran_id, tran_found := xml.find_child_by_ident(doc, pose_id, "Tran", nth_tran)
+            if !tran_found {
+                break // No more Tran elements for this Pose
+            }
+            nth_tran += 1
+
+            cn_val := xml2.get_i32_attr(doc, tran_id, "CN")
+            current_sqt_data: Sqt
+
+            // Get "Pos" element and its attributes
+            pos_id, pos_sub_elem_found := xml.find_child_by_ident(doc, tran_id, "Pos", 0)
+            if pos_sub_elem_found {
+                current_sqt_data.pos.x = xml2.get_f32_attr(doc, pos_id, "x")
+                current_sqt_data.pos.y = xml2.get_f32_attr(doc, pos_id, "y")
+                current_sqt_data.pos.z = xml2.get_f32_attr(doc, pos_id, "z")
+                current_sqt_data.pos.w = 1.0 // Set w component for position
+            } else {
+                log.warnf("Pose '%v', Tran #%v (CN %v): Missing 'Pos' element in %v. Using default (0,0,0,1).", temp_pose.name, nth_tran-1, cn_val, file_name)
+                current_sqt_data.pos = {0,0,0,1} // Default position
+            }
+
+            // Get "Rot" element and its attributes
+            rot_id, rot_sub_elem_found := xml.find_child_by_ident(doc, tran_id, "Rot", 0)
+            if rot_sub_elem_found {
+                current_sqt_data.rot.x = xml2.get_f32_attr(doc, rot_id, "x")
+                current_sqt_data.rot.y = xml2.get_f32_attr(doc, rot_id, "y")
+                current_sqt_data.rot.z = xml2.get_f32_attr(doc, rot_id, "z")
+                current_sqt_data.rot.w = xml2.get_f32_attr(doc, rot_id, "w")
+            } else {
+                log.warnf("Pose '%v', Tran #%v (CN %v): Missing 'Rot' element in %v. Using default identity quaternion (0,0,0,1).", temp_pose.name, nth_tran-1, cn_val, file_name)
+                qf := [4]f32{0.0, 0.0, 0.0, 1.0} // Default identity quaternion
+                current_sqt_data.rot = transmute(quat)qf // Identity quaternion literal
+            }
+
+            // Get "Sca" element and its attributes
+            sca_id, sca_sub_elem_found := xml.find_child_by_ident(doc, tran_id, "Sca", 0)
+            if sca_sub_elem_found {
+                current_sqt_data.sca.x = xml2.get_f32_attr(doc, sca_id, "x")
+                current_sqt_data.sca.y = xml2.get_f32_attr(doc, sca_id, "y")
+                current_sqt_data.sca.z = xml2.get_f32_attr(doc, sca_id, "z")
+                current_sqt_data.sca.w = 1.0 // Set w component for scale
+            } else {
+                log.warnf("Pose '%v', Tran #%v (CN %v): Missing 'Sca' element in %v. Using default scale (1,1,1,1).", temp_pose.name, nth_tran-1, cn_val, file_name)
+                current_sqt_data.sca = {1,1,1,1} // Default scale
+            }
+            
+            pose_transform_entry: PoseSqt
+            pose_transform_entry.id = cn_val
+            pose_transform_entry.sqt_data = current_sqt_data
+            append(&temp_pose.pose, pose_transform_entry) // Changed here
+        }
+        append(&pl.poses, temp_pose)
+    }
+    return pl
 }

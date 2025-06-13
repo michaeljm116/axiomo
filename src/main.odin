@@ -48,9 +48,9 @@ main :: proc() {
 	defer destroy_model(&mod)
 
 	models : [dynamic]Model
+	defer delete(models)
 	load_directory("assets/Models/", &models)
 	defer for &m in models do destroy_model(&m)
-
 	mats : [dynamic]Material
 	res_load_materials("assets/Materials.xml", &mats)
 	defer delete(mats)
