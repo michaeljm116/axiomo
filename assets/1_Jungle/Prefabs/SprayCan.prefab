@@ -1,0 +1,54 @@
+<Root>
+    <Node Name="SprayCan" hasChildren="true" eFlags="3" gFlags="0" Dynamic="false">
+        <Transform>
+            <Position x="0" y="0" z="-1.5802002"/>
+            <Rotation x="0" y="0" z="0"/>
+            <Scale x="1" y="1" z="1"/>
+        </Transform>
+        <Node Name="Handle" hasChildren="false" eFlags="32775" gFlags="0" Dynamic="true">
+            <Transform>
+                <Position x="0" y="1.2301636" z="0"/>
+                <Rotation x="0" y="0" z="0"/>
+                <Scale x="0.25" y="0.5" z="0.25"/>
+            </Transform>
+            <Material ID="1957785856"/>
+            <Object ID="-3"/>
+        </Node>
+        <Node Name="Top" hasChildren="false" eFlags="32775" gFlags="0" Dynamic="true">
+            <Transform>
+                <Position x="0" y="1.76" z="0"/>
+                <Rotation x="0" y="0" z="0"/>
+                <Scale x="0.2" y="0.1" z="0.2"/>
+            </Transform>
+            <Material ID="564706208"/>
+            <Object ID="-3"/>
+        </Node>
+        <Node Name="Top" hasChildren="false" eFlags="32775" gFlags="0" Dynamic="false">
+            <Transform>
+                <Position x="0" y="2.03" z="0"/>
+                <Rotation x="0" y="0" z="0"/>
+                <Scale x="0.2" y="0.050000001" z="0.2"/>
+            </Transform>
+            <Material ID="564706208"/>
+            <Object ID="-3"/>
+        </Node>
+        <Node Name="Nozzel" hasChildren="false" eFlags="32775" gFlags="0" Dynamic="false">
+            <Transform>
+                <Position x="0" y="1.79" z="0"/>
+                <Rotation x="0" y="0" z="0"/>
+                <Scale x="0.1" y="0.17" z="0.30000001"/>
+            </Transform>
+            <Material ID="150738392"/>
+            <Object ID="-3"/>
+        </Node>
+        <Node Name="Swatty" hasChildren="false" eFlags="32775" gFlags="0" Dynamic="true">
+            <Transform>
+                <Position x="-0.059999999" y="1.939" z="0"/>
+                <Rotation x="0" y="0" z="0"/>
+                <Scale x="0.090000004" y="0.1" z="0.11"/>
+            </Transform>
+            <Material ID="564706208"/>
+            <Object ID="-2"/>
+        </Node>
+    </Node>
+</Root>

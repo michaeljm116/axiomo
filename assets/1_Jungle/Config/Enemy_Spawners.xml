@@ -1,0 +1,56 @@
+<Root>
+	<Room name="Dungeon_2w_bl" type="2w" num_enemies="4", num_items="2">
+		</Exit name="Dungeon_1w_r" type="1w" door="r">
+		<Enemy Name="Beary" Prefab="Bear" Alive="true" Item="None">
+			<Position x="4" y="4">				
+		</Enemy>
+		<Enemy Name="Boory" Prefab="Bear" Alive="true" Item="None">
+			<Position x="-6" y="6">
+		</Enemy>
+		<Enemy Name="Beery" Prefab="Bear" Alive="true" Item="Heart">
+			<Position x="-4" y="-4">
+		</Enemy>
+		<Enemy Name="Liony" Prefab="Lion" Alive="true" Item="Heart">
+			<Position x="-6" y="-6">
+		</Enemy>
+		</Item Type="Heart" Prefab="Heart" Used="false" Visible="false">
+		</Item Type="Heart" Prefab="Heart" Used="false" Visible="false">
+	</Room>
+	
+</Root>
+	<Node Name="DarkFroku" Prefab="Froku-Dark" Type="Boss">
+		<Area>
+			<Position x="8" y="-4.33" z="15"/>
+            <Extents x="4" z="4"/>
+		</Area>
+		<Properties StartTime="0.5" Cooldown="8.2" InitialEnemies="1" MaxEnemies="4"/>
+	</Node>
+	<Node Name="Ghosty" Prefab="Ghost" Type="Spawner">
+		<Area>
+			<Position x="4" y="-3.5100479" z="-4.2199936"/>
+            <Extents x="8" z="8"/>
+		</Area>
+		<Properties StartTime="0.5" Cooldown="4.2" InitialEnemies="2" MaxEnemies="8"/>
+	</Node>
+	<Node Name="Zombi" Prefab="Zombo" Type="Spawner">
+		<Area>
+			<Position x="12" y="-3.5100479" z="-4.2199936"/>
+            <Extents x="8" z="8"/>
+		</Area>
+		<Properties StartTime="0.5" Cooldown="2.2" InitialEnemies="4" MaxEnemies="16"/>
+	</Node>
+	<Node Name="Beary" Prefab="Bear" Type="Spawner">
+		<Area>
+			<Position x="12" y="-2.5100479" z="-4.2199936"/>
+            <Extents x="8" z="8"/>
+		</Area>
+		<Properties StartTime="0.5" Cooldown="2.2" InitialEnemies="4" MaxEnemies="16"/>
+	</Node>
+	<Node Name="Liony" Prefab="Lion" Type="Spawner">
+		<Area>
+			<Position x="12" y="-2.5100479" z="-4.2199936"/>
+            <Extents x="8" z="8"/>
+		</Area>
+		<Properties StartTime="0.5" Cooldown="2.2" InitialEnemies="4" MaxEnemies="16"/>
+	</Node>
+</Root>
