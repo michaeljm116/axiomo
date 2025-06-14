@@ -44,26 +44,29 @@ main :: proc() {
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
 	
+	// Create an arena allocator using context.temp_allocator
+	arena: mem.Arena
+	arena_data: []byte = make([]byte, 1024 * 1024, context.temp_allocator) // 1 MiB
+	mem.arena_init(&arena, arena_data)
+	defer mem.arena_free_all(&arena)
+	arena_alloc := mem.arena_allocator(&arena)
+	
 	context.logger = log.create_console_logger()
 	defer free(context.logger.data)
 	g_ctx = context
 
-	mod := load_pmodel("assets/froku.pm")
-	defer destroy_model(&mod)
+	mod := load_pmodel("assets/froku.pm", arena_alloc)
 
-	models : [dynamic]Model
+	models : [dynamic]Model = make([dynamic]Model, 0, arena_alloc)
 	defer delete(models)
 	load_directory("assets/Models/", &models)
-	defer for &m in models do destroy_model(&m)
-	mats : [dynamic]Material
+
+	mats : [dynamic]Material = make([dynamic]Material, 0, arena_alloc)
 	res_load_materials("assets/Materials.xml", &mats)
 	defer delete(mats)
 	for m in mats do fmt.println(m.name)
 
-	poses := res_load_pose("assets/1_Jungle/Animations/Froku.anim", "Froku")
-	defer delete(poses.poses)
-
-
+	poses := res_load_pose("assets/1_Jungle/Animations/Froku.anim", "Froku", arena_alloc)
 
 	// TODO: update vendor bindings to glfw 3.4 and use this to set a custom allocator.
 	// glfw.InitAllocator()

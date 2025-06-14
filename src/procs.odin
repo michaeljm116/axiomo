@@ -15,13 +15,14 @@ import "core:strconv"
 import "extensions/xml2"
 import path "core:path/filepath"
 import path2 "extensions/filepath2"
+
 //----------------------------------------------------------------------------\\
 // /LoadOthers /lo
 //----------------------------------------------------------------------------\\
 load_directory :: proc(directory: string, models: ^[dynamic]Model) {
     files := path2.get_dir_files(directory)
     for f in files{
-        append(models, load_pmodel(f.fullpath))
+        append(models, load_pmodel(f.fullpath, models^.allocator))
     }
     os.file_info_slice_delete(files)
 }
@@ -29,7 +30,7 @@ load_directory :: proc(directory: string, models: ^[dynamic]Model) {
 //----------------------------------------------------------------------------\\
 // /LoadModel /pm
 //----------------------------------------------------------------------------\\
-load_pmodel :: proc(file_name : string) -> Model
+load_pmodel :: proc(file_name : string, allocator: mem.Allocator) -> Model
 {
     // Set up initial variables
     mod : Model
@@ -53,14 +54,13 @@ load_pmodel :: proc(file_name : string) -> Model
         for b in 0..<intro_length {
             br, err = os.read(binaryio, mem.ptr_to_bytes(&c) )
             log_if_err(err)
-            fmt.print(rune(c))
         }
     }
 
     // Read the Name, First get the length, then assemble the string
     name_length = read_i32(&binaryio)
     if name_length > 0 {
-        name_bytes := make([]u8, name_length)//, context.temp_allocator)
+        name_bytes := make([]u8, name_length, allocator)
         br, err = os.read(binaryio, name_bytes[:])
         log_if_err(err)
         mod.name = string(name_bytes[:])
@@ -71,7 +71,7 @@ load_pmodel :: proc(file_name : string) -> Model
     num_mesh = read_i32(&binaryio)
 
     // Assemble the meshes
-    mod.meshes = make([dynamic]Mesh, num_mesh)
+    mod.meshes = make([dynamic]Mesh, num_mesh, num_mesh, allocator)
     for i in 0..< num_mesh
     {
         // Declare meta deta
@@ -85,7 +85,7 @@ load_pmodel :: proc(file_name : string) -> Model
         //Get Mesh Name, first get length then get actual name
         mesh_name_length = read_i32(&binaryio)
         if(mesh_name_length > 0){
-            name_bytes := make([]u8, mesh_name_length)
+            name_bytes := make([]u8, mesh_name_length, allocator)
             br, err = os.read(binaryio, name_bytes[:])
             log_if_err(err)
             m.name = string(name_bytes)
@@ -104,7 +104,7 @@ load_pmodel :: proc(file_name : string) -> Model
         m.extents = read_vec3(&binaryio)
 
         //Get the veritices
-        m.verts = make([dynamic]Vertex, num_verts)
+        m.verts = make([dynamic]Vertex, num_verts, num_verts, allocator)
         for v in 0..<num_verts{
             vert : Vertex
             br,err = os.read(binaryio, mem.ptr_to_bytes(&vert))
@@ -113,7 +113,7 @@ load_pmodel :: proc(file_name : string) -> Model
         }
 
         //Get The num_faces
-        m.faces = make([dynamic]vec4i, num_faces)
+        m.faces = make([dynamic]vec4i, num_faces, num_faces, allocator)
         for f in 0..<num_faces{
             face : vec4i
             br, err = os.read(binaryio, mem.ptr_to_bytes(&face))
@@ -133,11 +133,11 @@ load_pmodel :: proc(file_name : string) -> Model
 
     // Now get the shapes
     num_shapes := read_i32(&binaryio)
-    mod.shapes = make([dynamic]Shape, num_shapes)
+    mod.shapes = make([dynamic]Shape, num_shapes, num_shapes, allocator)
     for s in 0..<num_shapes{
         shape : Shape
         s_name_length := read_i32(&binaryio)
-        s_name_bytes := make([]u8, s_name_length)
+        s_name_bytes := make([]u8, s_name_length, allocator)
         br, err = os.read(binaryio, s_name_bytes[:])
         log_if_err(err)
         shape.name = string(s_name_bytes)
@@ -234,7 +234,7 @@ res_load_materials :: proc(file : string, materials : ^[dynamic]Material)
         nth_mat += 1
 
         temp_mat : Material
-        temp_mat.name = xml2.get_str_attr(doc, mat_id, "Name")
+        temp_mat.name = strings.clone(xml2.get_str_attr(doc, mat_id, "Name"), materials^.allocator)
         temp_mat.diffuse = vec3 {
             xml2.get_f32_attr(doc, mat_id, "DiffuseR"),
             xml2.get_f32_attr(doc, mat_id, "DiffuseG"),
@@ -249,14 +249,14 @@ res_load_materials :: proc(file : string, materials : ^[dynamic]Material)
         append(materials, temp_mat)
     }
 }
+
 //----------------------------------------------------------------------------\\
 // /Load Animations /la
 //----------------------------------------------------------------------------\\
-res_load_pose :: proc(file_name, prefab_name : string) ->  rPoseList {
+res_load_pose :: proc(file_name, prefab_name : string, allocator: mem.Allocator) -> rPoseList {
     pl: rPoseList
-    pl.name = prefab_name
-    // Initialize dynamic arrays
-    pl.poses = make([dynamic]rPose)
+    pl.name = strings.clone(prefab_name, allocator)
+    pl.poses = make([dynamic]rPose, 0, allocator)
 
     doc, err := xml.load_from_file(file_name)
     if xml2.log_if_err(err) do return pl
@@ -268,16 +268,18 @@ res_load_pose :: proc(file_name, prefab_name : string) ->  rPoseList {
     nth_pose := 0
     for found == true{
         pose_id, found = xml.find_child_by_ident(doc, 0, "Pose", nth_pose)
-        if xml2.log_if_not_found(found){
-            log.warnf("Pose #%v not found in %v.", nth_pose, file_name)
-            return pl // Return early if no more poses are found
+        if(!found){
+            if(nth_pose == 0){
+                log.warnf("No poses found in %v.", file_name)
+            }
+            return pl
         }
        nth_pose += 1
 
         temp_pose: rPose
         temp_pose.name = xml2.get_str_attr(doc, pose_id, "Name")
         // Initialize dynamic array for PoseSqts
-        temp_pose.pose = make([dynamic]PoseSqt) // Changed here
+        temp_pose.pose = make([dynamic]PoseSqt, allocator)
 
         // Iterate through "Tran" elements for the current pose
         tran_id : xml.Element_ID
@@ -314,8 +316,7 @@ res_load_pose :: proc(file_name, prefab_name : string) ->  rPoseList {
                 current_sqt_data.rot.w = xml2.get_f32_attr(doc, rot_id, "w")
             } else {
                 log.warnf("Pose '%v', Tran #%v (CN %v): Missing 'Rot' element in %v. Using default identity quaternion (0,0,0,1).", temp_pose.name, nth_tran-1, cn_val, file_name)
-                qf := [4]f32{0.0, 0.0, 0.0, 1.0} // Default identity quaternion
-                current_sqt_data.rot = transmute(quat)qf // Identity quaternion literal
+                current_sqt_data.rot = math.QUATERNIONF32_IDENTITY
             }
 
             // Get "Sca" element and its attributes
@@ -338,4 +339,13 @@ res_load_pose :: proc(file_name, prefab_name : string) ->  rPoseList {
         append(&pl.poses, temp_pose)
     }
     return pl
+}
+
+destroy_pose_list :: proc(pl: ^rPoseList) {
+    for &pose in pl.poses {
+        delete(pose.name)
+        delete(pose.pose)
+    }
+    delete(pl.poses)
+    delete(pl.name)
 }
