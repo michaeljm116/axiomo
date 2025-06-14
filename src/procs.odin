@@ -259,26 +259,20 @@ res_load_pose :: proc(file_name, prefab_name : string) ->  rPoseList {
     pl.poses = make([dynamic]rPose)
 
     doc, err := xml.load_from_file(file_name)
-    if xml2.log_if_err(err) {
-        // If file not found or XML error, return the empty pl 
-        return pl 
-    }
+    if xml2.log_if_err(err) do return pl
     defer xml.destroy(doc)
 
-    root_id, root_found := xml.find_child_by_ident(doc, 0, "Root", 0)
-    if !root_found {
-        log.errorf("Could not find <Root> element in %v", file_name)
-        return pl 
-    }
-
     // Iterate through "Pose" elements
+    pose_id : xml.Element_ID
+    found : bool = true
     nth_pose := 0
-    for { 
-        pose_id, pose_found := xml.find_child_by_ident(doc, root_id, "Pose", nth_pose)
-        if !pose_found {
-            break // No more Pose elements
+    for found == true{
+        pose_id, found = xml.find_child_by_ident(doc, 0, "Pose", nth_pose)
+        if xml2.log_if_not_found(found){
+            log.warnf("Pose #%v not found in %v.", nth_pose, file_name)
+            return pl // Return early if no more poses are found
         }
-        nth_pose += 1
+       nth_pose += 1
 
         temp_pose: rPose
         temp_pose.name = xml2.get_str_attr(doc, pose_id, "Name")
@@ -286,9 +280,11 @@ res_load_pose :: proc(file_name, prefab_name : string) ->  rPoseList {
         temp_pose.pose = make([dynamic]PoseSqt) // Changed here
 
         // Iterate through "Tran" elements for the current pose
+        tran_id : xml.Element_ID
         nth_tran := 0
-        for { 
-            tran_id, tran_found := xml.find_child_by_ident(doc, pose_id, "Tran", nth_tran)
+        tran_found : bool = true
+        for tran_found == true{
+            tran_id, tran_found = xml.find_child_by_ident(doc, pose_id, "Tran", nth_tran)
             if !tran_found {
                 break // No more Tran elements for this Pose
             }
@@ -333,7 +329,7 @@ res_load_pose :: proc(file_name, prefab_name : string) ->  rPoseList {
                 log.warnf("Pose '%v', Tran #%v (CN %v): Missing 'Sca' element in %v. Using default scale (1,1,1,1).", temp_pose.name, nth_tran-1, cn_val, file_name)
                 current_sqt_data.sca = {1,1,1,1} // Default scale
             }
-            
+
             pose_transform_entry: PoseSqt
             pose_transform_entry.id = cn_val
             pose_transform_entry.sqt_data = current_sqt_data

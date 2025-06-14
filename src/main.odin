@@ -43,6 +43,10 @@ main :: proc() {
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
+	
+	context.logger = log.create_console_logger()
+	defer free(context.logger.data)
+	g_ctx = context
 
 	mod := load_pmodel("assets/froku.pm")
 	defer destroy_model(&mod)
@@ -56,9 +60,10 @@ main :: proc() {
 	defer delete(mats)
 	for m in mats do fmt.println(m.name)
 
-	context.logger = log.create_console_logger()
-	defer free(context.logger.data)
-	g_ctx = context
+	poses := res_load_pose("assets/1_Jungle/Animations/Froku.anim", "Froku")
+	defer delete(poses.poses)
+
+
 
 	// TODO: update vendor bindings to glfw 3.4 and use this to set a custom allocator.
 	// glfw.InitAllocator()
