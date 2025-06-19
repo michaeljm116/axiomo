@@ -28,7 +28,7 @@ load_directory :: proc(directory: string, models: ^[dynamic]Model) {
 }
 
 //----------------------------------------------------------------------------\\
-// /LoadModel /pm
+// /LoadModel /lm
 //----------------------------------------------------------------------------\\
 load_pmodel :: proc(file_name : string, allocator: mem.Allocator) -> Model
 {
@@ -216,7 +216,7 @@ log_if_err :: proc(e : os.Error,  loc := #caller_location){
 }
 
 //----------------------------------------------------------------------------\\
-// /LoadMaterials /lm
+// /Materials /ma
 //----------------------------------------------------------------------------\\
 res_load_materials :: proc(file : string, materials : ^[dynamic]Material)
 {

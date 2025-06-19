@@ -134,7 +134,7 @@ namespace Principia {
 		VkPhysicalDeviceFeatures2 physical_features { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &device_features };
 		vkGetPhysicalDeviceFeatures2(vkDevice.physicalDevice, &device_features);
 		vkGetPhysicalDeviceFeatures2(vkDevice.physicalDevice, &physical_features);
-		
+
 		bool bindless_supported = indexing_features.descriptorBindingPartiallyBound && indexing_features.runtimeDescriptorArray;
 		if (bindless_supported)
 			physical_features.pNext = &indexing_features;
@@ -436,7 +436,7 @@ namespace Principia {
 
 	//Make sure you pick a suitable device
 	int RenderBase::isDeviceSuitable(VkPhysicalDevice device) {
-		
+
 		//Details about basic device properties
 		VkPhysicalDeviceProperties deviceProperties;
 		vkGetPhysicalDeviceProperties(device, &deviceProperties);
@@ -619,4 +619,36 @@ namespace Principia {
 				throw std::runtime_error("couldn't find a compuete queue yo card sux");
 		}
 	}
+	void RenderBase::setComputeQueueFamilyIndex2()
+    {
+        uint32_t qFamCount;
+        vkGetPhysicalDeviceQueueFamilyProperties(vkDevice.physicalDevice, &qFamCount, nullptr);
+        std::vector<VkQueueFamilyProperties> queueFams(qFamCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(vkDevice.physicalDevice, &qFamCount, queueFams.data());
+
+        uint32_t computeFamily = -1;  // -1 means not found yet
+        uint32_t fallbackCompute = -1;  // First compute queue we find, just in case
+
+        for (uint32_t i = 0; i < qFmCount; ++i) {
+            const auto& qfam = queueFams[i];
+            if (qfam.queueCount > 0 && (qfam.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+                if (!(qfam.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
+                    computeFamily = i;  // Found a compute-only queue, we good
+                    break;
+                } else if (fallbackCompute == -1) {
+                    fallbackCompute = i;  // Stash the first compute queue
+                }
+            }
+        }
+
+        if (computeFamily == -1) {  // No compute-only queue found
+            if (fallbackCompute != -1) {
+                computeFamily = fallbackCompute;  // Use the fallback
+            } else {
+                throw std::runtime_error("Couldn't find a compute queue, yo card’s toast");
+            }
+        }
+
+        vkDevice.qFams.computeFamily = computeFamily;
+    }
 }
