@@ -336,9 +336,6 @@ init_vulkan :: proc()
 	}
 	defer vk.DestroyRenderPass(g_device, g_render_pass, nil)
 
-	create_depth_resources()
-	create_framebuffers()
-	defer destroy_framebuffers()
 
 	// Set up pipeline.
 	{
@@ -434,6 +431,11 @@ init_vulkan :: proc()
 	}
 	defer vk.DestroyCommandPool(g_device, g_command_pool, nil)
 
+	create_depth_resources()
+	create_framebuffers()
+	defer destroy_framebuffers()
+
+	
 	// Set up sync primitives.
 	{
 		sem_info := vk.SemaphoreCreateInfo {
