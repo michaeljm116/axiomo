@@ -23,47 +23,51 @@ ENABLE_VALIDATION_LAYERS :: #config(ENABLE_VALIDATION_LAYERS, ODIN_DEBUG)
 
 MAX_FRAMES_IN_FLIGHT :: 2
 RenderBase :: struct{
+	ctx: runtime.Context,
+	window: glfw.WindowHandle,
 
+	framebuffer_resized: bool,
+
+	instance: vk.Instance,
+	physical_device: vk.PhysicalDevice,
+	device: vk.Device,
+	surface: vk.SurfaceKHR,
+	graphics_queue: vk.Queue,
+	present_queue: vk.Queue,
+	compute_queue: vk.Queue,
+	compute_queue_family_index: u32,
+
+	swapchain: vk.SwapchainKHR,
+	swapchain_images: []vk.Image,
+	swapchain_views: []vk.ImageView,
+	swapchain_format: vk.SurfaceFormatKHR,
+	swapchain_extent: vk.Extent2D,
+	swapchain_frame_buffers: []vk.Framebuffer,
+
+	vert_shader_module: vk.ShaderModule,
+	frag_shader_module: vk.ShaderModule,
+	shader_stages: [2]vk.PipelineShaderStageCreateInfo,
+
+	render_pass: vk.RenderPass,
+	pipeline_layout: vk.PipelineLayout,
+	pipeline: vk.Pipeline,
+	pipeline_cache: vk.PipelineCache,
+
+	command_pool: vk.CommandPool,
+	command_buffers: [MAX_FRAMES_IN_FLIGHT]vk.CommandBuffer,
+
+	image_available_semaphores: [MAX_FRAMES_IN_FLIGHT]vk.Semaphore,
+	render_finished_semaphores: [MAX_FRAMES_IN_FLIGHT]vk.Semaphore,
+	in_flight_fences: [MAX_FRAMES_IN_FLIGHT]vk.Fence,
+
+	vma_allocator: vma.Allocator,
+	
+	depth_image : vk.Image,
+	depth_allocation : vma.Allocation,
+	depth_view: vk.ImageView,
 }
-g_ctx: runtime.Context
 
-g_window: glfw.WindowHandle
-
-g_framebuffer_resized: bool
-
-g_instance: vk.Instance
-g_physical_device: vk.PhysicalDevice
-g_device: vk.Device
-g_surface: vk.SurfaceKHR
-g_graphics_queue: vk.Queue
-g_present_queue: vk.Queue
-g_compute_queue: vk.Queue
-g_compute_queue_family_index: u32
-
-g_swapchain: vk.SwapchainKHR
-g_swapchain_images: []vk.Image
-g_swapchain_views: []vk.ImageView
-g_swapchain_format: vk.SurfaceFormatKHR
-g_swapchain_extent: vk.Extent2D
-g_swapchain_frame_buffers: []vk.Framebuffer
-
-g_vert_shader_module: vk.ShaderModule
-g_frag_shader_module: vk.ShaderModule
-g_shader_stages: [2]vk.PipelineShaderStageCreateInfo
-
-g_render_pass: vk.RenderPass
-g_pipeline_layout: vk.PipelineLayout
-g_pipeline: vk.Pipeline
-g_pipeline_cache: vk.PipelineCache
-
-g_command_pool: vk.CommandPool
-g_command_buffers: [MAX_FRAMES_IN_FLIGHT]vk.CommandBuffer
-
-g_image_available_semaphores: [MAX_FRAMES_IN_FLIGHT]vk.Semaphore
-g_render_finished_semaphores: [MAX_FRAMES_IN_FLIGHT]vk.Semaphore
-g_in_flight_fences: [MAX_FRAMES_IN_FLIGHT]vk.Fence
-
-g_vma_allocator: vma.Allocator
+rb : RenderBase
 
 // KHR_PORTABILITY_SUBSET_EXTENSION_NAME :: "VK_KHR_portability_subset"
 
@@ -82,11 +86,11 @@ init_vulkan :: proc()
 	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
 	glfw.WindowHint(glfw.RESIZABLE, glfw.TRUE)
 
-	g_window = glfw.CreateWindow(800, 600, "Vulkan", nil, nil)
-	defer glfw.DestroyWindow(g_window)
+	rb.window = glfw.CreateWindow(800, 600, "Vulkan", nil, nil)
+	defer glfw.DestroyWindow(rb.window)
 
-	glfw.SetFramebufferSizeCallback(g_window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
-		g_framebuffer_resized = true
+	glfw.SetFramebufferSizeCallback(rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
+		rb.framebuffer_resized = true
 	})
 
 	//----------------------------------------------------------------------------\\
@@ -148,30 +152,30 @@ init_vulkan :: proc()
 	create_info.enabledExtensionCount = u32(len(extensions))
 	create_info.ppEnabledExtensionNames = raw_data(extensions)
 
-	must(vk.CreateInstance(&create_info, nil, &g_instance))
-	defer vk.DestroyInstance(g_instance, nil)
+	must(vk.CreateInstance(&create_info, nil, &rb.instance))
+	defer vk.DestroyInstance(rb.instance, nil)
 
-	vk.load_proc_addresses_instance(g_instance)
+	vk.load_proc_addresses_instance(rb.instance)
 
 	when ENABLE_VALIDATION_LAYERS {
 		dbg_messenger: vk.DebugUtilsMessengerEXT
-		must(vk.CreateDebugUtilsMessengerEXT(g_instance, &dbg_create_info, nil, &dbg_messenger))
-		defer vk.DestroyDebugUtilsMessengerEXT(g_instance, dbg_messenger, nil)
+		must(vk.CreateDebugUtilsMessengerEXT(rb.instance, &dbg_create_info, nil, &dbg_messenger))
+		defer vk.DestroyDebugUtilsMessengerEXT(rb.instance, dbg_messenger, nil)
 	}
 
 	//----------------------------------------------------------------------------\\
     // /Create Surface and Devices /cs
     //----------------------------------------------------------------------------\\
-	must(glfw.CreateWindowSurface(g_instance, g_window, nil, &g_surface))
-	defer vk.DestroySurfaceKHR(g_instance, g_surface, nil)
+	must(glfw.CreateWindowSurface(rb.instance, rb.window, nil, &rb.surface))
+	defer vk.DestroySurfaceKHR(rb.instance, rb.surface, nil)
 
 	// Pick a suitable GPU.
 	must(pick_physical_device())
 
 	// Setup logical device,
-	indices := find_queue_families(g_physical_device)
-	set_compute_queue_family_index(g_physical_device, &indices)
-	g_compute_queue_family_index = indices.compute.?
+	indices := find_queue_families(rb.physical_device)
+	set_compute_queue_family_index(rb.physical_device, &indices)
+	rb.compute_queue_family_index = indices.compute.?
 	{
 		// TODO: this is kinda messy.
 		indices_set := make(map[u32]struct {}, allocator = context.temp_allocator)
@@ -218,8 +222,8 @@ init_vulkan :: proc()
 				sType = .PHYSICAL_DEVICE_FEATURES_2,
 				pNext = &device_features,
 			}
-			vk.GetPhysicalDeviceFeatures2(g_physical_device, &device_features)
-			vk.GetPhysicalDeviceFeatures2(g_physical_device, &physical_features)
+			vk.GetPhysicalDeviceFeatures2(rb.physical_device, &device_features)
+			vk.GetPhysicalDeviceFeatures2(rb.physical_device, &physical_features)
 			bindless_supported := indexing_features.descriptorBindingPartiallyBound && indexing_features.runtimeDescriptorArray
 			if bindless_supported {
 				log.info("vulkan: bindless descriptor indexing supported")
@@ -237,13 +241,13 @@ init_vulkan :: proc()
 
 		//TODO : ENABLE VALIDATION LAYERS
 
-		must(vk.CreateDevice(g_physical_device, &device_create_info, nil, &g_device))
+		must(vk.CreateDevice(rb.physical_device, &device_create_info, nil, &rb.device))
 
-		vk.GetDeviceQueue(g_device, indices.graphics.?, 0, &g_graphics_queue)
-		vk.GetDeviceQueue(g_device, indices.present.?, 0, &g_present_queue)
-		vk.GetDeviceQueue(g_device, indices.compute.?, g_compute_queue_family_index, &g_compute_queue)
+		vk.GetDeviceQueue(rb.device, indices.graphics.?, 0, &rb.graphics_queue)
+		vk.GetDeviceQueue(rb.device, indices.present.?, 0, &rb.present_queue)
+		vk.GetDeviceQueue(rb.device, indices.compute.?, rb.compute_queue_family_index, &rb.compute_queue)
 	}
-	defer vk.DestroyDevice(g_device, nil)
+	defer vk.DestroyDevice(rb.device, nil)
 
 	init_vma()
 
@@ -252,29 +256,29 @@ init_vulkan :: proc()
 
 	// Load shaders.
 	{
-		g_vert_shader_module = create_shader_module(SHADER_VERT)
-		g_shader_stages[0] = vk.PipelineShaderStageCreateInfo {
+		rb.vert_shader_module = create_shader_module(SHADER_VERT)
+		rb.shader_stages[0] = vk.PipelineShaderStageCreateInfo {
 			sType  = .PIPELINE_SHADER_STAGE_CREATE_INFO,
 			stage  = {.VERTEX},
-			module = g_vert_shader_module,
+			module = rb.vert_shader_module,
 			pName  = "main",
 		}
 
-		g_frag_shader_module = create_shader_module(SHADER_FRAG)
-		g_shader_stages[1] = vk.PipelineShaderStageCreateInfo {
+		rb.frag_shader_module = create_shader_module(SHADER_FRAG)
+		rb.shader_stages[1] = vk.PipelineShaderStageCreateInfo {
 			sType  = .PIPELINE_SHADER_STAGE_CREATE_INFO,
 			stage  = {.FRAGMENT},
-			module = g_frag_shader_module,
+			module = rb.frag_shader_module,
 			pName  = "main",
 		}
 	}
-	defer vk.DestroyShaderModule(g_device, g_vert_shader_module, nil)
-	defer vk.DestroyShaderModule(g_device, g_frag_shader_module, nil)
+	defer vk.DestroyShaderModule(rb.device, rb.vert_shader_module, nil)
+	defer vk.DestroyShaderModule(rb.device, rb.frag_shader_module, nil)
 
 	// Set up render pass.
 	{
 		color_attachment := vk.AttachmentDescription {
-			format         = g_swapchain_format.format,
+			format         = rb.swapchain_format.format,
 			samples        = {._1},
 			loadOp         = .CLEAR,
 			storeOp        = .STORE,
@@ -332,9 +336,9 @@ init_vulkan :: proc()
 			pDependencies   = &dependency,
 		}
 
-		must(vk.CreateRenderPass(g_device, &render_pass, nil, &g_render_pass))
+		must(vk.CreateRenderPass(rb.device, &render_pass, nil, &rb.render_pass))
 	}
-	defer vk.DestroyRenderPass(g_device, g_render_pass, nil)
+	defer vk.DestroyRenderPass(rb.device, rb.render_pass, nil)
 
 
 	// Set up pipeline.
@@ -388,12 +392,12 @@ init_vulkan :: proc()
 		pipeline_layout := vk.PipelineLayoutCreateInfo {
 			sType = .PIPELINE_LAYOUT_CREATE_INFO,
 		}
-		must(vk.CreatePipelineLayout(g_device, &pipeline_layout, nil, &g_pipeline_layout))
+		must(vk.CreatePipelineLayout(rb.device, &pipeline_layout, nil, &rb.pipeline_layout))
 
 		pipeline := vk.GraphicsPipelineCreateInfo {
 			sType               = .GRAPHICS_PIPELINE_CREATE_INFO,
 			stageCount          = 2,
-			pStages             = &g_shader_stages[0],
+			pStages             = &rb.shader_stages[0],
 			pVertexInputState   = &vertex_input_info,
 			pInputAssemblyState = &input_assembly,
 			pViewportState      = &viewport_state,
@@ -401,15 +405,15 @@ init_vulkan :: proc()
 			pMultisampleState   = &multisampling,
 			pColorBlendState    = &color_blending,
 			pDynamicState       = &dynamic_state,
-			layout              = g_pipeline_layout,
-			renderPass          = g_render_pass,
+			layout              = rb.pipeline_layout,
+			renderPass          = rb.render_pass,
 			subpass             = 0,
 			basePipelineIndex   = -1,
 		}
-		must(vk.CreateGraphicsPipelines(g_device, 0, 1, &pipeline, nil, &g_pipeline))
+		must(vk.CreateGraphicsPipelines(rb.device, 0, 1, &pipeline, nil, &rb.pipeline))
 	}
-	defer vk.DestroyPipelineLayout(g_device, g_pipeline_layout, nil)
-	defer vk.DestroyPipeline(g_device, g_pipeline, nil)
+	defer vk.DestroyPipelineLayout(rb.device, rb.pipeline_layout, nil)
+	defer vk.DestroyPipeline(rb.device, rb.pipeline, nil)
 
 
 	// Create command pool.
@@ -419,22 +423,21 @@ init_vulkan :: proc()
 			flags            = {.RESET_COMMAND_BUFFER},
 			queueFamilyIndex = indices.graphics.?,
 		}
-		must(vk.CreateCommandPool(g_device, &pool_info, nil, &g_command_pool))
+		must(vk.CreateCommandPool(rb.device, &pool_info, nil, &rb.command_pool))
 
 		alloc_info := vk.CommandBufferAllocateInfo {
 			sType              = .COMMAND_BUFFER_ALLOCATE_INFO,
-			commandPool        = g_command_pool,
+			commandPool        = rb.command_pool,
 			level              = .PRIMARY,
 			commandBufferCount = MAX_FRAMES_IN_FLIGHT,
 		}
-		must(vk.AllocateCommandBuffers(g_device, &alloc_info, &g_command_buffers[0]))
+		must(vk.AllocateCommandBuffers(rb.device, &alloc_info, &rb.command_buffers[0]))
 	}
-	defer vk.DestroyCommandPool(g_device, g_command_pool, nil)
+	defer vk.DestroyCommandPool(rb.device, rb.command_pool, nil)
 
 	create_depth_resources()
 	create_framebuffers()
 	defer destroy_framebuffers()
-
 	
 	// Set up sync primitives.
 	{
@@ -446,31 +449,31 @@ init_vulkan :: proc()
 			flags = {.SIGNALED},
 		}
 		for i in 0 ..< MAX_FRAMES_IN_FLIGHT {
-			must(vk.CreateSemaphore(g_device, &sem_info, nil, &g_image_available_semaphores[i]))
-			must(vk.CreateSemaphore(g_device, &sem_info, nil, &g_render_finished_semaphores[i]))
-			must(vk.CreateFence(g_device, &fence_info, nil, &g_in_flight_fences[i]))
+			must(vk.CreateSemaphore(rb.device, &sem_info, nil, &rb.image_available_semaphores[i]))
+			must(vk.CreateSemaphore(rb.device, &sem_info, nil, &rb.render_finished_semaphores[i]))
+			must(vk.CreateFence(rb.device, &fence_info, nil, &rb.in_flight_fences[i]))
 		}
 	}
-	defer for sem in g_image_available_semaphores {vk.DestroySemaphore(g_device, sem, nil)}
-	defer for sem in g_render_finished_semaphores {vk.DestroySemaphore(g_device, sem, nil)}
-	defer for fence in g_in_flight_fences {vk.DestroyFence(g_device, fence, nil)}
+	defer for sem in rb.image_available_semaphores {vk.DestroySemaphore(rb.device, sem, nil)}
+	defer for sem in rb.render_finished_semaphores {vk.DestroySemaphore(rb.device, sem, nil)}
+	defer for fence in rb.in_flight_fences {vk.DestroyFence(rb.device, fence, nil)}
 
 	current_frame := 0
-	for !glfw.WindowShouldClose(g_window) {
+	for !glfw.WindowShouldClose(rb.window) {
 		free_all(context.temp_allocator)
 
 		glfw.PollEvents()
 
 		// Wait for previous frame.
-		must(vk.WaitForFences(g_device, 1, &g_in_flight_fences[current_frame], true, max(u64)))
+		must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, max(u64)))
 
 		// Acquire an image from the swapchain.
 		image_index: u32
 		acquire_result := vk.AcquireNextImageKHR(
-			g_device,
-			g_swapchain,
+			rb.device,
+			rb.swapchain,
 			max(u64),
-			g_image_available_semaphores[current_frame],
+			rb.image_available_semaphores[current_frame],
 			0,
 			&image_index,
 		)
@@ -483,37 +486,37 @@ init_vulkan :: proc()
 			log.panicf("vulkan: acquire next image failure: %v", acquire_result)
 		}
 
-		must(vk.ResetFences(g_device, 1, &g_in_flight_fences[current_frame]))
+		must(vk.ResetFences(rb.device, 1, &rb.in_flight_fences[current_frame]))
 
-		must(vk.ResetCommandBuffer(g_command_buffers[current_frame], {}))
-		record_command_buffer(g_command_buffers[current_frame], image_index)
+		must(vk.ResetCommandBuffer(rb.command_buffers[current_frame], {}))
+		record_command_buffer(rb.command_buffers[current_frame], image_index)
 
 		// Submit.
 		submit_info := vk.SubmitInfo {
 			sType                = .SUBMIT_INFO,
 			waitSemaphoreCount   = 1,
-			pWaitSemaphores      = &g_image_available_semaphores[current_frame],
+			pWaitSemaphores      = &rb.image_available_semaphores[current_frame],
 			pWaitDstStageMask    = &vk.PipelineStageFlags{.COLOR_ATTACHMENT_OUTPUT},
 			commandBufferCount   = 1,
-			pCommandBuffers      = &g_command_buffers[current_frame],
+			pCommandBuffers      = &rb.command_buffers[current_frame],
 			signalSemaphoreCount = 1,
-			pSignalSemaphores    = &g_render_finished_semaphores[current_frame],
+			pSignalSemaphores    = &rb.render_finished_semaphores[current_frame],
 		}
-		must(vk.QueueSubmit(g_graphics_queue, 1, &submit_info, g_in_flight_fences[current_frame]))
+		must(vk.QueueSubmit(rb.graphics_queue, 1, &submit_info, rb.in_flight_fences[current_frame]))
 
 		// Present.
 		present_info := vk.PresentInfoKHR {
 			sType              = .PRESENT_INFO_KHR,
 			waitSemaphoreCount = 1,
-			pWaitSemaphores    = &g_render_finished_semaphores[current_frame],
+			pWaitSemaphores    = &rb.render_finished_semaphores[current_frame],
 			swapchainCount     = 1,
-			pSwapchains        = &g_swapchain,
+			pSwapchains        = &rb.swapchain,
 			pImageIndices      = &image_index,
 		}
-		present_result := vk.QueuePresentKHR(g_present_queue, &present_info)
+		present_result := vk.QueuePresentKHR(rb.present_queue, &present_info)
 		switch {
-		case present_result == .ERROR_OUT_OF_DATE_KHR || present_result == .SUBOPTIMAL_KHR || g_framebuffer_resized:
-			g_framebuffer_resized = false
+		case present_result == .ERROR_OUT_OF_DATE_KHR || present_result == .SUBOPTIMAL_KHR || rb.framebuffer_resized:
+			rb.framebuffer_resized = false
 			recreate_swapchain()
 		case present_result == .SUCCESS:
 		case:
@@ -522,7 +525,7 @@ init_vulkan :: proc()
 
 		current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT
 	}
-	vk.DeviceWaitIdle(g_device)
+	vk.DeviceWaitIdle(rb.device)
 }
 
 @(require_results)
@@ -607,16 +610,16 @@ pick_physical_device :: proc() -> vk.Result {
 	}
 
 	count: u32
-	vk.EnumeratePhysicalDevices(g_instance, &count, nil) or_return
+	vk.EnumeratePhysicalDevices(rb.instance, &count, nil) or_return
 	if count == 0 {log.panic("vulkan: no GPU found")}
 
 	devices := make([]vk.PhysicalDevice, count, context.temp_allocator)
-	vk.EnumeratePhysicalDevices(g_instance, &count, raw_data(devices)) or_return
+	vk.EnumeratePhysicalDevices(rb.instance, &count, raw_data(devices)) or_return
 
 	best_device_score := -1
 	for device in devices {
 		if score := score_physical_device(device); score > best_device_score {
-			g_physical_device = device
+			rb.physical_device = device
 			best_device_score = score
 		}
 	}
@@ -646,7 +649,7 @@ find_queue_families :: proc(device: vk.PhysicalDevice) -> (ids: Queue_Family_Ind
 		}
 
 		supported: b32
-		vk.GetPhysicalDeviceSurfaceSupportKHR(device, u32(i), g_surface, &supported)
+		vk.GetPhysicalDeviceSurfaceSupportKHR(device, u32(i), rb.surface, &supported)
 		if supported {
 			ids.present = u32(i)
 		}
@@ -702,22 +705,22 @@ query_swapchain_support :: proc(
 	result: vk.Result,
 ) {
 	// NOTE: looks like a wrong binding with the third arg being a multipointer.
-	vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(device, g_surface, &support.capabilities) or_return
+	vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(device, rb.surface, &support.capabilities) or_return
 
 	{
 		count: u32
-		vk.GetPhysicalDeviceSurfaceFormatsKHR(device, g_surface, &count, nil) or_return
+		vk.GetPhysicalDeviceSurfaceFormatsKHR(device, rb.surface, &count, nil) or_return
 
 		support.formats = make([]vk.SurfaceFormatKHR, count, allocator)
-		vk.GetPhysicalDeviceSurfaceFormatsKHR(device, g_surface, &count, raw_data(support.formats)) or_return
+		vk.GetPhysicalDeviceSurfaceFormatsKHR(device, rb.surface, &count, raw_data(support.formats)) or_return
 	}
 
 	{
 		count: u32
-		vk.GetPhysicalDeviceSurfacePresentModesKHR(device, g_surface, &count, nil) or_return
+		vk.GetPhysicalDeviceSurfacePresentModesKHR(device, rb.surface, &count, nil) or_return
 
 		support.presentModes = make([]vk.PresentModeKHR, count, allocator)
-		vk.GetPhysicalDeviceSurfacePresentModesKHR(device, g_surface, &count, raw_data(support.presentModes)) or_return
+		vk.GetPhysicalDeviceSurfacePresentModesKHR(device, rb.surface, &count, raw_data(support.presentModes)) or_return
 	}
 
 	return
@@ -751,7 +754,7 @@ choose_swapchain_extent :: proc(capabilities: vk.SurfaceCapabilitiesKHR) -> vk.E
 		return capabilities.currentExtent
 	}
 
-	width, height := glfw.GetFramebufferSize(g_window)
+	width, height := glfw.GetFramebufferSize(rb.window)
 	return(
 		vk.Extent2D {
 			width = clamp(u32(width), capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
@@ -764,7 +767,7 @@ find_supported_format :: proc(candidates : []vk.Format, tiling : vk.ImageTiling,
 {
 	for format in candidates{
 		props : vk.FormatProperties
-		vk.GetPhysicalDeviceFormatProperties(g_physical_device, format, &props)
+		vk.GetPhysicalDeviceFormatProperties(rb.physical_device, format, &props)
 
 		if(tiling == .LINEAR && (props.linearTilingFeatures & features) == features) do return format
 		else if (tiling == .OPTIMAL && (props.optimalTilingFeatures & features) == features) do return format
@@ -783,7 +786,7 @@ find_depth_format :: proc() -> vk.Format
 }
 
 glfw_error_callback :: proc "c" (code: i32, description: cstring) {
-	context = g_ctx
+	context = rb.ctx
 	log.errorf("glfw: %i: %s", code, description)
 }
 
@@ -793,7 +796,7 @@ vk_messenger_callback :: proc "system" (
 	pCallbackData: ^vk.DebugUtilsMessengerCallbackDataEXT,
 	pUserData: rawptr,
 ) -> b32 {
-	context = g_ctx
+	context = rb.ctx
 
 	level: log.Level
 	if .ERROR in messageSeverity {
@@ -827,10 +830,10 @@ physical_device_extensions :: proc(
 }
 
 create_swapchain :: proc() {
-	indices := find_queue_families(g_physical_device)
+	indices := find_queue_families(rb.physical_device)
 	// Setup swapchain.
 	{
-		support, result := query_swapchain_support(g_physical_device, context.temp_allocator)
+		support, result := query_swapchain_support(rb.physical_device, context.temp_allocator)
 		if result != .SUCCESS {
 			log.panicf("vulkan: query swapchain failed: %v", result)
 		}
@@ -839,8 +842,8 @@ create_swapchain :: proc() {
 		present_mode := choose_swapchain_present_mode(support.presentModes)
 		extent := choose_swapchain_extent(support.capabilities)
 
-		g_swapchain_format = surface_format
-		g_swapchain_extent = extent
+		rb.swapchain_format = surface_format
+		rb.swapchain_extent = extent
 
 		image_count := support.capabilities.minImageCount + 1
 		if support.capabilities.maxImageCount > 0 && image_count > support.capabilities.maxImageCount {
@@ -849,7 +852,7 @@ create_swapchain :: proc() {
 
 		create_info := vk.SwapchainCreateInfoKHR {
 			sType            = .SWAPCHAIN_CREATE_INFO_KHR,
-			surface          = g_surface,
+			surface          = rb.surface,
 			minImageCount    = image_count,
 			imageFormat      = surface_format.format,
 			imageColorSpace  = surface_format.colorSpace,
@@ -879,54 +882,54 @@ create_swapchain :: proc() {
 		create_info.presentMode = present_mode
 		create_info.clipped = true
 
-		must(vk.CreateSwapchainKHR(g_device, &create_info, nil, &g_swapchain))
+		must(vk.CreateSwapchainKHR(rb.device, &create_info, nil, &rb.swapchain))
 	}
 
 	// Setup swapchain images.
 	{
 		count: u32
-		must(vk.GetSwapchainImagesKHR(g_device, g_swapchain, &count, nil))
+		must(vk.GetSwapchainImagesKHR(rb.device, rb.swapchain, &count, nil))
 
-		g_swapchain_images = make([]vk.Image, count)
-		g_swapchain_views = make([]vk.ImageView, count)
-		must(vk.GetSwapchainImagesKHR(g_device, g_swapchain, &count, raw_data(g_swapchain_images)))
+		rb.swapchain_images = make([]vk.Image, count)
+		rb.swapchain_views = make([]vk.ImageView, count)
+		must(vk.GetSwapchainImagesKHR(rb.device, rb.swapchain, &count, raw_data(rb.swapchain_images)))
 
-		for image, i in g_swapchain_images {
+		for image, i in rb.swapchain_images {
 			create_info := vk.ImageViewCreateInfo {
 				sType = .IMAGE_VIEW_CREATE_INFO,
 				image = image,
 				viewType = .D2,
-				format = g_swapchain_format.format,
+				format = rb.swapchain_format.format,
 				subresourceRange = {aspectMask = {.COLOR}, levelCount = 1, layerCount = 1},
 			}
-			must(vk.CreateImageView(g_device, &create_info, nil, &g_swapchain_views[i]))
+			must(vk.CreateImageView(rb.device, &create_info, nil, &rb.swapchain_views[i]))
 		}
 	}
 }
 
 destroy_swapchain :: proc() {
-	for view in g_swapchain_views {
-		vk.DestroyImageView(g_device, view, nil)
+	for view in rb.swapchain_views {
+		vk.DestroyImageView(rb.device, view, nil)
 	}
-	delete(g_swapchain_views)
-	delete(g_swapchain_images)
-	vk.DestroySwapchainKHR(g_device, g_swapchain, nil)
+	delete(rb.swapchain_views)
+	delete(rb.swapchain_images)
+	vk.DestroySwapchainKHR(rb.device, rb.swapchain, nil)
 }
 
 create_framebuffers :: proc() {
-    g_swapchain_frame_buffers = make([]vk.Framebuffer, len(g_swapchain_views))
-    for view, i in g_swapchain_views {
-        attachments := []vk.ImageView{view, g_depth_view} // Color and depth attachments
+    rb.swapchain_frame_buffers = make([]vk.Framebuffer, len(rb.swapchain_views))
+    for view, i in rb.swapchain_views {
+        attachments := []vk.ImageView{view, rb.depth_view} // Color and depth attachments
         frame_buffer := vk.FramebufferCreateInfo {
             sType           = .FRAMEBUFFER_CREATE_INFO,
-            renderPass      = g_render_pass,
+            renderPass      = rb.render_pass,
             attachmentCount = 2,
             pAttachments    = raw_data(attachments),
-            width           = g_swapchain_extent.width,
-            height          = g_swapchain_extent.height,
+            width           = rb.swapchain_extent.width,
+            height          = rb.swapchain_extent.height,
             layers          = 1,
         }
-        must(vk.CreateFramebuffer(g_device, &frame_buffer, nil, &g_swapchain_frame_buffers[i]))
+        must(vk.CreateFramebuffer(rb.device, &frame_buffer, nil, &rb.swapchain_frame_buffers[i]))
     }
 }
 
@@ -935,7 +938,7 @@ create_pipeline_cache :: proc()
 	create_info : vk.PipelineCacheCreateInfo = {
 		sType = .PIPELINE_CACHE_CREATE_INFO,
 	}
-	must(vk.CreatePipelineCache(g_device, &create_info, nil, &g_pipeline_cache))
+	must(vk.CreatePipelineCache(rb.device, &create_info, nil, &rb.pipeline_cache))
 }
 
 init_vma :: proc()
@@ -945,27 +948,23 @@ init_vma :: proc()
 	create_info := vma.AllocatorCreateInfo {
 		flags = {.EXT_MEMORY_BUDGET}, 
 		vulkanApiVersion = vk.API_VERSION_1_2,
-		instance = g_instance,
-		device = g_device,
-		physicalDevice = g_physical_device,
+		instance = rb.instance,
+		device = rb.device,
+		physicalDevice = rb.physical_device,
 		pVulkanFunctions = &vma_funcs
 	}
-	must(vma.CreateAllocator(&create_info, &g_vma_allocator))
+	must(vma.CreateAllocator(&create_info, &rb.vma_allocator))
 }
-
-g_depth_image : vk.Image
-g_depth_allocation : vma.Allocation
-g_depth_view: vk.ImageView
 
 create_depth_resources :: proc() {
     depth_format := find_depth_format()
-    create_image(g_swapchain_extent.width, g_swapchain_extent.height, depth_format, .OPTIMAL, .DEPTH_STENCIL_ATTACHMENT, &g_depth_image, &g_depth_allocation)
-    g_depth_view = create_image_view(g_depth_image, depth_format, {.DEPTH})
-    transition_image_layout(g_depth_image, depth_format, .UNDEFINED, .DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    create_image(rb.swapchain_extent.width, rb.swapchain_extent.height, depth_format, .OPTIMAL, .DEPTH_STENCIL_ATTACHMENT, &rb.depth_image, &rb.depth_allocation)
+    rb.depth_view = create_image_view(rb.depth_image, depth_format, {.DEPTH})
+    transition_image_layout(rb.depth_image, depth_format, .UNDEFINED, .DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 }
 destroy_depth_resources :: proc() {
-    vk.DestroyImageView(g_device, g_depth_view, nil)
-    vma.DestroyImage(g_vma_allocator, g_depth_image, g_depth_allocation)
+    vk.DestroyImageView(rb.device, rb.depth_view, nil)
+    vma.DestroyImage(rb.vma_allocator, rb.depth_image, rb.depth_allocation)
 }
 
 create_image :: proc (width, height : u32, 
@@ -989,7 +988,7 @@ create_image :: proc (width, height : u32,
 	}
 
 	alloc_info := vma.AllocationCreateInfo{usage = .AUTO}
-	must(vma.CreateImage(g_vma_allocator, &image_info, &alloc_info, image, allocation, nil))
+	must(vma.CreateImage(rb.vma_allocator, &image_info, &alloc_info, image, allocation, nil))
 }
 
 create_image_view :: proc(image: vk.Image, format: vk.Format, aspect_mask: vk.ImageAspectFlags) -> vk.ImageView {
@@ -1005,7 +1004,7 @@ create_image_view :: proc(image: vk.Image, format: vk.Format, aspect_mask: vk.Im
         },
     }
     view: vk.ImageView
-    must(vk.CreateImageView(g_device, &view_info, nil, &view))
+    must(vk.CreateImageView(rb.device, &view_info, nil, &view))
     return view
 }
 
@@ -1022,18 +1021,18 @@ create_buffer :: proc(allocator : vma.Allocator, size : vk.DeviceSize, usage : v
 }
 
 destroy_framebuffers :: proc() {
-	for frame_buffer in g_swapchain_frame_buffers {vk.DestroyFramebuffer(g_device, frame_buffer, nil)}
-	delete(g_swapchain_frame_buffers)
+	for frame_buffer in rb.swapchain_frame_buffers {vk.DestroyFramebuffer(rb.device, frame_buffer, nil)}
+	delete(rb.swapchain_frame_buffers)
 }
 
 recreate_swapchain :: proc() {
     // Don't do anything when minimized.
-    for w, h := glfw.GetFramebufferSize(g_window); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(g_window) {
+    for w, h := glfw.GetFramebufferSize(rb.window); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(rb.window) {
         glfw.WaitEvents()
-        if glfw.WindowShouldClose(g_window) { break }
+        if glfw.WindowShouldClose(rb.window) { break }
     }
 
-    vk.DeviceWaitIdle(g_device)
+    vk.DeviceWaitIdle(rb.device)
 
     destroy_framebuffers()
     destroy_depth_resources()
@@ -1052,7 +1051,7 @@ create_shader_module :: proc(code: []byte) -> (module: vk.ShaderModule) {
 		codeSize = len(code),
 		pCode    = raw_data(as_u32),
 	}
-	must(vk.CreateShaderModule(g_device, &create_info, nil, &module))
+	must(vk.CreateShaderModule(rb.device, &create_info, nil, &module))
 	return
 }
 
@@ -1068,25 +1067,25 @@ record_command_buffer :: proc(command_buffer: vk.CommandBuffer, image_index: u32
 
     render_pass_info := vk.RenderPassBeginInfo {
         sType = .RENDER_PASS_BEGIN_INFO,
-        renderPass = g_render_pass,
-        framebuffer = g_swapchain_frame_buffers[image_index],
-        renderArea = {extent = g_swapchain_extent},
+        renderPass = rb.render_pass,
+        framebuffer = rb.swapchain_frame_buffers[image_index],
+        renderArea = {extent = rb.swapchain_extent},
         clearValueCount = 2,
         pClearValues = &clear_values[0],
     }
     vk.CmdBeginRenderPass(command_buffer, &render_pass_info, .INLINE)
 
-    vk.CmdBindPipeline(command_buffer, .GRAPHICS, g_pipeline)
+    vk.CmdBindPipeline(command_buffer, .GRAPHICS, rb.pipeline)
 
     viewport := vk.Viewport {
-        width    = f32(g_swapchain_extent.width),
-        height   = f32(g_swapchain_extent.height),
+        width    = f32(rb.swapchain_extent.width),
+        height   = f32(rb.swapchain_extent.height),
         maxDepth = 1.0,
     }
     vk.CmdSetViewport(command_buffer, 0, 1, &viewport)
 
     scissor := vk.Rect2D {
-        extent = g_swapchain_extent,
+        extent = rb.swapchain_extent,
     }
     vk.CmdSetScissor(command_buffer, 0, 1, &scissor)
 
@@ -1110,12 +1109,12 @@ must :: proc(result: vk.Result, loc := #caller_location) {
 begin_single_time_commands :: proc() -> vk.CommandBuffer {
     alloc_info := vk.CommandBufferAllocateInfo {
         sType              = .COMMAND_BUFFER_ALLOCATE_INFO,
-        commandPool        = g_command_pool,
+        commandPool        = rb.command_pool,
         level              = .PRIMARY,
         commandBufferCount = 1,
     }
     command_buffer: vk.CommandBuffer
-    must(vk.AllocateCommandBuffers(g_device, &alloc_info, &command_buffer))
+    must(vk.AllocateCommandBuffers(rb.device, &alloc_info, &command_buffer))
 
     begin_info := vk.CommandBufferBeginInfo {
         sType = .COMMAND_BUFFER_BEGIN_INFO,
@@ -1133,10 +1132,10 @@ end_single_time_commands :: proc(command_buffer: ^vk.CommandBuffer) {
         commandBufferCount = 1,
         pCommandBuffers    = command_buffer,
     }
-    must(vk.QueueSubmit(g_graphics_queue, 1, &submit_info, 0))
-    must(vk.QueueWaitIdle(g_graphics_queue))
+    must(vk.QueueSubmit(rb.graphics_queue, 1, &submit_info, 0))
+    must(vk.QueueWaitIdle(rb.graphics_queue))
 
-    vk.FreeCommandBuffers(g_device, g_command_pool, 1, command_buffer)
+    vk.FreeCommandBuffers(rb.device, rb.command_pool, 1, command_buffer)
 }
 
 transition_image_layout :: proc(image: vk.Image, format: vk.Format, old_layout: vk.ImageLayout, new_layout: vk.ImageLayout) {

@@ -1,0 +1,520 @@
+{
+  "Scene": {
+    "_Num": "1"
+  },
+  "Node": [
+    {
+      "Transform": {
+        "Position": {
+          "_x": "0",
+          "_y": "-5",
+          "_z": "0"
+        },
+        "Rotation": {
+          "_x": "-45",
+          "_y": "-0",
+          "_z": "1e-06"
+        },
+        "Scale": {
+          "_x": "1",
+          "_y": "1",
+          "_z": "1"
+        }
+      },
+      "AspectRatio": {
+        "_ratio": "1.7777778"
+      },
+      "FOV": {
+        "_fov": "104"
+      },
+      "_Name": "Camera",
+      "_hasChildren": false,
+      "_eFlags": "2228243",
+      "_gFlags": "0",
+      "_Dynamic": true
+    },
+    {
+      "Transform": {
+        "Position": {
+          "_x": "0.14968872",
+          "_y": "-3.9308186",
+          "_z": "-0.029907227"
+        },
+        "Rotation": {
+          "_x": "0",
+          "_y": "-0",
+          "_z": "0"
+        },
+        "Scale": {
+          "_x": "1",
+          "_y": "1",
+          "_z": "1"
+        }
+      },
+      "Color": {
+        "_r": "255",
+        "_g": "255",
+        "_b": "255"
+      },
+      "Intensity": {
+        "_i": "1000"
+      },
+      "ID": {
+        "_id": "52"
+      },
+      "_Name": "Light",
+      "_hasChildren": false,
+      "_eFlags": "2228235",
+      "_gFlags": "0",
+      "_Dynamic": true
+    },
+    {
+      "Transform": {
+        "Position": {
+          "_x": "0",
+          "_y": "-20",
+          "_z": "26"
+        },
+        "Rotation": {
+          "_x": "0",
+          "_y": "9.9999997e-05",
+          "_z": "0"
+        },
+        "Scale": {
+          "_x": "40",
+          "_y": "4",
+          "_z": "40"
+        }
+      },
+      "Material": {
+        "_ID": "-874053208"
+      },
+      "Object": {
+        "_ID": "-2"
+      },
+      "Rigid": {
+        "_Rigid": true
+      },
+      "Collider": {
+        "Local": {
+          "_x": "0",
+          "_y": "0",
+          "_z": "0"
+        },
+        "Extents": {
+          "_x": "20",
+          "_y": "4",
+          "_z": "20"
+        },
+        "_Type": "1"
+      },
+      "_Name": "Floor",
+      "_hasChildren": false,
+      "_eFlags": "2334727",
+      "_gFlags": "0",
+      "_Dynamic": false
+    },
+    {
+      "Transform": {
+        "Position": {
+          "_x": "-14",
+          "_y": "-10",
+          "_z": "24"
+        },
+        "Rotation": {
+          "_x": "0",
+          "_y": "9.9999997e-05",
+          "_z": "0"
+        },
+        "Scale": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "10"
+        }
+      },
+      "Material": {
+        "_ID": "-382174016"
+      },
+      "Object": {
+        "_ID": "-2"
+      },
+      "Rigid": {
+        "_Rigid": true
+      },
+      "Collider": {
+        "Local": {
+          "_x": "0",
+          "_y": "0",
+          "_z": "0"
+        },
+        "Extents": {
+          "_x": "7",
+          "_y": "10",
+          "_z": "1"
+        },
+        "_Type": "1"
+      },
+      "_Name": "topWall_l",
+      "_hasChildren": false,
+      "_eFlags": "2334727",
+      "_gFlags": "0",
+      "_Dynamic": false
+    },
+    {
+      "Transform": {
+        "Position": {
+          "_x": "14",
+          "_y": "-10",
+          "_z": "24"
+        },
+        "Rotation": {
+          "_x": "0",
+          "_y": "9.9999997e-05",
+          "_z": "0"
+        },
+        "Scale": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "10"
+        }
+      },
+      "Material": {
+        "_ID": "-382174016"
+      },
+      "Object": {
+        "_ID": "-2"
+      },
+      "Rigid": {
+        "_Rigid": true
+      },
+      "Collider": {
+        "Local": {
+          "_x": "0",
+          "_y": "0",
+          "_z": "0"
+        },
+        "Extents": {
+          "_x": "7",
+          "_y": "10",
+          "_z": "1"
+        },
+        "_Type": "1"
+      },
+      "_Name": "topWall_r",
+      "_hasChildren": false,
+      "_eFlags": "2334727",
+      "_gFlags": "0",
+      "_Dynamic": false
+    },
+    {
+      "Transform": {
+        "Position": {
+          "_x": "-14",
+          "_y": "-10",
+          "_z": "-24"
+        },
+        "Rotation": {
+          "_x": "0",
+          "_y": "9.9999997e-05",
+          "_z": "0"
+        },
+        "Scale": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "10"
+        }
+      },
+      "Material": {
+        "_ID": "-382174016"
+      },
+      "Object": {
+        "_ID": "-2"
+      },
+      "Rigid": {
+        "_Rigid": true
+      },
+      "Collider": {
+        "Local": {
+          "_x": "0",
+          "_y": "0",
+          "_z": "0"
+        },
+        "Extents": {
+          "_x": "7",
+          "_y": "10",
+          "_z": "1"
+        },
+        "_Type": "1"
+      },
+      "_Name": "bottomWall_l",
+      "_hasChildren": false,
+      "_eFlags": "2334727",
+      "_gFlags": "0",
+      "_Dynamic": false
+    },
+    {
+      "Transform": {
+        "Position": {
+          "_x": "14",
+          "_y": "-10",
+          "_z": "-24"
+        },
+        "Rotation": {
+          "_x": "0",
+          "_y": "9.9999997e-05",
+          "_z": "0"
+        },
+        "Scale": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "10"
+        }
+      },
+      "Material": {
+        "_ID": "-382174016"
+      },
+      "Object": {
+        "_ID": "-2"
+      },
+      "Rigid": {
+        "_Rigid": true
+      },
+      "Collider": {
+        "Local": {
+          "_x": "0",
+          "_y": "0",
+          "_z": "0"
+        },
+        "Extents": {
+          "_x": "7",
+          "_y": "10",
+          "_z": "1"
+        },
+        "_Type": "1"
+      },
+      "_Name": "bottomWall_r",
+      "_hasChildren": false,
+      "_eFlags": "2334727",
+      "_gFlags": "0",
+      "_Dynamic": false
+    },
+    {
+      "Transform": {
+        "Position": {
+          "_x": "24",
+          "_y": "-10",
+          "_z": "14"
+        },
+        "Rotation": {
+          "_x": "0",
+          "_y": "-0",
+          "_z": "9.9999997e-05"
+        },
+        "Scale": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "10"
+        }
+      },
+      "Material": {
+        "_ID": "-382174016"
+      },
+      "Object": {
+        "_ID": "-2"
+      },
+      "Collider": {
+        "Local": {
+          "_x": "0",
+          "_y": "0",
+          "_z": "0"
+        },
+        "Extents": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "10"
+        },
+        "_Type": "1"
+      },
+      "_Name": "rightWall_t",
+      "_hasChildren": false,
+      "_eFlags": "2326535",
+      "_gFlags": "0",
+      "_Dynamic": false
+    },
+    {
+      "Transform": {
+        "Position": {
+          "_x": "24",
+          "_y": "-10",
+          "_z": "-9"
+        },
+        "Rotation": {
+          "_x": "0",
+          "_y": "-0",
+          "_z": "9.9999997e-05"
+        },
+        "Scale": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "5"
+        }
+      },
+      "Material": {
+        "_ID": "-382174016"
+      },
+      "Object": {
+        "_ID": "-2"
+      },
+      "Collider": {
+        "Local": {
+          "_x": "0",
+          "_y": "0",
+          "_z": "0"
+        },
+        "Extents": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "10"
+        },
+        "_Type": "1"
+      },
+      "_Name": "rightWall_b",
+      "_hasChildren": false,
+      "_eFlags": "2326535",
+      "_gFlags": "0",
+      "_Dynamic": false
+    },
+    {
+      "Transform": {
+        "Position": {
+          "_x": "-24",
+          "_y": "-10",
+          "_z": "14"
+        },
+        "Rotation": {
+          "_x": "0",
+          "_y": "-0",
+          "_z": "9.9999997e-05"
+        },
+        "Scale": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "10"
+        }
+      },
+      "Material": {
+        "_ID": "-382174016"
+      },
+      "Object": {
+        "_ID": "-2"
+      },
+      "Collider": {
+        "Local": {
+          "_x": "0",
+          "_y": "0",
+          "_z": "0"
+        },
+        "Extents": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "10"
+        },
+        "_Type": "1"
+      },
+      "_Name": "leftWall_t",
+      "_hasChildren": false,
+      "_eFlags": "2326535",
+      "_gFlags": "0",
+      "_Dynamic": false
+    },
+    {
+      "Transform": {
+        "Position": {
+          "_x": "-24",
+          "_y": "-10",
+          "_z": "-8.9996948"
+        },
+        "Rotation": {
+          "_x": "0",
+          "_y": "-0",
+          "_z": "9.9999997e-05"
+        },
+        "Scale": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "5"
+        }
+      },
+      "Material": {
+        "_ID": "-382174016"
+      },
+      "Object": {
+        "_ID": "-2"
+      },
+      "Collider": {
+        "Local": {
+          "_x": "0",
+          "_y": "0",
+          "_z": "0"
+        },
+        "Extents": {
+          "_x": "10",
+          "_y": "10",
+          "_z": "10"
+        },
+        "_Type": "1"
+      },
+      "_Name": "leftWall_b",
+      "_hasChildren": false,
+      "_eFlags": "2326535",
+      "_gFlags": "0",
+      "_Dynamic": false
+    },
+    {
+      "Transform": {
+        "Position": {
+          "_x": "0",
+          "_y": "-20",
+          "_z": "-19"
+        },
+        "Rotation": {
+          "_x": "0",
+          "_y": "0",
+          "_z": "0"
+        },
+        "Scale": {
+          "_x": "4",
+          "_y": "4",
+          "_z": "5"
+        }
+      },
+      "Material": {
+        "_ID": "-874053208"
+      },
+      "Object": {
+        "_ID": "-2"
+      },
+      "Rigid": {
+        "_Rigid": true
+      },
+      "Collider": {
+        "Local": {
+          "_x": "0",
+          "_y": "0",
+          "_z": "0"
+        },
+        "Extents": {
+          "_x": "20",
+          "_y": "4",
+          "_z": "20"
+        },
+        "_Type": "1"
+      },
+      "_Name": "Floor",
+      "_hasChildren": false,
+      "_eFlags": "2334727",
+      "_gFlags": "0",
+      "_Dynamic": false
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import "core:bytes"
 import "core:bufio"
 import "core:encoding/ini"
 import xml "core:encoding/xml"
+import "core:encoding/json"
 import "core:mem"
 import "core:strconv"
 import "extensions/xml2"
@@ -209,16 +210,25 @@ read_vec3 :: proc(io : ^os.Handle) -> vec3
     return v
 }
 
-log_if_err :: proc(e : os.Error,  loc := #caller_location){
+log_if_err_os :: proc(e : os.Error,  loc := #caller_location){
     if e != os.ERROR_NONE {
         fmt.eprintln("Error: ", e, " at location : ", loc)
     }
 }
+log_if_err_b :: proc(b : bool, msg : string, loc := #caller_location)
+{
+   if b do fmt.eprintln("Error: ", msg, " at location: ",  loc)
+}
+log_if_err_j :: proc(e : json.Unmarshal_Error, loc := #caller_location)
+{
+   if e != .None do fmt.eprintln("Error: ", e, " at location : ", loc)
+}
+log_if_err :: proc{log_if_err_os, log_if_err_b, log_if_err_j}
 
 //----------------------------------------------------------------------------\\
 // /Materials /ma
 //----------------------------------------------------------------------------\\
-res_load_materials :: proc(file : string, materials : ^[dynamic]Material)
+res_load_materials :: proc(file : string, materials : ^[dynamic]AMaterial)
 {
     doc, err := xml.load_from_file(file)
     if xml2.log_if_err(err) do return
@@ -233,7 +243,7 @@ res_load_materials :: proc(file : string, materials : ^[dynamic]Material)
         if xml2.log_if_not_found(found) do return
         nth_mat += 1
 
-        temp_mat : Material
+        temp_mat : AMaterial
         temp_mat.name = strings.clone(xml2.get_str_attr(doc, mat_id, "Name"), materials^.allocator)
         temp_mat.diffuse = vec3 {
             xml2.get_f32_attr(doc, mat_id, "DiffuseR"),

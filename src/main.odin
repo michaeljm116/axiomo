@@ -51,7 +51,9 @@ main :: proc() {
 
 	context.logger = log.create_console_logger()
 	defer free(context.logger.data)
-	g_ctx = context
+	rb.ctx = context
+
+	load_new_scene("assets/1_Jungle/Scenes/Dungeon_4w.json")
 
 	mod := load_pmodel("assets/froku.pm", arena_alloc)
 
@@ -59,7 +61,7 @@ main :: proc() {
 	defer delete(models)
 	load_directory("assets/Models/", &models)
 
-	mats : [dynamic]Material = make([dynamic]Material, 0, arena_alloc)
+	mats : [dynamic]AMaterial = make([dynamic]AMaterial, 0, arena_alloc)
 	res_load_materials("assets/Materials.xml", &mats)
 	defer delete(mats)
 	for m in mats do fmt.println(m.name)

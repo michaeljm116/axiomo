@@ -11,6 +11,8 @@ import "core:bufio"
 import "core:encoding/ini"
 import "core:encoding/xml"
 import "core:mem"
+import vk "vendor:vulkan"
+import "vma"
 
 vec4i :: [4]i32
 quat :: math.Quaternionf32
@@ -39,7 +41,7 @@ rVertex :: struct{
     uv : [2]f32
 }
 
-Material :: struct{
+AMaterial :: struct{
     diffuse : vec3,
     reflective : f32,
     roughness : f32,
@@ -80,7 +82,7 @@ Mesh :: struct{
     center : vec3,
     extents : vec3,
     name : string,
-    mat : Material,
+    mat : AMaterial,
     mat_id : i32,
     mesh_id : i32
 }
@@ -151,4 +153,60 @@ ssBVHNode :: struct {
 BVHBounds :: struct {
     upper : vec3,
     lower :vec3
+}
+
+// Helper types for vectors/matrices
+vec2f :: [2]f32
+vec3f :: [3]f32
+mat4f :: [4][4]f32
+
+ssGUI :: struct {
+    min:        vec2f,
+    extents:    vec2f,
+    align_min:  vec2f,
+    align_ext:  vec2f,
+    layer:      int,
+    id:         int,
+    pad:        int,
+    alpha:      f32,
+}
+
+ssPrimitive :: struct {
+    world:      mat4f,
+    extents:    vec3f,
+    num_children: int,
+    id:         int,
+    mat_id:     int,
+    start_index: int,
+    end_index:   int,
+}
+
+ssVert :: struct {
+    pos:    vec3f,
+    u:      f32,
+    norm:   vec3f,
+    v:      f32,
+}
+
+ssTriangleIndex :: struct {
+    v:      [3]int,
+    id:     int,
+}
+
+ssIndex :: struct {
+    v:      [4]int,
+}
+
+ssShape :: struct {
+    center:     vec3f,
+    mat_id:     int,
+    extents:    vec3f,
+    type:       int,
+}
+
+ssLight :: struct {
+    pos:        vec3f,
+    intensity:  f32,
+    color:      vec3f,
+    id:         int,
 }
