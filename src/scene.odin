@@ -16,12 +16,12 @@ import vk "vendor:vulkan"
 import "vma"
 
 
-load_new_scene :: proc(name : string) {
-    data, ok := os.read_entire_file_from_filename(name, context.temp_allocator)
+load_new_scene :: proc(name : string, allocator := context.temp_allocator) {
+    data, ok := os.read_entire_file_from_filename(name, allocator)
     log_if_err(!ok, fmt.tprintf("Finding file(%s)",name))
 
     scene: SceneData
-    json_err := json.unmarshal(data, &scene);
+    json_err := json.unmarshal(data, &scene, allocator = allocator);
     log_if_err(json_err)
 
     // Process scene and nodes

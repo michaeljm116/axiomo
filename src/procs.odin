@@ -221,7 +221,7 @@ log_if_err_b :: proc(b : bool, msg : string, loc := #caller_location)
 }
 log_if_err_j :: proc(e : json.Unmarshal_Error, loc := #caller_location)
 {
-   if e != .None do fmt.eprintln("Error: ", e, " at location : ", loc)
+   if e != nil do fmt.eprintln("Error: ", e, " at location : ", loc)
 }
 log_if_err :: proc{log_if_err_os, log_if_err_b, log_if_err_j}
 
@@ -240,7 +240,7 @@ res_load_materials :: proc(file : string, materials : ^[dynamic]AMaterial)
     found : bool = true
     for found == true {
         mat_id, found = xml.find_child_by_ident(doc, 0, "Material", nth_mat)
-        if xml2.log_if_not_found(found) do return
+        if xml2.log_if_not_found(found, "Material") do return
         nth_mat += 1
 
         temp_mat : AMaterial
