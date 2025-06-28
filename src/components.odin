@@ -21,9 +21,6 @@ import math "core:math/linalg"
 //  - physics
 //  - static
 // audio
-// animation
-//
-//
 
 //----------------------------------------------------------------------------\\
 // /Transform Component /tc
@@ -1351,3 +1348,180 @@ anim_flags :: proc{
 
 // Constants
 ANIM_FLAG_RESET :: 0b11111111111000000000000000000000
+
+//----------------------------------------------------------------------------\\
+// /Debug Component /dc
+//----------------------------------------------------------------------------\\
+
+Cmp_Debug :: struct {
+    type: string,
+    message: string,
+}
+
+debug_component_default :: proc() -> Cmp_Debug {
+    return Cmp_Debug{
+        type = "",
+        message = "",
+    }
+}
+
+debug_component_create :: proc(debug_type: string, debug_message: string) -> Cmp_Debug {
+    return Cmp_Debug{
+        type = strings.clone(debug_type),
+        message = strings.clone(debug_message),
+    }
+}
+
+debug_component_destroy :: proc(comp: ^Cmp_Debug) {
+    delete(comp.type)
+    delete(comp.message)
+}
+
+// Constructor overloading
+debug_component :: proc{
+    debug_component_default,
+    debug_component_create,
+}
+
+//----------------------------------------------------------------------------\\
+// /Audio Component /auc
+//----------------------------------------------------------------------------\\
+
+import sdl "vendor:sdl2"
+import sdl_mixer "vendor:sdl2/mixer"
+
+// Audio type enumeration
+AudioType :: enum {
+    SOUND_EFFECT,
+    MUSIC,
+}
+
+Cmp_Audio :: struct {
+    play: bool,
+    chunk: ^sdl_mixer.Chunk,  // SDL2 mixer chunk
+    file_name: string,
+    channel: i32,  // SDL mixer channel for this audio
+}
+
+audio_component_default :: proc() -> Cmp_Audio {
+    return Cmp_Audio{
+        play = false,
+        chunk = nil,
+        file_name = "",
+        channel = -1,
+    }
+}
+
+audio_component_with_file :: proc(filename: string) -> Cmp_Audio {
+    return Cmp_Audio{
+        play = false,
+        chunk = nil,
+        file_name = strings.clone(filename),
+        channel = -1,
+    }
+}
+
+audio_component_create :: proc(filename: string, should_play: bool) -> Cmp_Audio {
+    return Cmp_Audio{
+        play = should_play,
+        chunk = nil,
+        file_name = strings.clone(filename),
+        channel = -1,
+    }
+}
+
+audio_component_destroy :: proc(comp: ^Cmp_Audio) {
+    if comp.chunk != nil {
+        sdl_mixer.FreeChunk(comp.chunk)
+    }
+    delete(comp.file_name)
+}
+
+// Constructor overloading
+audio_component :: proc{
+    audio_component_default,
+    audio_component_with_file,
+    audio_component_create,
+}
+
+// Utility functions for audio
+audio_load_file :: proc(comp: ^Cmp_Audio, filename: string) -> bool {
+    // Clean up existing chunk
+    if comp.chunk != nil {
+        sdl_mixer.FreeChunk(comp.chunk)
+    }
+
+    // Load new audio file
+    comp.chunk = sdl_mixer.LoadWAV(strings.clone_to_cstring(filename, context.temp_allocator))
+    if comp.chunk == nil {
+        fmt.printf("Failed to load audio file: %s, SDL_Error: %s\n", filename, sdl.GetError())
+        return false
+    }
+
+    // Update filename
+    delete(comp.file_name)
+    comp.file_name = strings.clone(filename)
+    return true
+}
+
+audio_play :: proc(comp: ^Cmp_Audio, loops: i32 = 0) -> bool {
+    if comp.chunk == nil {
+        if !audio_load_file(comp, comp.file_name) {
+            return false
+        }
+    }
+
+    comp.channel = sdl_mixer.PlayChannel(-1, comp.chunk, loops)
+    if comp.channel == -1 {
+        fmt.printf("Failed to play audio: %s\n", sdl.GetError())
+        return false
+    }
+
+    comp.play = true
+    return true
+}
+
+audio_stop :: proc(comp: ^Cmp_Audio) {
+    if comp.channel != -1 {
+        sdl_mixer.HaltChannel(comp.channel)
+    }
+    comp.play = false
+    comp.channel = -1
+}
+
+audio_pause :: proc(comp: ^Cmp_Audio) {
+    if comp.channel != -1 {
+        sdl_mixer.Pause(comp.channel)
+    }
+}
+
+audio_resume :: proc(comp: ^Cmp_Audio) {
+    if comp.channel != -1 {
+        sdl_mixer.Resume(comp.channel)
+    }
+}
+
+audio_is_playing :: proc(comp: Cmp_Audio) -> bool {
+    if comp.channel == -1 do return false
+    return sdl_mixer.Playing(comp.channel) != 0
+}
+
+audio_set_volume :: proc(comp: ^Cmp_Audio, volume: i32) {
+    if comp.chunk != nil {
+        sdl_mixer.VolumeChunk(comp.chunk, volume)
+    }
+}
+
+// Initialize SDL mixer (call this once at startup)
+audio_system_init :: proc() -> bool {
+    if sdl_mixer.OpenAudio(44100, sdl_mixer.DEFAULT_FORMAT, 2, 2048) != 0 {
+        fmt.printf("Failed to initialize SDL_mixer: %s\n", sdl.GetError())
+        return false
+    }
+    return true
+}
+
+// Cleanup SDL mixer (call this at shutdown)
+audio_system_quit :: proc() {
+    sdl_mixer.CloseAudio()
+}
