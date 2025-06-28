@@ -53,7 +53,7 @@ main :: proc() {
 	defer free(context.logger.data)
 	rb.ctx = context
 
-	load_new_scene("assets/1_Jungle/Scenes/Dungeon_4w.json", arena_alloc)
+	load_new_scene("assets/1_Jungle/Scenes/PrefabMaker.json", arena_alloc)
 
 	mod := load_pmodel("assets/froku.pm", arena_alloc)
 
