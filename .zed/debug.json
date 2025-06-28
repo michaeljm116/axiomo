@@ -1,0 +1,9 @@
+[
+  {
+    "label": "Build Binary",
+    "adapter": "CodeLLDB",
+    "program": "$ZED_WORKTREE_ROOT/build/debug.exe",
+    "preLaunchTask": "build",
+    "request": "launch"
+  }
+]

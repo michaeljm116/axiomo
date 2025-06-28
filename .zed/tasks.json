@@ -1,0 +1,8 @@
+[
+  {
+    "label": "build",
+    "type": "shell",
+    "command": "odin build src/. -debug -out:build/debug.exe",
+    "group": "build"
+  }
+]
