@@ -149,6 +149,7 @@ Node :: struct {
     Transform: Transform,
     Name: string `json:"_Name"`,
     hasChildren: bool `json:"_hasChildren"`,
+    Children: [dynamic]Node,
     eFlags: int `json:"_eFlags"`,
     gFlags: int `json:"_gFlags"`,
     Dynamic: bool `json:"_Dynamic"`,
