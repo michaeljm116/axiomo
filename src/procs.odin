@@ -16,7 +16,7 @@ import "core:strconv"
 import "extensions/xml2"
 import path "core:path/filepath"
 import path2 "extensions/filepath2"
-
+import "ecs"
 //----------------------------------------------------------------------------\\
 // /LoadOthers /lo
 //----------------------------------------------------------------------------\\
@@ -358,4 +358,43 @@ destroy_pose_list :: proc(pl: ^rPoseList) {
     }
     delete(pl.poses)
     delete(pl.name)
+}
+
+//----------------------------------------------------------------------------\\
+// /ECS
+//----------------------------------------------------------------------------\\
+// Helper functions that assume g_world
+
+// Entity management
+add_entity :: proc() -> ecs.EntityID {
+    return ecs.add_entity(g_world)
+}
+
+// Component management
+add_component :: proc(entity: ecs.EntityID, component: $T) {
+    ecs.add_component(g_world, entity, component)
+}
+
+// Query system
+query :: proc(terms: ..ecs.Term) -> []^ecs.Archetype {
+    return ecs.query(g_world, ..terms)
+}
+
+// Table access - overloaded procedure set
+get_table :: proc {
+    get_table_same,
+    get_table_cast,
+    get_table_pair,
+}
+
+get_table_same :: proc(archetype: ^ecs.Archetype, $Component: typeid) -> []Component {
+    return ecs.get_table_same(g_world, archetype, Component)
+}
+
+get_table_cast :: proc(archetype: ^ecs.Archetype, $Component: typeid, $CastTo: typeid) -> []CastTo {
+    return ecs.get_table_cast(g_world, archetype, Component, CastTo)
+}
+
+get_table_pair :: proc(archetype: ^ecs.Archetype, pair: ecs.PairType($R, $T)) -> []R {
+    return ecs.get_table_pair(g_world, archetype, pair)
 }

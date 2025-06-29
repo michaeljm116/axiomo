@@ -34,13 +34,18 @@ import "core:fmt"
 import "core:path/filepath"
 import vk "vendor:vulkan"
 import "vendor:glfw"
+import "ecs"
 
+g_world : ecs.World
 track_alloc: mem.Tracking_Allocator
 
 main :: proc() {
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
+
+	world := ecs.create_world()
+	defer ecs.delete_world()
 
 	// Create an arena allocator using context.temp_allocator
 	arena: mem.Arena
