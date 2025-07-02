@@ -15,6 +15,7 @@ import "core:encoding/json"
 import vk "vendor:vulkan"
 import "vma"
 
+parents : [dynamic]Cmp_Node
 
 load_new_scene :: proc(name : string, allocator := context.temp_allocator) {
     data, ok := os.read_entire_file_from_filename(name, allocator)
@@ -26,6 +27,7 @@ load_new_scene :: proc(name : string, allocator := context.temp_allocator) {
 
     // Process scene and nodes
     for node in scene.Node {
+
         switch node.Type {
         case .Camera:
             if camera_data, ok := node.Data.(CameraData); ok {
@@ -150,10 +152,28 @@ Node :: struct {
     Name: string `json:"_Name"`,
     hasChildren: bool `json:"_hasChildren"`,
     Children: [dynamic]Node,
-    eFlags: int `json:"_eFlags"`,
-    gFlags: int `json:"_gFlags"`,
+    eFlags: u32 `json:"_eFlags"`,
+    gFlags: i64 `json:"_gFlags"`,
     Dynamic: bool `json:"_Dynamic"`,
     Data: NodeData,
+}
+
+Node_To_Component :: proc(node : Node) -> Cmp_Node {
+    ret := Cmp_Node{
+       entity = add_entity(),
+       parent = 0,
+       name = node.Name,
+       engine_flags = transmute(ComponentFlags)node.eFlags,
+       game_flags = node.gFlags,
+       is_dynamic = node.Dynamic
+    }
+    if(node.hasChildren){
+        for c in node.Children{
+            Node_To_Component(c)
+
+        }
+    }
+
 }
 
 // Scene struct for the Scene object

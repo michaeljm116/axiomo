@@ -19,11 +19,17 @@ quat :: math.Quaternionf32
 vec3 :: math.Vector3f32
 vec4 :: math.Vector4f32
 mat4 :: math.Matrix4f32
+
+
+// Helper types for vectors/matrices
+vec2f :: [2]f32
+vec3f :: [3]f32
+mat4f :: [4][4]f32
+
 //----------------------------------------------------------------------------\\
 // /Structs /st
 //----------------------------------------------------------------------------\\
-Shape :: struct
-{
+Shape :: struct{
     name : string,
     type : i32,
     center : vec3,
@@ -139,27 +145,6 @@ rPoseList :: struct{
     poses : [dynamic]rPose,
     hash_val : i32
 }
-
-//----------------------------------------------------------------------------\\
-// /BVH
-//----------------------------------------------------------------------------\\
-
-ssBVHNode :: struct {
-    upper : vec3,
-    offset : i32,
-    lower : vec3,
-    numChildren : i32
-}
-
-BVHBounds :: struct {
-    upper : vec3,
-    lower :vec3
-}
-
-// Helper types for vectors/matrices
-vec2f :: [2]f32
-vec3f :: [3]f32
-mat4f :: [4][4]f32
 
 ssGUI :: struct {
     min:        vec2f,

@@ -11,9 +11,3 @@ import "core:bufio"
 import "core:encoding/ini"
 import "core:encoding/xml"
 import "core:mem"
-
-// /bvh
-bvhbounds_merge :: proc(a,b : BVHBounds) -> BVHBounds
-{
-    return {}
-}

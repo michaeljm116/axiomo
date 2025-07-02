@@ -780,7 +780,7 @@ get_component_same :: proc(world: ^World, entity: EntityID, $Component: typeid) 
     }
     
     components := (cast(^[dynamic]Component)(&table))[:num_components]
-    return ^components[row]
+    return &components[row]
 }
 
 get_component_cast :: proc(world: ^World, entity: EntityID, $Component: typeid, $CastTo: typeid) -> ^CastTo {

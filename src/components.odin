@@ -1,7 +1,9 @@
 package main
-
+import "core:fmt"
 import math "core:math/linalg"
-
+import "ecs"
+import "core:hash/xxhash"
+import "core:strings"
 //components
 // ✅bvh
 // ✅light
@@ -53,7 +55,7 @@ cmp_transform_prs :: proc(pos: vec3, rot: vec3, sca: vec3) -> Cmp_Transform {
     tc.euler_rotation = rot
 
     // Combine rotations (order: X, Y, Z)
-    rotation_matrix := math.matrix4_from_euler_angles_xyz_f32
+    rotation_matrix := math.matrix4_from_euler_angles_xyz_f32(rot.x, rot.y, rot.z)
 
     // Convert rotation matrix to quaternion
     tc.local.rot = math.quaternion_from_matrix4_f32(rotation_matrix)
@@ -73,7 +75,7 @@ cmp_transform_prs :: proc(pos: vec3, rot: vec3, sca: vec3) -> Cmp_Transform {
 //----------------------------------------------------------------------------\\
 // /Node Component /nc
 //----------------------------------------------------------------------------\\
-ComponentFlag :: enum u32 #flag {
+ComponentFlag :: enum {
     NODE        = 0,
     TRANSFORM   = 1,
     MATERIAL    = 2,
@@ -116,7 +118,7 @@ Entity :: ecs.EntityID
 Cmp_Node :: struct {
     entity: Entity,                       // The entity this node represents
     parent: Entity,                       // Parent entity (0 means no parent)
-    children: [dynamic]Entity,            // Dynamic array of child entities
+    children: [dynamic]^Cmp_Node,            // Dynamic array of child entities
     name: string,                           // Node name
     clicked: bool,                          // UI interaction state
     is_dynamic: bool,                       // Dynamic object flag
@@ -137,7 +139,7 @@ node_component_default :: proc(entity: Entity) -> Cmp_Node {
     nc := Cmp_Node{}
     nc.entity = entity
     nc.parent = Entity(0)  // 0 means no parent
-    nc.engine_flags = ComponentFlag.NODE
+    nc.engine_flags = {ComponentFlag.NODE}
     nc.children = make([dynamic]Entity)
     return nc
 }
@@ -146,7 +148,7 @@ node_component_with_parent :: proc(entity: Entity, parent_entity: Entity) -> Cmp
     nc := Cmp_Node{}
     nc.entity = entity
     nc.parent = parent_entity
-    nc.engine_flags = ComponentFlag.NODE
+    nc.engine_flags = {ComponentFlag.NODE}
     nc.children = make([dynamic]Entity)
     return nc
 }
@@ -155,7 +157,7 @@ node_component_named :: proc(entity: Entity, node_name: string, flags: Component
     nc := Cmp_Node{}
     nc.entity = entity
     nc.name = node_name
-    nc.engine_flags = ComponentFlag.NODE | flags  // Combine flags
+    nc.engine_flags = {ComponentFlag.NODE + flags}  // Combine flags
     nc.parent = Entity(0)  // 0 means no parent
     nc.children = make([dynamic]Entity)
     return nc
@@ -187,7 +189,7 @@ remove_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Ent
     }
 
     // Remove child from parent's children list
-    for i, child in parent_node.children {
+    for child, i in parent_node.children {
         if child == child_entity {
             ordered_remove(&parent_node.children, i)
             break
@@ -222,22 +224,20 @@ get_children :: proc(world: ^ecs.World, entity: Entity) -> []Entity {
     return node.children[:]
 }
 
-has_flag :: proc(component: NodeComponent, flag: ComponentFlag) -> bool {
+has_flag :: proc(component: Cmp_Node, flag: ComponentFlag) -> bool {
     return flag in component.engine_flags
 }
 
-check_any :: proc(component: NodeComponent, flags: ComponentFlags) -> bool {
-    return len(component.engine_flags & flags) > 0  // Check if any flags are set
+check_any :: proc(component: Cmp_Node, flags: ComponentFlags) -> bool {
+    return (transmute(u32)(component.engine_flags ~ flags) > 0)
 }
 
 // Utility to create a hierarchical entity withCmp_Node
 create_node_entity :: proc(world: ^ecs.World, name: string, flags: ComponentFlag, parent: Entity = Entity(0)) -> Entity {
     entity := ecs.add_entity(world)
-    node_comp := parent == Entity(0) ?
-        node_component_named(entity, name, flags) :
-        node_component_with_parent(entity, parent)
+    node_comp := parent == Entity(0) ? node_component_named(entity, name, flags) : node_component_with_parent(entity, parent)
     node_comp.name = name
-    node_comp.engine_flags |= flags
+    node_comp.engine_flags += {flags}
 
     ecs.add_component(world, entity, node_comp)
 
@@ -256,20 +256,20 @@ query_nodes :: proc(world: ^ecs.World) -> []^ecs.Archetype {
 
 // Query helper to find all head nodes
 query_head_nodes :: proc(world: ^ecs.World) -> []^ecs.Archetype {
-    return ecs.query(world, ecs.has(Cmp_Node), ecs.has(HeadCmp_Node))
+    return ecs.query(world, ecs.has(Cmp_Node), ecs.has(Cmp_HeadNode))
 }
 
 //----------------------------------------------------------------------------\\
 // /Render Components /rc
 //----------------------------------------------------------------------------\\
 
-RenderType :: enum u8 #flag {
-    MATERIAL = 0,  // Will be 1 << 0 = 0x01
-    PRIMITIVE = 1, // Will be 1 << 1 = 0x02
-    LIGHT = 2,     // Will be 1 << 2 = 0x04
-    GUI = 3,       // Will be 1 << 3 = 0x08
-    GUINUM = 4,    // Will be 1 << 4 = 0x10
-    CAMERA = 5,    // Will be 1 << 5 = 0x20
+RenderType :: enum {
+    MATERIAL = 0,
+    PRIMITIVE = 1,
+    LIGHT = 2,
+    GUI = 3,
+    GUINUM = 4,
+    CAMERA = 5
 }
 
 RenderTypes :: bit_set[RenderType; u8]
@@ -299,7 +299,7 @@ mesh_component_with_ids :: proc(model_id: i32, resource_index: i32) -> Cmp_Mesh 
 }
 
 Cmp_Primitive :: struct {
-    world: mat4f,
+    world: mat4,
     extents: vec3,
     aabb_extents: vec3,
     num_children: i32,
@@ -311,13 +311,13 @@ Cmp_Primitive :: struct {
 
 primitive_component_default :: proc() -> Cmp_Primitive {
     return Cmp_Primitive{
-        world = math.matrix4_identity_f32(),
+        world = math.MATRIX4F32_IDENTITY,
     }
 }
 
 primitive_component_with_id :: proc(component_id: i32) -> Cmp_Primitive {
     return Cmp_Primitive{
-        world = math.matrix4_identity_f32(),
+        world = math.MATRIX4F32_IDENTITY,
         id = component_id,
     }
 }
@@ -468,11 +468,6 @@ model_component :: proc{
     model_component_with_ids,
 }
 
-render_component :: proc{
-    render_component_default,
-    render_component_with_type,
-}
-
 gui_component :: proc{
     gui_component_default,
     gui_component_full,
@@ -521,22 +516,22 @@ material_component :: proc{
 // /Light Component /lc
 //----------------------------------------------------------------------------\\
 
-LightComponent :: struct {
+Cmp_Light :: struct {
     color: vec3,
     intensity: f32,
     id: i32,
 }
 
-light_component_default :: proc() -> LightComponent {
-    return LightComponent{
+light_component_default :: proc() -> Cmp_Light {
+    return Cmp_Light{
         color = {0, 0, 0},
         intensity = 0.0,
         id = 0,
     }
 }
 
-light_component_full :: proc(color: vec3, intensity: f32, id: i32) -> LightComponent {
-    return LightComponent{
+light_component_full :: proc(color: vec3, intensity: f32, id: i32) -> Cmp_Light {
+    return Cmp_Light{
         color = color,
         intensity = intensity,
         id = id,
@@ -559,29 +554,29 @@ CameraType :: enum {
 }
 
 CameraMatrices :: struct {
-    perspective: mat4f,
-    view: mat4f,
+    perspective: mat4,
+    view: mat4,
 }
 
-CameraComponent :: struct {
+Cmp_Camera :: struct {
     aspect_ratio: f32,
     fov: f32,
-    rot_matrix: mat4f,
+    rot_matrix: mat4,
 }
 
-camera_component_default :: proc() -> CameraComponent {
-    return CameraComponent{
+camera_component_default :: proc() -> Cmp_Camera {
+    return Cmp_Camera{
         aspect_ratio = 0.0,
         fov = 0.0,
-        rot_matrix = math.matrix4_identity_f32(),
+        rot_matrix = math.MATRIX4F32_IDENTITY,
     }
 }
 
-camera_component_with_params :: proc(aspect_ratio: f32, fov: f32) -> CameraComponent {
-    return CameraComponent{
+camera_component_with_params :: proc(aspect_ratio: f32, fov: f32) -> Cmp_Camera {
+    return Cmp_Camera{
         aspect_ratio = aspect_ratio,
         fov = fov,
-        rot_matrix = math.matrix4_identity_f32(),
+        rot_matrix = math.MATRIX4F32_IDENTITY,
     }
 }
 
@@ -612,8 +607,8 @@ camera_create :: proc() -> Camera {
         movement_speed = 1.0,
         aspect = 0.0,
         matrices = CameraMatrices{
-            perspective = math.matrix4_identity_f32(),
-            view = math.matrix4_identity_f32(),
+            perspective = math.MATRIX4F32_IDENTITY,
+            view = math.MATRIX4F32_IDENTITY,
         },
         znear = 0.0,
         zfar = 1000.0,
@@ -621,13 +616,12 @@ camera_create :: proc() -> Camera {
 }
 
 camera_update_view_matrix :: proc(camera: ^Camera) {
-    rot_matrix := math.matrix4_identity_f32()
-    trans_matrix := math.matrix4_identity_f32()
-
+    rot_matrix := math.MATRIX4F32_IDENTITY
+    trans_matrix := math.MATRIX4F32_IDENTITY
     // Apply rotations
-    rot_matrix = math.matrix4_rotate_x_f32(math.to_radians(camera.rotation.x)) * rot_matrix
-    rot_matrix = math.matrix4_rotate_y_f32(math.to_radians(camera.rotation.y)) * rot_matrix
-    rot_matrix = math.matrix4_rotate_z_f32(math.to_radians(camera.rotation.z)) * rot_matrix
+    rot_matrix = math.matrix4_rotate_f32(math.to_radians(camera.rotation.x), vec3{1,0,0}) * rot_matrix
+    rot_matrix = math.matrix4_rotate_f32(math.to_radians(camera.rotation.y), vec3{0,1,0}) * rot_matrix
+    rot_matrix = math.matrix4_rotate_f32(math.to_radians(camera.rotation.z), vec3{0,0,1}) * rot_matrix
 
     trans_matrix = math.matrix4_translate_f32(camera.position)
 
@@ -721,15 +715,15 @@ camera_update_pad :: proc(camera: ^Camera, axis_left: vec2f, axis_right: vec2f, 
         // Move
         if abs(axis_left.y) > DEAD_ZONE {
             pos := (abs(axis_left.y) - DEAD_ZONE) / RANGE
-            sign := axis_left.y < 0.0 ? -1.0 : 1.0
+            sign :f32= axis_left.y < 0.0 ? -1.0 : 1.0
             camera.position -= cam_front * pos * sign * move_speed
             ret_val = true
         }
 
         if abs(axis_left.x) > DEAD_ZONE {
             pos := (abs(axis_left.x) - DEAD_ZONE) / RANGE
-            sign := axis_left.x < 0.0 ? -1.0 : 1.0
-            right := math.normalize(math.cross(cam_front, {0, 1, 0}))
+            sign :f32= axis_left.x < 0.0 ? -1.0 : 1.0
+            right := math.normalize(math.cross(cam_front, vec3{0,1,0}))
             camera.position += right * pos * sign * move_speed
             ret_val = true
         }
@@ -737,14 +731,14 @@ camera_update_pad :: proc(camera: ^Camera, axis_left: vec2f, axis_right: vec2f, 
         // Rotate
         if abs(axis_right.x) > DEAD_ZONE {
             pos := (abs(axis_right.x) - DEAD_ZONE) / RANGE
-            sign := axis_right.x < 0.0 ? -1.0 : 1.0
+            sign :f32= axis_right.x < 0.0 ? -1.0 : 1.0
             camera.rotation.y += pos * sign * rot_speed
             ret_val = true
         }
 
         if abs(axis_right.y) > DEAD_ZONE {
             pos := (abs(axis_right.y) - DEAD_ZONE) / RANGE
-            sign := axis_right.y < 0.0 ? -1.0 : 1.0
+            sign :f32= axis_right.y < 0.0 ? -1.0 : 1.0
             camera.rotation.x -= pos * sign * rot_speed
             ret_val = true
         }
@@ -921,153 +915,39 @@ bvh_count_nodes :: proc(node: BvhNode) -> i32 {
 // /Animation Component /ac
 //----------------------------------------------------------------------------\\
 
-import "core:hash"
-import "core:strings"
-
 // Animation flags - 4 bytes with bitfields
-AnimFlags :: struct {
-    data: u32,
-}
-
-// Bitfield accessors for AnimFlags
-anim_flags_get_id_po :: proc(flags: AnimFlags) -> u8 {
-    return u8(flags.data & 0xFF)
-}
-
-anim_flags_set_id_po :: proc(flags: ^AnimFlags, value: u8) {
-    flags.data = (flags.data & ~u32(0xFF)) | u32(value)
-}
-
-anim_flags_get_loop :: proc(flags: AnimFlags) -> bool {
-    return (flags.data & (1 << 8)) != 0
-}
-
-anim_flags_set_loop :: proc(flags: ^AnimFlags, value: bool) {
-    if value {
-        flags.data |= (1 << 8)
-    } else {
-        flags.data &= ~(1 << 8)
-    }
-}
-
-anim_flags_get_force_start :: proc(flags: AnimFlags) -> bool {
-    return (flags.data & (1 << 9)) != 0
-}
-
-anim_flags_set_force_start :: proc(flags: ^AnimFlags, value: bool) {
-    if value {
-        flags.data |= (1 << 9)
-    } else {
-        flags.data &= ~(1 << 9)
-    }
-}
-
-anim_flags_get_force_end :: proc(flags: AnimFlags) -> bool {
-    return (flags.data & (1 << 10)) != 0
-}
-
-anim_flags_set_force_end :: proc(flags: ^AnimFlags, value: bool) {
-    if value {
-        flags.data |= (1 << 10)
-    } else {
-        flags.data &= ~(1 << 10)
-    }
-}
-
-anim_flags_get_pos_flag :: proc(flags: AnimFlags) -> bool {
-    return (flags.data & (1 << 11)) != 0
-}
-
-anim_flags_set_pos_flag :: proc(flags: ^AnimFlags, value: bool) {
-    if value {
-        flags.data |= (1 << 11)
-    } else {
-        flags.data &= ~(1 << 11)
-    }
-}
-
-anim_flags_get_rot_flag :: proc(flags: AnimFlags) -> bool {
-    return (flags.data & (1 << 12)) != 0
-}
-
-anim_flags_set_rot_flag :: proc(flags: ^AnimFlags, value: bool) {
-    if value {
-        flags.data |= (1 << 12)
-    } else {
-        flags.data &= ~(1 << 12)
-    }
-}
-
-anim_flags_get_sca_flag :: proc(flags: AnimFlags) -> bool {
-    return (flags.data & (1 << 13)) != 0
-}
-
-anim_flags_set_sca_flag :: proc(flags: ^AnimFlags, value: bool) {
-    if value {
-        flags.data |= (1 << 13)
-    } else {
-        flags.data &= ~(1 << 13)
-    }
-}
-
-anim_flags_get_start_set :: proc(flags: AnimFlags) -> bool {
-    return (flags.data & (1 << 14)) != 0
-}
-
-anim_flags_set_start_set :: proc(flags: ^AnimFlags, value: bool) {
-    if value {
-        flags.data |= (1 << 14)
-    } else {
-        flags.data &= ~(1 << 14)
-    }
-}
-
-anim_flags_get_end_set :: proc(flags: AnimFlags) -> bool {
-    return (flags.data & (1 << 15)) != 0
-}
-
-anim_flags_set_end_set :: proc(flags: ^AnimFlags, value: bool) {
-    if value {
-        flags.data |= (1 << 15)
-    } else {
-        flags.data &= ~(1 << 15)
-    }
-}
-
-// Constructor functions for AnimFlags
-anim_flags_default :: proc() -> AnimFlags {
-    return AnimFlags{data = 0}
-}
-
-anim_flags_create :: proc(id: i32, loop: bool, force_start: bool, force_end: bool) -> AnimFlags {
-    flags := AnimFlags{data = 0}
-    anim_flags_set_id_po(&flags, u8(id))
-    anim_flags_set_loop(&flags, loop)
-    anim_flags_set_force_start(&flags, force_start)
-    anim_flags_set_force_end(&flags, force_end)
-    return flags
+AnimFlags :: bit_field u16{
+   idPo         : u8   | 8,
+   loop         : bool | 1,
+   force_start  : bool | 1,
+   force_end    : bool | 1,
+   pos_flag     : bool | 1,
+   rot_flag     : bool | 1,
+   sca_flag     : bool | 1,
+   start_set    : bool | 1,
+   end_set      : bool | 1
 }
 
 // Breadth-First Graph Component
-BFGraphComponent :: struct {
+Cmp_BFGraph :: struct {
     nodes: [dynamic]ecs.EntityID,  // Using entity IDs instead of pointers
     transforms: [dynamic]Sqt,
 }
 
-bf_graph_component_create :: proc() -> BFGraphComponent {
-    return BFGraphComponent{
+bf_graph_component_create :: proc() -> Cmp_BFGraph {
+    return Cmp_BFGraph{
         nodes = make([dynamic]ecs.EntityID),
         transforms = make([dynamic]Sqt),
     }
 }
 
-bf_graph_component_destroy :: proc(graph: ^BFGraphComponent) {
+bf_graph_component_destroy :: proc(graph: ^Cmp_BFGraph) {
     delete(graph.nodes)
     delete(graph.transforms)
 }
 
 // Flatten function - converts hierarchy to breadth-first order
-flatten_hierarchy :: proc(world: ^ecs.World, graph: ^BFGraphComponent, head_entity: ecs.EntityID) {
+flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: ecs.EntityID) {
     clear(&graph.nodes)
     clear(&graph.transforms)
 
@@ -1082,7 +962,7 @@ flatten_hierarchy :: proc(world: ^ecs.World, graph: ^BFGraphComponent, head_enti
         ordered_remove(&queue, 0)
 
         // Get node component to find children
-        node_comp := ecs.get_component(world, current, NodeComponent)
+        node_comp := ecs.get_component(world, current, Cmp_Node)
         if node_comp == nil do continue
 
         // Add children to queue and graph
@@ -1091,7 +971,7 @@ flatten_hierarchy :: proc(world: ^ecs.World, graph: ^BFGraphComponent, head_enti
             append(&graph.nodes, child)
 
             // Get transform component
-            transform_comp := ecs.get_component(world, child, TransformComponent)
+            transform_comp := ecs.get_component(world, child, Cmp_Transform)
             if transform_comp != nil {
                 append(&graph.transforms, transform_comp.local)
             } else {
@@ -1103,11 +983,11 @@ flatten_hierarchy :: proc(world: ^ecs.World, graph: ^BFGraphComponent, head_enti
 }
 
 // Set pose from animation data
-set_pose :: proc(world: ^ecs.World, graph: ^BFGraphComponent, pose: []PoseSqt) {
+set_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, pose: []PoseSqt) {
     for p in pose {
         if p.id >= 0 && p.id < i32(len(graph.nodes)) {
             entity := graph.nodes[p.id]
-            transform_comp := ecs.get_component(world, entity, TransformComponent)
+            transform_comp := ecs.get_component(world, entity, Cmp_Transform)
             if transform_comp != nil {
                 transform_comp.local.pos = p.sqt_data.pos
                 transform_comp.local.rot = p.sqt_data.rot
@@ -1118,10 +998,10 @@ set_pose :: proc(world: ^ecs.World, graph: ^BFGraphComponent, pose: []PoseSqt) {
 }
 
 // Reset pose to default
-reset_pose :: proc(world: ^ecs.World, graph: ^BFGraphComponent) {
+reset_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph) {
     for i in 0..<len(graph.nodes) {
         entity := graph.nodes[i]
-        transform_comp := ecs.get_component(world, entity, TransformComponent)
+        transform_comp := ecs.get_component(world, entity, Cmp_Transform)
         if transform_comp != nil && i < len(graph.transforms) {
             transform_comp.local.pos = graph.transforms[i].pos
             transform_comp.local.rot = graph.transforms[i].rot
@@ -1130,20 +1010,15 @@ reset_pose :: proc(world: ^ecs.World, graph: ^BFGraphComponent) {
     }
 }
 
-// Hash function for strings (simple replacement for xxhash)
-hash_string :: proc(s: string) -> u32 {
-    return u32(hash.crc32(transmute([]u8)s))
-}
-
 // Pose Component
-PoseComponent :: struct {
+Cmp_Pose :: struct {
     pose: [dynamic]PoseSqt,
     file_name: string,
     pose_name: string,
 }
 
-pose_component_create :: proc(name: string, file: string, pose_data: []PoseSqt) -> PoseComponent {
-    comp := PoseComponent{
+pose_component_create :: proc(name: string, file: string, pose_data: []PoseSqt) -> Cmp_Pose {
+    comp := Cmp_Pose{
         pose = make([dynamic]PoseSqt),
         file_name = strings.clone(file),
         pose_name = strings.clone(name),
@@ -1156,7 +1031,7 @@ pose_component_create :: proc(name: string, file: string, pose_data: []PoseSqt) 
     return comp
 }
 
-pose_component_destroy :: proc(comp: ^PoseComponent) {
+pose_component_destroy :: proc(comp: ^Cmp_Pose) {
     delete(comp.pose)
     delete(comp.file_name)
     delete(comp.pose_name)
@@ -1191,7 +1066,7 @@ Cmp_Animation :: struct {
 animation_component_default :: proc() -> Cmp_Animation {
     return Cmp_Animation{
         num_poses = 0,
-        flags = anim_flags_default(),
+        flags = AnimFlags{},
         time = 0.25,
         start = 0,
         end = 0,
@@ -1215,9 +1090,9 @@ animation_component_with_names :: proc(
         num_poses = num_poses,
         flags = flags,
         time = 0.25,
-        start = hash_string(start_name),
-        end = hash_string(end_name),
-        prefab_name = hash_string(prefab),
+        start = xxhash.XXH32(transmute([]byte)start_name),
+        end = xxhash.XXH32(transmute([]byte)end_name),
+        prefab_name = xxhash.XXH32(transmute([]byte)prefab),
         trans_timer = 0.0,
         trans_time = 0.1,
         trans = 0,
@@ -1250,8 +1125,8 @@ animation_component_no_start :: proc(
         flags = flags,
         time = 0.25,
         start = 0,
-        end = hash_string(end_name),
-        prefab_name = hash_string(prefab),
+        end = xxhash.XXH32(transmute([]byte)end_name),
+        prefab_name = xxhash.XXH32(transmute([]byte)prefab),
         trans_timer = 0.0,
         trans_time = 0.1,
         trans = 0,
@@ -1308,7 +1183,7 @@ animate_component_default :: proc() -> Cmp_Animate {
     return Cmp_Animate{
         curr_time = 0.0,
         time = 1.0,
-        flags = anim_flags_default(),
+        flags = AnimFlags{},
         start = Sqt{},
         end = Sqt{},
         parent_entity = ecs.EntityID(0),
@@ -1339,11 +1214,6 @@ animation_component :: proc{
 animate_component :: proc{
     animate_component_default,
     animate_component_create,
-}
-
-anim_flags :: proc{
-    anim_flags_default,
-    anim_flags_create,
 }
 
 // Constants

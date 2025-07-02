@@ -36,7 +36,7 @@ import vk "vendor:vulkan"
 import "vendor:glfw"
 import "ecs"
 
-g_world : ecs.World
+g_world : ^ecs.World
 track_alloc: mem.Tracking_Allocator
 
 main :: proc() {
@@ -44,8 +44,8 @@ main :: proc() {
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
 
-	world := ecs.create_world()
-	defer ecs.delete_world()
+	g_world = ecs.create_world()
+	defer ecs.delete_world(g_world)
 
 	// Create an arena allocator using context.temp_allocator
 	arena: mem.Arena
