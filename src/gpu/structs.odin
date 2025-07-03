@@ -77,3 +77,10 @@ Material :: struct {
     refractive_index : f32,
     texture_id : i32
 }
+
+BVHNode :: struct {
+    upper: vec3,
+    offset: i32,
+    lower: vec3,
+    num_children: i32,
+}
