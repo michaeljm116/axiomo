@@ -34,7 +34,9 @@ import "core:fmt"
 import "core:path/filepath"
 import vk "vendor:vulkan"
 import "vendor:glfw"
-import "ecs"
+import "external/ecs"
+import res "resource"
+import sc "resource/scene"
 
 g_world : ^ecs.World
 track_alloc: mem.Tracking_Allocator
@@ -58,20 +60,20 @@ main :: proc() {
 	defer free(context.logger.data)
 	rb.ctx = context
 
-	load_new_scene("assets/1_Jungle/Scenes/PrefabMaker.json", arena_alloc)
+	sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker.json", arena_alloc)
 
-	mod := load_pmodel("assets/froku.pm", arena_alloc)
+	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
 
-	models : [dynamic]Model = make([dynamic]Model, 0, arena_alloc)
+	models : [dynamic]res.Model = make([dynamic]res.Model, 0, arena_alloc)
 	defer delete(models)
-	load_directory("assets/Models/", &models)
+	res.load_directory("assets/Models/", &models)
 
-	mats : [dynamic]AMaterial = make([dynamic]AMaterial, 0, arena_alloc)
-	res_load_materials("assets/Materials.xml", &mats)
+	mats : [dynamic]res.Material = make([dynamic]res.Material, 0, arena_alloc)
+	res.load_materials("assets/Materials.xml", &mats)
 	defer delete(mats)
 	for m in mats do fmt.println(m.name)
 
-	poses := res_load_pose("assets/1_Jungle/Animations/Froku.anim", "Froku", arena_alloc)
+	poses := res.load_pose("assets/1_Jungle/Animations/Froku.anim", "Froku", arena_alloc)
 
 	// TODO: update vendor bindings to glfw 3.4 and use this to set a custom allocator.
 	// glfw.InitAllocator()

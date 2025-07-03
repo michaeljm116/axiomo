@@ -5,7 +5,7 @@ import "base:runtime"
 import "core:strings"
 import "core:slice"
 import "core:log"
-import "vma"
+import "external/vma"
 
 curr_id : u32 = 0
 MAX_MATERIALS :: 256

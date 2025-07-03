@@ -5,18 +5,11 @@ import "base:runtime"
 import "core:strings"
 import "core:slice"
 import "core:log"
-import "vma"
+import "external/vma"
 
-when ODIN_OS == .Darwin {
-	// NOTE: just a bogus import of the system library,
-	// needed so we can add a linker flag to point to /usr/local/lib (where vulkan is installed by default)
-	// when trying to load vulkan.
-	@(require, extra_linker_flags = "-rpath /usr/local/lib")
-	foreign import __ "system:System.framework"
-}
 
-SHADER_VERT :: #load("vert.spv")
-SHADER_FRAG :: #load("frag.spv")
+SHADER_VERT :: #load("../assets/shaders/vert.spv")
+SHADER_FRAG :: #load("../assets/shaders/frag.spv")
 
 // Enables Vulkan debug logging and validation layers.
 ENABLE_VALIDATION_LAYERS :: #config(ENABLE_VALIDATION_LAYERS, ODIN_DEBUG)
@@ -61,7 +54,7 @@ RenderBase :: struct{
 	in_flight_fences: [MAX_FRAMES_IN_FLIGHT]vk.Fence,
 
 	vma_allocator: vma.Allocator,
-	
+
 	depth_image : vk.Image,
 	depth_allocation : vma.Allocation,
 	depth_view: vk.ImageView,
@@ -204,7 +197,7 @@ init_vulkan :: proc()
 			ppEnabledLayerNames     = create_info.ppEnabledLayerNames,
 			//ppEnabledExtensionNames = raw_data(DEVICE_EXTENSIONS),
 			//enabledExtensionCount   = u32(len(DEVICE_EXTENSIONS)),
-			pEnabledFeatures = nil, // &device_features.features, // TODO: enable more features.			
+			pEnabledFeatures = nil, // &device_features.features, // TODO: enable more features.
 		}
 		//----------------------------------------------------------------------------\\
 		// /Bindless /bi add bindless support if it has it
@@ -438,7 +431,7 @@ init_vulkan :: proc()
 	create_depth_resources()
 	create_framebuffers()
 	defer destroy_framebuffers()
-	
+
 	// Set up sync primitives.
 	{
 		sem_info := vk.SemaphoreCreateInfo {
@@ -946,7 +939,7 @@ init_vma :: proc()
 	vma_funcs := vma.create_vulkan_functions()
 
 	create_info := vma.AllocatorCreateInfo {
-		flags = {.EXT_MEMORY_BUDGET}, 
+		flags = {.EXT_MEMORY_BUDGET},
 		vulkanApiVersion = vk.API_VERSION_1_2,
 		instance = rb.instance,
 		device = rb.device,
@@ -967,7 +960,7 @@ destroy_depth_resources :: proc() {
     vma.DestroyImage(rb.vma_allocator, rb.depth_image, rb.depth_allocation)
 }
 
-create_image :: proc (width, height : u32, 
+create_image :: proc (width, height : u32,
 	format : vk.Format, tiling : vk.ImageTiling,
 	usage : vk.ImageUsageFlag, image : ^vk.Image,
 	allocation : ^vma.Allocation

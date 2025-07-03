@@ -1,9 +1,10 @@
 package main
 import "core:fmt"
 import math "core:math/linalg"
-import "ecs"
+import "external/ecs"
 import "core:hash/xxhash"
 import "core:strings"
+import res "resource"
 //components
 // ✅bvh
 // ✅light
@@ -27,6 +28,12 @@ import "core:strings"
 //----------------------------------------------------------------------------\\
 // /Transform Component /tc
 //----------------------------------------------------------------------------\\
+Sqt :: struct
+{
+    rot : quat,
+    pos : vec4,
+    sca : vec4
+}
 
 Cmp_Transform :: struct {
     world: mat4,           // translation rotation scale matrix
@@ -112,9 +119,6 @@ ObjectType :: enum i32 {
     CONE = 7,
 }
 
-// Import the ECS Entity type
-Entity :: ecs.EntityID
-
 Cmp_Node :: struct {
     entity: Entity,                       // The entity this node represents
     parent: Entity,                       // Parent entity (0 means no parent)
@@ -140,7 +144,7 @@ node_component_default :: proc(entity: Entity) -> Cmp_Node {
     nc.entity = entity
     nc.parent = Entity(0)  // 0 means no parent
     nc.engine_flags = {ComponentFlag.NODE}
-    nc.children = make([dynamic]Entity)
+    //nc.children = make([dynamic]Entity)
     return nc
 }
 
@@ -149,7 +153,7 @@ node_component_with_parent :: proc(entity: Entity, parent_entity: Entity) -> Cmp
     nc.entity = entity
     nc.parent = parent_entity
     nc.engine_flags = {ComponentFlag.NODE}
-    nc.children = make([dynamic]Entity)
+    //nc.children = make([dynamic]Entity)
     return nc
 }
 
@@ -159,38 +163,41 @@ node_component_named :: proc(entity: Entity, node_name: string, flags: Component
     nc.name = node_name
     nc.engine_flags = {ComponentFlag.NODE + flags}  // Combine flags
     nc.parent = Entity(0)  // 0 means no parent
-    nc.children = make([dynamic]Entity)
+    //nc.children = make([dynamic]Entity)
     return nc
 }
 
 // Utility procedures for node hierarchy management using the ECS
 add_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Entity) {
     // Get parent's node component
-    parent_node := ecs.get_component(world, parent_entity, Cmp_Node)
+    parent_node := get_component(world, parent_entity, Cmp_Node)
     if parent_node == nil {
         return  // Parent doesn't have a node component
     }
 
-    // Add child to parent's children list
-    append(&parent_node.children, child_entity)
+    // Get child's node component
+    child_node := get_component(world, child_entity, Cmp_Node)
+    if child_node == nil {
+        return  // Child doesn't have a node component
+    }
+
+    // Add child node pointer to parent's children list
+    append(&parent_node.children, child_node)
     parent_node.is_parent = true
 
     // Update child's parent reference
-    child_node := ecs.get_component(world, child_entity, Cmp_Node)
-    if child_node != nil {
-        child_node.parent = parent_entity
-    }
+    child_node.parent = parent_entity
 }
 
 remove_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Entity) {
-    parent_node := ecs.get_component(world, parent_entity, Cmp_Node)
+    parent_node := get_component(world, parent_entity, Cmp_Node)
     if parent_node == nil {
         return
     }
 
     // Remove child from parent's children list
-    for child, i in parent_node.children {
-        if child == child_entity {
+    for child_node_ptr, i in parent_node.children {
+        if child_node_ptr.entity == child_entity {
             ordered_remove(&parent_node.children, i)
             break
         }
@@ -202,14 +209,14 @@ remove_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Ent
     }
 
     // Clear child's parent reference
-    child_node := ecs.get_component(world, child_entity, Cmp_Node)
+    child_node := get_component(world, child_entity, Cmp_Node)
     if child_node != nil {
         child_node.parent = Entity(0)
     }
 }
 
 get_parent :: proc(world: ^ecs.World, entity: Entity) -> Entity {
-    node := ecs.get_component(world, entity, Cmp_Node)
+    node := get_component(world, entity, Cmp_Node)
     if node == nil {
         return Entity(0)
     }
@@ -217,12 +224,19 @@ get_parent :: proc(world: ^ecs.World, entity: Entity) -> Entity {
 }
 
 get_children :: proc(world: ^ecs.World, entity: Entity) -> []Entity {
-    node := ecs.get_component(world, entity, Cmp_Node)
+    node := get_component(world, entity, Cmp_Node)
     if node == nil {
         return nil
     }
-    return node.children[:]
+
+    // Convert from array of Cmp_Node pointers to array of Entity IDs
+    entities := make([]Entity, len(node.children))
+    for child_node_ptr, i in node.children {
+        entities[i] = child_node_ptr.entity
+    }
+    return entities
 }
+
 
 has_flag :: proc(component: Cmp_Node, flag: ComponentFlag) -> bool {
     return flag in component.engine_flags
@@ -930,13 +944,13 @@ AnimFlags :: bit_field u16{
 
 // Breadth-First Graph Component
 Cmp_BFGraph :: struct {
-    nodes: [dynamic]ecs.EntityID,  // Using entity IDs instead of pointers
+    nodes: [dynamic]Entity,  // Using entity IDs instead of pointers
     transforms: [dynamic]Sqt,
 }
 
 bf_graph_component_create :: proc() -> Cmp_BFGraph {
     return Cmp_BFGraph{
-        nodes = make([dynamic]ecs.EntityID),
+        nodes = make([dynamic]Entity),
         transforms = make([dynamic]Sqt),
     }
 }
@@ -947,12 +961,12 @@ bf_graph_component_destroy :: proc(graph: ^Cmp_BFGraph) {
 }
 
 // Flatten function - converts hierarchy to breadth-first order
-flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: ecs.EntityID) {
+flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: Entity) {
     clear(&graph.nodes)
     clear(&graph.transforms)
 
     // Use a queue for breadth-first traversal
-    queue: [dynamic]ecs.EntityID
+    queue: [dynamic]Entity
     defer delete(queue)
 
     append(&queue, head_entity)
@@ -962,16 +976,17 @@ flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: e
         ordered_remove(&queue, 0)
 
         // Get node component to find children
-        node_comp := ecs.get_component(world, current, Cmp_Node)
+        node_comp := get_component(world, current, Cmp_Node)
         if node_comp == nil do continue
 
         // Add children to queue and graph
-        for child in node_comp.children {
-            append(&queue, child)
-            append(&graph.nodes, child)
+        for child_node_ptr in node_comp.children {
+            child_entity := child_node_ptr.entity
+            append(&queue, child_entity)
+            append(&graph.nodes, child_entity)
 
             // Get transform component
-            transform_comp := ecs.get_component(world, child, Cmp_Transform)
+            transform_comp := get_component(world, child_entity, Cmp_Transform)
             if transform_comp != nil {
                 append(&graph.transforms, transform_comp.local)
             } else {
@@ -983,11 +998,11 @@ flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: e
 }
 
 // Set pose from animation data
-set_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, pose: []PoseSqt) {
+set_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, pose: []res.PoseSqt) {
     for p in pose {
         if p.id >= 0 && p.id < i32(len(graph.nodes)) {
             entity := graph.nodes[p.id]
-            transform_comp := ecs.get_component(world, entity, Cmp_Transform)
+            transform_comp := get_component(world, entity, Cmp_Transform)
             if transform_comp != nil {
                 transform_comp.local.pos = p.sqt_data.pos
                 transform_comp.local.rot = p.sqt_data.rot
@@ -1001,7 +1016,7 @@ set_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, pose: []PoseSqt) {
 reset_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph) {
     for i in 0..<len(graph.nodes) {
         entity := graph.nodes[i]
-        transform_comp := ecs.get_component(world, entity, Cmp_Transform)
+        transform_comp := get_component(world, entity, Cmp_Transform)
         if transform_comp != nil && i < len(graph.transforms) {
             transform_comp.local.pos = graph.transforms[i].pos
             transform_comp.local.rot = graph.transforms[i].rot
@@ -1012,14 +1027,14 @@ reset_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph) {
 
 // Pose Component
 Cmp_Pose :: struct {
-    pose: [dynamic]PoseSqt,
+    pose: [dynamic]res.PoseSqt,
     file_name: string,
     pose_name: string,
 }
 
-pose_component_create :: proc(name: string, file: string, pose_data: []PoseSqt) -> Cmp_Pose {
+pose_component_create :: proc(name: string, file: string, pose_data: []res.PoseSqt) -> Cmp_Pose {
     comp := Cmp_Pose{
-        pose = make([dynamic]PoseSqt),
+        pose = make([dynamic]res.PoseSqt),
         file_name = strings.clone(file),
         pose_name = strings.clone(name),
     }
@@ -1176,7 +1191,7 @@ Cmp_Animate :: struct {
     flags: AnimFlags,
     start: Sqt,
     end: Sqt,
-    parent_entity: ecs.EntityID,  // Reference to parent animation entity
+    parent_entity: Entity,  // Reference to parent animation entity
 }
 
 animate_component_default :: proc() -> Cmp_Animate {
@@ -1186,11 +1201,11 @@ animate_component_default :: proc() -> Cmp_Animate {
         flags = AnimFlags{},
         start = Sqt{},
         end = Sqt{},
-        parent_entity = ecs.EntityID(0),
+        parent_entity = Entity(0),
     }
 }
 
-animate_component_create :: proc(time: f32, flags: AnimFlags, start: Sqt, end: Sqt, parent: ecs.EntityID) -> Cmp_Animate {
+animate_component_create :: proc(time: f32, flags: AnimFlags, start: Sqt, end: Sqt, parent: Entity) -> Cmp_Animate {
     return Cmp_Animate{
         curr_time = 0.0,
         time = time,
