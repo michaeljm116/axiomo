@@ -78,7 +78,7 @@ Material :: struct {
     texture_id : i32
 }
 
-BVHNode :: struct {
+BvhNode :: struct {
     upper: vec3,
     offset: i32,
     lower: vec3,

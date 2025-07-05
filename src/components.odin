@@ -28,9 +28,6 @@ import sdl_mixer "vendor:sdl2/mixer"
 //  - static
 // audio
 
-//----------------------------------------------------------------------------\\
-// /Transform Component /tc
-//----------------------------------------------------------------------------\\
 Sqt :: struct
 {
     rot : quat,
@@ -46,9 +43,6 @@ Cmp_Transform :: struct {
     euler_rotation: vec3,   // euler angles for rotation
 }
 
-//----------------------------------------------------------------------------\\
-// /Node Component /nc
-//----------------------------------------------------------------------------\\
 ComponentFlag :: enum {
     NODE        = 0,
     TRANSFORM   = 1,

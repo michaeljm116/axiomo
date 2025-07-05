@@ -6,6 +6,7 @@ import "core:strings"
 import "core:slice"
 import "core:log"
 import "external/vma"
+import "gpu"
 
 curr_id : u32 = 0
 MAX_MATERIALS :: 256
@@ -18,7 +19,8 @@ MAX_GUIS :: 96
 MAX_NODES :: 2048
 MAX_BINDLESS_TEXTURES :: 256
 
-/*
+raytracer: ComputeRaytracer
+
 ComputeRaytracer :: struct {
     // System state
     editor: bool,
@@ -35,15 +37,15 @@ ComputeRaytracer :: struct {
     // Compute pipeline state
     compute: struct {
         storage_buffers: struct {
-            verts: VBuffer(ssVert),
-            faces: VBuffer(ssIndex),
-            blas: VBuffer(ssBVHNode),
-            shapes: VBuffer(ssShape),
-            primitives: VBuffer(ssPrimitive),
-            materials: VBuffer(ssMaterial),
-            lights: VBuffer(ssLight),
-            guis: VBuffer(ssGUI),
-            bvh: VBuffer(ssBVHNode),
+            verts: gpu.VBuffer(gpu.Vert),
+            faces: gpu.VBuffer(gpu.Index),
+            blas: gpu.VBuffer(gpu.BvhNode),
+            shapes: gpu.VBuffer(gpu.Shape),
+            primitives: gpu.VBuffer(gpu.Primitive),
+            materials: gpu.VBuffer(gpu.Material),
+            lights: gpu.VBuffer(gpu.Light),
+            guis: gpu.VBuffer(gpu.Gui),
+            bvh: gpu.VBuffer(gpu.BvhNode),
         },
         queue: vk.Queue,
         command_pool: vk.CommandPool,
@@ -59,7 +61,7 @@ ComputeRaytracer :: struct {
             aspect_ratio: f32,
             rand: i32,
         },
-        uniform_buffer: VBuffer(struct {
+        uniform_buffer: gpu.VBuffer(struct {
             rotM: mat4f,
             fov: f32,
             aspect_ratio: f32,
@@ -68,49 +70,32 @@ ComputeRaytracer :: struct {
     },
 
     // Scene data
-    primitives: []ssPrimitive,
-    materials: []ssMaterial,
-    lights: []ssLight,
-    guis: []ssGUI,
-    bvh: []ssBVHNode,
+    primitives: []gpu.Primitive,
+    materials: []gpu.Material,
+    lights: []gpu.Light,
+    guis: []gpu.Gui,
+    bvh: []gpu.BvhNode,
 
-    mesh_comps: []MeshComponent,
-    // objectComps: []PrimitiveComponent, // Uncomment/adapt as needed
-    // jointComps: []JointComponent, // Uncomment/adapt as needed
-    light_comps: []LightComponent,
+    mesh_comps: []Cmp_Mesh,
+    light_comps: []Cmp_Light,
 
     mesh_assigner: map[i32][2]int,
     joint_assigner: map[i32][2]int,
     shape_assigner: map[i32][2]int,
 
-    // Texture state
     compute_texture: Texture,
-    gui_textures: [MAX_TEXTURES]Texture,
+    gui_textures: [MAX_GUIS]Texture,
     bindless_textures: []Texture,
 
-    // Compute helpers
     compute_write_descriptor_sets: []vk.WriteDescriptorSet,
 
-    // BVH helpers
     ordered_prims_map: []int,
 
-    // Misc
     prepared: bool,
 }
 
-raytracer: ComputeRaytracer
-
-
-
-// VBuffer struct to manage Vulkan buffers and their memory
-VBuffer :: struct {
-    buffer: vk.Buffer,
-    allocation: vma.Allocation,
-    buffer_info: vk.DescriptorBufferInfo,
-}
-
 // Initialize a uniform buffer with the provided data
-init_uniform_buffer :: proc(vb: ^VBuffer, rc: ^RenderBase, data: $T) {
+init_uniform_buffer :: proc(vb: ^gpu.VBuffer, rc: ^RenderBase, data: $T) {
     size := u64(size_of(T))
     create_buffer(rc, size, {.UNIFORM_BUFFER}, &vb.allocation, &vb.buffer)
     vb.buffer_info = vk.DescriptorBufferInfo{buffer = vb.buffer, offset = 0, range = size}
@@ -120,57 +105,9 @@ init_uniform_buffer :: proc(vb: ^VBuffer, rc: ^RenderBase, data: $T) {
     vma.UnmapMemory(rc.vma_allocator, vb.allocation)
 }
 
-// Initialize a storage buffer with the provided data and maximum count
-init_storage_buffer :: proc(vb: ^VBuffer, rc: ^RenderBase, data: []$T, max_count: int) {
-    size := u64(size_of(T) * max_count)
-    create_buffer(rc, size, {.STORAGE_BUFFER}, &vb.allocation, &vb.buffer)
-    vb.buffer_info = vk.DescriptorBufferInfo{buffer = vb.buffer, offset = 0, range = size}
-    if len(data) > 0 {
-        mapped: rawptr
-        must(vma.MapMemory(rc.vma_allocator, vb.allocation, &mapped))
-        mem.copy(mapped, raw_data(data), size_of(T) * len(data))
-        vma.UnmapMemory(rc.vma_allocator, vb.allocation)
-    }
-}
-
-// Initialize a storage buffer using a staging buffer for data transfer
-init_storage_buffer_with_staging :: proc(vb: ^VBuffer, rc: ^RenderBase, data: []$T) {
-    size := u64(size_of(T) * len(data))
-    staging_buffer: vk.Buffer
-    staging_allocation: vma.Allocation
-    create_buffer(rc, size, {.TRANSFER_SRC}, &staging_allocation, &staging_buffer)
-    mapped: rawptr
-    must(vma.MapMemory(rc.vma_allocator, staging_allocation, &mapped))
-    mem.copy(mapped, raw_data(data), int(size))
-    vma.UnmapMemory(rc.vma_allocator, staging_allocation)
-
-    create_buffer(rc, size, {.STORAGE_BUFFER, .TRANSFER_DST}, &vb.allocation, &vb.buffer)
-    vb.buffer_info = vk.DescriptorBufferInfo{buffer = vb.buffer, offset = 0, range = size}
-
-    cmd := begin_single_time_commands(rc)
-    copy_region := vk.BufferCopy{srcOffset = 0, dstOffset = 0, size = size}
-    vk.CmdCopyBuffer(cmd, staging_buffer, vb.buffer, 1, &copy_region)
-    end_single_time_commands(rc, &cmd)
-
-    vma.DestroyBuffer(rc.vma_allocator, staging_buffer, staging_allocation)
-}
-
-// Update the buffer with new data
-update_buffer :: proc(vb: ^VBuffer, rc: ^RenderBase, data: []$T) {
-    size := u64(size_of(T) * len(data))
-    mapped: rawptr
-    must(vma.MapMemory(rc.vma_allocator, vb.allocation, &mapped))
-    mem.copy(mapped, raw_data(data), int(size))
-    vma.UnmapMemory(rc.vma_allocator, vb.allocation)
-}
-
-// Destroy the VBuffer and free its resources
-destroy_vbuffer :: proc(vb: ^VBuffer, rc: ^RenderBase) {
-    vma.DestroyBuffer(rc.vma_allocator, vb.buffer, vb.allocation)
-}
 
 // Example usage in a compute raytracer
-prepare_storage_buffers :: proc(cr: ^ComputeRaytracer) {
+/*prepare_storage_buffers :: proc(cr: ^ComputeRaytracer) {
     reserve(&cr.materials, MAX_MATERIALS)
     reserve(&cr.lights, MAX_LIGHTS)
     reserve(&cr.primitives, MAX_OBJS)
@@ -186,7 +123,7 @@ prepare_storage_buffers :: proc(cr: ^ComputeRaytracer) {
     // GUI initialization example
     gui_comp := get_singleton_gui_component(cr.world)
     if gui_comp != nil {
-        gui := ssGUI{
+        gui := gpu.Gui{
             min = gui_comp.min,
             extents = gui_comp.extents,
             alignMin = gui_comp.alignMin,
@@ -199,5 +136,4 @@ prepare_storage_buffers :: proc(cr: ^ComputeRaytracer) {
         append(&cr.guis, gui)
         update_buffer(&cr.compute.storage_buffers.guis, cr.rc, cr.guis[:])
     }
-}
-*/
+}*/

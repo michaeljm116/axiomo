@@ -1224,3 +1224,189 @@ copy_buffer_to_image :: proc(buffer: vk.Buffer, image: vk.Image, width, height: 
 
     end_single_time_commands(&command_buffer)
 }
+
+// Pixel and Image structs
+PrPixel :: struct {
+    r, g, b, a: u8,
+}
+
+prpixel_get :: proc(pixel: ^PrPixel, index: int) -> ^u8 {
+    assert(index >= 0 && index < 4)
+    switch index {
+    case 0: return &pixel.r
+    case 1: return &pixel.g
+    case 2: return &pixel.b
+    case 3: return &pixel.a
+    case: return &pixel.r
+    }
+}
+
+PrImage :: struct {
+    width, height, channels: i32,
+    data: [][]PrPixel,
+}
+
+primage_init :: proc(image: ^PrImage, image_width, image_height, image_channels: i32) {
+    image.width = image_width
+    image.height = image_height
+    image.channels = image_channels
+    image.data = make([][]PrPixel, image_width)
+    for i in 0..<image_width {
+        image.data[i] = make([]PrPixel, image_height)
+    }
+}
+
+primage_load_from_texture :: proc(image: ^PrImage, texture_file: string) {
+    // This is a placeholder - you'll need to implement stb_image loading
+    // For now, just initialize with default values
+    primage_init(image, 512, 512, 4)
+
+    // TODO: Implement stb_image loading
+    // stbi_uc* pixels = stbi_load(texture_file.c_str(), &width, &height, &channels, 0);
+    // Process pixels and fill image.data
+}
+
+primage_destroy :: proc(image: ^PrImage) {
+    if image.data != nil {
+        for row in image.data {
+            delete(row)
+        }
+        delete(image.data)
+    }
+}
+
+// Texture struct and related procedures
+Texture :: struct {
+    image: vk.Image,
+    view: vk.ImageView,
+    image_layout: vk.ImageLayout,
+    image_allocation: vma.Allocation,
+    sampler: vk.Sampler,
+    width: u32,
+    height: u32,
+    mip_levels: u32,
+    layer_count: u32,
+    descriptor: vk.DescriptorImageInfo,
+    path: string,
+    descriptor_set: vk.DescriptorSet,
+}
+
+texture_destroy :: proc(texture: ^Texture, device: vk.Device, allocator: ^vma.Allocator) {
+    if texture.sampler != 0 {
+        vk.DestroySampler(device, texture.sampler, nil)
+    }
+    if texture.view != 0 {
+        vk.DestroyImageView(device, texture.view, nil)
+    }
+    if texture.image != 0 {
+        vma.DestroyImage(allocator^, texture.image, texture.image_allocation)
+    }
+}
+
+texture_create :: proc(texture: ^Texture, device: vk.Device, allocator: ^vma.Allocator, path: string) -> bool {
+    texture.path = path
+
+    // Load image using stb_image (you'll need to import stb_image bindings)
+    // For now, let's assume we have the pixel data somehow
+    // This is a placeholder - you'll need to implement image loading
+    tex_width: i32 = 512
+    tex_height: i32 = 512
+    tex_channels: i32 = 4
+    image_size := vk.DeviceSize(tex_width * tex_height * 4)
+
+    texture.width = u32(tex_width)
+    texture.height = u32(tex_height)
+
+    // Create staging buffer using VMA
+    staging_buffer: vk.Buffer
+    staging_allocation: vma.Allocation
+
+    staging_buffer_info := vk.BufferCreateInfo {
+        sType = .BUFFER_CREATE_INFO,
+        size = image_size,
+        usage = {.TRANSFER_SRC},
+        sharingMode = .EXCLUSIVE,
+    }
+
+    staging_alloc_info := vma.AllocationCreateInfo {
+        usage = .CPU_ONLY,
+        flags = {.MAPPED},
+    }
+
+    result := vma.CreateBuffer(allocator^, &staging_buffer_info, &staging_alloc_info, &staging_buffer, &staging_allocation, nil)
+    assert(result == .SUCCESS)
+
+    // Map memory and copy pixel data (placeholder)
+    data: rawptr
+    vma.MapMemory(allocator^, staging_allocation, &data)
+    // Copy pixel data here - you'll need to load actual image data
+    vma.UnmapMemory(allocator^, staging_allocation)
+
+    // Create image using VMA
+    image_info := vk.ImageCreateInfo {
+        sType = .IMAGE_CREATE_INFO,
+        imageType = .D2,
+        extent = {width = u32(tex_width), height = u32(tex_height), depth = 1},
+        mipLevels = 1,
+        arrayLayers = 1,
+        format = .R8G8B8A8_UNORM,
+        tiling = .OPTIMAL,
+        initialLayout = .UNDEFINED,
+        usage = {.TRANSFER_DST, .SAMPLED},
+        samples = {._1},
+        sharingMode = .EXCLUSIVE,
+    }
+
+    image_alloc_info := vma.AllocationCreateInfo {
+        usage = .GPU_ONLY,
+    }
+
+    result = vma.CreateImage(allocator^, &image_info, &image_alloc_info, &texture.image, &texture.image_allocation, nil)
+    assert(result == .SUCCESS)
+
+    // Transition image layout and copy buffer
+    transition_image_layout(texture.image, .R8G8B8A8_UNORM, .UNDEFINED, .TRANSFER_DST_OPTIMAL)
+    copy_buffer_to_image(staging_buffer, texture.image, u32(tex_width), u32(tex_height))
+    transition_image_layout(texture.image, .R8G8B8A8_UNORM, .TRANSFER_DST_OPTIMAL, .SHADER_READ_ONLY_OPTIMAL)
+
+    // Cleanup staging buffer
+    vma.DestroyBuffer(allocator^, staging_buffer, staging_allocation)
+
+    // Create image view
+    texture.view = create_image_view(texture.image, .R8G8B8A8_UNORM, {.COLOR})
+
+    // Create sampler
+    sampler_info := vk.SamplerCreateInfo {
+        sType = .SAMPLER_CREATE_INFO,
+        magFilter = .LINEAR,
+        minFilter = .LINEAR,
+        addressModeU = .REPEAT,
+        addressModeV = .REPEAT,
+        addressModeW = .REPEAT,
+        anisotropyEnable = true,
+        maxAnisotropy = 16,
+        borderColor = .FLOAT_OPAQUE_BLACK,
+        unnormalizedCoordinates = false,
+        compareEnable = false,
+        compareOp = .ALWAYS,
+        mipmapMode = .LINEAR,
+        mipLodBias = 0.0,
+        minLod = 0.0,
+        maxLod = 0.0,
+    }
+    must(vk.CreateSampler(device, &sampler_info, nil, &texture.sampler))
+
+    texture.image_layout = .SHADER_READ_ONLY_OPTIMAL
+    texture_update_descriptor(texture)
+
+    return true
+}
+
+texture_update_descriptor :: proc(texture: ^Texture) {
+    texture.descriptor = vk.DescriptorImageInfo {
+        sampler = texture.sampler,
+        imageView = texture.view,
+        imageLayout = texture.image_layout,
+    }
+}
+
