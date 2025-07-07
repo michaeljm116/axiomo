@@ -39,6 +39,7 @@ import res "resource"
 import sc "resource/scene"
 
 g_world : ^ecs.World
+g_world_ent : Entity
 track_alloc: mem.Tracking_Allocator
 
 main :: proc() {
@@ -47,6 +48,13 @@ main :: proc() {
 	defer leak_detection()
 
 	g_world = ecs.create_world()
+	g_world_ent = add_entity()
+	add_component(g_world_ent, Cmp_Gui{
+	    {0,0}, {1,1},
+		{0,0}, {1,1},
+		0, 1, 0, 0, false
+	})
+
 	defer ecs.delete_world(g_world)
 
 	// Create an arena allocator using context.temp_allocator

@@ -75,13 +75,13 @@ node_component_named :: proc(entity: Entity, node_name: string, flags: Component
 // Utility procedures for node hierarchy management using the ECS
 add_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Entity) {
     // Get parent's node component
-    parent_node := get_component(world, parent_entity, Cmp_Node)
+    parent_node := get_component(parent_entity, Cmp_Node)
     if parent_node == nil {
         return  // Parent doesn't have a node component
     }
 
     // Get child's node component
-    child_node := get_component(world, child_entity, Cmp_Node)
+    child_node := get_component(child_entity, Cmp_Node)
     if child_node == nil {
         return  // Child doesn't have a node component
     }
@@ -95,7 +95,7 @@ add_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Entity
 }
 
 remove_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Entity) {
-    parent_node := get_component(world, parent_entity, Cmp_Node)
+    parent_node := get_component(parent_entity, Cmp_Node)
     if parent_node == nil {
         return
     }
@@ -114,14 +114,14 @@ remove_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Ent
     }
 
     // Clear child's parent reference
-    child_node := get_component(world, child_entity, Cmp_Node)
+    child_node := get_component(child_entity, Cmp_Node)
     if child_node != nil {
         child_node.parent = Entity(0)
     }
 }
 
 get_parent :: proc(world: ^ecs.World, entity: Entity) -> Entity {
-    node := get_component(world, entity, Cmp_Node)
+    node := get_component(entity, Cmp_Node)
     if node == nil {
         return Entity(0)
     }
@@ -129,7 +129,7 @@ get_parent :: proc(world: ^ecs.World, entity: Entity) -> Entity {
 }
 
 get_children :: proc(world: ^ecs.World, entity: Entity) -> []Entity {
-    node := get_component(world, entity, Cmp_Node)
+    node := get_component(entity, Cmp_Node)
     if node == nil {
         return nil
     }
@@ -686,7 +686,7 @@ flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: E
         ordered_remove(&queue, 0)
 
         // Get node component to find children
-        node_comp := get_component(world, current, Cmp_Node)
+        node_comp := get_component(current, Cmp_Node)
         if node_comp == nil do continue
 
         // Add children to queue and graph
@@ -696,7 +696,7 @@ flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: E
             append(&graph.nodes, child_entity)
 
             // Get transform component
-            transform_comp := get_component(world, child_entity, Cmp_Transform)
+            transform_comp := get_component(child_entity, Cmp_Transform)
             if transform_comp != nil {
                 append(&graph.transforms, transform_comp.local)
             } else {
@@ -712,7 +712,7 @@ set_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, pose: []res.PoseSqt) {
     for p in pose {
         if p.id >= 0 && p.id < i32(len(graph.nodes)) {
             entity := graph.nodes[p.id]
-            transform_comp := get_component(world, entity, Cmp_Transform)
+            transform_comp := get_component(entity, Cmp_Transform)
             if transform_comp != nil {
                 transform_comp.local.pos = p.sqt_data.pos
                 transform_comp.local.rot = p.sqt_data.rot
@@ -726,7 +726,7 @@ set_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, pose: []res.PoseSqt) {
 reset_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph) {
     for i in 0..<len(graph.nodes) {
         entity := graph.nodes[i]
-        transform_comp := get_component(world, entity, Cmp_Transform)
+        transform_comp := get_component(entity, Cmp_Transform)
         if transform_comp != nil && i < len(graph.transforms) {
             transform_comp.local.pos = graph.transforms[i].pos
             transform_comp.local.rot = graph.transforms[i].rot

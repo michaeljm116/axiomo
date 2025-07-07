@@ -226,8 +226,7 @@ vbuffer_init_storage_buffer_custom_size :: proc(vbuf: ^VBuffer($T), allocator: ^
         alloc_create_info.flags = {.MAPPED}
     }
 
-    result = vma.CreateBuffer(allocator^, &buffer_create_info, &alloc_create_info, &vbuf.buffer, &vbuf.alloc, nil)
-    assert(result == .SUCCESS)
+    must(vma.CreateBuffer(allocator^, &buffer_create_info, &alloc_create_info, &vbuf.buffer, &vbuf.alloc, nil))
 
     // Map and copy initial data if using CPU accessible memory
     if memory_usage == .CPU_TO_GPU || memory_usage == .CPU_ONLY {

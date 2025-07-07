@@ -19,7 +19,7 @@ MAX_GUIS :: 96
 MAX_NODES :: 2048
 MAX_BINDLESS_TEXTURES :: 256
 
-raytracer: ComputeRaytracer
+rt: ComputeRaytracer
 
 ComputeRaytracer :: struct {
     // System state
@@ -70,14 +70,14 @@ ComputeRaytracer :: struct {
     },
 
     // Scene data
-    primitives: []gpu.Primitive,
-    materials: []gpu.Material,
-    lights: []gpu.Light,
-    guis: []gpu.Gui,
-    bvh: []gpu.BvhNode,
+    primitives: [dynamic]gpu.Primitive,
+    materials: [dynamic]gpu.Material,
+    lights: [dynamic]gpu.Light,
+    guis: [dynamic]gpu.Gui,
+    bvh: [dynamic]gpu.BvhNode,
 
-    mesh_comps: []Cmp_Mesh,
-    light_comps: []Cmp_Light,
+    mesh_comps: [dynamic]Cmp_Mesh,
+    light_comps: [dynamic]Cmp_Light,
 
     mesh_assigner: map[i32][2]int,
     joint_assigner: map[i32][2]int,
@@ -94,6 +94,10 @@ ComputeRaytracer :: struct {
     prepared: bool,
 }
 
+//----------------------------------------------------------------------------\\
+// /PROCS
+//----------------------------------------------------------------------------\\
+
 // Initialize a uniform buffer with the provided data
 init_uniform_buffer :: proc(vb: ^gpu.VBuffer, rc: ^RenderBase, data: $T) {
     size := u64(size_of(T))
@@ -105,35 +109,162 @@ init_uniform_buffer :: proc(vb: ^gpu.VBuffer, rc: ^RenderBase, data: $T) {
     vma.UnmapMemory(rc.vma_allocator, vb.allocation)
 }
 
-
 // Example usage in a compute raytracer
-/*prepare_storage_buffers :: proc(cr: ^ComputeRaytracer) {
-    reserve(&cr.materials, MAX_MATERIALS)
-    reserve(&cr.lights, MAX_LIGHTS)
-    reserve(&cr.primitives, MAX_OBJS)
-    reserve(&cr.guis, MAX_GUIS)
-    reserve(&cr.bvh, MAX_NODES)
+prepare_storage_buffers :: proc(cr: ^ComputeRaytracer) {
+    reserve(&rt.materials, MAX_MATERIALS)
+    reserve(&rt.lights, MAX_LIGHTS)
 
-    init_storage_buffer(&cr.compute.storage_buffers.primitives, cr.rc, cr.primitives[:], MAX_OBJS)
-    init_storage_buffer(&cr.compute.storage_buffers.materials, cr.rc, cr.materials[:], MAX_MATERIALS)
-    init_storage_buffer(&cr.compute.storage_buffers.lights, cr.rc, cr.lights[:], MAX_LIGHTS)
-    init_storage_buffer(&cr.compute.storage_buffers.guis, cr.rc, cr.guis[:], MAX_GUIS)
-    init_storage_buffer(&cr.compute.storage_buffers.bvh, cr.rc, cr.bvh[:], MAX_NODES)
+    gpu.vbuffer_init_storage_buffer(
+        &rt.compute.storage_buffers.primitives,
+        &rb.vma_allocator,
+        rt.primitives[:],
+        u32(len(rt.primitives)))
 
-    // GUI initialization example
-    gui_comp := get_singleton_gui_component(cr.world)
-    if gui_comp != nil {
-        gui := gpu.Gui{
-            min = gui_comp.min,
-            extents = gui_comp.extents,
-            alignMin = gui_comp.alignMin,
-            alignExt = gui_comp.alignExt,
-            layer = gui_comp.layer,
-            id = gui_comp.id,
-            alpha = gui_comp.alpha,
-        }
-        gui_comp.ref = i32(len(cr.guis))
-        append(&cr.guis, gui)
-        update_buffer(&cr.compute.storage_buffers.guis, cr.rc, cr.guis[:])
+   gui_cmp := get_component(g_world_ent, Cmp_Gui)
+   gpu_gui := gpu.Gui{min = gui_cmp.min, extents = gui_cmp.extents,
+       align_min = gui_cmp.align_min, align_ext = gui_cmp.align_ext,
+       layer = gui_cmp.layer, id = gui_cmp.id, alpha = gui_cmp.alpha
+   }
+   append(&rt.guis, gpu_gui)
+   gui_cmp.ref = i32(len(rt.guis))
+   gpu.vbuffer_init_storage_buffer(
+        &rt.compute.storage_buffers.guis,
+        &rb.vma_allocator,
+        rt.guis[:],
+        u32(len(rt.guis)))
+   gpu.vbuffer_init_storage_buffer(
+       &rt.compute.storage_buffers.bvh,
+       &rb.vma_allocator,
+       rt.bvh[:],
+       u32(len(rt.bvh)))
+}
+
+create_uniform_buffers :: proc() {
+    gpu.vbuffer_init_custom(&rt.compute.uniform_buffer, &rb.vma_allocator, 1, {.UNIFORM_BUFFER}, .CPU_TO_GPU)
+    gpu.vbuffer_apply_changes_no_data(&rt.compute.uniform_buffer, &rb.vma_allocator)
+}
+
+prepare_texture_target :: proc(tex: ^Texture, width, height: u32, format: vk.Format) {
+    // Get format properties to check if the format supports storage image operations
+    format_properties: vk.FormatProperties
+    vk.GetPhysicalDeviceFormatProperties(rb.physical_device, format, &format_properties)
+    if (format_properties.optimalTilingFeatures & { .STORAGE_IMAGE_BIT }) == {} {
+        panic("Format does not support storage image operations")
     }
-}*/
+
+    // Set texture dimensions
+    tex.width = width
+    tex.height = height
+
+    // Create the image using VMA
+    image_info := vk.ImageCreateInfo{
+        sType = .IMAGE_CREATE_INFO,
+        imageType = .D2,
+        format = format,
+        extent = {width, height, 1},
+        mipLevels = 1,
+        arrayLayers = 1,
+        samples = {._1_BIT},
+        tiling = .OPTIMAL,
+        usage = { .SAMPLED_BIT, .STORAGE_BIT },
+        sharingMode = .EXCLUSIVE,
+        initialLayout = .UNDEFINED,
+    }
+    alloc_info := vma.AllocationCreateInfo{
+        usage = .AUTO_PREFER_DEVICE,
+    }
+    must(vma.CreateImage(rb.vma_allocator, &image_info, &alloc_info, &tex.image, &tex.allocation, nil))
+
+    // Create image view
+    view_info := vk.ImageViewCreateInfo{
+        sType = .IMAGE_VIEW_CREATE_INFO,
+        image = tex.image,
+        viewType = .D2,
+        format = format,
+        subresourceRange = {
+            aspectMask = { .COLOR_BIT },
+            baseMipLevel = 0,
+            levelCount = 1,
+            baseArrayLayer = 0,
+            layerCount = 1,
+        },
+    }
+    must(vk.CreateImageView(rb.device, &view_info, nil, &tex.view))
+
+    // Create sampler
+    sampler_info := vk.SamplerCreateInfo{
+        sType = .SAMPLER_CREATE_INFO,
+        magFilter = .LINEAR,
+        minFilter = .LINEAR,
+        addressModeU = .CLAMP_TO_EDGE,
+        addressModeV = .CLAMP_TO_EDGE,
+        addressModeW = .CLAMP_TO_EDGE,
+        anisotropyEnable = false,
+        maxAnisotropy = 1.0,
+        borderColor = .FLOAT_TRANSPARENT_BLACK,
+        unnormalizedCoordinates = false,
+        compareEnable = false,
+        compareOp = .ALWAYS,
+        mipmapMode = .LINEAR,
+        minLod = 0.0,
+        maxLod = 0.0,
+    }
+    must(vk.CreateSampler(rb.device, &sampler_info, nil, &tex.sampler))
+
+    // Transition image layout to GENERAL
+    cmd_buffer_info := vk.CommandBufferAllocateInfo{
+        sType = .COMMAND_BUFFER_ALLOCATE_INFO,
+        commandPool = rt.compute.command_pool,
+        level = .PRIMARY,
+        commandBufferCount = 1,
+    }
+    cmd_buffer: vk.CommandBuffer
+    must(vk.AllocateCommandBuffers(rb.device, &cmd_buffer_info, &cmd_buffer))
+
+    begin_info := vk.CommandBufferBeginInfo{
+        sType = .COMMAND_BUFFER_BEGIN_INFO,
+        flags = { .ONE_TIME_SUBMIT },
+    }
+    must(vk.BeginCommandBuffer(cmd_buffer, &begin_info))
+
+    barrier := vk.ImageMemoryBarrier{
+        sType = .IMAGE_MEMORY_BARRIER,
+        oldLayout = .UNDEFINED,
+        newLayout = .GENERAL,
+        srcQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED,
+        dstQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED,
+        image = tex.image,
+        subresourceRange = {
+            aspectMask = { .COLOR_BIT },
+            baseMipLevel = 0,
+            levelCount = 1,
+            baseArrayLayer = 0,
+            layerCount = 1,
+        },
+        srcAccessMask = {},
+        dstAccessMask = { .SHADER_READ_BIT, .SHADER_WRITE_BIT },
+    }
+    vk.CmdPipelineBarrier(
+        cmd_buffer,
+        { .TOP_OF_PIPE_BIT },
+        { .COMPUTE_SHADER_BIT },
+        {},
+        0, nil,
+        0, nil,
+        1, &barrier,
+    )
+
+    must(vk.EndCommandBuffer(cmd_buffer))
+
+    submit_info := vk.SubmitInfo{
+        sType = .SUBMIT_INFO,
+        commandBufferCount = 1,
+        pCommandBuffers = &cmd_buffer,
+    }
+    must(vk.QueueSubmit(rt.compute.queue, 1, &submit_info, nil))
+
+
+    must(vk.QueueWaitIdle(rt.compute.queue))
+
+    vk.FreeCommandBuffers(rb.device, rt.compute.command_pool, 1, &cmd_buffer)
+}

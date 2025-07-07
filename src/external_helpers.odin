@@ -63,13 +63,13 @@ get_component :: proc {
     get_component_pair,
 }
 
-get_component_same :: proc(world: ^World, entity: Entity, $Component: typeid) -> ^Component{
+get_component_same :: proc(entity: Entity, $Component: typeid) -> ^Component{
     return ecs.get_component_same(g_world, entity, Component)
 }
-get_component_cast :: proc(world: ^World, entity: Entity, $Component: typeid, $CastTo: typeid) -> ^CastTo {
+get_component_cast :: proc(entity: Entity, $Component: typeid, $CastTo: typeid) -> ^CastTo {
     return ecs.get_component_cast(g_world, entity, Component, CastTo)
 }
-get_component_pair :: proc(world: ^World, entity: Entity, pair: ecs.PairType($R, $T)) -> ^R {
+get_component_pair :: proc(entity: Entity, pair: ecs.PairType($R, $T)) -> ^R {
     return ecs.get_component_pair(g_world, entity, pair)
 }
 
