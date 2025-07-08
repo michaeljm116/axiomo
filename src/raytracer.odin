@@ -384,3 +384,288 @@ create_graphics_pipeline :: proc() {
     vk.DestroyShaderModule(rb.device, frag_shader_module, nil)
     vk.DestroyShaderModule(rb.device, vert_shader_module, nil)
 }
+
+create_descriptor_pool :: proc() {
+    pool_sizes: [5]vk.DescriptorPoolSize
+    pool_sizes[0] = { type = .UNIFORM_BUFFER, descriptorCount = 2 }
+    pool_sizes[1] = { type = .COMBINED_IMAGE_SAMPLER, descriptorCount = 3 + MAX_TEXTURES }
+    pool_sizes[2] = { type = .STORAGE_IMAGE, descriptorCount = 1 }
+    pool_sizes[3] = { type = .STORAGE_BUFFER, descriptorCount = 9 }
+    pool_sizes[4] = { type = .COMBINED_IMAGE_SAMPLER, descriptorCount = MAX_BINDLESS_TEXTURES }
+    pool_info := vk.DescriptorPoolCreateInfo{
+        sType = .DESCRIPTOR_POOL_CREATE_INFO,
+        flags = { .UPDATE_AFTER_BIND },
+        maxSets = 3,
+        poolSizeCount = 5,
+        pPoolSizes = &pool_sizes[0],
+    }
+    must(vk.CreateDescriptorPool(rb.device, &pool_info, nil, &rt.descriptor_pool))
+}
+
+create_descriptor_sets :: proc() {
+    alloc_info := vk.DescriptorSetAllocateInfo{
+        sType = .DESCRIPTOR_SET_ALLOCATE_INFO,
+        descriptorPool = rt.descriptor_pool,
+        descriptorSetCount = 1,
+        pSetLayouts = &rt.graphics.descriptor_set_layout,
+    }
+    must(vk.AllocateDescriptorSets(rb.device, &alloc_info, &rt.graphics.descriptor_set))
+    write_set := vk.WriteDescriptorSet{
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.graphics.descriptor_set,
+        dstBinding = 0,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .COMBINED_IMAGE_SAMPLER,
+        pImageInfo = &rt.compute_texture.descriptor,
+    }
+    vk.UpdateDescriptorSets(rb.device, 1, &write_set, 0, nil)
+}
+
+prepare_compute :: proc() {
+    // Get compute queue
+    vk.GetDeviceQueue(rb.device, rb.compute_queue_family, 0, &rt.compute.queue)
+
+    // Define descriptor set layout bindings
+    bindings: [13]vk.DescriptorSetLayoutBinding
+    for i in 0..<11 {
+        bindings[i] = {
+            binding = u32(i),
+            descriptorType = i == 0 ? .STORAGE_IMAGE : i == 1 ? .UNIFORM_BUFFER : .STORAGE_BUFFER,
+            descriptorCount = 1,
+            stageFlags = { .COMPUTE_SHADER },
+        }
+    }
+    bindings[11] = {
+        binding = 11,
+        descriptorType = .COMBINED_IMAGE_SAMPLER,
+        descriptorCount = MAX_TEXTURES,
+        stageFlags = { .COMPUTE_SHADER },
+    }
+    bindings[12] = {
+        binding = 12,
+        descriptorType = .COMBINED_IMAGE_SAMPLER,
+        descriptorCount = MAX_BINDLESS_TEXTURES,
+        stageFlags = { .COMPUTE_SHADER },
+    }
+
+    // Set up binding flags for bindless textures
+    binding_flags: [13]vk.DescriptorBindingFlags
+    binding_flags[12] = { .PARTIALLY_BOUND, .UPDATE_AFTER_BIND }
+
+    extended_flags_info := vk.DescriptorSetLayoutBindingFlagsCreateInfoEXT{
+        sType = .DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT,
+        bindingCount = 13,
+        pBindingFlags = &binding_flags[0],
+    }
+
+    layout_info := vk.DescriptorSetLayoutCreateInfo{
+        sType = .DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        flags = { .UPDATE_AFTER_BIND },
+        bindingCount = 13,
+        pBindings = &bindings[0],
+        pNext = &extended_flags_info,
+    }
+    must(vk.CreateDescriptorSetLayout(rb.device, &layout_info, nil, &rt.compute.descriptor_set_layout))
+
+    // Create pipeline layout
+    pipeline_layout_info := vk.PipelineLayoutCreateInfo{
+        sType = .PIPELINE_LAYOUT_CREATE_INFO,
+        setLayoutCount = 1,
+        pSetLayouts = &rt.compute.descriptor_set_layout,
+    }
+    must(vk.CreatePipelineLayout(rb.device, &pipeline_layout_info, nil, &rt.compute.pipeline_layout))
+
+    // Allocate descriptor set
+    alloc_info := vk.DescriptorSetAllocateInfo{
+        sType = .DESCRIPTOR_SET_ALLOCATE_INFO,
+        descriptorPool = rt.descriptor_pool,
+        descriptorSetCount = 1,
+        pSetLayouts = &rt.compute.descriptor_set_layout,
+    }
+    must(vk.AllocateDescriptorSets(rb.device, &alloc_info, &rt.compute.descriptor_set))
+
+    // Prepare image infos for gui_textures and bindless_textures
+    texture_image_infos: [MAX_TEXTURES]vk.DescriptorImageInfo
+    for i in 0..<MAX_TEXTURES {
+        texture_image_infos[i] = rt.gui_textures[i].descriptor
+    }
+    bindless_image_infos := make([]vk.DescriptorImageInfo, len(rt.bindless_textures))
+    defer delete(bindless_image_infos)
+    for t, i in rt.bindless_textures {
+        bindless_image_infos[i] = t.descriptor
+    }
+
+    // Set up write descriptor sets
+    write_sets: [13]vk.WriteDescriptorSet
+    write_sets[0] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 0,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .STORAGE_IMAGE,
+        pImageInfo = &rt.compute_texture.descriptor,
+    }
+    write_sets[1] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 1,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .UNIFORM_BUFFER,
+        pBufferInfo = &rt.compute.uniform_buffer.buffer_info,
+    }
+    write_sets[2] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 2,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .STORAGE_BUFFER,
+        pBufferInfo = &rt.compute.storage_buffers.verts.buffer_info,
+    }
+    write_sets[3] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 3,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .STORAGE_BUFFER,
+        pBufferInfo = &rt.compute.storage_buffers.faces.buffer_info,
+    }
+    write_sets[4] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 4,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .STORAGE_BUFFER,
+        pBufferInfo = &rt.compute.storage_buffers.blas.buffer_info,
+    }
+    write_sets[5] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 5,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .STORAGE_BUFFER,
+        pBufferInfo = &rt.compute.storage_buffers.shapes.buffer_info,
+    }
+    write_sets[6] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 6,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .STORAGE_BUFFER,
+        pBufferInfo = &rt.compute.storage_buffers.primitives.buffer_info,
+    }
+    write_sets[7] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 7,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .STORAGE_BUFFER,
+        pBufferInfo = &rt.compute.storage_buffers.materials.buffer_info,
+    }
+    write_sets[8] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 8,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .STORAGE_BUFFER,
+        pBufferInfo = &rt.compute.storage_buffers.lights.buffer_info,
+    }
+    write_sets[9] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 9,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .STORAGE_BUFFER,
+        pBufferInfo = &rt.compute.storage_buffers.guis.buffer_info,
+    }
+    write_sets[10] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 10,
+        dstArrayElement = 0,
+        descriptorCount = 1,
+        descriptorType = .STORAGE_BUFFER,
+        pBufferInfo = &rt.compute.storage_buffers.bvh.buffer_info,
+    }
+    write_sets[11] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 11,
+        dstArrayElement = 0,
+        descriptorCount = MAX_TEXTURES,
+        descriptorType = .COMBINED_IMAGE_SAMPLER,
+        pImageInfo = &texture_image_infos[0],
+    }
+    write_sets[12] = {
+        sType = .WRITE_DESCRIPTOR_SET,
+        dstSet = rt.compute.descriptor_set,
+        dstBinding = 12,
+        dstArrayElement = 0,
+        descriptorCount = u32(len(rt.bindless_textures)),
+        descriptorType = .COMBINED_IMAGE_SAMPLER,
+        pImageInfo = raw_data(bindless_image_infos),
+    }
+
+    // Update descriptor sets
+    vk.UpdateDescriptorSets(rb.device, 13, &write_sets[0], 0, nil)
+
+    // Create compute pipeline
+    shader_code, ok := os.read_entire_file("../Assets/Shaders/raytracing.comp.spv")
+    if !ok {
+        panic("Failed to read compute shader")
+    }
+    defer delete(shader_code)
+    module_info := vk.ShaderModuleCreateInfo{
+        sType = .SHADER_MODULE_CREATE_INFO,
+        codeSize = u32(len(shader_code)),
+        pCode = cast(^u32)raw_data(shader_code),
+    }
+    shader_module: vk.ShaderModule
+    must(vk.CreateShaderModule(rb.device, &module_info, nil, &shader_module))
+    pipeline_info := vk.ComputePipelineCreateInfo{
+        sType = .COMPUTE_PIPELINE_CREATE_INFO,
+        stage = {
+            sType = .PIPELINE_SHADER_STAGE_CREATE_INFO,
+            stage = { .COMPUTE },
+            module = shader_module,
+            pName = "main",
+        },
+        layout = rt.compute.pipeline_layout,
+    }
+    must(vk.CreateComputePipelines(rb.device, rb.pipeline_cache, 1, &pipeline_info, nil, &rt.compute.pipeline))
+    vk.DestroyShaderModule(rb.device, shader_module, nil)
+
+    // Create command pool
+    cmd_pool_info := vk.CommandPoolCreateInfo{
+        sType = .COMMAND_POOL_CREATE_INFO,
+        queueFamilyIndex = rb.compute_queue_family,
+        flags = { .RESET_COMMAND_BUFFER },
+    }
+    must(vk.CreateCommandPool(rb.device, &cmd_pool_info, nil, &rt.compute.command_pool))
+
+    // Allocate command buffer
+    cmd_buf_info := vk.CommandBufferAllocateInfo{
+        sType = .COMMAND_BUFFER_ALLOCATE_INFO,
+        commandPool = rt.compute.command_pool,
+        level = .PRIMARY,
+        commandBufferCount = 1,
+    }
+    must(vk.AllocateCommandBuffers(rb.device, &cmd_buf_info, &rt.compute.command_buffer))
+
+    // Create fence
+    fence_info := vk.FenceCreateInfo{
+        sType = .FENCE_CREATE_INFO,
+        flags = { .SIGNALED },
+    }
+    must(vk.CreateFence(rb.device, &fence_info, nil, &rt.compute.fence))
+}
