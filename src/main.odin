@@ -87,7 +87,7 @@ main :: proc() {
 	// glfw.InitAllocator()
 
 	// TODO: set up Vulkan allocator.
-	init_vulkan()
+	start_up_raytracer()
 
 }
 
