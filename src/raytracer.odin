@@ -14,6 +14,7 @@ import "core:mem"
 import "core:fmt"
 import "gpu"
 import res "resource"
+import "external/embree"
 
 curr_id : u32 = 0
 MAX_MATERIALS :: 256
@@ -106,7 +107,7 @@ ComputeRaytracer :: struct {
 
     compute_write_descriptor_sets: []vk.WriteDescriptorSet,
 
-    ordered_prims_map: []int,
+    ordered_prims_map: [dynamic]int,
 
     prepared: bool,
     update_flags: UpdateFlags,
@@ -1131,3 +1132,17 @@ update_camera_component :: proc(camera: ^Cmp_Camera) {
     gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &rb.vma_allocator, &rt.compute.ubo)
 }
 
+update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity, root: ^BvhNode, num_nodes : i32)
+{
+    num_prims := len(ordered_prims)
+    if(num_prims == 0) do return
+    clear(&rt.primitives)
+    clear(&rt.ordered_prims_map)
+    reserve(&rt.primitives, num_prims)
+    reserve(&rt.primitives, num_prims)
+    for op, i in ordered_prims{
+        rt.ordered_prims_map[op.primID] = i
+        prim := &prims[op.primID]
+        pc := get_component(prim, pair(Cmp_Primitive, Cmp_Primitive))
+    }
+}
