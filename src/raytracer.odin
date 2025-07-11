@@ -1120,7 +1120,7 @@ update_camera_full :: proc(camera: ^Camera) {
     rt.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
     rt.compute.ubo.rotM = transmute(mat4f)camera.matrices.view
     rt.compute.ubo.rand = rand.int31()
-    gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &rb.vma_allocator, rt.compute.ubo)
+    gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &rb.vma_allocator, &rt.compute.ubo)
 }
 
 update_camera_component :: proc(camera: ^Cmp_Camera) {
@@ -1128,6 +1128,6 @@ update_camera_component :: proc(camera: ^Cmp_Camera) {
     rt.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
     rt.compute.ubo.rotM = transmute(mat4f)camera.rot_matrix
     rt.compute.ubo.rand = rand.int31()
-    gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &rb.vma_allocator, rt.compute.ubo)
+    gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &rb.vma_allocator, &rt.compute.ubo)
 }
 

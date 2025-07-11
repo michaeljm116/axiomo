@@ -353,12 +353,12 @@ vbuffer_apply_changes_no_data :: proc(vbuf: ^VBuffer($T), allocator: ^vma.Alloca
 }
 
 // Apply changes from provided data
-vbuffer_apply_changes_with_data :: proc(vbuf: ^VBuffer($T), allocator: ^vma.Allocator, data: T) {
+vbuffer_apply_changes_with_data :: proc(vbuf: ^VBuffer($T), allocator: ^vma.Allocator, data: ^T) {
     if !vbuf.initialized do return
 
     data_ptr: rawptr
     vma.MapMemory(allocator^, vbuf.alloc, &data_ptr)
-    mem.copy(data_ptr, &data, size_of(T))
+    mem.copy(data_ptr, data, size_of(T))
     vma.UnmapMemory(allocator^, vbuf.alloc)
 }
 
