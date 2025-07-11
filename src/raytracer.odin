@@ -1142,7 +1142,91 @@ update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [d
     reserve(&rt.primitives, num_prims)
     for op, i in ordered_prims{
         rt.ordered_prims_map[op.primID] = i
-        prim := &prims[op.primID]
-        pc := get_component(prim, pair(Cmp_Primitive, Cmp_Primitive))
+        prim := prims[op.primID]
+        pc := get_component(prim, Cmp_Primitive)
+
+        if pc != nil {
+            // Convert primitive component to GPU primitive
+            gpu_prim := gpu.Primitive{
+                world = transmute(mat4f)pc.world,
+                extents = pc.extents,
+                num_children = pc.num_children,
+                id = pc.id,
+                mat_id = pc.mat_id,
+                start_index = pc.start_index,
+                end_index = pc.end_index,
+            }
+            append(&rt.primitives, gpu_prim)
+        }
     }
+
+    // Flatten BVH tree
+    offset := 0
+    resize(&rt.bvh, int(num_nodes))
+
+    // Get root bounds
+    root_bounds := BvhBounds{}
+    switch root_node in root {
+    case ^InnerBvhNode:
+        root_bounds = bvh_merge(root_node.bounds[0], root_node.bounds[1])
+    case ^LeafBvhNode:
+        root_bounds = root_node.bounds
+    }
+
+    flatten_bvh(root^, root_bounds, &offset)
+    rt.update_flags |= {.BVH}
 }
+
+// Flatten BVH tree into linear array for GPU
+flatten_bvh :: proc(node: BvhNode, bounds: BvhBounds, offset: ^int) -> i32 {
+    bvh_node := &rt.bvh[offset^]
+    my_offset := i32(offset^)
+    offset^ += 1
+
+    switch n in node {
+    case ^LeafBvhNode:
+        // Leaf node
+        bvh_node.upper = n.bounds.upper
+        bvh_node.lower = n.bounds.lower
+        bvh_node.num_children = 0
+        bvh_node.offset = i32(rt.ordered_prims_map[n.id])
+
+    case ^InnerBvhNode:
+        // Inner node
+        bvh_node.upper = bounds.upper
+        bvh_node.lower = bounds.lower
+        bvh_node.num_children = 2
+
+        // Recursively flatten children
+        flatten_bvh(n.children[0], n.bounds[0], offset)
+        bvh_node.offset = flatten_bvh(n.children[1], n.bounds[1], offset)
+    }
+
+    return my_offset
+}
+
+update_uniform_buffers :: proc() {
+    gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &rb.vma_allocator, &rt.compute.ubo)
+}
+
+update_material :: proc()
+update_gui :: proc()
+update_gui_number :: proc()
+//----------------------------------------------------------------------------\\
+// /Main Procs /main procs
+//----------------------------------------------------------------------------\\
+
+add_material :: proc()
+add_node :: proc()
+add_gui_number :: proc()
+
+start_frame :: proc(image_index : u32)
+end_frame :: proc(image_index : u32)
+added_entity :: proc(e : Entity)
+removed_entity :: proc(e : Entity)
+process_entity :: proc(e : Entity)
+end :: proc()
+cleanup :: proc()
+destroy_compute :: proc()
+cleanup_swapchain :: proc()
+rt_recreate_swapchain :: proc()
