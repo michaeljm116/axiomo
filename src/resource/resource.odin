@@ -46,6 +46,7 @@ Shape :: struct{
 Mesh :: struct{
     verts : [dynamic]Vertex,
     faces : [dynamic]vec4i,
+    bvhs : [dynamic]BVHNode,
     center : vec3,
     extents : vec3,
     name : string,
@@ -58,7 +59,6 @@ Model :: struct{
     name : string,
     meshes : [dynamic]Mesh,
     shapes : [dynamic]Shape,
-    bvhs : [dynamic]BVHNode,
     center : vec3,
     extents : vec3,
     unique_id : i32,
@@ -263,6 +263,7 @@ destroy_model :: proc(model : ^Model)
        delete(m.name)
        delete(m.faces)
        delete(m.verts)
+       delete(m.bvhs)
        delete(m.mat.name)
        delete(m.mat.texture)
    }
@@ -271,7 +272,6 @@ destroy_model :: proc(model : ^Model)
        delete(s.name)
    }
    delete(model.shapes)
-   delete(model.bvhs)
    delete(model.name)
 }
 

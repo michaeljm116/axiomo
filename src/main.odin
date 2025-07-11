@@ -40,6 +40,11 @@ import sc "resource/scene"
 
 g_world : ^ecs.World
 g_world_ent : Entity
+g_materials : [dynamic]res.Material
+g_models : [dynamic]res.Model
+g_level_dir := "../Assets/Levels/1_Jungle/"
+
+
 track_alloc: mem.Tracking_Allocator
 
 main :: proc() {
@@ -72,14 +77,10 @@ main :: proc() {
 
 	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
 
-	models : [dynamic]res.Model = make([dynamic]res.Model, 0, arena_alloc)
-	defer delete(models)
-	res.load_directory("assets/Models/", &models)
-
-	mats : [dynamic]res.Material = make([dynamic]res.Material, 0, arena_alloc)
-	res.load_materials("assets/Materials.xml", &mats)
-	defer delete(mats)
-	for m in mats do fmt.println(m.name)
+	g_models = make([dynamic]res.Model, 0, arena_alloc)
+	res.load_directory("assets/Models/", &g_models)
+	g_materials = make([dynamic]res.Material, 0, arena_alloc)
+	res.load_materials("assets/Materials.xml", &g_materials)
 
 	poses := res.load_pose("assets/1_Jungle/Animations/Froku.anim", "Froku", arena_alloc)
 
@@ -87,7 +88,7 @@ main :: proc() {
 	// glfw.InitAllocator()
 
 	// TODO: set up Vulkan allocator.
-	start_up_raytracer()
+	start_up_raytracer(arena_alloc)
 
 }
 

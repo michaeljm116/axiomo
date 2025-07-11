@@ -7,7 +7,13 @@ import "core:slice"
 import "core:log"
 import "core:os"
 import "external/vma"
+import "core:math"
+import "core:math/linalg"
+import "core:math/rand"
+import "core:mem"
+import "core:fmt"
 import "gpu"
+import res "resource"
 
 curr_id : u32 = 0
 MAX_MATERIALS :: 256
@@ -20,6 +26,16 @@ MAX_GUIS :: 96
 MAX_NODES :: 2048
 MAX_BINDLESS_TEXTURES :: 256
 MAX_TEXTURES :: 10
+// Update flags for tracking what needs to be updated
+UpdateFlag :: enum {
+    OBJECT,
+    MATERIAL,
+    LIGHT,
+    GUI,
+    BVH,
+}
+UpdateFlags :: bit_set[UpdateFlag]
+
 rt: ComputeRaytracer
 
 ComputeRaytracer :: struct {
@@ -93,6 +109,7 @@ ComputeRaytracer :: struct {
     ordered_prims_map: []int,
 
     prepared: bool,
+    update_flags: UpdateFlags,
 }
 
 //----------------------------------------------------------------------------\\
@@ -796,6 +813,111 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
     }
 }
 
+//----------------------------------------------------------------------------\\
+// /Start up /su
+//----------------------------------------------------------------------------\\
+start_up_raytracer :: proc(alloc: mem.Allocator)
+{
+   init_vulkan()
+   set_camera()
+   map_materials_to_gpu(alloc)
+   map_models_to_gpu(alloc)
+}
+
+set_camera :: proc()
+{
+    rt.compute.ubo.aspect_ratio = 1280.0 / 720.0
+    rt.compute.ubo.fov = math.tan(f32(13.0 * 0.03490658503))
+    rt.compute.ubo.rotM = mat4f(0)
+    rt.compute.ubo.rand = rand.int31()
+}
+
+
+map_materials_to_gpu :: proc(alloc : mem.Allocator)
+{
+	rt.materials = make([dynamic]gpu.Material, len(g_materials), alloc)
+	for &m in g_materials{
+	    gpu_mat : gpu.Material = {
+			diffuse = m.diffuse,
+			reflective = m.reflective,
+			roughness = m.roughness,
+			transparency = m.transparency,
+			refractive_index = m.refractive_index,
+			texture_id = m.texture_id
+		}
+		append(&rt.materials, gpu_mat)
+	}
+}
+
+map_models_to_gpu :: proc(alloc : mem.Allocator)
+{
+    verts : [dynamic]gpu.Vert
+    faces : [dynamic]gpu.Index
+    shapes : [dynamic]gpu.Shape
+    blas : [dynamic]gpu.BvhNode
+    defer delete(blas)
+    defer delete(shapes)
+    defer delete(faces)
+    defer delete(verts)
+
+    for mod in g_models
+    {
+        for mesh, i in mod.meshes
+        {
+            prev_vert_size := len(verts)
+            prev_ind_size := len(faces)
+            prev_blas_size := len(blas)
+
+            reserve(&verts, prev_vert_size + len(mesh.verts))
+            for vert in mesh.verts{
+                append(&verts, gpu.Vert{pos = vert.pos, norm = vert.norm, u = vert.uv.x, v = vert.uv.y})
+            }
+            reserve(&faces, prev_ind_size + len(mesh.faces))
+            for face in mesh.faces{
+                append(&faces, gpu.Index{v = face + i32(prev_vert_size)})
+            }
+            reserve(&blas, prev_blas_size + len(mesh.bvhs))
+            for bvh in mesh.bvhs{
+                append(&blas, gpu.BvhNode{bvh.upper, bvh.offset, bvh.lower, bvh.numChildren})
+            }
+        }
+    }
+    append(&shapes, gpu.Shape{})
+
+    //Load them into the gpu
+    init_storage_buf(&rt.compute.storage_buffers.verts,verts, len(verts))
+    init_storage_buf(&rt.compute.storage_buffers.faces,faces, len(faces))
+    init_storage_buf(&rt.compute.storage_buffers.blas, blas, len(blas))
+    init_storage_buf(&rt.compute.storage_buffers.shapes, shapes, len(shapes))
+    for &t, i in rt.gui_textures{
+        t = Texture{path = texture_paths[i]}
+        texture_create(&t)
+    }
+    rt.bindless_textures = make([dynamic]Texture, len(texture_paths), alloc)[:]
+    for p, i in texture_paths{
+        t := Texture{path = p}
+        texture_create(&t)
+        rt.bindless_textures[i] = t
+    }
+}
+
+texture_paths := [6]string{
+    "../Assets/Levels/1_Jungle/Textures/numbers.png",
+    "../Assets/Levels/1_Jungle/Textures/pause.png",
+    "../Assets/Levels/1_Jungle/Textures/circuit.png",
+    "../Assets/Levels/1_Jungle/Textures/ARROW.png",
+    "../Assets/Levels/1_Jungle/Textures/debugr.png",
+    "../Assets/Levels/1_Jungle/Textures/title.png",
+}
+
+init_storage_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int )
+{
+    gpu.vbuffer_init_storage_buffer_with_staging_device(vbuf, rb.device, &rb.vma_allocator, rb.command_pool, rb.compute_queue, objects[:], u32(size))
+}
+
+//----------------------------------------------------------------------------\\
+// Updates /up
+//----------------------------------------------------------------------------\\
 // Update descriptor sets for compute pipeline
 update_descriptors :: proc() {
     // Prepare write descriptor sets
@@ -955,28 +1077,57 @@ update_descriptors :: proc() {
     vk.UpdateDescriptorSets(rb.device, 13, &write_descriptor_sets[0], 0, nil)
 }
 
-//----------------------------------------------------------------------------\\
-// /Start up /su
-//----------------------------------------------------------------------------\\
-start_up_raytracer :: proc()
-{
-   init_vulkan()
-   set_camera()
-   load_materials()
-   load_resources()
+update_buffers :: proc() {
+    vk.WaitForFences(rb.device, 1, &rt.compute.fence, true, max(u64))
+
+    if rt.update_flags == {} do return
+
+    if .OBJECT in rt.update_flags {
+        // compute_.storage_buffers.primitives.UpdateBuffers(vkDevice, primitives);
+        rt.update_flags -= {.OBJECT}
+    }
+
+    if .MATERIAL in rt.update_flags {
+        rt.update_flags -= {.MATERIAL}
+    }
+
+    if .LIGHT in rt.update_flags {
+        gpu.vbuffer_update(&rt.compute.storage_buffers.lights, &rb.vma_allocator, rt.lights[:])
+        rt.update_flags -= {.LIGHT}
+    }
+
+    if .GUI in rt.update_flags {
+        gpu.vbuffer_update(&rt.compute.storage_buffers.guis, &rb.vma_allocator, rt.guis[:])
+        rt.update_flags -= {.GUI}
+    }
+
+    if .BVH in rt.update_flags {
+        gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.primitives, &rb.vma_allocator, rt.primitives[:], u32(len(rt.primitives)))
+        gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.bvh, &rb.vma_allocator, rt.bvh[:], u32(len(rt.bvh)))
+        rt.update_flags -= {.BVH}
+    }
+
+    rt.update_flags = {}
+    // compute_.storage_buffers.objects.UpdateAndExpandBuffers(vkDevice, objects, objects.size());
+    // compute_.storage_buffers.bvh.UpdateAndExpandBuffers(vkDevice, bvh, bvh.size());
+    update_descriptors()
 }
 
-set_camera :: proc()
-{
+update_camera :: proc{update_camera_full, update_camera_component}
 
+update_camera_full :: proc(camera: ^Camera) {
+    rt.compute.ubo.aspect_ratio = camera.aspect
+    rt.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
+    rt.compute.ubo.rotM = transmute(mat4f)camera.matrices.view
+    rt.compute.ubo.rand = rand.int31()
+    gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &rb.vma_allocator, rt.compute.ubo)
 }
 
-load_materials :: proc()
-{
-
+update_camera_component :: proc(camera: ^Cmp_Camera) {
+    rt.compute.ubo.aspect_ratio = camera.aspect_ratio
+    rt.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
+    rt.compute.ubo.rotM = transmute(mat4f)camera.rot_matrix
+    rt.compute.ubo.rand = rand.int31()
+    gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &rb.vma_allocator, rt.compute.ubo)
 }
 
-load_resources :: proc()
-{
-
-}

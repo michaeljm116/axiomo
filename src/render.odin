@@ -1303,9 +1303,10 @@ texture_destroy :: proc(texture: ^Texture, device: vk.Device, allocator: ^vma.Al
     }
 }
 
-texture_create :: proc(texture: ^Texture, device: vk.Device, allocator: ^vma.Allocator, path: string) -> bool {
-    texture.path = path
-
+texture_create :: proc(texture: ^Texture) -> bool {
+    return texture_create_device(texture, rb.device, &rb.vma_allocator)
+}
+texture_create_device :: proc(texture: ^Texture, device: vk.Device, allocator: ^vma.Allocator) -> bool {
     // Load image using stb_image (you'll need to import stb_image bindings)
     // For now, let's assume we have the pixel data somehow
     // This is a placeholder - you'll need to implement image loading

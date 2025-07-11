@@ -164,7 +164,7 @@ vbuffer_init_custom :: proc(vbuf: ^VBuffer($T), allocator: ^vma.Allocator, mul: 
 
 vbuffer_init :: proc{
     vbuffer_initialize,
-    vbuffer_init_custom
+    vbuffer_init_custom,
 }
 
 // Initialize storage buffer with data
@@ -317,7 +317,7 @@ vbuffer_init_storage_buffer :: proc{
    vbuffer_initialize_storage_buffer,
    vbuffer_init_storage_buffer_custom_size,
    vbuffer_init_storage_buffer_with_staging,
-   vbuffer_init_storage_buffer_with_staging_device
+   vbuffer_init_storage_buffer_with_staging_device,
 }
 
 // Update buffer contents
@@ -364,7 +364,7 @@ vbuffer_apply_changes_with_data :: proc(vbuf: ^VBuffer($T), allocator: ^vma.Allo
 
 vbuffer_apply_changes :: proc{
    vbuffer_apply_changes_no_data,
-   vbuffer_apply_changes_with_data
+   vbuffer_apply_changes_with_data,
 }
 
 // Helper function to begin single time commands
