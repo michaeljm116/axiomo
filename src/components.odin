@@ -110,6 +110,18 @@ RenderType :: enum {
 
 RenderTypes :: bit_set[RenderType; u8]
 
+RendererType :: enum{
+    ComputeRaytracer,
+    HardwareRaytracer,
+    ComputeRasterizer,
+    HardwareRasterizer
+}
+
+Cmp_Render :: struct
+{
+    type : RenderTypes,
+    renderer : RendererType
+}
 Cmp_Mesh :: struct {
     mesh_index: i32,
     mesh_model_id: i32,
@@ -317,3 +329,5 @@ Cmp_Audio :: struct {
     file_name: string,
     channel: i32,  // SDL mixer channel for this audio
 }
+
+

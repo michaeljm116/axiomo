@@ -14,6 +14,7 @@ SHADER_FRAG :: #load("../assets/shaders/frag.spv")
 // Enables Vulkan debug logging and validation layers.
 ENABLE_VALIDATION_LAYERS :: #config(ENABLE_VALIDATION_LAYERS, ODIN_DEBUG)
 
+current_frame: int
 MAX_FRAMES_IN_FLIGHT :: 2
 RenderBase :: struct{
 	ctx: runtime.Context,
@@ -60,7 +61,6 @@ RenderBase :: struct{
 	depth_view: vk.ImageView,
 
 	submit_info: vk.SubmitInfo,
-
 }
 
 rb : RenderBase
@@ -454,7 +454,7 @@ init_vulkan :: proc()
 	defer for sem in rb.render_finished_semaphores {vk.DestroySemaphore(rb.device, sem, nil)}
 	defer for fence in rb.in_flight_fences {vk.DestroyFence(rb.device, fence, nil)}
 
-	current_frame := 0
+	current_frame = 0
 	for !glfw.WindowShouldClose(rb.window) {
 		free_all(context.temp_allocator)
 
