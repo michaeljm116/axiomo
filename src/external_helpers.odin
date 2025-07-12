@@ -3,6 +3,7 @@ import math "core:math/linalg"
 import ecs "external/ecs"
 import vma "external/vma"
 import embree "external/embree"
+import "resource"
 
 // Helper types for vectors/matrices
 vec2f :: [2]f32
@@ -73,3 +74,7 @@ get_component_pair :: proc(entity: Entity, pair: ecs.PairType($R, $T)) -> ^R {
     return ecs.get_component_pair(g_world, entity, pair)
 }
 
+get_material :: proc(i:i32) -> ^resource.Material
+{
+    return &g_materials[i]
+}

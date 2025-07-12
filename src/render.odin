@@ -58,6 +58,9 @@ RenderBase :: struct{
 	depth_image : vk.Image,
 	depth_allocation : vma.Allocation,
 	depth_view: vk.ImageView,
+
+	submit_info: vk.SubmitInfo,
+
 }
 
 rb : RenderBase
@@ -485,7 +488,7 @@ init_vulkan :: proc()
 		record_command_buffer(rb.command_buffers[current_frame], image_index)
 
 		// Submit.
-		submit_info := vk.SubmitInfo {
+		rb.submit_info = vk.SubmitInfo {
 			sType                = .SUBMIT_INFO,
 			waitSemaphoreCount   = 1,
 			pWaitSemaphores      = &rb.image_available_semaphores[current_frame],
@@ -495,7 +498,7 @@ init_vulkan :: proc()
 			signalSemaphoreCount = 1,
 			pSignalSemaphores    = &rb.render_finished_semaphores[current_frame],
 		}
-		must(vk.QueueSubmit(rb.graphics_queue, 1, &submit_info, rb.in_flight_fences[current_frame]))
+		must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, rb.in_flight_fences[current_frame]))
 
 		// Present.
 		present_info := vk.PresentInfoKHR {

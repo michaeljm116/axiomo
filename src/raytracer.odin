@@ -1209,24 +1209,392 @@ update_uniform_buffers :: proc() {
     gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &rb.vma_allocator, &rt.compute.ubo)
 }
 
-update_material :: proc()
-update_gui :: proc()
-update_gui_number :: proc()
+update_material :: proc(id: i32) {
+    m := get_material(id)
+    rt.materials[id].diffuse = m.diffuse
+    rt.materials[id].reflective = m.reflective
+    rt.materials[id].roughness = m.roughness
+    rt.materials[id].transparency = m.transparency
+    rt.materials[id].refractive_index = m.refractive_index
+    rt.materials[id].texture_id = m.texture_id
+    gpu.vbuffer_update(&rt.compute.storage_buffers.materials, &rb.vma_allocator, rt.materials[:])
+}
+
+update_gui :: proc(gc: ^Cmp_Gui) {
+    g := &rt.guis[gc.ref]
+    g.min = gc.min
+    g.extents = gc.extents
+    g.align_min = gc.align_min
+    g.align_ext = gc.align_ext
+    g.layer = gc.layer
+    g.id = gc.id
+    g.alpha = gc.alpha
+    rt.update_flags |= {.GUI}
+}
+
+int_to_array_of_ints :: proc(n: i32) -> [dynamic]i32 {
+    if n == 0 {
+        res := make([dynamic]i32, 1)
+        res[0] = 0
+        return res
+    }
+    res: [dynamic]i32
+    nn := n
+    for nn > 0 {
+        append(&res, nn % 10)
+        nn /= 10
+    }
+    slice.reverse(res[:])
+    return res
+}
+
+update_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
+    nums := int_to_array_of_ints(gnc.number)
+    num_size := i32(len(nums))
+    change_occured := num_size != gnc.highest_active_digit_index + i32(1)
+    if !change_occured {
+        for i in 0..<gnc.highest_active_digit_index + 1 {
+            rt.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
+            rt.guis[gnc.shader_references[i]].alpha = gnc.alpha
+        }
+    } else {
+        increased := num_size > gnc.highest_active_digit_index + 1
+        if increased {
+            needs_shader_ref := num_size > i32(len(gnc.shader_references))
+            if needs_shader_ref {
+                for i in (num_size - i32(len(gnc.shader_references)))..<num_size {
+                    gui := gpu.Gui{
+                        min = gnc.min,
+                        extents = gnc.extents,
+                        align_min = {0.1 * f32(nums[num_size - 1]), 0.0},
+                        align_ext = {0.1, 1.0},
+                        layer = 0,
+                        id = 0,
+                        alpha = gnc.alpha,
+                    }
+                    append(&gnc.shader_references, i32(len(rt.guis)))
+                    append(&rt.guis, gui)
+                }
+                gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.guis, &rb.vma_allocator, rt.guis[:], u32(len(rt.guis)))
+            }
+            for i in 0..<num_size {
+                rt.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
+                rt.guis[gnc.shader_references[i]].alpha = gnc.alpha
+                rt.guis[gnc.shader_references[i]].min.x = gnc.min.x - (f32(num_size - 1 - i) * gnc.extents.x)
+            }
+            gnc.highest_active_digit_index = num_size - 1
+        } else {
+            for i in 0..<num_size {
+                rt.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
+                rt.guis[gnc.shader_references[i]].alpha = gnc.alpha
+                rt.guis[gnc.shader_references[i]].min.x = gnc.min.x - (f32(num_size - 1 - i) * gnc.extents.x)
+            }
+            for i in gnc.highest_active_digit_index..<num_size {
+                rt.guis[gnc.shader_references[i]].alpha = 0
+            }
+            gnc.highest_active_digit_index = num_size - 1
+        }
+    }
+    rt.update_flags |= {.GUI}
+}
+
 //----------------------------------------------------------------------------\\
 // /Main Procs /main procs
 //----------------------------------------------------------------------------\\
+add_material :: proc(diff: vec3, rfl: f32, rough: f32, trans: f32, ri: f32) {
+    mat := gpu.Material{
+        diffuse = diff,
+        reflective = rfl,
+        roughness = rough,
+        transparency = trans,
+        refractive_index = ri,
+        texture_id = 0,
+    }
+    append(&rt.materials, mat)
+    gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.materials, &rb.vma_allocator, rt.materials[:], u32(len(rt.materials)))
+    update_descriptors()
+}
 
-add_material :: proc()
-add_node :: proc()
-add_gui_number :: proc()
+add_node :: proc(node: ^Cmp_Node) {
+    if .MODEL in node.engine_flags {
+        return
+    }
+    if .LIGHT in node.engine_flags {
+        return
+    }
+    if .CAMERA in node.engine_flags {
+        cam := get_component(node.entity, Cmp_Camera)
+        trans_comp := get_component(node.entity, Cmp_Transform)
+        rt.compute.ubo.aspect_ratio = cam.aspect_ratio
+        rt.compute.ubo.rotM = transmute(mat4f)trans_comp.world
+        rt.compute.ubo.fov = math.tan(cam.fov * 0.03490658503)
+    }
+}
 
-start_frame :: proc(image_index : u32)
-end_frame :: proc(image_index : u32)
-added_entity :: proc(e : Entity)
-removed_entity :: proc(e : Entity)
-process_entity :: proc(e : Entity)
-end :: proc()
-cleanup :: proc()
-destroy_compute :: proc()
-cleanup_swapchain :: proc()
-rt_recreate_swapchain :: proc()
+add_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
+    nums := int_to_array_of_ints(gnc.number)
+    num_size := i32(len(nums))
+    for i in 0..<num_size {
+        gui := gpu.Gui{
+            min = gnc.min,
+            extents = gnc.extents,
+            align_min = {0.1 * f32(nums[i]), 0.0},
+            align_ext = {0.1, 1.0},
+            layer = 0,
+            id = 0,
+            alpha = gnc.alpha,
+        }
+        append(&gnc.shader_references, i32(len(rt.guis)))
+        append(&rt.guis, gui)
+    }
+    gnc.ref = gnc.shader_references[0]
+    rt.update_flags |= {.GUI}
+}
+
+start_frame :: proc(image_index: ^u32) {
+    result := vk.AcquireNextImageKHR(rb.device, rb.swapchain, max(u64), rb.image_available_semaphores[rb.current_frame], {}, image_index)
+    #partial switch result {
+    case .ERROR_OUT_OF_DATE_KHR:
+        rt_recreate_swapchain()
+        return
+    case .SUCCESS, .SUBOPTIMAL_KHR:
+    case:
+        panic(fmt.tprintf("vulkan: acquire next image failure: %v", result))
+    }
+
+    wait_stages := vk.PipelineStageFlags{.COLOR_ATTACHMENT_OUTPUT}
+    rb.submit_info.sType = .SUBMIT_INFO
+    rb.submit_info.commandBufferCount = 1
+    rb.submit_info.pCommandBuffers = &rb.command_buffers[image_index^]
+    rb.submit_info.waitSemaphoreCount = 1
+    rb.submit_info.pWaitSemaphores = &rb.image_available_semaphores[rb.current_frame]
+    rb.submit_info.pWaitDstStageMask = &wait_stages
+    rb.submit_info.signalSemaphoreCount = 1
+    rb.submit_info.pSignalSemaphores = &rb.render_finished_semaphores[rb.current_frame]
+
+    must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, rb.in_flight_fences[rb.current_frame]))
+}
+
+end_frame :: proc(image_index: ^u32) {
+    present_info := vk.PresentInfoKHR{
+        sType = .PRESENT_INFO_KHR,
+        waitSemaphoreCount = rb.submit_info.signalSemaphoreCount,
+        pWaitSemaphores = rb.submit_info.pSignalSemaphores,
+        swapchainCount = 1,
+        pSwapchains = &rb.swapchain,
+        pImageIndices = image_index,
+    }
+
+    result := vk.QueuePresentKHR(rb.present_queue, &present_info)
+    switch {
+    case result == .ERROR_OUT_OF_DATE_KHR || result == .SUBOPTIMAL_KHR || rb.framebuffer_resized:
+        rb.framebuffer_resized = false
+        rt_recreate_swapchain()
+    case result == .SUCCESS:
+    case:
+        panic(fmt.tprintf("vulkan: present failure: %v", result))
+    }
+    must(vk.QueueWaitIdle(rb.present_queue))
+
+    must(vk.WaitForFences(rb.device, 1, &rt.compute.fence, true, max(u64)))
+    must(vk.ResetFences(rb.device, 1, &rt.compute.fence))
+
+    compute_submit_info := vk.SubmitInfo{
+        sType = .SUBMIT_INFO,
+        commandBufferCount = 1,
+        pCommandBuffers = &rt.compute.command_buffer,
+    }
+    must(vk.QueueSubmit(rb.compute_queue, 1, &compute_submit_info, rt.compute.fence))
+}
+
+added_entity :: proc(e: Entity) {
+    rc := get_component(e, Cmp_Render)
+    if rc == nil { return }
+    t := rc.render_type
+
+    if .MATERIAL in t {
+    }
+    if .PRIMITIVE in t {
+        prim_comp := get_component(e, Cmp_Primitive)
+        mat_comp := get_component(e, Cmp_Material)
+        trans_comp := get_component(e, Cmp_Transform)
+
+        prim_comp.mat_id = mat_comp.mat_id
+        prim_comp.world = trans_comp.world
+        prim_comp.extents = trans_comp.local.sca.xyz
+        if prim_comp.id > 0 {
+            temp := rt.mesh_assigner[prim_comp.id]
+            prim_comp.start_index = temp[0]
+            prim_comp.end_index = temp[1]
+        }
+        rt.update_flags |= {.OBJECT}
+    }
+    if .LIGHT in t {
+        light_comp := get_component(e, Cmp_Light)
+        trans_comp := get_component(e, Cmp_Transform)
+        light := gpu.Light{
+            pos = trans_comp.global.pos.xyz,
+            color = light_comp.color,
+            intensity = light_comp.intensity,
+            id = i32(e),
+        }
+        light_comp.id = light.id
+        append(&rt.lights, light)
+        append(&rt.light_comps, light_comp)
+
+        gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.lights, &rb.vma_allocator, rt.lights[:], u32(len(rt.lights)))
+        rt.update_flags |= {.LIGHT}
+    }
+    if .GUI in t {
+        gc := get_component(e, Cmp_Gui)
+        gui := gpu.Gui{
+            min = gc.min,
+            extents = gc.extents,
+            align_min = gc.align_min,
+            align_ext = gc.align_ext,
+            layer = gc.layer,
+            id = gc.id,
+            alpha = gc.alpha,
+        }
+        gc.ref = i32(len(rt.guis))
+        append(&rt.guis, gui)
+        rt.update_flags |= {.GUI}
+    }
+    if .GUINUM in t {
+        gnc := get_component(e, Cmp_GuiNumber)
+        nums := int_to_array_of_ints(gnc.number)
+        for i in 0..<len(nums) {
+            gui := gpu.Gui{
+                min = gnc.min,
+                extents = gnc.extents,
+                align_min = {0.1 * f32(nums[i]), 0.0},
+                align_ext = {0.1, 1.0},
+                layer = 0,
+                id = 0,
+                alpha = gnc.alpha,
+            }
+            append(&gnc.shader_references, i32(len(rt.guis)))
+            append(&rt.guis, gui)
+        }
+        gnc.ref = gnc.shader_references[0]
+        rt.update_flags |= {.GUI}
+    }
+    if .CAMERA in t {
+        cam := get_component(e, Cmp_Camera)
+        trans_comp := get_component(e, Cmp_Transform)
+        rt.compute.ubo.aspect_ratio = cam.aspect_ratio
+        rt.compute.ubo.rotM = transmute(mat4f)trans_comp.world
+        rt.compute.ubo.fov = cam.fov
+    }
+}
+
+removed_entity :: proc(e: Entity) {
+    rc := get_component(e, Cmp_Render)
+    if rc == nil { return }
+    t := rc.render_type
+
+    if .LIGHT in t {
+        lc := get_component(e, Cmp_Light)
+        for l, i in rt.lights {
+            if lc.id == l.id {
+                ordered_remove(&rt.lights, i)
+                ordered_remove(&rt.light_comps, i)
+                break
+            }
+        }
+        if len(rt.lights) == 0 {
+            clear(&rt.lights)
+            clear(&rt.light_comps)
+        }
+    }
+}
+
+process_entity :: proc(e: Entity) {
+    rc := get_component(e, Cmp_Render)
+    if rc == nil { return }
+    type := rc.render_type
+    if type == {} { return }
+
+    switch {
+    case .MATERIAL in type:
+        rt.update_flags |= {.MATERIAL}
+    case .PRIMITIVE in type:
+        rt.update_flags |= {.OBJECT}
+    case .LIGHT in type:
+        rt.update_flags |= {.LIGHT}
+    case .GUI in type:
+        gc := get_component(e, Cmp_Gui)
+        update_gui(gc)
+    case .GUINUM in type:
+        gnc := get_component(e, Cmp_GuiNumber)
+        if gnc.update {
+            gnc.update = false
+            update_gui_number(gnc)
+        }
+    }
+    type = {}
+}
+
+end :: proc() {
+    update_buffers()
+    update_descriptors()
+    if glfw.WindowShouldClose(rb.window) {
+        ecs.set_shutdown(g_world)
+        vk.DeviceWaitIdle(rb.device)
+    }
+}
+
+cleanup :: proc() {
+    vk.DeviceWaitIdle(rb.device)
+    cleanup_swapchain()
+
+    destroy_compute()
+
+    vk.DestroyDescriptorPool(rb.device, rt.descriptor_pool, nil)
+    vk.DestroyDescriptorSetLayout(rb.device, rt.graphics.descriptor_set_layout, nil)
+
+    vk.DestroyCommandPool(rb.device, rb.command_pool, nil)
+
+    cleanup_vulkan()
+}
+
+destroy_compute :: proc() {
+    gpu.vbuffer_destroy(&rt.compute.uniform_buffer, &rb.vma_allocator)
+    gpu.vbuffer_destroy(&rt.compute.storage_buffers.verts, &rb.vma_allocator)
+    gpu.vbuffer_destroy(&rt.compute.storage_buffers.faces, &rb.vma_allocator)
+    gpu.vbuffer_destroy(&rt.compute.storage_buffers.blas, &rb.vma_allocator)
+    gpu.vbuffer_destroy(&rt.compute.storage_buffers.shapes, &rb.vma_allocator)
+    gpu.vbuffer_destroy(&rt.compute.storage_buffers.primitives, &rb.vma_allocator)
+    gpu.vbuffer_destroy(&rt.compute.storage_buffers.materials, &rb.vma_allocator)
+    gpu.vbuffer_destroy(&rt.compute.storage_buffers.lights, &rb.vma_allocator)
+    gpu.vbuffer_destroy(&rt.compute.storage_buffers.guis, &rb.vma_allocator)
+    gpu.vbuffer_destroy(&rt.compute.storage_buffers.bvh, &rb.vma_allocator)
+
+    texture_destroy(&rt.compute_texture, rb.device, &rb.vma_allocator)
+    for &t in rt.gui_textures {
+        texture_destroy(&t, rb.device, &rb.vma_allocator)
+    }
+    for &t in rt.bindless_textures {
+        texture_destroy(&t, rb.device, &rb.vma_allocator)
+    }
+    vk.DestroyPipelineCache(rb.device, rb.pipeline_cache, nil)
+    vk.DestroyPipeline(rb.device, rt.compute.pipeline, nil)
+    vk.DestroyPipelineLayout(rb.device, rt.compute.pipeline_layout, nil)
+    vk.DestroyDescriptorSetLayout(rb.device, rt.compute.descriptor_set_layout, nil)
+    vk.DestroyFence(rb.device, rt.compute.fence, nil)
+    vk.DestroyCommandPool(rb.device, rt.compute.command_pool, nil)
+}
+
+cleanup_swapchain :: proc() {
+    vk.DestroyPipeline(rb.device, rt.graphics.pipeline, nil)
+    vk.DestroyPipelineLayout(rb.device, rt.graphics.pipeline_layout, nil)
+
+    cleanup_swapchain_vulkan()
+}
+
+rt_recreate_swapchain :: proc() {
+    recreate_swapchain_vulkan()
+    create_descriptor_set_layout()
+    create_graphics_pipeline()
+    create_command_buffers(0.7333333333, i32(rb.swapchain_extent.width * 0.16666666666), 36)
+}
