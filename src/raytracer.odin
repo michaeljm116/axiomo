@@ -1352,7 +1352,7 @@ add_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
 }
 
 start_frame :: proc(image_index: ^u32) {
-    result := vk.AcquireNextImageKHR(rb.device, rb.swapchain, max(u64), rb.image_available_semaphores[rb.current_frame], {}, image_index)
+    result := vk.AcquireNextImageKHR(rb.device, rb.swapchain, max(u64), rb.image_available_semaphores[current_frame], {}, image_index)
     #partial switch result {
     case .ERROR_OUT_OF_DATE_KHR:
         rt_recreate_swapchain()
@@ -1367,12 +1367,12 @@ start_frame :: proc(image_index: ^u32) {
     rb.submit_info.commandBufferCount = 1
     rb.submit_info.pCommandBuffers = &rb.command_buffers[image_index^]
     rb.submit_info.waitSemaphoreCount = 1
-    rb.submit_info.pWaitSemaphores = &rb.image_available_semaphores[rb.current_frame]
+    rb.submit_info.pWaitSemaphores = &rb.image_available_semaphores[current_frame]
     rb.submit_info.pWaitDstStageMask = &wait_stages
     rb.submit_info.signalSemaphoreCount = 1
-    rb.submit_info.pSignalSemaphores = &rb.render_finished_semaphores[rb.current_frame]
+    rb.submit_info.pSignalSemaphores = &rb.render_finished_semaphores[current_frame]
 
-    must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, rb.in_flight_fences[rb.current_frame]))
+    must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, rb.in_flight_fences[current_frame]))
 }
 
 end_frame :: proc(image_index: ^u32) {
@@ -1410,7 +1410,7 @@ end_frame :: proc(image_index: ^u32) {
 added_entity :: proc(e: Entity) {
     rc := get_component(e, Cmp_Render)
     if rc == nil { return }
-    t := rc.render_type
+    t := rc.type
 
     if .MATERIAL in t {
     }
@@ -1424,8 +1424,8 @@ added_entity :: proc(e: Entity) {
         prim_comp.extents = trans_comp.local.sca.xyz
         if prim_comp.id > 0 {
             temp := rt.mesh_assigner[prim_comp.id]
-            prim_comp.start_index = temp[0]
-            prim_comp.end_index = temp[1]
+            prim_comp.start_index = i32(temp[0])
+            prim_comp.end_index = i32(temp[1])
         }
         rt.update_flags |= {.OBJECT}
     }
@@ -1440,7 +1440,7 @@ added_entity :: proc(e: Entity) {
         }
         light_comp.id = light.id
         append(&rt.lights, light)
-        append(&rt.light_comps, light_comp)
+        append(&rt.light_comps, light_comp^)
 
         gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.lights, &rb.vma_allocator, rt.lights[:], u32(len(rt.lights)))
         rt.update_flags |= {.LIGHT}
@@ -1491,7 +1491,7 @@ added_entity :: proc(e: Entity) {
 removed_entity :: proc(e: Entity) {
     rc := get_component(e, Cmp_Render)
     if rc == nil { return }
-    t := rc.render_type
+    t := rc.type
 
     if .LIGHT in t {
         lc := get_component(e, Cmp_Light)
@@ -1512,7 +1512,7 @@ removed_entity :: proc(e: Entity) {
 process_entity :: proc(e: Entity) {
     rc := get_component(e, Cmp_Render)
     if rc == nil { return }
-    type := rc.render_type
+    type := rc.type
     if type == {} { return }
 
     switch {
@@ -1539,7 +1539,7 @@ end :: proc() {
     update_buffers()
     update_descriptors()
     if glfw.WindowShouldClose(rb.window) {
-        ecs.set_shutdown(g_world)
+        end_ecs()
         vk.DeviceWaitIdle(rb.device)
     }
 }

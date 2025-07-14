@@ -74,6 +74,27 @@ get_component_pair :: proc(entity: Entity, pair: ecs.PairType($R, $T)) -> ^R {
     return ecs.get_component_pair(g_world, entity, pair)
 }
 
+has :: proc {
+	has_typeid,
+	has_pair,
+}
+
+has_typeid :: proc(component: typeid) -> ecs.Term {
+	return ecs.has(component)
+}
+
+has_pair :: proc(p: $P/ecs.PairType) -> ecs.Term {
+	return ecs.has(p)
+}
+
+end_ecs :: proc() {
+    ecs.delete_world(g_world)
+}
+
+//----------------------------------------------------------------------------\\
+// /Internal helpers
+//----------------------------------------------------------------------------\\
+
 get_material :: proc(i:i32) -> ^resource.Material
 {
     return &g_materials[i]

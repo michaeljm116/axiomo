@@ -13,7 +13,7 @@ import embree "external/embree"
 //----------------------------------------------------------------------------\\
 
 Sys_Bvh :: struct {
-    // ECS world reference
+    world: ^ecs.World,
 
     // Embree data
     device: embree.RTCDevice,
@@ -33,10 +33,12 @@ Sys_Bvh :: struct {
 }
 
 // Global counter for node creation (matches C++ static variable)
-g_num_nodes: i32 = 0
+global_num_nodes: i32 = 0
 
 // Create a new BVH system
-bvh_system_create :: proc() -> ^Sys_Bvh {
+bvh_system_create :: proc(world: ^ecs.World) -> ^Sys_Bvh {
+    system := new(Sys_Bvh)
+    system.world = world
     system.entities = make([dynamic]Entity)
     system.primitive_components = make([dynamic]^Cmp_Primitive)
     system.build_primitives = make([dynamic]embree.RTCBuildPrimitive)
@@ -62,16 +64,16 @@ bvh_system_create :: proc() -> ^Sys_Bvh {
 }
 
 // Destroy BVH system
-bvh_system_destroy :: proc(using system: ^Sys_Bvh) {
+bvh_system_destroy :: proc(system: ^Sys_Bvh) {
     if system == nil do return
 
-    bvh_destroy(root)
-    embree.rtcReleaseBVH(bvh)
-    embree.rtcReleaseDevice(device)
+    bvh_destroy(system.root)
+    embree.rtcReleaseBVH(system.bvh)
+    embree.rtcReleaseDevice(system.device)
 
-    delete(entities)
-    delete(primitive_components)
-    delete(build_primitives)
+    delete(system.entities)
+    delete(system.primitive_components)
+    delete(system.build_primitives)
 
     free(system)
 }
@@ -83,8 +85,8 @@ bounds_function :: proc "c" (args: ^embree.RTCBoundsFunctionArguments) {
     prim := mem.ptr_offset(prims, int(args.primID))
 
     center := prim.world[3].xyz
-    lower := center - prim.extents
-    upper := center + prim.extents
+    lower := center - prim.aabb_extents
+    upper := center + prim.aabb_extents
 
     args.bounds_o.lower_x = lower.x
     args.bounds_o.lower_y = lower.y
@@ -128,7 +130,7 @@ create_inner :: proc "c" (alloc: embree.RTCThreadLocalAllocator, numChildren: u3
     context = runtime.default_context()
     assert(numChildren == 2)
     ptr := embree.rtcThreadLocalAlloc(alloc, size_of(InnerBvhNode), 16)
-     g_num_nodes += 1
+    global_num_nodes += 1
 
     // Initialize the inner node
     node := cast(^InnerBvhNode)ptr
@@ -176,7 +178,7 @@ create_leaf :: proc "c" (
 
     assert(numPrims >= MIN_LEAF_SIZE && numPrims <= MAX_LEAF_SIZE)
     ptr := embree.rtcThreadLocalAlloc(alloc, size_of(LeafBvhNode), 16)
-     g_num_nodes += 1
+    global_num_nodes += 1
 
     // Create leaf node
     node := cast(^LeafBvhNode)ptr
@@ -190,32 +192,29 @@ create_leaf :: proc "c" (
 }
 
 // Build the BVH tree
-bvh_system_build :: proc(using system: ^Sys_Bvh) {
-    g_num_nodes = 0
-    clear(&build_primitives)
-    reserve(&build_primitives, len(primitive_components))
+bvh_system_build :: proc(system: ^Sys_Bvh) {
+    global_num_nodes = 0
+    clear(&system.build_primitives)
+    reserve(&system.build_primitives, len(system.primitive_components))
 
     // Create build primitives from primitive components
+    for prim_comp, i in system.primitive_components {
+        center := prim_comp.world[3].xyz
+        lower := center - prim_comp.aabb_extents
+        upper := center + prim_comp.aabb_extents
 
-    for archetype in query(has(Cmp_Primitive)) {
-        prim_comps := get_table(archetype, Cmp_Primitive)
-        for prim_comp, i in prim_comps{
-            center := prim_comp.word[3].xyz
-            lower := center - prim_comp.aabb_extents
-            upper := center + prim_comp.aabb_extents
-
-            build_prim := embree.RTCBuildPrimitive{
-                lower_x = lower.x,
-                lower_y = lower.y,
-                lower_z = lower.z,
-                geomID = 0,
-                upper_x = upper.x,
-                upper_y = upper.y,
-                upper_z = upper.z,
-                primID = u32(i),
-            }
-            append(&build_primitives, build_prim)
+        build_prim := embree.RTCBuildPrimitive{
+            lower_x = lower.x,
+            lower_y = lower.y,
+            lower_z = lower.z,
+            geomID = 0,
+            upper_x = upper.x,
+            upper_y = upper.y,
+            upper_z = upper.z,
+            primID = u32(i),
         }
+
+        append(&system.build_primitives, build_prim)
     }
 
     // Set up build arguments
@@ -248,7 +247,7 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
 
     // Build the BVH
     system.root = cast(BvhNode)embree.rtcBuildBVH(&arguments)
-    system.num_nodes = g_num_nodes
+    system.num_nodes = global_num_nodes
 }
 
 // Add entity to BVH system
@@ -257,7 +256,7 @@ bvh_system_add_entity :: proc(system: ^Sys_Bvh, entity: Entity) {
     append(&system.entities, entity)
 
     // Get primitive component
-    prim_comp := ecs.get_component(system.world, entity, Cmp_Primitive)
+    prim_comp := get_component(entity, Cmp_Primitive)
     if prim_comp != nil {
         append(&system.primitive_components, prim_comp)
     }
@@ -356,4 +355,4 @@ bvh_system_raycast :: proc(system: ^Sys_Bvh, ray_origin: vec3, ray_direction: ve
 
     // Example structure - you'd implement the actual raycast logic
     return false, 0.0
-}
+    }
