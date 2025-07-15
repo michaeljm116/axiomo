@@ -20,7 +20,7 @@ Sys_Bvh :: struct {
     bvh: embree.RTCBVH,
 
     // BVH tree data
-    root: BvhNode,
+    root: ^BvhNode,
     num_nodes: i32,
 
     // Entity and primitive data
@@ -37,6 +37,7 @@ g_num_nodes: i32 = 0
 
 // Create a new BVH system
 bvh_system_create :: proc() -> ^Sys_Bvh {
+    system := new(Sys_Bvh)
     system.entities = make([dynamic]Entity)
     system.primitive_components = make([dynamic]^Cmp_Primitive)
     system.build_primitives = make([dynamic]embree.RTCBuildPrimitive)
@@ -128,9 +129,7 @@ create_inner :: proc "c" (alloc: embree.RTCThreadLocalAllocator, numChildren: u3
     context = runtime.default_context()
     assert(numChildren == 2)
     ptr := embree.rtcThreadLocalAlloc(alloc, size_of(InnerBvhNode), 16)
-     g_num_nodes += 1
-
-    // Initialize the inner node
+    g_num_nodes += 1
     node := cast(^InnerBvhNode)ptr
     mem.zero(node, size_of(InnerBvhNode))
 
@@ -142,10 +141,9 @@ set_children :: proc "c" (bvhNodePtr: rawptr, childPtr: ^^rawptr, numChildren: u
     assert(numChildren == 2)
     node := cast(^InnerBvhNode)bvhNodePtr
 
-    for i in 0..<2 {
-        child_ptr := mem.ptr_offset(childPtr, i)
-        node.children[i] = cast(BvhNode)child_ptr^
-    }
+    children_array := transmute([^]BvhNode)childPtr
+    node.children[0] = children_array[0]
+    node.children[1] = children_array[1]
 }
 
 set_bounds :: proc "c" (bvhNodePtr: rawptr, bounds: ^^embree.RTCBounds, numChildren: u32, userPtr: rawptr) {
@@ -200,7 +198,7 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
     for archetype in query(has(Cmp_Primitive)) {
         prim_comps := get_table(archetype, Cmp_Primitive)
         for prim_comp, i in prim_comps{
-            center := prim_comp.word[3].xyz
+            center := prim_comp.world[3].xyz
             lower := center - prim_comp.aabb_extents
             upper := center + prim_comp.aabb_extents
 
@@ -247,7 +245,7 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
     }
 
     // Build the BVH
-    system.root = cast(BvhNode)embree.rtcBuildBVH(&arguments)
+    system.root = transmute(^BvhNode)embree.rtcBuildBVH(&arguments)
     system.num_nodes = g_num_nodes
 }
 
@@ -257,7 +255,7 @@ bvh_system_add_entity :: proc(system: ^Sys_Bvh, entity: Entity) {
     append(&system.entities, entity)
 
     // Get primitive component
-    prim_comp := ecs.get_component(system.world, entity, Cmp_Primitive)
+    prim_comp := get_component(entity, Cmp_Primitive)
     if prim_comp != nil {
         append(&system.primitive_components, prim_comp)
     }
@@ -277,12 +275,6 @@ bvh_system_remove_entity :: proc(system: ^Sys_Bvh, entity: Entity) {
     }
 }
 
-// Process entities (equivalent to processEntity in C++)
-bvh_system_process :: proc(system: ^Sys_Bvh) {
-    // This would be called per frame
-    // Currently empty like the C++ version
-}
-
 // Check if rebuild is needed and build if so
 bvh_system_update :: proc(system: ^Sys_Bvh) {
     if system.rebuild {
@@ -291,27 +283,10 @@ bvh_system_update :: proc(system: ^Sys_Bvh) {
     }
 }
 
-// Getters (equivalent to C++ inline methods)
-bvh_system_get_root :: proc(system: ^Sys_Bvh) -> BvhNode {
-    return system.root
-}
-
-bvh_system_get_ordered_prims :: proc(system: ^Sys_Bvh) -> []embree.RTCBuildPrimitive {
-    return system.build_primitives[:]
-}
-
-bvh_system_get_num_nodes :: proc(system: ^Sys_Bvh) -> i32 {
-    return system.num_nodes
-}
-
-bvh_system_get_original_entities :: proc(system: ^Sys_Bvh) -> []Entity {
-    return system.entities[:]
-}
-
 // ECS integration procedures
-bvh_system_query_entities :: proc(world: ^ecs.World) -> []Entity {
+bvh_system_query_entities :: proc() -> []Entity {
     // Query for entities with Cmp_Node, Cmp_Transform, andCmp_Primitive
-    archetypes := ecs.query(world,
+    archetypes := query(
         ecs.has(Cmp_Node),
         ecs.has(Cmp_Transform),
         ecs.has(Cmp_Primitive))
@@ -330,7 +305,7 @@ bvh_system_query_entities :: proc(world: ^ecs.World) -> []Entity {
 
 // Initialize BVH system with existing entities
 bvh_system_initialize :: proc(system: ^Sys_Bvh) {
-    entities := bvh_system_query_entities(system.world)
+    entities := bvh_system_query_entities()
 
     for entity in entities {
         bvh_system_add_entity(system, entity)
@@ -341,19 +316,10 @@ bvh_system_initialize :: proc(system: ^Sys_Bvh) {
 }
 
 // Print BVH statistics (utility function)
-bvh_system_print_stats :: proc(system: ^Sys_Bvh) {
+bvh_system_print_stats :: proc(using system: ^Sys_Bvh) {
     fmt.printf("BVH Statistics:\n")
-    fmt.printf("  Entities: %d\n", len(system.entities))
-    fmt.printf("  Primitives: %d\n", len(system.primitive_components))
-    fmt.printf("  Nodes: %d\n", system.num_nodes)
-    fmt.printf("  Root SAH: %.2f\n", bvh_sah(system.root))
-}
-
-// Raycast against BVH (example usage)
-bvh_system_raycast :: proc(system: ^Sys_Bvh, ray_origin: vec3, ray_direction: vec3) -> (hit: bool, distance: f32) {
-    // This would use the Embree ray intersection API
-    // Implementation depends on your specific raytracing needs
-
-    // Example structure - you'd implement the actual raycast logic
-    return false, 0.0
+    fmt.printf("  Entities: %d\n", len(entities))
+    fmt.printf("  Primitives: %d\n", len(primitive_components))
+    fmt.printf("  Nodes: %d\n", num_nodes)
+    fmt.printf("  Root SAH: %.2f\n", bvh_sah(root^))
 }
