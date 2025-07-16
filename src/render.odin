@@ -13,6 +13,7 @@ SHADER_FRAG :: #load("../assets/shaders/frag.spv")
 
 // Enables Vulkan debug logging and validation layers.
 ENABLE_VALIDATION_LAYERS :: #config(ENABLE_VALIDATION_LAYERS, ODIN_DEBUG)
+dbg_messenger: vk.DebugUtilsMessengerEXT
 
 current_frame: int
 MAX_FRAMES_IN_FLIGHT :: 2
@@ -62,7 +63,6 @@ RenderBase :: struct{
 
 	submit_info: vk.SubmitInfo,
 }
-
 rb : RenderBase
 
 // KHR_PORTABILITY_SUBSET_EXTENSION_NAME :: "VK_KHR_portability_subset"
@@ -77,13 +77,11 @@ init_vulkan :: proc()
     glfw.SetErrorCallback(glfw_error_callback)
 
 	if !glfw.Init() {log.panic("glfw: could not be initialized")}
-	defer glfw.Terminate()
 
 	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
 	glfw.WindowHint(glfw.RESIZABLE, glfw.TRUE)
 
 	rb.window = glfw.CreateWindow(800, 600, "Vulkan", nil, nil)
-	defer glfw.DestroyWindow(rb.window)
 
 	glfw.SetFramebufferSizeCallback(rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
 		rb.framebuffer_resized = true
@@ -149,21 +147,17 @@ init_vulkan :: proc()
 	create_info.ppEnabledExtensionNames = raw_data(extensions)
 
 	must(vk.CreateInstance(&create_info, nil, &rb.instance))
-	defer vk.DestroyInstance(rb.instance, nil)
 
 	vk.load_proc_addresses_instance(rb.instance)
 
 	when ENABLE_VALIDATION_LAYERS {
-		dbg_messenger: vk.DebugUtilsMessengerEXT
 		must(vk.CreateDebugUtilsMessengerEXT(rb.instance, &dbg_create_info, nil, &dbg_messenger))
-		defer vk.DestroyDebugUtilsMessengerEXT(rb.instance, dbg_messenger, nil)
 	}
 
 	//----------------------------------------------------------------------------\\
     // /Create Surface and Devices /cs
     //----------------------------------------------------------------------------\\
 	must(glfw.CreateWindowSurface(rb.instance, rb.window, nil, &rb.surface))
-	defer vk.DestroySurfaceKHR(rb.instance, rb.surface, nil)
 
 	// Pick a suitable GPU.
 	must(pick_physical_device())
@@ -241,14 +235,12 @@ init_vulkan :: proc()
 
 		vk.GetDeviceQueue(rb.device, indices.graphics.?, 0, &rb.graphics_queue)
 		vk.GetDeviceQueue(rb.device, indices.present.?, 0, &rb.present_queue)
-		vk.GetDeviceQueue(rb.device, indices.compute.?, rb.compute_queue_family_index, &rb.compute_queue)
+		vk.GetDeviceQueue(rb.device, indices.compute.?, 1, &rb.compute_queue) // should be rb.compute_queue_family_index, but it aint workin fo some reason
 	}
-	defer vk.DestroyDevice(rb.device, nil)
 
 	init_vma()
 
 	create_swapchain()
-	defer destroy_swapchain()
 
 	// Load shaders.
 	{
@@ -268,8 +260,6 @@ init_vulkan :: proc()
 			pName  = "main",
 		}
 	}
-	defer vk.DestroyShaderModule(rb.device, rb.vert_shader_module, nil)
-	defer vk.DestroyShaderModule(rb.device, rb.frag_shader_module, nil)
 
 	// Set up render pass.
 	{
@@ -334,7 +324,6 @@ init_vulkan :: proc()
 
 		must(vk.CreateRenderPass(rb.device, &render_pass, nil, &rb.render_pass))
 	}
-	defer vk.DestroyRenderPass(rb.device, rb.render_pass, nil)
 
 
 	// Set up pipeline.
@@ -408,8 +397,6 @@ init_vulkan :: proc()
 		}
 		must(vk.CreateGraphicsPipelines(rb.device, 0, 1, &pipeline, nil, &rb.pipeline))
 	}
-	defer vk.DestroyPipelineLayout(rb.device, rb.pipeline_layout, nil)
-	defer vk.DestroyPipeline(rb.device, rb.pipeline, nil)
 
 
 	// Create command pool.
@@ -429,11 +416,9 @@ init_vulkan :: proc()
 		}
 		must(vk.AllocateCommandBuffers(rb.device, &alloc_info, &rb.command_buffers[0]))
 	}
-	defer vk.DestroyCommandPool(rb.device, rb.command_pool, nil)
 
 	create_depth_resources()
 	create_framebuffers()
-	defer destroy_framebuffers()
 
 	// Set up sync primitives.
 	{
@@ -450,78 +435,9 @@ init_vulkan :: proc()
 			must(vk.CreateFence(rb.device, &fence_info, nil, &rb.in_flight_fences[i]))
 		}
 	}
-	defer for sem in rb.image_available_semaphores {vk.DestroySemaphore(rb.device, sem, nil)}
-	defer for sem in rb.render_finished_semaphores {vk.DestroySemaphore(rb.device, sem, nil)}
-	defer for fence in rb.in_flight_fences {vk.DestroyFence(rb.device, fence, nil)}
 
 	current_frame = 0
-	for !glfw.WindowShouldClose(rb.window) {
-		free_all(context.temp_allocator)
-
-		glfw.PollEvents()
-
-		// Wait for previous frame.
-		must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, max(u64)))
-
-		// Acquire an image from the swapchain.
-		image_index: u32
-		acquire_result := vk.AcquireNextImageKHR(
-			rb.device,
-			rb.swapchain,
-			max(u64),
-			rb.image_available_semaphores[current_frame],
-			0,
-			&image_index,
-		)
-		#partial switch acquire_result {
-		case .ERROR_OUT_OF_DATE_KHR:
-			recreate_swapchain()
-			continue
-		case .SUCCESS, .SUBOPTIMAL_KHR:
-		case:
-			log.panicf("vulkan: acquire next image failure: %v", acquire_result)
-		}
-
-		must(vk.ResetFences(rb.device, 1, &rb.in_flight_fences[current_frame]))
-
-		must(vk.ResetCommandBuffer(rb.command_buffers[current_frame], {}))
-		record_command_buffer(rb.command_buffers[current_frame], image_index)
-
-		// Submit.
-		rb.submit_info = vk.SubmitInfo {
-			sType                = .SUBMIT_INFO,
-			waitSemaphoreCount   = 1,
-			pWaitSemaphores      = &rb.image_available_semaphores[current_frame],
-			pWaitDstStageMask    = &vk.PipelineStageFlags{.COLOR_ATTACHMENT_OUTPUT},
-			commandBufferCount   = 1,
-			pCommandBuffers      = &rb.command_buffers[current_frame],
-			signalSemaphoreCount = 1,
-			pSignalSemaphores    = &rb.render_finished_semaphores[current_frame],
-		}
-		must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, rb.in_flight_fences[current_frame]))
-
-		// Present.
-		present_info := vk.PresentInfoKHR {
-			sType              = .PRESENT_INFO_KHR,
-			waitSemaphoreCount = 1,
-			pWaitSemaphores    = &rb.render_finished_semaphores[current_frame],
-			swapchainCount     = 1,
-			pSwapchains        = &rb.swapchain,
-			pImageIndices      = &image_index,
-		}
-		present_result := vk.QueuePresentKHR(rb.present_queue, &present_info)
-		switch {
-		case present_result == .ERROR_OUT_OF_DATE_KHR || present_result == .SUBOPTIMAL_KHR || rb.framebuffer_resized:
-			rb.framebuffer_resized = false
-			recreate_swapchain()
-		case present_result == .SUCCESS:
-		case:
-			log.panicf("vulkan: present failure: %v", present_result)
-		}
-
-		current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT
-	}
-	vk.DeviceWaitIdle(rb.device)
+	//update_vulkan()
 }
 
 @(require_results)
@@ -1414,3 +1330,94 @@ texture_update_descriptor :: proc(texture: ^Texture) {
     }
 }
 
+update_vulkan :: proc()
+{
+    for !glfw.WindowShouldClose(rb.window) {
+		free_all(context.temp_allocator)
+
+		glfw.PollEvents()
+
+		// Wait for previous frame.
+		must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, max(u64)))
+
+		// Acquire an image from the swapchain.
+		image_index: u32
+		acquire_result := vk.AcquireNextImageKHR(
+			rb.device,
+			rb.swapchain,
+			max(u64),
+			rb.image_available_semaphores[current_frame],
+			0,
+			&image_index,
+		)
+		#partial switch acquire_result {
+		case .ERROR_OUT_OF_DATE_KHR:
+			recreate_swapchain()
+			continue
+		case .SUCCESS, .SUBOPTIMAL_KHR:
+		case:
+			log.panicf("vulkan: acquire next image failure: %v", acquire_result)
+		}
+
+		must(vk.ResetFences(rb.device, 1, &rb.in_flight_fences[current_frame]))
+
+		must(vk.ResetCommandBuffer(rb.command_buffers[current_frame], {}))
+		record_command_buffer(rb.command_buffers[current_frame], image_index)
+
+		// Submit.
+		rb.submit_info = vk.SubmitInfo {
+			sType                = .SUBMIT_INFO,
+			waitSemaphoreCount   = 1,
+			pWaitSemaphores      = &rb.image_available_semaphores[current_frame],
+			pWaitDstStageMask    = &vk.PipelineStageFlags{.COLOR_ATTACHMENT_OUTPUT},
+			commandBufferCount   = 1,
+			pCommandBuffers      = &rb.command_buffers[current_frame],
+			signalSemaphoreCount = 1,
+			pSignalSemaphores    = &rb.render_finished_semaphores[current_frame],
+		}
+		must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, rb.in_flight_fences[current_frame]))
+
+		// Present.
+		present_info := vk.PresentInfoKHR {
+			sType              = .PRESENT_INFO_KHR,
+			waitSemaphoreCount = 1,
+			pWaitSemaphores    = &rb.render_finished_semaphores[current_frame],
+			swapchainCount     = 1,
+			pSwapchains        = &rb.swapchain,
+			pImageIndices      = &image_index,
+		}
+		present_result := vk.QueuePresentKHR(rb.present_queue, &present_info)
+		switch {
+		case present_result == .ERROR_OUT_OF_DATE_KHR || present_result == .SUBOPTIMAL_KHR || rb.framebuffer_resized:
+			rb.framebuffer_resized = false
+			recreate_swapchain()
+		case present_result == .SUCCESS:
+		case:
+			log.panicf("vulkan: present failure: %v", present_result)
+		}
+
+		current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT
+	}
+	vk.DeviceWaitIdle(rb.device)
+}
+
+destroy_vulkan :: proc()
+{
+    defer glfw.Terminate()
+    defer glfw.DestroyWindow(rb.window)
+    defer vk.DestroyInstance(rb.instance, nil)
+    defer vk.DestroyDebugUtilsMessengerEXT(rb.instance, dbg_messenger, nil)
+    defer vk.DestroySurfaceKHR(rb.instance, rb.surface, nil)
+    defer vk.DestroyDevice(rb.device, nil)
+    defer destroy_swapchain()
+    defer vk.DestroyShaderModule(rb.device, rb.vert_shader_module, nil)
+    defer vk.DestroyShaderModule(rb.device, rb.frag_shader_module, nil)
+    defer vk.DestroyRenderPass(rb.device, rb.render_pass, nil)
+    defer vk.DestroyPipelineLayout(rb.device, rb.pipeline_layout, nil)
+    defer vk.DestroyPipeline(rb.device, rb.pipeline, nil)
+    defer vk.DestroyCommandPool(rb.device, rb.command_pool, nil)
+    defer destroy_framebuffers()
+    defer for sem in rb.image_available_semaphores {vk.DestroySemaphore(rb.device, sem, nil)}
+    defer for sem in rb.render_finished_semaphores {vk.DestroySemaphore(rb.device, sem, nil)}
+    defer for fence in rb.in_flight_fences {vk.DestroyFence(rb.device, fence, nil)}
+}

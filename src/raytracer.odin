@@ -25,8 +25,8 @@ MAX_OBJS :: 4096
 MAX_LIGHTS :: 32
 MAX_GUIS :: 96
 MAX_NODES :: 2048
-MAX_BINDLESS_TEXTURES :: 256
-MAX_TEXTURES :: 10
+MAX_BINDLESS_TEXTURES :: 6
+MAX_TEXTURES :: 5
 // Update flags for tracking what needs to be updated
 UpdateFlag :: enum {
     OBJECT,
@@ -102,7 +102,7 @@ ComputeRaytracer :: struct {
     shape_assigner: map[i32][2]int,
 
     compute_texture: Texture,
-    gui_textures: [MAX_GUIS]Texture,
+    gui_textures: [MAX_TEXTURES]Texture,
     bindless_textures: []Texture,
 
     compute_write_descriptor_sets: []vk.WriteDescriptorSet,

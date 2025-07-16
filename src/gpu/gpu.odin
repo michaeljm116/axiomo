@@ -282,7 +282,8 @@ vbuffer_init_storage_buffer_with_staging :: proc(vbuf: ^VBuffer($T), allocator: 
 // Initialize storage buffer with staging using device-based approach (similar to C++ version)
 vbuffer_init_storage_buffer_with_staging_device :: proc(vbuf: ^VBuffer($T), device: vk.Device, allocator: ^vma.Allocator, command_pool: vk.CommandPool, queue: vk.Queue, objects: []T, mul: u32, usage: vk.BufferUsageFlags = {.VERTEX_BUFFER, .INDEX_BUFFER, .STORAGE_BUFFER, .TRANSFER_DST}) {
     buffer_size := vk.DeviceSize(size_of(T) * mul)
-
+    if(buffer_size == 0) do return
+    
     // Create staging buffer
     staging_buffer: vk.Buffer
     staging_alloc: vma.Allocation

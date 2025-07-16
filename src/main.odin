@@ -89,7 +89,13 @@ main :: proc() {
 
 	// TODO: set up Vulkan allocator.
 	start_up_raytracer(arena_alloc)
+	
 
+        update_vulkan()
+
+	vk.DeviceWaitIdle(rb.device)
+	initialize_raytracer()
+	destroy_vulkan()
 }
 
 leak_detection :: proc()
