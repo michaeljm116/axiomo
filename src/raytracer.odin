@@ -144,11 +144,11 @@ prepare_storage_buffers :: proc() {
     reserve(&rt.materials, MAX_MATERIALS)
     reserve(&rt.lights, MAX_LIGHTS)
 
-    gpu.vbuffer_init_storage_buffer(
+    gpu.vbuffer_init_storage_buffer_custom_size(
         &rt.compute.storage_buffers.primitives,
         &rb.vma_allocator,
         rt.primitives[:],
-        u32(len(rt.primitives)))
+        MAX_OBJS)
 
    gui_cmp := get_component(g_world_ent, Cmp_Gui)
    gpu_gui := gpu.Gui{min = gui_cmp.min, extents = gui_cmp.extents,
@@ -157,16 +157,16 @@ prepare_storage_buffers :: proc() {
    }
    append(&rt.guis, gpu_gui)
    gui_cmp.ref = i32(len(rt.guis))
-   gpu.vbuffer_init_storage_buffer(
+   gpu.vbuffer_init_storage_buffer_custom_size(
         &rt.compute.storage_buffers.guis,
         &rb.vma_allocator,
         rt.guis[:],
-        u32(len(rt.guis)))
-   gpu.vbuffer_init_storage_buffer(
+        MAX_GUIS)
+   gpu.vbuffer_init_storage_buffer_custom_size(
        &rt.compute.storage_buffers.bvh,
        &rb.vma_allocator,
        rt.bvh[:],
-       u32(len(rt.bvh)))
+       MAX_NODES)
 }
 
 create_uniform_buffers :: proc() {
@@ -336,13 +336,13 @@ create_graphics_pipeline :: proc() {
     }
 
     // Read shader files
-    vert_shader_code, ok := os.read_entire_file("../Assets/Shaders/texture.vert.spv")
+    vert_shader_code, ok := os.read_entire_file("assets/shaders/texture.vert.spv")
     if !ok {
         panic("Failed to read vertex shader")
     }
     defer delete(vert_shader_code)
 
-    frag_shader_code, ok2 := os.read_entire_file("../Assets/Shaders/texture.frag.spv")
+    frag_shader_code, ok2 := os.read_entire_file("assets/shaders/texture.frag.spv")
     if !ok2 {
         panic("Failed to read fragment shader")
     }
@@ -649,7 +649,7 @@ prepare_compute :: proc() {
     vk.UpdateDescriptorSets(rb.device, 13, &write_sets[0], 0, nil)
 
     // Create compute pipeline
-    shader_code, ok := os.read_entire_file("../Assets/Shaders/raytracing.comp.spv")
+    shader_code, ok := os.read_entire_file("assets/shaders/raytracing.comp.spv")
     if !ok {
         panic("Failed to read compute shader")
     }

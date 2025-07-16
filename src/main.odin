@@ -89,12 +89,12 @@ main :: proc() {
 
 	// TODO: set up Vulkan allocator.
 	start_up_raytracer(arena_alloc)
-	
-
-        update_vulkan()
-
-	vk.DeviceWaitIdle(rb.device)
 	initialize_raytracer()
+
+	for !glfw.WindowShouldClose(rb.window) {
+        update_vulkan()
+	}
+	vk.DeviceWaitIdle(rb.device)
 	destroy_vulkan()
 }
 

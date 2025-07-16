@@ -1332,7 +1332,7 @@ texture_update_descriptor :: proc(texture: ^Texture) {
 
 update_vulkan :: proc()
 {
-    for !glfw.WindowShouldClose(rb.window) {
+    if !glfw.WindowShouldClose(rb.window) {
 		free_all(context.temp_allocator)
 
 		glfw.PollEvents()
@@ -1353,7 +1353,7 @@ update_vulkan :: proc()
 		#partial switch acquire_result {
 		case .ERROR_OUT_OF_DATE_KHR:
 			recreate_swapchain()
-			continue
+			break//continue
 		case .SUCCESS, .SUBOPTIMAL_KHR:
 		case:
 			log.panicf("vulkan: acquire next image failure: %v", acquire_result)
