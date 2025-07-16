@@ -11,7 +11,7 @@ import "core:encoding/json"
 //----------------------------------------------------------------------------\\
 
 Scene :: struct {
-    Num: string `json:"_Num"`,
+    Num: i32 `json:"_Num"`,
 }
 
 // SceneData is the top-level struct
@@ -19,6 +19,7 @@ SceneData :: struct {
     Scene: Scene,
     Node: [dynamic]Node,
 }
+
 // Vector3 maps to JSON objects with _x, _y, _z fields
 Vector3 :: struct {
     x: f32 `json:"_x"`,
@@ -57,17 +58,17 @@ Intensity :: struct {
 
 // ID for Light nodes
 ID :: struct {
-    id: string `json:"_id"`,
+    id: i32 `json:"_id"`,
 }
 
 // Material for Object nodes
 Material :: struct {
-    ID: string `json:"_ID"`,
+    ID: i32 `json:"_ID"`,
 }
 
 // ObjectID for Object nodes
 ObjectID :: struct {
-    ID: string `json:"_ID"`,
+    ID: i32 `json:"_ID"`,
 }
 
 // Rigid for Object nodes
@@ -79,7 +80,7 @@ Rigid :: struct {
 Collider :: struct {
     Local: Vector3,
     Extents: Vector3,
-    Type: string `json:"_Type"`,
+    Type: i32 `json:"_Type"`,
 }
 
 // NodeType to distinguish node types
@@ -94,6 +95,7 @@ NodeData :: union {
     CameraData,
     LightData,
     ObjectData,
+
 }
 
 // Camera-specific data

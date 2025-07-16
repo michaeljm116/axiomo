@@ -4,6 +4,7 @@ import ecs "external/ecs"
 import vma "external/vma"
 import embree "external/embree"
 import "resource"
+import "resource/scene"
 
 // Helper types for vectors/matrices
 vec2f :: [2]f32
@@ -91,6 +92,7 @@ end_ecs :: proc() {
     ecs.delete_world(g_world)
 }
 
+
 //----------------------------------------------------------------------------\\
 // /Internal helpers
 //----------------------------------------------------------------------------\\
@@ -99,3 +101,4 @@ get_material :: proc(i:i32) -> ^resource.Material
 {
     return &g_materials[i]
 }
+

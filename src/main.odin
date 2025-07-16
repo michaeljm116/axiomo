@@ -43,7 +43,7 @@ g_world_ent : Entity
 g_materials : [dynamic]res.Material
 g_models : [dynamic]res.Model
 g_level_dir := "../Assets/Levels/1_Jungle/"
-
+g_scene : [dynamic]Cmp_Node
 
 track_alloc: mem.Tracking_Allocator
 

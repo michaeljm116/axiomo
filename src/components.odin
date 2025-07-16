@@ -28,6 +28,7 @@ import sdl_mixer "vendor:sdl2/mixer"
 //  - static
 // audio
 
+
 Sqt :: struct
 {
     rot : quat,
@@ -69,6 +70,12 @@ ComponentFlag :: enum {
     PREFAB      = 22,
 }
 ComponentFlags :: bit_set[ComponentFlag; u32]
+
+EngineFlags :: union
+{
+    ComponentFlags,
+    u32,
+}
 
 ObjectType :: enum i32 {
     SPHERE = 1,
@@ -117,11 +124,11 @@ RendererType :: enum{
     HardwareRasterizer
 }
 
-Cmp_Render :: struct
-{
+Cmp_Render :: struct{
     type : RenderTypes,
     renderer : RendererType
 }
+
 Cmp_Mesh :: struct {
     mesh_index: i32,
     mesh_model_id: i32,
