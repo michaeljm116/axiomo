@@ -227,9 +227,11 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0)) -> Entity 
 }
 
 // Load entire scene
-load_scene :: proc(scene_data: scene.SceneData) -> Entity {
+load_scene :: proc(scene_data: scene.SceneData){
     if len(scene_data.Node) == 0 {
-        return Entity(0)
+        return// Entity(0)
     }
-    return load_node(scene_data.Node[0])
+    for node in scene_data.Node{
+        load_node(node)
+    }
 }

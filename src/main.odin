@@ -73,7 +73,7 @@ main :: proc() {
 	defer free(context.logger.data)
 	rb.ctx = context
 
-	sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker.json", arena_alloc)
+	scene := sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker.json", arena_alloc)
 
 	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
 
@@ -89,8 +89,9 @@ main :: proc() {
 
 	// TODO: set up Vulkan allocator.
 	start_up_raytracer(arena_alloc)
-	initialize_raytracer()
 
+	initialize_raytracer()
+	load_scene(scene)
 	for !glfw.WindowShouldClose(rb.window) {
         update_vulkan()
 	}
