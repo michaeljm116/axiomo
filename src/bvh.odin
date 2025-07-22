@@ -37,6 +37,7 @@ g_num_nodes: i32 = 0
 
 // Create a new BVH system
 bvh_system_create :: proc() -> ^Sys_Bvh {
+    fmt.println("creating bvh")
     system := new(Sys_Bvh)
     system.entities = make([dynamic]Entity)
     system.primitive_components = make([dynamic]^Cmp_Primitive)
@@ -58,7 +59,7 @@ bvh_system_create :: proc() -> ^Sys_Bvh {
         proc "c" (userPtr: rawptr, bytes: c.ssize_t, post: bool) -> bool {
             return true
         }, nil)
-
+    fmt.println("bvh created")
     return system
 }
 
@@ -247,6 +248,7 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
     // Build the BVH
     system.root = transmute(^BvhNode)embree.rtcBuildBVH(&arguments)
     system.num_nodes = g_num_nodes
+    fmt.printfln("BVH Built! Num Nodes : ", g_num_nodes)
 }
 
 // Add entity to BVH system
@@ -305,6 +307,7 @@ bvh_system_query_entities :: proc() -> []Entity {
 
 // Initialize BVH system with existing entities
 bvh_system_initialize :: proc(system: ^Sys_Bvh) {
+    fmt.println("Initializing BVH System...")
     entities := bvh_system_query_entities()
 
     for entity in entities {
@@ -313,6 +316,7 @@ bvh_system_initialize :: proc(system: ^Sys_Bvh) {
 
     // Do initial build
     bvh_system_build(system)
+    fmt.println("BVH Initialized")
 }
 
 // Print BVH statistics (utility function)

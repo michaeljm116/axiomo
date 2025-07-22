@@ -222,7 +222,6 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0)) -> Entity 
 
     // Refresh entity if needed
     // entity.refresh() - if ECS has such method
-
     return entity
 }
 

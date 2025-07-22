@@ -44,16 +44,21 @@ g_materials : [dynamic]res.Material
 g_models : [dynamic]res.Model
 g_level_dir := "../Assets/Levels/1_Jungle/"
 g_scene : [dynamic]Cmp_Node
+g_bvh : ^Sys_Bvh
 
 track_alloc: mem.Tracking_Allocator
 
 main :: proc() {
+    fmt.println("HI")
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
 
 	g_world = ecs.create_world()
 	g_world_ent = add_entity()
+	g_bvh = bvh_system_create()
+	defer bvh_system_destroy(g_bvh)
+
 	add_component(g_world_ent, Cmp_Gui{
 	    {0,0}, {1,1},
 		{0,0}, {1,1},
@@ -92,7 +97,10 @@ main :: proc() {
 
 	initialize_raytracer()
 	load_scene(scene)
+	bvh_system_initialize(g_bvh)
 	for !glfw.WindowShouldClose(rb.window) {
+        //bvh_system_build(g_bvh)
+        //update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
         update_vulkan()
 	}
 	vk.DeviceWaitIdle(rb.device)
