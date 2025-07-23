@@ -99,8 +99,8 @@ main :: proc() {
 	load_scene(scene)
 	bvh_system_initialize(g_bvh)
 	for !glfw.WindowShouldClose(rb.window) {
-        //bvh_system_build(g_bvh)
-        //update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
+        bvh_system_build(g_bvh)
+        update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
         update_vulkan()
 	}
 	vk.DeviceWaitIdle(rb.device)

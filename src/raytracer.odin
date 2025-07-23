@@ -1139,7 +1139,7 @@ update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [d
     clear(&rt.primitives)
     clear(&rt.ordered_prims_map)
     reserve(&rt.primitives, num_prims)
-    reserve(&rt.primitives, num_prims)
+    resize(&rt.ordered_prims_map, num_prims)
     for op, i in ordered_prims{
         rt.ordered_prims_map[op.primID] = i
         prim := prims[op.primID]
