@@ -10,6 +10,33 @@ import "core:encoding/json"
 // /STRUCTS
 //----------------------------------------------------------------------------\\
 
+ComponentFlag :: enum {
+    NODE        = 0,
+    TRANSFORM   = 1,
+    MATERIAL    = 2,
+    LIGHT       = 3,
+    CAMERA      = 4,
+    MODEL       = 5,
+    MESH        = 6,
+    BOX         = 7,
+    SPHERE      = 8,
+    PLANE       = 9,
+    AABB        = 10,
+    CYLINDER    = 11,
+    SKINNED     = 12,
+    RIGIDBODY   = 13,
+    CCONTROLLER = 14,
+    PRIMITIVE   = 15,
+    COLIDER     = 16,
+    IMPULSE     = 17,
+    GUI         = 18,
+    BUTTON      = 19,
+    JOINT       = 20,
+    HEADNODE    = 21,
+    PREFAB      = 22,
+}
+ComponentFlags :: bit_set[ComponentFlag; u32]
+
 Scene :: struct {
     Num: i32 `json:"_Num"`,
 }
@@ -83,53 +110,24 @@ Collider :: struct {
     Type: i32 `json:"_Type"`,
 }
 
-// NodeType to distinguish node types
-NodeType :: enum {
-    Camera,
-    Light,
-    Object,
-}
-
-// NodeData union for type-specific fields
-NodeData :: union {
-    CameraData,
-    LightData,
-    ObjectData,
-
-}
-
-// Camera-specific data
-CameraData :: struct {
-    AspectRatio: AspectRatio,
-    FOV: FOV,
-}
-
-// Light-specific data
-LightData :: struct {
-    Color: Color,
-    Intensity: Intensity,
-    ID: ID,
-}
-
-// Object-specific data
-ObjectData :: struct {
-    Material: Material,
-    Object: ObjectID,
-    Rigid: Rigid,
-    Collider: Collider,
-}
-
 // Node struct for each node in the array
 Node :: struct {
-    Type: NodeType, // Determined during unmarshalling
     Transform: Transform,
     Name: string `json:"_Name"`,
     hasChildren: bool `json:"_hasChildren"`,
-    Children: [dynamic]Node,
+    Children: [dynamic]Node `json:"Node"`,
     eFlags: u32 `json:"_eFlags"`,
     gFlags: i64 `json:"_gFlags"`,
     Dynamic: bool `json:"_Dynamic"`,
-    Data: NodeData,
+    aspect_ratio: AspectRatio `json:"AspectRatio"`,
+    fov: FOV `json:"FOV"`,
+    color: Color `json:"Color"`,
+    intensity: Intensity `json:"Intensity"`,
+    id: ID `json:"ID"`,
+    material: Material `json:"Material"`,
+    object: ObjectID `json:"Object"`,
+    rigid: Rigid `json:"Rigid"`,
+    collider: Collider `json:"Collider"`,
 }
 
 //----------------------------------------------------------------------------\\
@@ -144,5 +142,30 @@ load_new_scene :: proc(name : string, allocator := context.temp_allocator) -> Sc
     json_err := json.unmarshal(data, &scene, allocator = allocator);
     res.log_if_err(json_err)
 
+    // Process scene and nodes
+    for node in scene.Node {
+        flags := transmute(ComponentFlags)node.eFlags
+
+        if .CAMERA in flags {
+            fmt.printf("Processing Camera Node: %s, AspectRatio: %f, FOV: %f\n",
+                node.Name, node.aspect_ratio.ratio, node.fov.fov)
+            // Add logic to map to ECS components (e.g., call serialize.load_node)
+        } else if .LIGHT in flags {
+            fmt.printf("Processing Light Node: %s, Color: (%f, %f, %f), Intensity: %f, ID: %d\n",
+                node.Name, node.color.r, node.color.g, node.color.b,
+                node.intensity.i, node.id.id)
+            // Add logic to map to ECS components
+        } else if .PRIMITIVE in flags || .MODEL in flags || .RIGIDBODY in flags || .COLIDER in flags {
+            fmt.printf("Processing Object Node: %s, Material ID: %d, Object ID: %d, Rigid: %v\n",
+                node.Name, node.material.ID, node.object.ID, node.rigid.Rigid)
+            if node.collider.Type != 0 {
+                fmt.printf("Collider: Type=%d, Local=(%f, %f, %f), Extents=(%f, %f, %f)\n",
+                    node.collider.Type,
+                    node.collider.Local.x, node.collider.Local.y, node.collider.Local.z,
+                    node.collider.Extents.x, node.collider.Extents.y, node.collider.Extents.z)
+            }
+            // Add logic to map to ECS components
+        }
+    }
     return scene
 }

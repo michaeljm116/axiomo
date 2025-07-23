@@ -33,61 +33,56 @@ save_node :: proc(cmp_node: ^Cmp_Node) -> scene.Node {
         }
     }
 
-    // Determine node type and save data
+    // Save data based on flags
     if .LIGHT in cmp_node.engine_flags {
         light := get_component(cmp_node.entity, Cmp_Light)
         if light != nil {
-            scene_node.Type = .Light
-            scene_node.Data = scene.LightData{
-                Color = {r = light.color.r, g = light.color.g, b = light.color.b},
-                Intensity = {i = light.intensity},
-                ID = {id = light.id},
-            }
+            scene_node.color = scene.Color{r = light.color.r, g = light.color.g, b = light.color.b}
+            scene_node.intensity = scene.Intensity{i = light.intensity}
+            scene_node.id = scene.ID{id = light.id}
         }
     } else if .CAMERA in cmp_node.engine_flags {
         cam := get_component(cmp_node.entity, Cmp_Camera)
         if cam != nil {
-            scene_node.Type = .Camera
-            scene_node.Data = scene.CameraData{
-                AspectRatio = {ratio = cam.aspect_ratio},
-                FOV = {fov = cam.fov},
-            }
+            scene_node.aspect_ratio = scene.AspectRatio{ratio = cam.aspect_ratio}
+            scene_node.fov = scene.FOV{fov = cam.fov}
         }
     } else if .PRIMITIVE in cmp_node.engine_flags || .MODEL in cmp_node.engine_flags {
-        scene_node.Type = .Object
-        obj_data := scene.ObjectData{}
-
         // Material
         mat := get_component(cmp_node.entity, Cmp_Material)
         if mat != nil {
-            obj_data.Material = scene.Material{ID = mat.mat_unique_id}
+            scene_node.material = scene.Material{ID = mat.mat_unique_id}
         }
 
         // Primitive/Object ID
         prim := get_component(cmp_node.entity, Cmp_Primitive)
         if prim != nil {
-            obj_data.Object = scene.ObjectID{ID = prim.id}
+            scene_node.object = scene.ObjectID{ID = prim.id}
         } else {
             // For model, perhaps use model ID
             model := get_component(cmp_node.entity, Cmp_Model)
             if model != nil {
-                obj_data.Object = scene.ObjectID{ID = model.model_unique_id}
+                scene_node.object = scene.ObjectID{ID = model.model_unique_id}
             }
         }
 
         // Rigid
         if .RIGIDBODY in cmp_node.engine_flags {
-            obj_data.Rigid = scene.Rigid{Rigid = true}
+            scene_node.rigid = scene.Rigid{Rigid = true}
         }
 
         // Collider
         if .COLIDER in cmp_node.engine_flags {
-            // Assuming collider component exists, but not defined in provided code
-            // Placeholder: you'd need to add Cmp_Collider similar to C++
-            // For now, skip or assume defaults
+            // Assuming collider component exists, e.g. Cmp_Collider
+            // coll := get_component(cmp_node.entity, Cmp_Collider)
+            // if coll != nil {
+            //     scene_node.collider = scene.Collider{
+            //         Local = {x = coll.local.x, y = coll.local.y, z = coll.local.z},
+            //         Extents = {x = coll.extents.x, y = coll.extents.y, z = coll.extents.z},
+            //         Type = i32(coll.type),
+            //     }
+            // }
         }
-
-        scene_node.Data = obj_data
     }
 
     // Recurse for children
@@ -152,52 +147,44 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0)) -> Entity 
     }
 
     // Handle type-specific components
-    switch scene_node.Type {
-    case .Camera:
-        if data, ok := scene_node.Data.(scene.CameraData); ok {
-            cam_comp := camera_component(data.AspectRatio.ratio, data.FOV.fov)
-            add_component(entity, cam_comp)
-            add_component(entity, Cmp_Render{type = {.CAMERA}}) // Example, adjust as needed
-            cmp_node.is_parent = true
+    if .CAMERA in cmp_node.engine_flags {
+        cam_comp := camera_component(scene_node.aspect_ratio.ratio, scene_node.fov.fov)
+        add_component(entity, cam_comp)
+        add_component(entity, Cmp_Render{type = {.CAMERA}}) // Example, adjust as needed
+        cmp_node.is_parent = true
+    }
+    if .LIGHT in cmp_node.engine_flags {
+        color := math.Vector3f32{scene_node.color.r, scene_node.color.g, scene_node.color.b}
+        light_comp := light_component(color, scene_node.intensity.i, scene_node.id.id)
+        add_component(entity, light_comp)
+        add_component(entity, Cmp_Render{type = {.LIGHT}})
+        cmp_node.is_parent = true
+    }
+    if .PRIMITIVE in cmp_node.engine_flags {
+        // Material
+        mat_id := scene_node.material.ID
+        mat_comp := material_component(i32(mat_id))
+        add_component(entity, mat_comp)
+
+        // Object/Primitive
+        obj_id := scene_node.object.ID
+        prim_comp := primitive_component(i32(obj_id))
+        add_component(entity, prim_comp)
+        add_component(entity, Cmp_Render{type = {.PRIMITIVE}})
+
+        // Rigid
+        if scene_node.rigid.Rigid {
+            cmp_node.engine_flags += {.RIGIDBODY}
+            // Add physics components if needed
         }
 
-    case .Light:
-        if data, ok := scene_node.Data.(scene.LightData); ok {
-            color := math.Vector3f32{data.Color.r, data.Color.g, data.Color.b}
-            id_int := data.ID.id
-            light_comp := light_component(color, data.Intensity.i, id_int)
-            add_component(entity, light_comp)
-            add_component(entity, Cmp_Render{type = {.LIGHT}})
-            cmp_node.is_parent = true
-        }
-
-    case .Object:
-        if data, ok := scene_node.Data.(scene.ObjectData); ok {
-            // Material
-            mat_id := data.Material.ID
-            mat_comp := material_component(i32(mat_id))
-            add_component(entity, mat_comp)
-
-            // Object/Primitive
-            obj_id := data.Object.ID
-            prim_comp := primitive_component(i32(obj_id))
-            add_component(entity, prim_comp)
-            add_component(entity, Cmp_Render{type = {.PRIMITIVE}})
-
-            // Rigid
-            if data.Rigid.Rigid {
-                cmp_node.engine_flags += {.RIGIDBODY}
-                // Add physics components if needed
-            }
-
-            // Collider
-            if data.Collider.Type != 0 { // Assuming presence indicates collider
-                coll_type := data.Collider.Type // Parse type
-                local := math.Vector3f32{data.Collider.Local.x, data.Collider.Local.y, data.Collider.Local.z}
-                extents := math.Vector3f32{data.Collider.Extents.x, data.Collider.Extents.y, data.Collider.Extents.z}
-                // Add Cmp_Collider if defined, e.g. add_component(entity, Cmp_Collider{local=local, extents=extents, type=coll_type})
-                cmp_node.engine_flags += {.COLIDER}
-            }
+        // Collider
+        if scene_node.collider.Type != 0 { // Assuming presence indicates collider
+            coll_type := scene_node.collider.Type
+            local := math.Vector3f32{scene_node.collider.Local.x, scene_node.collider.Local.y, scene_node.collider.Local.z}
+            extents := math.Vector3f32{scene_node.collider.Extents.x, scene_node.collider.Extents.y, scene_node.collider.Extents.z}
+            // Add Cmp_Collider if defined, e.g. add_component(entity, Cmp_Collider{local=local, extents=extents, type=coll_type})
+            cmp_node.engine_flags += {.COLIDER}
         }
     }
 
