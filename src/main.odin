@@ -98,10 +98,12 @@ main :: proc() {
 	initialize_raytracer()
 	load_scene(scene)
 	bvh_system_initialize(g_bvh)
+	start_frame(&image_index)
 	for !glfw.WindowShouldClose(rb.window) {
+    	end_frame(&image_index)
         bvh_system_build(g_bvh)
         update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
-        update_vulkan()
+        start_frame(&image_index)
 	}
 	vk.DeviceWaitIdle(rb.device)
 	destroy_vulkan()

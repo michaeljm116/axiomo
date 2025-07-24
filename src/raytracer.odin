@@ -1352,7 +1352,16 @@ add_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
 }
 
 start_frame :: proc(image_index: ^u32) {
-    result := vk.AcquireNextImageKHR(rb.device, rb.swapchain, max(u64), rb.image_available_semaphores[current_frame], {}, image_index)
+
+    result := vk.AcquireNextImageKHR(
+        rb.device,
+        rb.swapchain,
+        max(u64),
+        rb.image_available_semaphores[current_frame],
+        {},
+        image_index
+    )
+
     #partial switch result {
     case .ERROR_OUT_OF_DATE_KHR:
         rt_recreate_swapchain()
@@ -1363,15 +1372,16 @@ start_frame :: proc(image_index: ^u32) {
     }
 
     wait_stages := vk.PipelineStageFlags{.COLOR_ATTACHMENT_OUTPUT}
-    rb.submit_info.sType = .SUBMIT_INFO
-    rb.submit_info.commandBufferCount = 1
-    rb.submit_info.pCommandBuffers = &rb.command_buffers[image_index^]
-    rb.submit_info.waitSemaphoreCount = 1
-    rb.submit_info.pWaitSemaphores = &rb.image_available_semaphores[current_frame]
-    rb.submit_info.pWaitDstStageMask = &wait_stages
-    rb.submit_info.signalSemaphoreCount = 1
-    rb.submit_info.pSignalSemaphores = &rb.render_finished_semaphores[current_frame]
-
+    rb.submit_info = vk.SubmitInfo{
+        sType = .SUBMIT_INFO,
+        commandBufferCount = 1,
+        pCommandBuffers = &rb.command_buffers[image_index^],
+        waitSemaphoreCount = 1,
+        pWaitSemaphores = &rb.image_available_semaphores[current_frame],
+        pWaitDstStageMask = &wait_stages,
+        signalSemaphoreCount = 1,
+        pSignalSemaphores = &rb.render_finished_semaphores[current_frame]
+    }
     must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, rb.in_flight_fences[current_frame]))
 }
 
@@ -1394,7 +1404,12 @@ end_frame :: proc(image_index: ^u32) {
     case:
         panic(fmt.tprintf("vulkan: present failure: %v", result))
     }
+
+    current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT
     must(vk.QueueWaitIdle(rb.present_queue))
+
+    free_all(context.temp_allocator)
+    glfw.PollEvents()
 
     must(vk.WaitForFences(rb.device, 1, &rt.compute.fence, true, max(u64)))
     must(vk.ResetFences(rb.device, 1, &rt.compute.fence))

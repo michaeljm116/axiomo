@@ -1330,6 +1330,7 @@ texture_update_descriptor :: proc(texture: ^Texture) {
     }
 }
 
+image_index: u32
 update_vulkan :: proc()
 {
     if !glfw.WindowShouldClose(rb.window) {
@@ -1341,7 +1342,6 @@ update_vulkan :: proc()
 		must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, max(u64)))
 
 		// Acquire an image from the swapchain.
-		image_index: u32
 		acquire_result := vk.AcquireNextImageKHR(
 			rb.device,
 			rb.swapchain,
