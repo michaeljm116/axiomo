@@ -25,7 +25,7 @@
         "_ratio": 1.7777778
       },
       "FOV": {
-        "_fov": "104"
+        "_fov": 104
       },
       "_Name": "Camera",
       "_hasChildren": false,
@@ -52,9 +52,9 @@
         }
       },
       "Color": {
-        "_r": "255",
-        "_g": "255",
-        "_b": "255"
+        "_r": 255,
+        "_g": 255,
+        "_b": 255
       },
       "Intensity": {
         "_i": "1000"
@@ -106,7 +106,7 @@
           "_y": 1,
           "_z": 10
         },
-        "_Type": "1"
+        "_Type": 1
       },
       "_Name": "Floor",
       "_hasChildren": false,

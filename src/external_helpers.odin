@@ -16,7 +16,7 @@ quat :: math.Quaternionf32
 vec3 :: math.Vector3f32
 vec4 :: math.Vector4f32
 mat4 :: math.Matrix4f32
-
+mat3 :: math.Matrix3f32
 // Import the ECS Entity type
 Entity :: ecs.EntityID
 World :: ecs.World

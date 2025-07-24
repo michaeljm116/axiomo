@@ -248,7 +248,6 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
     // Build the BVH
     system.root = transmute(^BvhNode)embree.rtcBuildBVH(&arguments)
     system.num_nodes = g_num_nodes
-    fmt.printfln("BVH Built! Num Nodes : ", g_num_nodes)
 }
 
 // Add entity to BVH system

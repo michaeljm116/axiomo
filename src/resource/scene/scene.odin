@@ -129,7 +129,6 @@ Node :: struct {
     rigid: Rigid `json:"Rigid"`,
     collider: Collider `json:"Collider"`,
 }
-
 //----------------------------------------------------------------------------\\
 // /PROCS
 //----------------------------------------------------------------------------\\
@@ -144,28 +143,39 @@ load_new_scene :: proc(name : string, allocator := context.temp_allocator) -> Sc
 
     // Process scene and nodes
     for node in scene.Node {
-        flags := transmute(ComponentFlags)node.eFlags
-
-        if .CAMERA in flags {
-            fmt.printf("Processing Camera Node: %s, AspectRatio: %f, FOV: %f\n",
-                node.Name, node.aspect_ratio.ratio, node.fov.fov)
-            // Add logic to map to ECS components (e.g., call serialize.load_node)
-        } else if .LIGHT in flags {
-            fmt.printf("Processing Light Node: %s, Color: (%f, %f, %f), Intensity: %f, ID: %d\n",
-                node.Name, node.color.r, node.color.g, node.color.b,
-                node.intensity.i, node.id.id)
-            // Add logic to map to ECS components
-        } else if .PRIMITIVE in flags || .MODEL in flags || .RIGIDBODY in flags || .COLIDER in flags {
-            fmt.printf("Processing Object Node: %s, Material ID: %d, Object ID: %d, Rigid: %v\n",
-                node.Name, node.material.ID, node.object.ID, node.rigid.Rigid)
-            if node.collider.Type != 0 {
-                fmt.printf("Collider: Type=%d, Local=(%f, %f, %f), Extents=(%f, %f, %f)\n",
-                    node.collider.Type,
-                    node.collider.Local.x, node.collider.Local.y, node.collider.Local.z,
-                    node.collider.Extents.x, node.collider.Extents.y, node.collider.Extents.z)
-            }
-            // Add logic to map to ECS components
-        }
+        load_node(node)
     }
     return scene
+}
+
+load_node :: proc(node : Node) {
+    flags := transmute(ComponentFlags)node.eFlags
+
+    if .CAMERA in flags {
+        fmt.printf("Processing Camera Node: %s, AspectRatio: %f, FOV: %f\n",
+            node.Name, node.aspect_ratio.ratio, node.fov.fov)
+        // Add logic to map to ECS components (e.g., call serialize.load_node)
+    } else if .LIGHT in flags {
+        fmt.printf("Processing Light Node: %s, Color: (%f, %f, %f), Intensity: %f, ID: %d\n",
+            node.Name, node.color.r, node.color.g, node.color.b,
+            node.intensity.i, node.id.id)
+        // Add logic to map to ECS components
+    } else if .PRIMITIVE in flags || .SPHERE in flags || .RIGIDBODY in flags || .COLIDER in flags {
+        fmt.printf("Processing Object Node: %s, Material ID: %d, Object ID: %d, Rigid: %v\n",
+            node.Name, node.material.ID, node.object.ID, node.rigid.Rigid)
+        if node.collider.Type != 0 {
+            fmt.printf("Collider: Type=%d, Local=(%f, %f, %f), Extents=(%f, %f, %f)\n",
+                node.collider.Type,
+                node.collider.Local.x, node.collider.Local.y, node.collider.Local.z,
+                node.collider.Extents.x, node.collider.Extents.y, node.collider.Extents.z)
+        }
+        // Add logic to map to ECS components
+    }
+
+    // Recursively process children
+    if node.hasChildren {
+        for child in node.Children {
+            load_node(child)
+        }
+    }
 }
