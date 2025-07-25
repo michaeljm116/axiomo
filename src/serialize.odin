@@ -151,6 +151,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0)) -> Entity 
         cam_comp := camera_component(scene_node.aspect_ratio.ratio, scene_node.fov.fov)
         add_component(entity, cam_comp)
         add_component(entity, Cmp_Render{type = {.CAMERA}}) // Example, adjust as needed
+        added_entity(entity)
         cmp_node.is_parent = true
     }
     if .LIGHT in cmp_node.engine_flags {
@@ -158,6 +159,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0)) -> Entity 
         light_comp := light_component(color, scene_node.intensity.i, scene_node.id.id)
         add_component(entity, light_comp)
         add_component(entity, Cmp_Render{type = {.LIGHT}})
+        added_entity(entity)
         cmp_node.is_parent = true
     }
     if .PRIMITIVE in cmp_node.engine_flags {
@@ -171,6 +173,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0)) -> Entity 
         prim_comp := primitive_component(i32(obj_id))
         add_component(entity, prim_comp)
         add_component(entity, Cmp_Render{type = {.PRIMITIVE}})
+        added_entity(entity)
 
         // Rigid
         if scene_node.rigid.Rigid {

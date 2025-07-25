@@ -31,13 +31,13 @@ transform_sys_process :: proc() {
     archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_HeadNode))
 
     for archetype in archetypes {
-        transform_comps := get_table(archetype, Cmp_Transform)
+        //transform_comps := get_table(archetype, Cmp_Transform)
         node_comps := get_table(archetype, Cmp_Node)
-
-        for i in 0..<len(transform_comps) {
-            sqt_transform(&node_comps[i])
+        for &node in node_comps {
+                sqt_transform(&node)
         }
     }
+    fmt.println("Transform system processed all entities.")
 }
 
 // SQT Transform procedure (main transformation logic)
@@ -94,13 +94,12 @@ sqt_transform :: proc(nc: ^Cmp_Node) {
         l := get_component(nc.entity, Cmp_Light)
         if l != nil {
             // Update light in render system
-            light := gpu.Light{
+            rt.lights[0] = gpu.Light{
                 pos = tc.world[3].xyz,
                 color = l.color,
                 intensity = l.intensity,
                 id = l.id,
             }
-            update_light(l.id, light) // Assuming update_light is defined elsewhere
         }
     }
 

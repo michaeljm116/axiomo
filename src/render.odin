@@ -16,7 +16,7 @@ ENABLE_VALIDATION_LAYERS :: #config(ENABLE_VALIDATION_LAYERS, ODIN_DEBUG)
 dbg_messenger: vk.DebugUtilsMessengerEXT
 
 current_frame: int
-MAX_FRAMES_IN_FLIGHT :: 2
+MAX_FRAMES_IN_FLIGHT :: 3
 RenderBase :: struct{
 	ctx: runtime.Context,
 	window: glfw.WindowHandle,
@@ -412,7 +412,7 @@ init_vulkan :: proc()
 			sType              = .COMMAND_BUFFER_ALLOCATE_INFO,
 			commandPool        = rb.command_pool,
 			level              = .PRIMARY,
-			commandBufferCount = MAX_FRAMES_IN_FLIGHT,
+			commandBufferCount = u32(len(rb.swapchain_images)),
 		}
 		must(vk.AllocateCommandBuffers(rb.device, &alloc_info, &rb.command_buffers[0]))
 	}
@@ -1331,6 +1331,7 @@ texture_update_descriptor :: proc(texture: ^Texture) {
 }
 
 image_index: u32
+
 update_vulkan :: proc()
 {
     if !glfw.WindowShouldClose(rb.window) {
