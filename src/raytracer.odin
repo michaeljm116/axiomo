@@ -481,6 +481,9 @@ prepare_compute :: proc() {
     // Set up binding flags for bindless textures
     binding_flags: [13]vk.DescriptorBindingFlags
     binding_flags[12] = { .PARTIALLY_BOUND, .UPDATE_AFTER_BIND }
+    for i in 0..<12 {
+        binding_flags[i] = { .PARTIALLY_BOUND}
+    }
 
     extended_flags_info := vk.DescriptorSetLayoutBindingFlagsCreateInfoEXT{
         sType = .DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT,
@@ -525,9 +528,12 @@ prepare_compute :: proc() {
         bindless_image_infos[i] = t.descriptor
     }
 
-    // Set up write descriptor sets
-    write_sets: [13]vk.WriteDescriptorSet
-    write_sets[0] = {
+// Dynamically build write_sets, skipping buffer writes if handle is null
+    write_sets: [dynamic]vk.WriteDescriptorSet
+    defer delete(write_sets)
+
+    // Binding 0: STORAGE_IMAGE (always write, assuming rt.compute_texture.descriptor is valid; it's pImageInfo anyway)
+    append(&write_sets, vk.WriteDescriptorSet{
         sType = .WRITE_DESCRIPTOR_SET,
         dstSet = rt.compute.descriptor_set,
         dstBinding = 0,
@@ -535,98 +541,140 @@ prepare_compute :: proc() {
         descriptorCount = 1,
         descriptorType = .STORAGE_IMAGE,
         pImageInfo = &rt.compute_texture.descriptor,
+    })
+
+    // Binding 1: UNIFORM_BUFFER (skip if null)
+    if rt.compute.uniform_buffer.buffer_info.buffer != vk.Buffer(0) {
+        append(&write_sets, vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 1,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .UNIFORM_BUFFER,
+            pBufferInfo = &rt.compute.uniform_buffer.buffer_info,
+        })
     }
-    write_sets[1] = {
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 1,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .UNIFORM_BUFFER,
-        pBufferInfo = &rt.compute.uniform_buffer.buffer_info,
+
+    // Binding 2: STORAGE_BUFFER verts (skip if null)
+    if rt.compute.storage_buffers.verts.buffer_info.buffer != vk.Buffer(0) {
+        append(&write_sets, vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 2,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.verts.buffer_info,
+        })
     }
-    write_sets[2] = {
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 2,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.verts.buffer_info,
+
+    // Binding 3: STORAGE_BUFFER faces (skip if null)
+    if rt.compute.storage_buffers.faces.buffer_info.buffer != vk.Buffer(0) {
+        append(&write_sets, vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 3,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.faces.buffer_info,
+        })
     }
-    write_sets[3] = {
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 3,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.faces.buffer_info,
+
+    // Binding 4: STORAGE_BUFFER blas (skip if null)
+    if rt.compute.storage_buffers.blas.buffer_info.buffer != vk.Buffer(0) {
+        append(&write_sets, vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 4,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.blas.buffer_info,
+        })
     }
-    write_sets[4] = {
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 4,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.blas.buffer_info,
+
+    // Binding 5: STORAGE_BUFFER shapes (skip if null)
+    if rt.compute.storage_buffers.shapes.buffer_info.buffer != vk.Buffer(0) {
+        append(&write_sets, vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 5,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.shapes.buffer_info,
+        })
     }
-    write_sets[5] = {
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 5,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.shapes.buffer_info,
+
+    // Binding 6: STORAGE_BUFFER primitives (skip if null)
+    if rt.compute.storage_buffers.primitives.buffer_info.buffer != vk.Buffer(0) {
+        append(&write_sets, vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 6,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.primitives.buffer_info,
+        })
     }
-    write_sets[6] = {
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 6,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.primitives.buffer_info,
+
+    // Binding 7: STORAGE_BUFFER materials (skip if null)
+    if rt.compute.storage_buffers.materials.buffer_info.buffer != vk.Buffer(0) {
+        append(&write_sets, vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 7,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.materials.buffer_info,
+        })
     }
-    write_sets[7] = {
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 7,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.materials.buffer_info,
+
+    // Binding 8: STORAGE_BUFFER lights (skip if null)
+    if rt.compute.storage_buffers.lights.buffer_info.buffer != vk.Buffer(0) {
+        append(&write_sets, vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 8,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.lights.buffer_info,
+        })
     }
-    write_sets[8] = {
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 8,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.lights.buffer_info,
+
+    // Binding 9: STORAGE_BUFFER guis (skip if null)
+    if rt.compute.storage_buffers.guis.buffer_info.buffer != vk.Buffer(0) {
+        append(&write_sets, vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 9,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.guis.buffer_info,
+        })
     }
-    write_sets[9] = {
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 9,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.guis.buffer_info,
+
+    // Binding 10: STORAGE_BUFFER bvh (skip if null)
+    if rt.compute.storage_buffers.bvh.buffer_info.buffer != vk.Buffer(0) {
+        append(&write_sets, vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 10,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.bvh.buffer_info,
+        })
     }
-    write_sets[10] = {
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 10,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.bvh.buffer_info,
-    }
-    write_sets[11] = {
+
+    // Binding 11: COMBINED_IMAGE_SAMPLER array (always write, but could add checks if some are invalid)
+    append(&write_sets, vk.WriteDescriptorSet{
         sType = .WRITE_DESCRIPTOR_SET,
         dstSet = rt.compute.descriptor_set,
         dstBinding = 11,
@@ -634,8 +682,10 @@ prepare_compute :: proc() {
         descriptorCount = MAX_TEXTURES,
         descriptorType = .COMBINED_IMAGE_SAMPLER,
         pImageInfo = &texture_image_infos[0],
-    }
-    write_sets[12] = {
+    })
+
+    // Binding 12: COMBINED_IMAGE_SAMPLER bindless array (always write, with dynamic count)
+    append(&write_sets, vk.WriteDescriptorSet{
         sType = .WRITE_DESCRIPTOR_SET,
         dstSet = rt.compute.descriptor_set,
         dstBinding = 12,
@@ -643,10 +693,10 @@ prepare_compute :: proc() {
         descriptorCount = u32(len(rt.bindless_textures)),
         descriptorType = .COMBINED_IMAGE_SAMPLER,
         pImageInfo = raw_data(bindless_image_infos),
-    }
+    })
 
-    // Update descriptor sets
-    vk.UpdateDescriptorSets(rb.device, 13, &write_sets[0], 0, nil)
+    // Update descriptor sets (now with potentially fewer than 13 writes)
+    vk.UpdateDescriptorSets(rb.device, u32(len(write_sets)), raw_data(write_sets), 0, nil)
 
     // Create compute pipeline
     shader_code, ok := os.read_entire_file("assets/shaders/raytracing.comp.spv")
@@ -701,7 +751,8 @@ prepare_compute :: proc() {
 
 create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, offset_height: i32 = 0) {
     // Allocate command buffers if not already done
-    if len(rb.command_buffers) == 0 {
+    //if len(rb.command_buffers) == 0 
+    {
         //rb.command_buffers = make([]vk.CommandBuffer, MAX_FRAMES_IN_FLIGHT)
         command_buffer_info := vk.CommandBufferAllocateInfo{
             sType = .COMMAND_BUFFER_ALLOCATE_INFO,
@@ -732,7 +783,7 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
         barrier := vk.ImageMemoryBarrier{
             sType = .IMAGE_MEMORY_BARRIER,
             oldLayout = .GENERAL,
-            newLayout = .SHADER_READ_ONLY_OPTIMAL,
+            newLayout = .GENERAL,
             srcQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED,
             dstQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED,
             image = rt.compute_texture.image,
@@ -804,7 +855,7 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
         )
 
         // Draw full-screen quad (4 vertices)
-        vk.CmdDraw(cmd_buffer, 4, 1, 0, 0)
+        vk.CmdDraw(cmd_buffer, 3, 1, 0, 0)
 
         // End render pass
         vk.CmdEndRenderPass(cmd_buffer)
@@ -913,7 +964,7 @@ texture_paths := [6]string{
 
 init_storage_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int )
 {
-    gpu.vbuffer_init_storage_buffer_with_staging_device(vbuf, rb.device, &rb.vma_allocator, rb.command_pool, rb.compute_queue, objects[:], u32(size))
+    gpu.vbuffer_init_storage_buffer_with_staging_device(vbuf, rb.device, &rb.vma_allocator, rb.command_pool, rb.graphics_queue, objects[:], u32(size))
 }
 
 //----------------------------------------------------------------------------\\

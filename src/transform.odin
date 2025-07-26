@@ -37,7 +37,6 @@ transform_sys_process :: proc() {
                 sqt_transform(&node)
         }
     }
-    fmt.println("Transform system processed all entities.")
 }
 
 // SQT Transform procedure (main transformation logic)

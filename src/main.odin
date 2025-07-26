@@ -69,7 +69,7 @@ main :: proc() {
 
 	// Create an arena allocator using context.temp_allocator
 	arena: mem.Arena
-	arena_data: []byte = make([]byte, 1024 * 1024, context.temp_allocator) // 1 MiB
+	arena_data: []byte = make([]byte, 1024 * 1024 * 500, context.temp_allocator) // 1 MiB
 	mem.arena_init(&arena, arena_data)
 	defer mem.arena_free_all(&arena)
 	arena_alloc := mem.arena_allocator(&arena)
@@ -95,9 +95,12 @@ main :: proc() {
 	// TODO: set up Vulkan allocator.
 	start_up_raytracer(arena_alloc)
 
-	initialize_raytracer()
 	load_scene(scene)
 	bvh_system_initialize(g_bvh)
+	bvh_system_build(g_bvh)
+	update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
+
+	initialize_raytracer()
 	start_frame(&image_index)
 	for !glfw.WindowShouldClose(rb.window) {
     	end_frame(&image_index)
