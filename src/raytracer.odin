@@ -923,7 +923,7 @@ set_camera :: proc()
 map_materials_to_gpu :: proc(alloc : mem.Allocator)
 {
 	rt.materials = make([dynamic]gpu.Material, len(g_materials), alloc)
-	for &m in g_materials{
+	for &m, i in g_materials{
 	    gpu_mat : gpu.Material = {
 			diffuse = m.diffuse,
 			reflective = m.reflective,
@@ -932,7 +932,7 @@ map_materials_to_gpu :: proc(alloc : mem.Allocator)
 			refractive_index = m.refractive_index,
 			texture_id = m.texture_id
 		}
-		append(&rt.materials, gpu_mat)
+        rt.materials[i] = gpu_mat
 	}
 }
 
@@ -1537,7 +1537,7 @@ added_entity :: proc(e: Entity) {
         light_comp := get_component(e, Cmp_Light)
         trans_comp := get_component(e, Cmp_Transform)
         light := gpu.Light{
-            pos = trans_comp.global.pos.xyz,
+            pos = trans_comp.local.pos.xyz, // technically yes it should be global pos, but this is fine
             color = light_comp.color,
             intensity = light_comp.intensity,
             id = i32(e),
@@ -1589,6 +1589,7 @@ added_entity :: proc(e: Entity) {
         rt.compute.ubo.aspect_ratio = cam.aspect_ratio
         rt.compute.ubo.rotM = transmute(mat4f)trans_comp.world
         rt.compute.ubo.fov = cam.fov
+        update_camera(cam)
     }
 }
 
