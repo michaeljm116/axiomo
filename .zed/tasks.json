@@ -7,6 +7,7 @@
     "allow_concurrent_runs": false,
     "reveal": "always",
     "hide": "never",
-    "show_summary": true
+    "show_summary": true,
+    "show_output": true
   }
 ]

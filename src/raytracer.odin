@@ -150,6 +150,18 @@ prepare_storage_buffers :: proc() {
         rt.primitives[:],
         MAX_OBJS)
 
+    gpu.vbuffer_init_storage_buffer_custom_size(
+        &rt.compute.storage_buffers.lights,
+        &rb.vma_allocator,
+        rt.lights[:],
+        MAX_LIGHTS)
+
+    gpu.vbuffer_init_storage_buffer_custom_size(
+        &rt.compute.storage_buffers.materials,
+        &rb.vma_allocator,
+        rt.materials[:],
+        MAX_MATERIALS)
+
    gui_cmp := get_component(g_world_ent, Cmp_Gui)
    gpu_gui := gpu.Gui{min = gui_cmp.min, extents = gui_cmp.extents,
        align_min = gui_cmp.align_min, align_ext = gui_cmp.align_ext,
@@ -922,7 +934,6 @@ map_materials_to_gpu :: proc(alloc : mem.Allocator)
 		}
 		append(&rt.materials, gpu_mat)
 	}
-	gpu.vbuffer_update(&rt.compute.storage_buffers.materials, &rb.vma_allocator, rt.materials[:])
 }
 
 map_models_to_gpu :: proc(alloc : mem.Allocator)
