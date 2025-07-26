@@ -101,4 +101,12 @@ get_material :: proc(i:i32) -> ^resource.Material
 {
     return &g_materials[i]
 }
+get_material_index :: proc(id:i32) -> i32
+{
+    for m, i in g_materials
+    {
+       if(m.unique_id == id) do return i32(i)
+    }
+    return id
+}
 
