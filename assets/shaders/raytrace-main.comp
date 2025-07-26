@@ -127,8 +127,6 @@ void main()
     vec3 combinedColor = vec3(0);
     vec4 txt = vec4(0);
     bool gui_hit = false;
-    imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(1.0, 0.0, 0.0, 1.0));
-    return;
     Ray[SAMPLES] rays = main_rg(txt, gui_hit);
     if (gui_hit) return;
 

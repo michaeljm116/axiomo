@@ -1,8 +1,12 @@
 [
   {
-    "label": "build",
-    "type": "shell",
-    "command": "odin build src/. -debug -out:build/debug.exe",
-    "group": "build"
+    "label": "Build",
+    "command": "if (!(Test-Path .\\build)) { mkdir .\\build }; odin build src/. -debug -out:build/debug.exe",
+    "args": [],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "hide": "never",
+    "show_summary": true
   }
 ]
