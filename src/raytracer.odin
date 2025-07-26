@@ -752,7 +752,7 @@ prepare_compute :: proc() {
     must(vk.CreateFence(rb.device, &fence_info, nil, &rt.compute.fence))
 
     create_compute_command_buffer()
-    
+
 }
 
 create_compute_command_buffer :: proc() {
@@ -774,7 +774,7 @@ create_compute_command_buffer :: proc() {
 
 create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, offset_height: i32 = 0) {
     // Allocate command buffers if not already done
-    //if len(rb.command_buffers) == 0 
+    //if len(rb.command_buffers) == 0
     {
         //rb.command_buffers = make([]vk.CommandBuffer, MAX_FRAMES_IN_FLIGHT)
         command_buffer_info := vk.CommandBufferAllocateInfo{
@@ -922,6 +922,7 @@ map_materials_to_gpu :: proc(alloc : mem.Allocator)
 		}
 		append(&rt.materials, gpu_mat)
 	}
+	gpu.vbuffer_update(&rt.compute.storage_buffers.materials, &rb.vma_allocator, rt.materials[:])
 }
 
 map_models_to_gpu :: proc(alloc : mem.Allocator)
