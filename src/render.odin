@@ -429,7 +429,7 @@ init_vulkan :: proc()
 		}
 		fence_info := vk.FenceCreateInfo {
 			sType = .FENCE_CREATE_INFO,
-			flags = {.SIGNALED},
+			flags = {.SIGNALED}, // Start with fences signaled so we can use them immediately.
 		}
 		for i in 0 ..< MAX_FRAMES_IN_FLIGHT {
 			must(vk.CreateSemaphore(rb.device, &sem_info, nil, &rb.image_available_semaphores[i]))
@@ -1096,6 +1096,11 @@ transition_image_layout :: proc(image: vk.Image, format: vk.Format, old_layout: 
         barrier.dstAccessMask = {.DEPTH_STENCIL_ATTACHMENT_READ, .DEPTH_STENCIL_ATTACHMENT_WRITE}
         src_stage = {.TOP_OF_PIPE}
         dst_stage = {.EARLY_FRAGMENT_TESTS}
+    } else if old_layout == .UNDEFINED && new_layout == .GENERAL {
+        barrier.srcAccessMask = {}  // No prior access needed from undefined
+        barrier.dstAccessMask = {.SHADER_WRITE}  // For compute storage writes; add .SHADER_READ if you sample in shader too
+        src_stage = {.TOP_OF_PIPE}
+        dst_stage = {.COMPUTE_SHADER}  // Matches your raytracing dispatch
     } else {
         log.panic("unsupported layout transition!")
     }

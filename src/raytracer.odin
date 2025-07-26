@@ -241,7 +241,10 @@ prepare_texture_target :: proc(tex: ^Texture, width, height: u32, format: vk.For
     }
     must(vk.CreateSampler(rb.device, &sampler_info, nil, &tex.sampler))
 
-    // Initialize descriptor (note: imageLayout is set to GENERAL but no transition is performed)
+    // Transition layout to GENERAL (for compute storage/sampling) before descriptor use
+    transition_image_layout(tex.image, format, .UNDEFINED, .GENERAL)
+
+    // Now safe: Initialize descriptor with matching layout
     tex.descriptor = vk.DescriptorImageInfo{
         imageLayout = .GENERAL,
         imageView = tex.view,
@@ -722,7 +725,7 @@ prepare_compute :: proc() {
         layout = rt.compute.pipeline_layout,
     }
     must(vk.CreateComputePipelines(rb.device, rb.pipeline_cache, 1, &pipeline_info, nil, &rt.compute.pipeline))
-    vk.DestroyShaderModule(rb.device, shader_module, nil)
+    defer vk.DestroyShaderModule(rb.device, shader_module, nil)
 
     // Create command pool
     cmd_pool_info := vk.CommandPoolCreateInfo{
@@ -747,6 +750,26 @@ prepare_compute :: proc() {
         flags = { .SIGNALED },
     }
     must(vk.CreateFence(rb.device, &fence_info, nil, &rt.compute.fence))
+
+    create_compute_command_buffer()
+    
+}
+
+create_compute_command_buffer :: proc() {
+    cmd_buf_info := vk.CommandBufferBeginInfo {
+        sType = .COMMAND_BUFFER_BEGIN_INFO,
+        // No flags needed; equivalent to vks::initializers default (no ONE_TIME_SUBMIT for re-recordable if desired)
+    }
+
+    must(vk.BeginCommandBuffer(rt.compute.command_buffer, &cmd_buf_info))
+
+    vk.CmdBindPipeline(rt.compute.command_buffer, .COMPUTE, rt.compute.pipeline)
+    vk.CmdBindDescriptorSets(rt.compute.command_buffer, .COMPUTE, rt.compute.pipeline_layout, 0, 1, &rt.compute.descriptor_set, 0, nil)
+
+    // Dispatch: Matches your /16 (assuming workgroup size 16x16 in shader; adjust if different)
+    vk.CmdDispatch(rt.compute.command_buffer, rt.compute_texture.width / 16, rt.compute_texture.height / 16, 1)
+
+    must(vk.EndCommandBuffer(rt.compute.command_buffer))
 }
 
 create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, offset_height: i32 = 0) {
@@ -1403,6 +1426,9 @@ add_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
 }
 
 start_frame :: proc(image_index: ^u32) {
+    // Wait/reset graphics fence for prior frame sync (enables multi-frame overlap)
+    must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, max(u64)))
+    must(vk.ResetFences(rb.device, 1, &rb.in_flight_fences[current_frame]))
 
     result := vk.AcquireNextImageKHR(
         rb.device,
@@ -1433,14 +1459,14 @@ start_frame :: proc(image_index: ^u32) {
         signalSemaphoreCount = 1,
         pSignalSemaphores = &rb.render_finished_semaphores[current_frame]
     }
-    must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, rb.in_flight_fences[current_frame]))
+    must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, rb.in_flight_fences[current_frame]))  // Fence for graphics
 }
 
 end_frame :: proc(image_index: ^u32) {
     present_info := vk.PresentInfoKHR{
         sType = .PRESENT_INFO_KHR,
-        waitSemaphoreCount = rb.submit_info.signalSemaphoreCount,
-        pWaitSemaphores = rb.submit_info.pSignalSemaphores,
+        waitSemaphoreCount = 1,  // Fixed to 1 (matches signal)
+        pWaitSemaphores = &rb.render_finished_semaphores[current_frame],
         swapchainCount = 1,
         pSwapchains = &rb.swapchain,
         pImageIndices = image_index,
@@ -1451,17 +1477,15 @@ end_frame :: proc(image_index: ^u32) {
     case result == .ERROR_OUT_OF_DATE_KHR || result == .SUBOPTIMAL_KHR || rb.framebuffer_resized:
         rb.framebuffer_resized = false
         rt_recreate_swapchain()
+        return  // Skip advance on recreate
     case result == .SUCCESS:
     case:
         panic(fmt.tprintf("vulkan: present failure: %v", result))
     }
 
-    current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT
-    must(vk.QueueWaitIdle(rb.present_queue))
+    // No QueueWaitIdle: Use fences for async sync instead
 
-    free_all(context.temp_allocator)
-    glfw.PollEvents()
-
+    // Compute: Wait/reset dedicated compute fence (matches C++)
     must(vk.WaitForFences(rb.device, 1, &rt.compute.fence, true, max(u64)))
     must(vk.ResetFences(rb.device, 1, &rt.compute.fence))
 
@@ -1470,7 +1494,9 @@ end_frame :: proc(image_index: ^u32) {
         commandBufferCount = 1,
         pCommandBuffers = &rt.compute.command_buffer,
     }
-    must(vk.QueueSubmit(rb.compute_queue, 1, &compute_submit_info, rt.compute.fence))
+    must(vk.QueueSubmit(rb.compute_queue, 1, &compute_submit_info, rt.compute.fence))  // Dedicated fence
+
+    current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT
 }
 
 added_entity :: proc(e: Entity) {

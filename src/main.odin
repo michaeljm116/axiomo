@@ -101,9 +101,14 @@ main :: proc() {
 	update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
 
 	initialize_raytracer()
+	glfw.PollEvents()
 	start_frame(&image_index)
 	for !glfw.WindowShouldClose(rb.window) {
     	end_frame(&image_index)
+		// Poll and free: Move to main loop if overlapping better
+		glfw.PollEvents()
+		free_all(context.temp_allocator)
+		
         bvh_system_build(g_bvh)
         transform_sys_process()
         update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
