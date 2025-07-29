@@ -358,6 +358,10 @@ load_materials :: proc(file : string, materials : ^[dynamic]Material)
         temp_mat.transparency = xml2.get_f32_attr(doc, mat_id, "Transparency")
         temp_mat.refractive_index = xml2.get_f32_attr(doc, mat_id, "Refractive")
         temp_mat.texture_id = xml2.get_i32_attr(doc, mat_id, "TextureID")
+        temp_mat.unique_id = i32(temp_mat.name[0])
+        for i in 1..<len(temp_mat.name) {
+            temp_mat.unique_id *= i32(temp_mat.name[i]) + i32(temp_mat.name[i - 1])
+        }
 
         append(materials, temp_mat)
     }

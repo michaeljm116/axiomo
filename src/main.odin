@@ -24,32 +24,32 @@ package main
 
 import "base:runtime"
 
-import "core:slice"
+import "base:intrinsics"
 import "core:log"
 import "core:mem"
-import "base:intrinsics"
+import "core:slice"
 
-import "core:os"
 import "core:fmt"
+import "core:os"
 import "core:path/filepath"
-import vk "vendor:vulkan"
-import "vendor:glfw"
 import "external/ecs"
 import res "resource"
 import sc "resource/scene"
+import "vendor:glfw"
+import vk "vendor:vulkan"
 
-g_world : ^ecs.World
-g_world_ent : Entity
-g_materials : [dynamic]res.Material
-g_models : [dynamic]res.Model
+g_world: ^ecs.World
+g_world_ent: Entity
+g_materials: [dynamic]res.Material
+g_models: [dynamic]res.Model
 g_level_dir := "../Assets/Levels/1_Jungle/"
-g_scene : [dynamic]Cmp_Node
-g_bvh : ^Sys_Bvh
+g_scene: [dynamic]Cmp_Node
+g_bvh: ^Sys_Bvh
 
 track_alloc: mem.Tracking_Allocator
 
 main :: proc() {
-    fmt.println("HI")
+	fmt.println("HI")
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
@@ -59,11 +59,7 @@ main :: proc() {
 	g_bvh = bvh_system_create()
 	defer bvh_system_destroy(g_bvh)
 
-	add_component(g_world_ent, Cmp_Gui{
-	    {0,0}, {1,1},
-		{0,0}, {1,1},
-		0, 1, 0, 0, false
-	})
+	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 0, false})
 
 	defer ecs.delete_world(g_world)
 
@@ -77,15 +73,19 @@ main :: proc() {
 	context.logger = log.create_console_logger()
 	defer free(context.logger.data)
 	rb.ctx = context
+	g_materials = make([dynamic]res.Material, 0, arena_alloc)
+	res.load_materials("assets/Materials.xml", &g_materials)
+	for m, i in g_materials {
+		log.infof("Material Index: %d  | Name: %s ", i, m.name)
 
+	}
 	scene := sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker.json", arena_alloc)
 
 	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
 
 	g_models = make([dynamic]res.Model, 0, arena_alloc)
 	res.load_directory("assets/Models/", &g_models)
-	g_materials = make([dynamic]res.Material, 0, arena_alloc)
-	res.load_materials("assets/Materials.xml", &g_materials)
+
 
 	poses := res.load_pose("assets/1_Jungle/Animations/Froku.anim", "Froku", arena_alloc)
 
@@ -104,22 +104,21 @@ main :: proc() {
 	glfw.PollEvents()
 	start_frame(&image_index)
 	for !glfw.WindowShouldClose(rb.window) {
-    	end_frame(&image_index)
+		end_frame(&image_index)
 		// Poll and free: Move to main loop if overlapping better
 		glfw.PollEvents()
 		free_all(context.temp_allocator)
-		
-        bvh_system_build(g_bvh)
-        transform_sys_process()
-        update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
-        start_frame(&image_index)
+
+		bvh_system_build(g_bvh)
+		transform_sys_process()
+		update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
+		start_frame(&image_index)
 	}
 	vk.DeviceWaitIdle(rb.device)
 	destroy_vulkan()
 }
 
-leak_detection :: proc()
-{
+leak_detection :: proc() {
 	fmt.eprintf("\n")
 	for _, entry in track_alloc.allocation_map {
 		fmt.eprintf("- %v leaked %v bytes\n", entry.location, entry.size)

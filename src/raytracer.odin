@@ -1523,7 +1523,7 @@ added_entity :: proc(e: Entity) {
         mat_comp := get_component(e, Cmp_Material)
         trans_comp := get_component(e, Cmp_Transform)
 
-        prim_comp.mat_id = mat_comp.mat_id
+        prim_comp.mat_id = mat_comp.mat_unique_id
         prim_comp.world = trans_comp.world
         prim_comp.extents = trans_comp.local.sca.xyz
         if prim_comp.id > 0 {

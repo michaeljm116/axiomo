@@ -450,7 +450,7 @@ pick_physical_device :: proc() -> vk.Result {
 		vk.GetPhysicalDeviceProperties(device, &props)
 
 		name := byte_arr_str(&props.deviceName)
-		log.infof("vulkan: evaluating device %q", name)
+		// log.infof("vulkan: evaluating device %q", name)
 		defer log.infof("vulkan: device %q scored %v", name, score)
 
 		features: vk.PhysicalDeviceFeatures
@@ -512,14 +512,14 @@ pick_physical_device :: proc() -> vk.Result {
 			score += 100_000
 		case .CPU, .OTHER:
 		}
-		log.infof("vulkan: scored %i based on device type %v", score, props.deviceType)
+		// log.infof("vulkan: scored %i based on device type %v", score, props.deviceType)
 
 		// Maximum texture size.
 		score += int(props.limits.maxImageDimension2D)
-		log.infof(
-			"vulkan: added the max 2D image dimensions (texture size) of %v to the score",
-			props.limits.maxImageDimension2D,
-		)
+		// log.infof(
+		// 	"vulkan: added the max 2D image dimensions (texture size) of %v to the score",
+		// 	props.limits.maxImageDimension2D,
+		// )
 		return
 	}
 
