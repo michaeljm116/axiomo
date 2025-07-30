@@ -241,21 +241,24 @@ BvhBounds :: struct {
     _pad2: i32,
 }
 
-// Base BVH node interface using Odin's union
-BvhNode :: union {
-    ^InnerBvhNode,
-    ^LeafBvhNode,
+BvhNodeKind :: enum {
+    Inner,
+    Leaf,
 }
 
 InnerBvhNode :: struct {
+    kind: BvhNodeKind,     // FIRST FIELD for safe peeking from rawptr
     bounds: [2]BvhBounds,
-    children: [2]BvhNode,
+    children: [2]BvhNode,  // BvhNode will be rawptr
 }
 
 LeafBvhNode :: struct {
+    kind: BvhNodeKind,     // FIRST FIELD for safe peeking from rawptr
     id: u32,
     bounds: BvhBounds,
 }
+
+BvhNode :: rawptr  // Unified raw pointer for tree traversal
 
 // Animation flags - 4 bytes with bitfields
 AnimFlags :: bit_field u16{
@@ -336,5 +339,3 @@ Cmp_Audio :: struct {
     file_name: string,
     channel: i32,  // SDL mixer channel for this audio
 }
-
-

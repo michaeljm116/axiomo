@@ -20,7 +20,7 @@ Sys_Bvh :: struct {
     bvh: embree.RTCBVH,
 
     // BVH tree data
-    root: ^BvhNode,
+    root: BvhNode,
     num_nodes: i32,
 
     // Entity and primitive data
@@ -78,6 +78,21 @@ bvh_system_destroy :: proc(using system: ^Sys_Bvh) {
     free(system)
 }
 
+bvh_destroy :: proc(node: BvhNode) {
+    if node == nil { return }
+
+    kind := (cast(^BvhNodeKind)node)^
+    #partial switch kind {
+    case .Inner:
+        n := cast(^InnerBvhNode)node
+        bvh_destroy(n.children[0])
+        bvh_destroy(n.children[1])
+        free(n)  // Assuming nodes were new()-ed or alloc-ed
+    case .Leaf:
+        free(cast(^LeafBvhNode)node)
+    }
+}
+
 // Embree callback functions
 bounds_function :: proc "c" (args: ^embree.RTCBoundsFunctionArguments) {
     context = runtime.default_context()
@@ -133,7 +148,7 @@ create_inner :: proc "c" (alloc: embree.RTCThreadLocalAllocator, numChildren: u3
     g_num_nodes += 1
     node := cast(^InnerBvhNode)ptr
     mem.zero(node, size_of(InnerBvhNode))
-
+    node.kind = .Inner  // ADD THIS
     return ptr
 }
 
@@ -179,6 +194,7 @@ create_leaf :: proc "c" (
 
     // Create leaf node
     node := cast(^LeafBvhNode)ptr
+    node.kind = .Leaf
     node.id = prims.primID
     node.bounds = BvhBounds{
         lower = {prims.lower_x, prims.lower_y, prims.lower_z},
@@ -246,7 +262,8 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
     }
 
     // Build the BVH
-    system.root = transmute(^BvhNode)embree.rtcBuildBVH(&arguments)
+    root_raw := embree.rtcBuildBVH(&arguments)
+    system.root = root_raw
     system.num_nodes = g_num_nodes
 }
 
@@ -324,5 +341,5 @@ bvh_system_print_stats :: proc(using system: ^Sys_Bvh) {
     fmt.printf("  Entities: %d\n", len(entities))
     fmt.printf("  Primitives: %d\n", len(primitive_components))
     fmt.printf("  Nodes: %d\n", num_nodes)
-    fmt.printf("  Root SAH: %.2f\n", bvh_sah(root^))
+    fmt.printf("  Root SAH: %.2f\n", bvh_sah(root))
 }

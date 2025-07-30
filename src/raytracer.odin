@@ -1218,7 +1218,7 @@ update_camera_component :: proc(camera: ^Cmp_Camera) {
     gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &rb.vma_allocator, &rt.compute.ubo)
 }
 
-update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity, root: ^BvhNode, num_nodes : i32)
+update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity, root: BvhNode, num_nodes : i32)
 {
     num_prims := len(ordered_prims)
     if(num_prims == 0) do return
@@ -1247,43 +1247,51 @@ update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [d
     }
 
     // Flatten BVH tree
-    offset := 0
     resize(&rt.bvh, int(num_nodes))
 
     // Get root bounds
-    root_bounds := BvhBounds{}
-    switch root_node in root {
-    case ^InnerBvhNode:
+    root_bounds: BvhBounds
+    if root == nil { return }  // Early exit if no tree
+
+    kind := (cast(^BvhNodeKind)root)^  // Peek
+    #partial switch kind {
+    case .Inner:
+        root_node := cast(^InnerBvhNode)root
         root_bounds = bvh_merge(root_node.bounds[0], root_node.bounds[1])
-    case ^LeafBvhNode:
+    case .Leaf:
+        root_node := cast(^LeafBvhNode)root
         root_bounds = root_node.bounds
     }
 
-    flatten_bvh(root^, root_bounds, &offset)
+    offset := 0
+    flatten_bvh(root, root_bounds, &offset)
     rt.update_flags |= {.BVH}
 }
 
 // Flatten BVH tree into linear array for GPU
 flatten_bvh :: proc(node: BvhNode, bounds: BvhBounds, offset: ^int) -> i32 {
+    if node == nil { return -1 }  // Safeguard
+
     bvh_node := &rt.bvh[offset^]
     my_offset := i32(offset^)
     offset^ += 1
 
-    switch n in node {
-    case ^LeafBvhNode:
-        // Leaf node
+    // Peek at kind (safe: first field)
+    kind := (cast(^BvhNodeKind)node)^
+
+    #partial switch kind {
+    case .Leaf:
+        n := cast(^LeafBvhNode)node
         bvh_node.upper = n.bounds.upper
         bvh_node.lower = n.bounds.lower
         bvh_node.num_children = 0
         bvh_node.offset = i32(rt.ordered_prims_map[n.id])
 
-    case ^InnerBvhNode:
-        // Inner node
+    case .Inner:
+        n := cast(^InnerBvhNode)node
         bvh_node.upper = bounds.upper
         bvh_node.lower = bounds.lower
         bvh_node.num_children = 2
-
-        // Recursively flatten children
         flatten_bvh(n.children[0], n.bounds[0], offset)
         bvh_node.offset = flatten_bvh(n.children[1], n.bounds[1], offset)
     }

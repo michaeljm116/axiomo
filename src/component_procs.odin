@@ -550,112 +550,82 @@ bvh_bounds_with_points :: proc(a: vec3, b: vec3) -> BvhBounds {
 }
 
 // Helper procedures for BVH operations
-bvh_merge :: proc(a: BvhBounds, b: BvhBounds) -> BvhBounds {
+bvh_merge :: proc(a, b: BvhBounds) -> BvhBounds {
     return BvhBounds{
         lower = math.min(a.lower, b.lower),
         upper = math.max(a.upper, b.upper),
     }
 }
 
-bvh_area :: proc(bounds: BvhBounds) -> f32 {
-    te := bounds.upper - bounds.lower
-    return 2.0 * bvh_madd(te.x, (te.y + te.z), te.y * te.z)
-}
-
-bvh_madd :: proc(a: f32, b: f32, c: f32) -> f32 {
-    return a * b + c
+bvh_is_leaf :: proc(node: BvhNode) -> bool {
+    if node == nil { return false }
+    kind := (cast(^BvhNodeKind)node)^
+    #partial switch kind {
+    case .Leaf: return true
+    case .Inner: return false
+    }
+    return false  // Fallback
 }
 
 bvh_sah :: proc(node: BvhNode) -> f32 {
-    switch n in node {
-    case ^InnerBvhNode:
-        return inner_bvh_sah(n)
-    case ^LeafBvhNode:
-        return leaf_bvh_sah(n)
+    if node == nil { return 0.0 }
+    kind := (cast(^BvhNodeKind)node)^
+    #partial switch kind {
+    case .Inner:
+        n := cast(^InnerBvhNode)node
+        merged := bvh_merge(n.bounds[0], n.bounds[1])
+        area_merged := bvh_area(merged)
+        child0_sah := bvh_sah(n.children[0])
+        child1_sah := bvh_sah(n.children[1])
+        return 1.0 + (bvh_area(n.bounds[0]) * child0_sah + bvh_area(n.bounds[1]) * child1_sah) / area_merged
+    case .Leaf:
+        return 1.0
     }
-    return 0.0
+    return 0.0  // Fallback
 }
 
-bvh_is_leaf :: proc(node: BvhNode) -> bool {
-    switch n in node {
-    case ^InnerBvhNode:
-        return false
-    case ^LeafBvhNode:
-        return true
-    }
-    return false
+bvh_area :: proc(bounds: BvhBounds) -> f32 {
+    te := bounds.upper - bounds.lower
+    return 2 * bvh_madd(te.x, (te.y + te.z), te.y * te.z)
 }
 
-inner_bvh_node_create :: proc() -> ^InnerBvhNode {
+bvh_madd :: proc(a, b, c: f32) -> f32 {
+    return a * b + c
+}
+
+inner_bvh_node_create :: proc() -> BvhNode {
     node := new(InnerBvhNode)
-    node.bounds[0] = BvhBounds{}
-    node.bounds[1] = BvhBounds{}
-    node.children[0] = nil
-    node.children[1] = nil
-    return node
+    node.kind = .Inner
+    node.bounds = {}  // Zero-init
+    node.children = {nil, nil}
+    return cast(BvhNode)node  // Cast to rawptr if needed, but since BvhNode is rawptr, return rawptr(node)
 }
 
-inner_bvh_sah :: proc(node: ^InnerBvhNode) -> f32 {
-    merged := bvh_merge(node.bounds[0], node.bounds[1])
-    area_merged := bvh_area(merged)
-
-    child0_sah := bvh_sah(node.children[0]) if node.children[0] != nil else 0.0
-    child1_sah := bvh_sah(node.children[1]) if node.children[1] != nil else 0.0
-
-    return 1.0 + (bvh_area(node.bounds[0]) * child0_sah + bvh_area(node.bounds[1]) * child1_sah) / area_merged
-}
-
-leaf_bvh_node_create :: proc(id: u32, bounds: BvhBounds) -> ^LeafBvhNode {
+leaf_bvh_node_create :: proc(id: u32, bounds: BvhBounds) -> BvhNode {
     node := new(LeafBvhNode)
+    node.kind = .Leaf
     node.id = id
     node.bounds = bounds
-    return node
+    return cast(BvhNode)node
 }
-
-leaf_bvh_sah :: proc(node: ^LeafBvhNode) -> f32 {
-    return 1.0
-}
-
 // Constructor overloading
 bvh_bounds :: proc{
     bvh_bounds_default,
     bvh_bounds_with_points,
 }
 
-// Utility procedures for working with BVH trees
-bvh_destroy :: proc(node: ^BvhNode) {
-    if node == nil do return
-
-    switch n in node {
-    case ^InnerBvhNode:
-        bvh_destroy(&n.children[0])
-        bvh_destroy(&n.children[1])
-        free(n)
-    case ^LeafBvhNode:
-        free(n)
-    }
-}
-
 bvh_get_bounds :: proc(node: BvhNode) -> BvhBounds {
-    switch n in node {
-    case ^InnerBvhNode:
+    if node == nil { return {} }
+    kind := (cast(^BvhNodeKind)node)^
+    #partial switch kind {
+    case .Inner:
+        n := cast(^InnerBvhNode)node
         return bvh_merge(n.bounds[0], n.bounds[1])
-    case ^LeafBvhNode:
+    case .Leaf:
+        n := cast(^LeafBvhNode)node
         return n.bounds
     }
-    return BvhBounds{}
-}
-
-bvh_count_nodes :: proc(node: BvhNode) -> i32 {
-    if node == nil do return 0
-
-    switch n in node {
-    case ^InnerBvhNode:
-        return 1 + bvh_count_nodes(n.children[0]) + bvh_count_nodes(n.children[1])
-    case ^LeafBvhNode:
-        return 1
-    }
-    return 0
+    return {}
 }
 
 bf_graph_component_create :: proc() -> Cmp_BFGraph {
