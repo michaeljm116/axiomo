@@ -78,7 +78,7 @@ main :: proc() {
 	for m, i in g_materials {
 		log.infof("Material Index: %d  | Name: %s ", i, m.name)
 	}
-	scene := sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker.json", arena_alloc)
+	scene := sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker2.json", arena_alloc)
 
 	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
 
