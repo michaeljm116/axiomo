@@ -77,7 +77,6 @@ main :: proc() {
 	res.load_materials("assets/Materials.xml", &g_materials)
 	for m, i in g_materials {
 		log.infof("Material Index: %d  | Name: %s ", i, m.name)
-
 	}
 	scene := sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker.json", arena_alloc)
 
@@ -85,7 +84,6 @@ main :: proc() {
 
 	g_models = make([dynamic]res.Model, 0, arena_alloc)
 	res.load_directory("assets/Models/", &g_models)
-
 
 	poses := res.load_pose("assets/1_Jungle/Animations/Froku.anim", "Froku", arena_alloc)
 
