@@ -160,9 +160,12 @@ load_node :: proc(node : Node) {
             node.Name, node.color.r, node.color.g, node.color.b,
             node.intensity.i, node.id.id)
         // Add logic to map to ECS components
-    } else if .PRIMITIVE in flags || .SPHERE in flags || .RIGIDBODY in flags || .COLIDER in flags {
-        fmt.printf("Processing Object Node: %s, Material ID: %d, Object ID: %d, Rigid: %v\n",
-            node.Name, node.material.ID, node.object.ID, node.rigid.Rigid)
+    } else if .PRIMITIVE in flags || .SPHERE in flags || .HEADNODE in flags || .COLIDER in flags {
+        fmt.printf("Processing Object Node: %s, Material ID: %d, Object ID: %d, Rigid: %v, Children: %v",
+            node.Name, node.material.ID, node.object.ID, node.rigid.Rigid, len(node.Children))
+        fmt.printf("|  Transform  | Position x:%f, y:%f, z:%f,  |  Scale x:%f, y:%f, z:%f\n",
+            node.Transform.Position.x, node.Transform.Position.y, node.Transform.Position.z,
+            node.Transform.Scale.x, node.Transform.Scale.y, node.Transform.Scale.z)
         if node.collider.Type != 0 {
             fmt.printf("Collider: Type=%d, Local=(%f, %f, %f), Extents=(%f, %f, %f)\n",
                 node.collider.Type,

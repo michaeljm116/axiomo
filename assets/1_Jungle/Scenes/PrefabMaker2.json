@@ -1010,36 +1010,38 @@
               "Object": {
                 "_ID": -3
               },
-              "Node": {
-                "Transform": {
-                  "Position": {
-                    "_x": -0.01953125,
-                    "_y": 2.5610001,
-                    "_z": 0
+              "Node": [
+                {
+                  "Transform": {
+                    "Position": {
+                      "_x": -0.01953125,
+                      "_y": 2.5610001,
+                      "_z": 0
+                    },
+                    "Rotation": {
+                      "_x": 0,
+                      "_y": 0,
+                      "_z": 0
+                    },
+                    "Scale": {
+                      "_x": 2,
+                      "_y": 2,
+                      "_z": 2
+                    }
                   },
-                  "Rotation": {
-                    "_x": 0,
-                    "_y": 0,
-                    "_z": 0
+                  "Material": {
+                    "_ID": 0
                   },
-                  "Scale": {
-                    "_x": 2,
-                    "_y": 2,
-                    "_z": 2
-                  }
-                },
-                "Material": {
-                  "_ID": 0
-                },
-                "Object": {
-                  "_ID": -1
-                },
-                "_Name": "Head",
-                "_hasChildren": false,
-                "_eFlags": 32775,
-                "_gFlags": 0,
-                "_Dynamic": true
-              },
+                  "Object": {
+                    "_ID": -1
+                  },
+                  "_Name": "Head",
+                  "_hasChildren": false,
+                  "_eFlags": 32775,
+                  "_gFlags": 0,
+                  "_Dynamic": true
+                }
+              ],
               "_Name": "Neck",
               "_hasChildren": true,
               "_eFlags": 32775,
