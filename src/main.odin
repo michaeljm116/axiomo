@@ -94,6 +94,17 @@ main :: proc() {
 	start_up_raytracer(arena_alloc)
 
 	load_scene(scene)
+	for n in scene.Node
+	{
+	    if n.hasChildren == true
+		{
+      		for c in n.Children
+           	{
+               	fmt.println("Child is:%d", c.Name)
+           	}
+		}
+	}
+	transform_sys_process()
 	bvh_system_initialize(g_bvh)
 	bvh_system_build(g_bvh)
 	update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)

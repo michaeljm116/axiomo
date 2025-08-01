@@ -15,17 +15,6 @@ Sys_Transform :: struct {
     // ECS world reference (assuming global g_world)
 }
 
-// Create a new transform system
-transform_sys_create :: proc() -> ^Sys_Transform {
-    system := new(Sys_Transform)
-    return system
-}
-
-// Destroy transform system
-transform_sys_destroy :: proc(system: ^Sys_Transform) {
-    free(system)
-}
-
 // Process all entities with Transform and Node components
 transform_sys_process :: proc() {
     archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_HeadNode))
