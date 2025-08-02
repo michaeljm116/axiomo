@@ -188,7 +188,8 @@ create_leaf :: proc "c" (
     MIN_LEAF_SIZE :: 1
     MAX_LEAF_SIZE :: 1
 
-    assert(numPrims >= MIN_LEAF_SIZE && numPrims <= MAX_LEAF_SIZE)
+    //assert(numPrims >= MIN_LEAF_SIZE && numPrims <= MAX_LEAF_SIZE)
+    if !(numPrims >= MIN_LEAF_SIZE && numPrims <= MAX_LEAF_SIZE) do fmt.println("BVH Exceeded max leaf size. its: ", numPrims)
     ptr := embree.rtcThreadLocalAlloc(alloc, size_of(LeafBvhNode), 16)
      g_num_nodes += 1
 

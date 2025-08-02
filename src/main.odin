@@ -92,25 +92,8 @@ main :: proc() {
 	// TODO: set up Vulkan allocator.
 	start_up_raytracer(arena_alloc)
 
-	load_scene(scene, arena_alloc)
-	// for cmp_node in g_scene{
-    // 	fmt.printfln("Node %s: has %v children", cmp_node.name, len(cmp_node.children))
-    // 	for &c in cmp_node.children do fmt.printfln("  Child: %s", c.name)
-	// }
-    archetypes := query(ecs.has(Cmp_Node), ecs.has(Cmp_Root))
-    for archetype in archetypes
-    {
-        node_comps := get_table(archetype, Cmp_Node)
-        for &n in node_comps
-        {
-            fmt.println(n.name)
-      		for c in n.children{
-                n := get_component(c, Cmp_Node)
-                fmt.printfln("  Child is:%s", n.name)
-            }
-        }
-    }
 
+	load_scene(scene, arena_alloc)
 	transform_sys_process()
 	bvh_system_initialize(g_bvh)
 	bvh_system_build(g_bvh)
