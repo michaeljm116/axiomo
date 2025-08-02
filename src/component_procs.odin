@@ -49,7 +49,7 @@ node_component_default :: proc(entity: Entity) -> Cmp_Node {
     nc.entity = entity
     nc.parent = Entity(0)  // 0 means no parent
     nc.engine_flags = {ComponentFlag.NODE}
-    //nc.children = make([dynamic]Entity)
+    nc.children = make([dynamic]Entity)
     return nc
 }
 
@@ -58,7 +58,7 @@ node_component_with_parent :: proc(entity: Entity, parent_entity: Entity) -> Cmp
     nc.entity = entity
     nc.parent = parent_entity
     nc.engine_flags = {ComponentFlag.NODE}
-    //nc.children = make([dynamic]Entity)
+    nc.children = make([dynamic]Entity)
     return nc
 }
 
@@ -68,7 +68,7 @@ node_component_named :: proc(entity: Entity, node_name: string, flags: Component
     nc.name = node_name
     nc.engine_flags = {ComponentFlag.NODE + flags}  // Combine flags
     nc.parent = Entity(0)  // 0 means no parent
-    //nc.children = make([dynamic]Entity)
+    nc.children = make([dynamic]Entity)
     return nc
 }
 
@@ -86,8 +86,8 @@ add_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Entity
         return  // Child doesn't have a node component
     }
 
-    // Add child node pointer to parent's children list
-    append(&parent_node.children, child_node)
+    // Add child entity to parent's children list
+    append(&parent_node.children, child_entity)
     parent_node.is_parent = true
 
     // Update child's parent reference
@@ -101,8 +101,8 @@ remove_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Ent
     }
 
     // Remove child from parent's children list
-    for child_node_ptr, i in parent_node.children {
-        if child_node_ptr.entity == child_entity {
+    for child_ent, i in parent_node.children {
+        if child_ent == child_entity {
             ordered_remove(&parent_node.children, i)
             break
         }
@@ -134,12 +134,7 @@ get_children :: proc(world: ^ecs.World, entity: Entity) -> []Entity {
         return nil
     }
 
-    // Convert from array of Cmp_Node pointers to array of Entity IDs
-    entities := make([]Entity, len(node.children))
-    for child_node_ptr, i in node.children {
-        entities[i] = child_node_ptr.entity
-    }
-    return entities
+    return node.children[:]
 }
 
 
@@ -175,7 +170,7 @@ query_nodes :: proc(world: ^ecs.World) -> []^ecs.Archetype {
 
 // Query helper to find all head nodes
 query_head_nodes :: proc(world: ^ecs.World) -> []^ecs.Archetype {
-    return ecs.query(world, ecs.has(Cmp_Node), ecs.has(Cmp_HeadNode))
+    return ecs.query(world, ecs.has(Cmp_Node), ecs.has(Cmp_Root))
 }
 
 mesh_component_default :: proc() -> Cmp_Mesh {
@@ -382,6 +377,7 @@ camera_create :: proc() -> Camera {
     return Camera{
         fov = 0.0,
         type = .LOOKAT,
+        //look_type = .LOOK_FROM,
         rotation = {0, 0, 0},
         position = {0, 0, 0},
         rotation_speed = 1.0,
@@ -660,13 +656,12 @@ flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: E
         if node_comp == nil do continue
 
         // Add children to queue and graph
-        for child_node_ptr in node_comp.children {
-            child_entity := child_node_ptr.entity
-            append(&queue, child_entity)
-            append(&graph.nodes, child_entity)
+        for child_ent in node_comp.children {
+            append(&queue, child_ent)
+            append(&graph.nodes, child_ent)
 
             // Get transform component
-            transform_comp := get_component(child_entity, Cmp_Transform)
+            transform_comp := get_component(child_ent, Cmp_Transform)
             if transform_comp != nil {
                 append(&graph.transforms, transform_comp.local)
             } else {

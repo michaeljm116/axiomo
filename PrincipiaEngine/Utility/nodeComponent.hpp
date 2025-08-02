@@ -28,7 +28,7 @@ namespace Principia {
 		COMPONENT_GUI		  = 0x40000,
 		COMPONENT_BUTTON	  = 0x80000,
 		COMPONENT_JOINT		  = 0x100000,
-		COMPONENT_HEADNODE	  = 0x200000,
+		COMPONENT_ROOT	  = 0x200000,
 		COMPONENT_PREFAB	  = 0x400000 
 	};
 
@@ -83,8 +83,8 @@ namespace Principia {
 	//	AdamComponent(size_t n) { numChildren = n; };
 	//};
 
-	struct HeadNodeComponent : artemis::Component {
-		HeadNodeComponent() {};
+	struct ROOTComponent : artemis::Component {
+		ROOTComponent() {};
 	};
 
 }

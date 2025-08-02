@@ -43,7 +43,7 @@ g_world_ent: Entity
 g_materials: [dynamic]res.Material
 g_models: [dynamic]res.Model
 g_level_dir := "../Assets/Levels/1_Jungle/"
-g_scene: [dynamic]Cmp_Node
+g_scene: [dynamic]Entity
 g_bvh: ^Sys_Bvh
 
 track_alloc: mem.Tracking_Allocator
@@ -76,7 +76,7 @@ main :: proc() {
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)
 	res.load_materials("assets/Materials.xml", &g_materials)
 	for m, i in g_materials {
-		log.infof("Material Index: %d  | Name: %s ", i, m.name)
+		//log.infof("Material Index: %d  | Name: %s ", i, m.name)
 	}
 	scene := sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker2.json", arena_alloc)
 
@@ -84,7 +84,6 @@ main :: proc() {
 
 	g_models = make([dynamic]res.Model, 0, arena_alloc)
 	res.load_directory("assets/Models/", &g_models)
-
 	poses := res.load_pose("assets/1_Jungle/Animations/Froku.anim", "Froku", arena_alloc)
 
 	// TODO: update vendor bindings to glfw 3.4 and use this to set a custom allocator.
@@ -93,17 +92,25 @@ main :: proc() {
 	// TODO: set up Vulkan allocator.
 	start_up_raytracer(arena_alloc)
 
-	load_scene(scene)
-	for n in scene.Node
-	{
-	    if n.hasChildren == true
-		{
-      		for c in n.Children
-           	{
-               	fmt.println("Child is:%d", c.Name)
-           	}
-		}
-	}
+	load_scene(scene, arena_alloc)
+	// for cmp_node in g_scene{
+    // 	fmt.printfln("Node %s: has %v children", cmp_node.name, len(cmp_node.children))
+    // 	for &c in cmp_node.children do fmt.printfln("  Child: %s", c.name)
+	// }
+    archetypes := query(ecs.has(Cmp_Node), ecs.has(Cmp_Root))
+    for archetype in archetypes
+    {
+        node_comps := get_table(archetype, Cmp_Node)
+        for &n in node_comps
+        {
+            fmt.println(n.name)
+      		for c in n.children{
+                n := get_component(c, Cmp_Node)
+                fmt.printfln("  Child is:%s", n.name)
+            }
+        }
+    }
+
 	transform_sys_process()
 	bvh_system_initialize(g_bvh)
 	bvh_system_build(g_bvh)

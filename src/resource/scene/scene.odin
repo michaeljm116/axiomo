@@ -32,7 +32,7 @@ ComponentFlag :: enum {
     GUI         = 18,
     BUTTON      = 19,
     JOINT       = 20,
-    HEADNODE    = 21,
+    ROOT    = 21,
     PREFAB      = 22,
 }
 ComponentFlags :: bit_set[ComponentFlag; u32]
@@ -142,9 +142,9 @@ load_new_scene :: proc(name : string, allocator := context.temp_allocator) -> Sc
     res.log_if_err(json_err)
 
     // Process scene and nodes
-    for node in scene.Node {
-        load_node(node)
-    }
+    // for node in scene.Node {
+    //     load_node(node)
+    // }
     return scene
 }
 
@@ -160,7 +160,7 @@ load_node :: proc(node : Node) {
             node.Name, node.color.r, node.color.g, node.color.b,
             node.intensity.i, node.id.id)
         // Add logic to map to ECS components
-    } else if .PRIMITIVE in flags || .SPHERE in flags || .HEADNODE in flags || .COLIDER in flags {
+    } else if .PRIMITIVE in flags || .SPHERE in flags || .ROOT in flags || .COLIDER in flags {
         fmt.printf("Processing Object Node: %s, Material ID: %d, Object ID: %d, Rigid: %v, Children: %v",
             node.Name, node.material.ID, node.object.ID, node.rigid.Rigid, len(node.Children))
         fmt.printf("|  Transform  | Position x:%f, y:%f, z:%f,  |  Scale x:%f, y:%f, z:%f\n",

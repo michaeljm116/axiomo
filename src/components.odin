@@ -66,7 +66,7 @@ ComponentFlag :: enum {
     GUI         = 18,
     BUTTON      = 19,
     JOINT       = 20,
-    HEADNODE    = 21,
+    ROOT        = 21,
     PREFAB      = 22,
 }
 ComponentFlags :: bit_set[ComponentFlag; u32]
@@ -90,7 +90,7 @@ ObjectType :: enum i32 {
 Cmp_Node :: struct {
     entity: Entity,                       // The entity this node represents
     parent: Entity,                       // Parent entity (0 means no parent)
-    children: [dynamic]^Cmp_Node,            // Dynamic array of child entities
+    children: [dynamic]Entity,            // Dynamic array of child entities
     name: string,                           // Node name
     clicked: bool,                          // UI interaction state
     is_dynamic: bool,                       // Dynamic object flag
@@ -102,7 +102,7 @@ Cmp_Node :: struct {
     game_flags: i64,                        // Game-specific flags
 }
 
-Cmp_HeadNode :: struct {
+Cmp_Root :: struct {
     // Empty component marker for head nodes
 }
 

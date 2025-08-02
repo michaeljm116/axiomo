@@ -17,13 +17,12 @@ Sys_Transform :: struct {
 
 // Process all entities with Transform and Node components
 transform_sys_process :: proc() {
-    archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_HeadNode))
+    archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_Root))
 
     for archetype in archetypes {
-        //transform_comps := get_table(archetype, Cmp_Transform)
         node_comps := get_table(archetype, Cmp_Node)
         for &node in node_comps {
-                sqt_transform(&node)
+            sqt_transform(&node)
         }
     }
 }
@@ -33,8 +32,9 @@ sqt_transform :: proc(nc: ^Cmp_Node) {
     tc := get_component(nc.entity, Cmp_Transform)
     if tc == nil { return }
 
-    pc := get_component(nc.parent, Cmp_Node) if nc.parent != Entity(0) else nil
-    has_parent := pc != nil
+    parent_ent := nc.parent
+    has_parent := parent_ent != Entity(0)
+    pc := get_component(parent_ent, Cmp_Node) if has_parent else nil
 
     // Local transform
     local := linalg.matrix4_translate_f32(tc.local.pos.xyz) * linalg.matrix4_from_quaternion_f32(tc.local.rot)
@@ -45,7 +45,7 @@ sqt_transform :: proc(nc: ^Cmp_Node) {
 
     // Combine with parent if exists
     if has_parent {
-        pt := get_component(nc.parent, Cmp_Transform)
+        pt := get_component(parent_ent, Cmp_Transform)
         tc.global.sca = tc.local.sca * pt.global.sca
         tc.global.rot = tc.local.rot * pt.global.rot
         tc.trm = pt.world * local
@@ -93,8 +93,11 @@ sqt_transform :: proc(nc: ^Cmp_Node) {
 
     // Recurse for children
     if nc.is_parent {
-        for child in nc.children {
-            sqt_transform(child)
+        for child_ent in nc.children {
+            child_nc := get_component(child_ent, Cmp_Node)
+            if child_nc != nil {
+                sqt_transform(child_nc)
+            }
         }
     }
 }
