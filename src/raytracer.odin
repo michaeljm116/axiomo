@@ -15,6 +15,7 @@ import "core:fmt"
 import "gpu"
 import res "resource"
 import "external/embree"
+import "core:math/bits"
 
 curr_id : u32 = 0
 MAX_MATERIALS :: 256
@@ -969,13 +970,14 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
             }
         }
     }
-    append(&shapes, gpu.Shape{})
+    append(&shapes, gpu.Shape{center = {0.0, 1.0, 0.0}, type = 1})
+    append(&blas, gpu.BvhNode{} )
 
     //Load them into the gpu
-    init_storage_buf(&rt.compute.storage_buffers.verts,verts, len(verts))
-    init_storage_buf(&rt.compute.storage_buffers.faces,faces, len(faces))
-    init_storage_buf(&rt.compute.storage_buffers.blas, blas, len(blas))
-    init_storage_buf(&rt.compute.storage_buffers.shapes, shapes, len(shapes))
+    init_staging_buf(&rt.compute.storage_buffers.verts,verts, len(verts))
+    init_staging_buf(&rt.compute.storage_buffers.faces,faces, len(faces))
+    init_staging_buf(&rt.compute.storage_buffers.blas, blas, len(blas))
+    init_staging_buf(&rt.compute.storage_buffers.shapes, shapes, len(shapes))
     for &t, i in rt.gui_textures{
         t = Texture{path = texture_paths[i]}
         texture_create(&t)
@@ -997,7 +999,7 @@ texture_paths := [6]string{
     "../Assets/Levels/1_Jungle/Textures/title.png",
 }
 
-init_storage_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int )
+init_staging_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int )
 {
     gpu.vbuffer_init_storage_buffer_with_staging_device(vbuf, rb.device, &rb.vma_allocator, rb.command_pool, rb.graphics_queue, objects[:], u32(size))
 }
@@ -1005,163 +1007,80 @@ init_storage_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int
 //----------------------------------------------------------------------------\\
 // Updates /up
 //----------------------------------------------------------------------------\\
-// Update descriptor sets for compute pipeline
 update_descriptors :: proc() {
-    // Prepare write descriptor sets
-    write_descriptor_sets: [13]vk.WriteDescriptorSet
+    // Wait for fence - equivalent to vkWaitForFences with UINT64_MAX
+    vk.WaitForFences(rb.device, 1, &rt.compute.fence, true, bits.U64_MAX)
 
-    // Binding 0: storage image
-    image_info := vk.DescriptorImageInfo{
-        imageView = rt.compute_texture.view,
-        imageLayout = .GENERAL,
-    }
-    write_descriptor_sets[0] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 0,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_IMAGE,
-        pImageInfo = &image_info,
-    }
+    // Create write descriptor sets for the specific bindings you need
+    // Based on your C++ code, you need bindings 6-10 for primitives, materials, lights, guis, and bvh
+    rt.compute_write_descriptor_sets = {
+        // Binding 6: for objects (primitives)
+        vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 6,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.primitives.buffer_info,
+        },
 
-    // Binding 1: uniform buffer
-    buffer_info := rt.compute.uniform_buffer.buffer_info
-    write_descriptor_sets[1] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 1,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .UNIFORM_BUFFER,
-        pBufferInfo = &buffer_info,
-    }
+        // Binding 7: for materials
+        vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 7,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.materials.buffer_info,
+        },
 
-    // Bindings 2-10: storage buffers (verts, faces, blas, shapes, primitives, materials, lights, guis, bvh)
-    write_descriptor_sets[2] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 2,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.verts.buffer_info,
-    }
-    write_descriptor_sets[3] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 3,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.faces.buffer_info,
-    }
-    write_descriptor_sets[4] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 4,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.blas.buffer_info,
-    }
-    write_descriptor_sets[5] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 5,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.shapes.buffer_info,
-    }
-    write_descriptor_sets[6] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 6,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.primitives.buffer_info,
-    }
-    write_descriptor_sets[7] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 7,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.materials.buffer_info,
-    }
-    write_descriptor_sets[8] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 8,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.lights.buffer_info,
-    }
-    write_descriptor_sets[9] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 9,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.guis.buffer_info,
-    }
-    write_descriptor_sets[10] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 10,
-        dstArrayElement = 0,
-        descriptorCount = 1,
-        descriptorType = .STORAGE_BUFFER,
-        pBufferInfo = &rt.compute.storage_buffers.bvh.buffer_info,
-    }
+        // Binding 8: for lights
+        vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 8,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.lights.buffer_info,
+        },
 
-    // Binding 11: combined image sampler for GUI textures (up to MAX_GUIS)
-    gui_image_infos: []vk.DescriptorImageInfo = make([]vk.DescriptorImageInfo, len(rt.gui_textures))
-    defer delete(gui_image_infos)
-    for i in 0..<len(rt.gui_textures) {
-        gui_image_infos[i] = vk.DescriptorImageInfo{
-            sampler = rt.gui_textures[i].sampler,
-            imageView = rt.gui_textures[i].view,
-            imageLayout = .SHADER_READ_ONLY_OPTIMAL,
-        }
-    }
-    write_descriptor_sets[11] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 11,
-        dstArrayElement = 0,
-        descriptorCount = u32(len(rt.gui_textures)),
-        descriptorType = .COMBINED_IMAGE_SAMPLER,
-        pImageInfo = &gui_image_infos[0] if len(gui_image_infos) > 0 else nil,
-    }
+        // Binding 9: for gui
+        vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 9,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.guis.buffer_info,
+        },
 
-    // Binding 12: combined image sampler for bindless textures
-    bindless_image_infos: []vk.DescriptorImageInfo = make([]vk.DescriptorImageInfo, len(rt.bindless_textures))
-    defer delete(bindless_image_infos)
-    for i in 0..<len(rt.bindless_textures) {
-        bindless_image_infos[i] = vk.DescriptorImageInfo{
-            sampler = rt.bindless_textures[i].sampler,
-            imageView = rt.bindless_textures[i].view,
-            imageLayout = .SHADER_READ_ONLY_OPTIMAL,
-        }
-    }
-    write_descriptor_sets[12] = vk.WriteDescriptorSet{
-        sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
-        dstBinding = 12,
-        dstArrayElement = 0,
-        descriptorCount = u32(len(rt.bindless_textures)),
-        descriptorType = .COMBINED_IMAGE_SAMPLER,
-        pImageInfo = &bindless_image_infos[0] if len(bindless_image_infos) > 0 else nil,
+        // Binding 10: for bvhnodes
+        vk.WriteDescriptorSet{
+            sType = .WRITE_DESCRIPTOR_SET,
+            dstSet = rt.compute.descriptor_set,
+            dstBinding = 10,
+            dstArrayElement = 0,
+            descriptorCount = 1,
+            descriptorType = .STORAGE_BUFFER,
+            pBufferInfo = &rt.compute.storage_buffers.bvh.buffer_info,
+        },
     }
 
     // Update descriptor sets
-    vk.UpdateDescriptorSets(rb.device, 13, &write_descriptor_sets[0], 0, nil)
+    vk.UpdateDescriptorSets(
+        rb.device,
+        u32(len(rt.compute_write_descriptor_sets)),
+        &rt.compute_write_descriptor_sets[0],
+        0,
+        nil
+    )
+
+    // Create compute command buffer
+    create_compute_command_buffer()
 }
 
 update_buffers :: proc() {

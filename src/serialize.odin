@@ -199,7 +199,9 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
         obj_id := scene_node.object.ID
         prim_comp := primitive_component(i32(obj_id))
 
-        add_component(entity, prim_comp)
+        add_component(entity, Cmp_Primitive{
+                world = math.MATRIX4F32_IDENTITY,
+                id = i32(obj_id)})
         add_component(entity, Cmp_Render{type = {.PRIMITIVE}})
         added_entity(entity)
 

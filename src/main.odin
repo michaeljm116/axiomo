@@ -111,6 +111,7 @@ main :: proc() {
 		bvh_system_build(g_bvh)
 		transform_sys_process()
 		update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
+		update_descriptors()
 		start_frame(&image_index)
 	}
 	vk.DeviceWaitIdle(rb.device)

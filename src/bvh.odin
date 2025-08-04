@@ -189,7 +189,10 @@ create_leaf :: proc "c" (
     MAX_LEAF_SIZE :: 1
 
     //assert(numPrims >= MIN_LEAF_SIZE && numPrims <= MAX_LEAF_SIZE)
-    if !(numPrims >= MIN_LEAF_SIZE && numPrims <= MAX_LEAF_SIZE) do fmt.println("BVH Exceeded max leaf size. its: ", numPrims)
+    // if !(numPrims >= MIN_LEAF_SIZE && numPrims <= MAX_LEAF_SIZE) {
+    //     fmt.println("BVH Exceeded max leaf size. its: ", numPrims)
+    //     return nil
+    // }
     ptr := embree.rtcThreadLocalAlloc(alloc, size_of(LeafBvhNode), 16)
      g_num_nodes += 1
 
@@ -325,11 +328,11 @@ bvh_system_query_entities :: proc() -> []Entity {
 // Initialize BVH system with existing entities
 bvh_system_initialize :: proc(system: ^Sys_Bvh) {
     fmt.println("Initializing BVH System...")
-    entities := bvh_system_query_entities()
 
-    for entity in entities {
+    for arch in query(has(Cmp_Node), has(Cmp_Transform), has(Cmp_Primitive)){
+    for entity in arch.entities {
         bvh_system_add_entity(system, entity)
-    }
+    }}
 
     // Do initial build
     bvh_system_build(system)
