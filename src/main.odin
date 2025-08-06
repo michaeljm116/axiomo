@@ -91,10 +91,14 @@ main :: proc() {
 
 	// TODO: set up Vulkan allocator.
 	start_up_raytracer(arena_alloc)
-
+	gameplay_init()
 
 	load_scene(scene, arena_alloc)
+	fmt.println("-------------------\nBefore change")
+	transform_print_hierarchy()
 	transform_sys_process()
+	fmt.println("-------------------\nAfterChange")
+	transform_print_hierarchy()
 	bvh_system_initialize(g_bvh)
 	bvh_system_build(g_bvh)
 	update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
@@ -108,6 +112,7 @@ main :: proc() {
 		glfw.PollEvents()
 		free_all(context.temp_allocator)
 
+		gameplay_update(0.015)
 		bvh_system_build(g_bvh)
 		transform_sys_process()
 		update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)

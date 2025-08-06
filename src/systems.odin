@@ -33,6 +33,63 @@ transform_sys_process :: proc() {
     }
 }
 
+transform_print_hierarchy :: proc() {
+    fmt.println("=== Transform Hierarchy ===")
+
+    // Find all root entities (entities with Cmp_Root)
+    root_archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_Root))
+
+    for archetype in root_archetypes {
+        node_comps := get_table(archetype, Cmp_Node)
+        transform_comps := get_table(archetype, Cmp_Transform)
+
+        for i in 0..<len(node_comps) {
+            node := &node_comps[i]
+            transform := &transform_comps[i]
+
+            // Print this root node and its hierarchy
+            print_entity_hierarchy(node, transform, 0)
+        }
+    }
+
+    fmt.println("=== End Hierarchy ===")
+}
+
+// Helper procedure to recursively print entity hierarchy
+print_entity_hierarchy :: proc(node: ^Cmp_Node, transform: ^Cmp_Transform, depth: int) {
+    // Create indentation based on depth
+    indent := ""
+    for i in 0..<depth {
+        indent = fmt.aprintf("%s  ", indent)
+    }
+    defer delete(indent)
+
+    // Print entity information
+    entity_name := node.name if len(node.name) > 0 else fmt.aprintf("Entity_%d", node.entity)
+    defer if len(node.name) == 0 do delete(entity_name)
+
+    fmt.printf("%s├─ %s (ID: %d)\n", indent, entity_name, node.entity)
+    fmt.printf("%s│  World Matrix:\n", indent)
+    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
+               transform.world[0][0], transform.world[0][1], transform.world[0][2], transform.world[0][3])
+    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
+               transform.world[1][0], transform.world[1][1], transform.world[1][2], transform.world[1][3])
+    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
+               transform.world[2][0], transform.world[2][1], transform.world[2][2], transform.world[2][3])
+    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
+               transform.world[3][0], transform.world[3][1], transform.world[3][2], transform.world[3][3])
+
+    // Print children recursively
+    for child_entity in node.children {
+        child_node := get_component(child_entity, Cmp_Node)
+        child_transform := get_component(child_entity, Cmp_Transform)
+
+        if child_node != nil && child_transform != nil {
+            print_entity_hierarchy(child_node, child_transform, depth + 1)
+        }
+    }
+}
+
 // SQT Transform procedure (main transformation logic)
 sqt_transform :: proc(nc: ^Cmp_Node) {
     tc := get_component(nc.entity, Cmp_Transform)
