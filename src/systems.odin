@@ -90,6 +90,231 @@ print_entity_hierarchy :: proc(node: ^Cmp_Node, transform: ^Cmp_Transform, depth
     }
 }
 
+// Prints transform hierarchy for entities with Transform, Primitive, and Node components
+// Uses the world matrix from Cmp_Primitive instead of Cmp_Transform
+primitive_transform_print_hierarchy :: proc() {
+    fmt.println("=== Primitive Transform Hierarchy ===")
+
+    // Find all root entities with the required components
+    root_archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Primitive), ecs.has(Cmp_Node))
+
+    for archetype in root_archetypes {
+        node_comps := get_table(archetype, Cmp_Node)
+        primitive_comps := get_table(archetype, Cmp_Primitive)
+
+        for i in 0..<len(node_comps) {
+            node := &node_comps[i]
+            primitive := &primitive_comps[i]
+
+            // Print this root node and its hierarchy
+            print_primitive_entity_hierarchy(node, primitive, 0)
+        }
+    }
+
+    fmt.println("=== End Primitive Hierarchy ===")
+}
+
+// Helper procedure to recursively print entity hierarchy using primitive component world matrix
+print_primitive_entity_hierarchy :: proc(node: ^Cmp_Node, primitive: ^Cmp_Primitive, depth: int) {
+    // Create indentation based on depth
+    indent := ""
+    for i in 0..<depth {
+        indent = fmt.aprintf("%s  ", indent)
+    }
+    defer delete(indent)
+
+    // Print entity information
+    entity_name := node.name if len(node.name) > 0 else fmt.aprintf("Entity_%d", node.entity)
+    defer if len(node.name) == 0 do delete(entity_name)
+
+    fmt.printf("%s├─ %s (ID: %d)\n", indent, entity_name, node.entity)
+    fmt.printf("%s│  Primitive World Matrix:\n", indent)
+    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
+               primitive.world[0][0], primitive.world[0][1], primitive.world[0][2], primitive.world[0][3])
+    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
+               primitive.world[1][0], primitive.world[1][1], primitive.world[1][2], primitive.world[1][3])
+    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
+               primitive.world[2][0], primitive.world[2][1], primitive.world[2][2], primitive.world[2][3])
+    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
+               primitive.world[3][0], primitive.world[3][1], primitive.world[3][2], primitive.world[3][3])
+
+    // Print children recursively, but only if they have all required components
+    for child_entity in node.children {
+        child_node := get_component(child_entity, Cmp_Node)
+        child_transform := get_component(child_entity, Cmp_Transform)
+        child_primitive := get_component(child_entity, Cmp_Primitive)
+
+        // Only print children that have all three required components
+        if child_node != nil && child_transform != nil && child_primitive != nil {
+            print_primitive_entity_hierarchy(child_node, child_primitive, depth + 1)
+        }
+    }
+}
+
+// Prints simplified transform hierarchy for entities with Transform, Primitive, and Node components
+// Shows only position and extents for easy debugging
+primitive_debug_print_hierarchy :: proc() {
+    fmt.println("=== Primitive Debug Hierarchy (Position + Size) ===")
+
+    // Find all root entities with the required components
+    root_archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Primitive), ecs.has(Cmp_Node))
+
+    for archetype in root_archetypes {
+        node_comps := get_table(archetype, Cmp_Node)
+        primitive_comps := get_table(archetype, Cmp_Primitive)
+
+        for i in 0..<len(node_comps) {
+            node := &node_comps[i]
+            primitive := &primitive_comps[i]
+
+            // Print this root node and its hierarchy
+            print_primitive_debug_hierarchy(node, primitive, 0)
+        }
+    }
+
+    fmt.println("=== End Debug Hierarchy ===")
+}
+
+// Helper procedure to recursively print simplified entity hierarchy
+print_primitive_debug_hierarchy :: proc(node: ^Cmp_Node, primitive: ^Cmp_Primitive, depth: int) {
+    // Create indentation based on depth
+    indent := ""
+    for i in 0..<depth {
+        indent = fmt.aprintf("%s  ", indent)
+    }
+    defer delete(indent)
+
+    // Print entity information
+    entity_name := node.name if len(node.name) > 0 else fmt.aprintf("Entity_%d", node.entity)
+    defer if len(node.name) == 0 do delete(entity_name)
+
+    // Extract position from world matrix (4th column, first 3 elements)
+    pos_x := primitive.world[3][0]
+    pos_y := primitive.world[3][1]
+    pos_z := primitive.world[3][2]
+
+    fmt.printf("%s├─ %s (ID: %d) | Pos: (%.3f, %.3f, %.3f) | Size: (%.3f, %.3f, %.3f)\n",
+               indent, entity_name, node.entity,
+               pos_x, pos_y, pos_z,
+               primitive.extents.x, primitive.extents.y, primitive.extents.z)
+
+    // Print children recursively, but only if they have all required components
+    for child_entity in node.children {
+        child_node := get_component(child_entity, Cmp_Node)
+        child_transform := get_component(child_entity, Cmp_Transform)
+        child_primitive := get_component(child_entity, Cmp_Primitive)
+
+        // Only print children that have all three required components
+        if child_node != nil && child_transform != nil && child_primitive != nil {
+            print_primitive_debug_hierarchy(child_node, child_primitive, depth + 1)
+        }
+    }
+}
+
+// Debug function to track what happens to entities during transform processing
+debug_transform_impact :: proc() {
+    fmt.println("=== Debugging Transform Impact ===")
+
+    // Get entities before transform processing
+    before_archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Primitive), ecs.has(Cmp_Node))
+    before_entities: [dynamic]Entity
+    defer delete(before_entities)
+
+    for archetype in before_archetypes {
+        node_comps := get_table(archetype, Cmp_Node)
+        for i in 0..<len(node_comps) {
+            append(&before_entities, node_comps[i].entity)
+        }
+    }
+
+    fmt.printf("Before: Found %d entities with all components\n", len(before_entities))
+
+    // Run transform processing
+    transform_sys_process()
+
+    // Get entities after transform processing
+    after_archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Primitive), ecs.has(Cmp_Node))
+    after_entities: [dynamic]Entity
+    defer delete(after_entities)
+
+    for archetype in after_archetypes {
+        node_comps := get_table(archetype, Cmp_Node)
+        for i in 0..<len(node_comps) {
+            append(&after_entities, node_comps[i].entity)
+        }
+    }
+
+    fmt.printf("After: Found %d entities with all components\n", len(after_entities))
+
+    // Find missing entities
+    for before_entity in before_entities {
+        found := false
+        for after_entity in after_entities {
+            if before_entity == after_entity {
+                found = true
+                break
+            }
+        }
+        if !found {
+            fmt.printf("LOST: Entity %d\n", before_entity)
+            // Check what components this entity still has
+            node := get_component(before_entity, Cmp_Node)
+            transform := get_component(before_entity, Cmp_Transform)
+            primitive := get_component(before_entity, Cmp_Primitive)
+            fmt.printf("  - Node: %v, Transform: %v, Primitive: %v\n",
+                      node != nil, transform != nil, primitive != nil)
+        }
+    }
+}
+
+// Debug function to show BVH entities and their primitive info before/after BVH operations
+debug_bvh_primitives :: proc(bvh_system: ^Sys_Bvh) {
+    fmt.println("=== BVH Primitives Debug ===")
+
+    fmt.println("BEFORE BVH update:")
+    print_bvh_entities_primitives(bvh_system, "BEFORE")
+
+    // Run the BVH operation you want to debug
+    bvh_system_build(bvh_system)  // or whatever BVH operation you're debugging
+
+    fmt.println("\nAFTER BVH update:")
+    print_bvh_entities_primitives(bvh_system, "AFTER")
+
+    fmt.println("=== End BVH Debug ===")
+}
+
+// Helper to print BVH entities and their primitive component info
+print_bvh_entities_primitives :: proc(bvh_system: ^Sys_Bvh, label: string) {
+    fmt.printf("%s - BVH has %d entities:\n", label, len(bvh_system.entities))
+
+    for entity, i in bvh_system.entities {
+        // Get the primitive component for this entity
+        primitive := get_component(entity, Cmp_Primitive)
+        node := get_component(entity, Cmp_Node)
+
+        if primitive != nil {
+            entity_name := node.name if node != nil && len(node.name) > 0 else fmt.aprintf("Entity_%d", entity)
+            defer if node == nil || len(node.name) == 0 do delete(entity_name)
+
+            // Extract position from primitive world matrix
+            pos_x := primitive.world[3][0]
+            pos_y := primitive.world[3][1]
+            pos_z := primitive.world[3][2]
+
+            fmt.printf("  [%d] %s (ID: %d) | Pos: (%.3f, %.3f, %.3f) | Size: (%.3f, %.3f, %.3f)\n",
+                       i, entity_name, entity,
+                       pos_x, pos_y, pos_z,
+                       primitive.extents.x, primitive.extents.y, primitive.extents.z)
+        } else {
+            fmt.printf("  [%d] Entity %d - NO PRIMITIVE COMPONENT!\n", i, entity)
+        }
+    }
+}
+
+
+// SQT Transform procedure (main transformation logic)
+// SQT Transform procedure (main transformation logic)
+
 // SQT Transform procedure (main transformation logic)
 sqt_transform :: proc(nc: ^Cmp_Node) {
     tc := get_component(nc.entity, Cmp_Transform)
@@ -214,7 +439,7 @@ geometry_transform_converter :: proc(nc: ^Cmp_Node) {
 
 
 //----------------------------------------------------------------------------\\
-// /BVH System /bs
+// /BVH System
 //----------------------------------------------------------------------------\\
 
 Sys_Bvh :: struct {
@@ -229,7 +454,7 @@ Sys_Bvh :: struct {
     num_nodes: i32,
 
     // Entity and primitive data
-    entities: [dynamic]Entity,
+    //entities: [dynamic]Entity,
     primitive_components: [dynamic]^Cmp_Primitive,
     build_primitives: [dynamic]embree.RTCBuildPrimitive,
 
@@ -421,7 +646,7 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
 
     // Create build primitives from primitive components
 
-    for archetype in query(has(Cmp_Primitive)) {
+    for archetype in query(has(Cmp_Primitive), has(Cmp_Node), has(Cmp_Transform)) {
         prim_comps := get_table(archetype, Cmp_Primitive)
         for prim_comp, i in prim_comps{
             center := prim_comp.world[3].xyz
@@ -476,17 +701,17 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
     system.num_nodes = g_num_nodes
 }
 
-// Add entity to BVH system
-bvh_system_add_entity :: proc(system: ^Sys_Bvh, entity: Entity) {
-    system.rebuild = true
-    append(&system.entities, entity)
+// // Add entity to BVH system
+// bvh_system_add_entity :: proc(system: ^Sys_Bvh, entity: Entity) {
+//     system.rebuild = true
+//     append(&system.entities, entity)
 
-    // Get primitive component
-    prim_comp := get_component(entity, Cmp_Primitive)
-    if prim_comp != nil {
-        append(&system.primitive_components, prim_comp)
-    }
-}
+//     // Get primitive component
+//     prim_comp := get_component(entity, Cmp_Primitive)
+//     if prim_comp != nil {
+//         append(&system.primitive_components, prim_comp)
+//     }
+// }
 
 // Remove entity from BVH system
 bvh_system_remove_entity :: proc(system: ^Sys_Bvh, entity: Entity) {
@@ -510,32 +735,32 @@ bvh_system_update :: proc(system: ^Sys_Bvh) {
     }
 }
 
-// ECS integration procedures
-bvh_system_query_entities :: proc() -> []Entity {
-    // Query for entities with Cmp_Node, Cmp_Transform, andCmp_Primitive
-    archetypes := query(
-        ecs.has(Cmp_Node),
-        ecs.has(Cmp_Transform),
-        ecs.has(Cmp_Primitive))
+// // ECS integration procedures
+// bvh_system_query_entities :: proc() -> []Entity {
+//     // Query for entities with Cmp_Node, Cmp_Transform, andCmp_Primitive
+//     archetypes := query(
+//         ecs.has(Cmp_Node),
+//         ecs.has(Cmp_Transform),
+//         ecs.has(Cmp_Primitive))
 
-    entities: [dynamic]Entity
-    defer delete(entities)
+//     entities: [dynamic]Entity
+//     defer delete(entities)
 
-    for archetype in archetypes {
-        for entity in archetype.entities {
-            append(&entities, entity)
-        }
-    }
+//     for archetype in archetypes {
+//         for entity in archetype.entities {
+//             append(&entities, entity)
+//         }
+//     }
 
-    return entities[:]
-}
+//     return entities[:]
+// }
 
 // Initialize BVH system with existing entities
 bvh_system_initialize :: proc(system: ^Sys_Bvh) {
-    for arch in query(has(Cmp_Node), has(Cmp_Transform), has(Cmp_Primitive)){
-    for entity in arch.entities {
-        bvh_system_add_entity(system, entity)
-    }}
+    // for arch in query(has(Cmp_Node), has(Cmp_Transform), has(Cmp_Primitive)){
+    // for entity in arch.entities {
+    //     bvh_system_add_entity(system, entity)
+    // }}
 
     // Do initial build
     bvh_system_build(system)

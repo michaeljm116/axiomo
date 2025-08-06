@@ -2677,6 +2677,27 @@ flatten_bvh :: proc(node: BvhNode, bounds: BvhBounds, offset: ^int) -> i32 {
     return my_offset
 }
 
+// Debug print for update_bvh parameters
+print_update_bvh_debug :: proc(ordered_prims: ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity) {
+    fmt.println("=== Update BVH Debug ===")
+
+    for ordered_prim, idx in ordered_prims {
+        prim_id := ordered_prim.primID
+        prim_value := prims[prim_id] if prim_id < u32(len(prims)) else Entity(0)
+
+        if prim_id < u32(len(prims)) {
+            node := get_component(prim_value, Cmp_Node)
+            node_name := node.name if node != nil && len(node.name) > 0 else fmt.aprintf("Entity_%d", prim_value)
+            defer if node == nil || len(node.name) == 0 do delete(node_name)
+
+            fmt.printf("[%d] PrimID: %d, Entity: %v, Name: %s\n", idx, prim_id, prim_value, node_name)
+        } else {
+            fmt.printf("[%d] PrimID: %d - OUT OF BOUNDS!\n", idx, prim_id)
+        }
+    }
+}
+
+
 update_uniform_buffers :: proc() {
     gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &rb.vma_allocator, &rt.compute.ubo)
 }
