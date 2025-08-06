@@ -102,8 +102,14 @@ main :: proc() {
 	bvh_system_initialize(g_bvh)
 	//bvh_system_build(g_bvh)
 	debug_bvh_primitives(g_bvh)
-	print_update_bvh_debug(&g_bvh.build_primitives, g_bvh.entities)
-	update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
+
+	archetypes := query(
+        ecs.has(Cmp_Node),
+        ecs.has(Cmp_Transform),
+        ecs.has(Cmp_Primitive))
+
+	print_update_bvh_debug(&g_bvh.build_primitives, archetypes[0].entities)
+	update_bvh(&g_bvh.build_primitives, archetypes[0].entities, g_bvh.root, g_bvh.num_nodes)
 
 	fmt.println("-------------------\nAfterChange")
 	primitive_debug_print_hierarchy()
@@ -121,7 +127,13 @@ if true do return
 		gameplay_update(0.015)
 		bvh_system_build(g_bvh)
 		transform_sys_process()
-		update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
+
+		archetypes := query(
+        ecs.has(Cmp_Node),
+        ecs.has(Cmp_Transform),
+        ecs.has(Cmp_Primitive))
+
+		update_bvh(&g_bvh.build_primitives, archetypes[0].entities, g_bvh.root, g_bvh.num_nodes)
 		update_descriptors()
 		start_frame(&image_index)
 	}
