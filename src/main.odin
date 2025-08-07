@@ -66,6 +66,8 @@ main :: proc() {
 	// Create an arena allocator using context.temp_allocator
 	arena: mem.Arena
 	arena_data: []byte = make([]byte, 1024 * 1024 * 500, context.temp_allocator) // 1 MiB
+
+
 	mem.arena_init(&arena, arena_data)
 	defer mem.arena_free_all(&arena)
 	arena_alloc := mem.arena_allocator(&arena)
@@ -103,17 +105,12 @@ main :: proc() {
 	//bvh_system_build(g_bvh)
 	debug_bvh_primitives(g_bvh)
 
-	archetypes := query(
-        ecs.has(Cmp_Node),
-        ecs.has(Cmp_Transform),
-        ecs.has(Cmp_Primitive))
-
-	print_update_bvh_debug(&g_bvh.build_primitives, archetypes[0].entities)
-	update_bvh(&g_bvh.build_primitives, archetypes[0].entities, g_bvh.root, g_bvh.num_nodes)
+	print_update_bvh_debug(&g_bvh.build_primitives, g_bvh.entities)
+	update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
 
 	fmt.println("-------------------\nAfterChange")
 	primitive_debug_print_hierarchy()
-if true do return
+//if true do return
 	gameplay_init()
 	initialize_raytracer()
 	glfw.PollEvents()
@@ -128,12 +125,7 @@ if true do return
 		bvh_system_build(g_bvh)
 		transform_sys_process()
 
-		archetypes := query(
-        ecs.has(Cmp_Node),
-        ecs.has(Cmp_Transform),
-        ecs.has(Cmp_Primitive))
-
-		update_bvh(&g_bvh.build_primitives, archetypes[0].entities, g_bvh.root, g_bvh.num_nodes)
+		update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
 		update_descriptors()
 		start_frame(&image_index)
 	}

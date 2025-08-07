@@ -284,15 +284,11 @@ debug_bvh_primitives :: proc(bvh_system: ^Sys_Bvh) {
 }
 
 // Helper to print BVH entities and their primitive component info
-print_bvh_entities_primitives :: proc(bvh_system: ^Sys_Bvh, label: string) {
-    archetypes := query(
-        ecs.has(Cmp_Node),
-        ecs.has(Cmp_Transform),
-        ecs.has(Cmp_Primitive))
-    for arch in archetypes{
-    fmt.printf("%s - BVH has %d entities:\n", label, len(arch.entities))
+print_bvh_entities_primitives :: proc(using bvh_system: ^Sys_Bvh, label: string) {
 
-    for entity, i in arch.entities {
+    fmt.printf("%s - BVH has %d entities:\n", label, len(entities))
+
+    for entity, i in entities {
         // Get the primitive component for this entity
         primitive := get_component(entity, Cmp_Primitive)
         node := get_component(entity, Cmp_Node)
@@ -313,7 +309,7 @@ print_bvh_entities_primitives :: proc(bvh_system: ^Sys_Bvh, label: string) {
         } else {
             fmt.printf("  [%d] Entity %d - NO PRIMITIVE COMPONENT!\n", i, entity)
         }
-    }}
+    }
 
 }
 
@@ -460,7 +456,7 @@ Sys_Bvh :: struct {
     num_nodes: i32,
 
     // Entity and primitive data
-    //entities: [dynamic]Entity,
+    entities: [dynamic]Entity,
     primitive_components: [dynamic]^Cmp_Primitive,
     build_primitives: [dynamic]embree.RTCBuildPrimitive,
 
@@ -646,19 +642,31 @@ create_leaf :: proc "c" (
 
 // Build the BVH tree
 bvh_system_build :: proc(using system: ^Sys_Bvh) {
+    //First clear everything
     g_num_nodes = 0
     clear(&build_primitives)
-    reserve(&build_primitives, len(primitive_components))
+    clear(&entities)
+    clear(&primitive_components)
 
-    // Create build primitives from primitive components
+    //Now Begin reseriving
+    archetypes := query(has(Cmp_Primitive), has(Cmp_Node), has(Cmp_Transform))
+    num_ents := 0
+    for a in archetypes do num_ents += len(a.entities)
 
-    for archetype in query(has(Cmp_Primitive), has(Cmp_Node), has(Cmp_Transform)) {
-        prim_comps := get_table(archetype, Cmp_Primitive)
-        for prim_comp, i in prim_comps{
-            center := prim_comp.world[3].xyz
-            lower := center - prim_comp.aabb_extents
-            upper := center + prim_comp.aabb_extents
+    reserve(&build_primitives, num_ents)
+    reserve(&entities, num_ents)
+    reserve(&primitive_components, num_ents)
 
+    // Asemble!
+    pid := 0
+    for a in archetypes
+    {
+       prim_comps := get_table(a, Cmp_Primitive)
+       for &pc, i in prim_comps
+       {
+            center := pc.world[3].xyz
+            lower := center - pc.aabb_extents
+            upper := center + pc.aabb_extents
             build_prim := embree.RTCBuildPrimitive{
                 lower_x = lower.x,
                 lower_y = lower.y,
@@ -667,10 +675,13 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
                 upper_x = upper.x,
                 upper_y = upper.y,
                 upper_z = upper.z,
-                primID = u32(i),
+                primID = u32(pid)
             }
+            append(&primitive_components, &pc)
+            append(&entities, a.entities[i])
             append(&build_primitives, build_prim)
-        }
+            pid += 1
+       }
     }
 
     // Set up build arguments
