@@ -267,56 +267,6 @@ debug_transform_impact :: proc() {
     }
 }
 
-// Debug function to show BVH entities and their primitive info before/after BVH operations
-debug_bvh_primitives :: proc(bvh_system: ^Sys_Bvh) {
-    fmt.println("=== BVH Primitives Debug ===")
-
-    fmt.println("BEFORE BVH update:")
-    print_bvh_entities_primitives(bvh_system, "BEFORE")
-
-    // Run the BVH operation you want to debug
-    bvh_system_build(bvh_system)  // or whatever BVH operation you're debugging
-
-    fmt.println("\nAFTER BVH update:")
-    print_bvh_entities_primitives(bvh_system, "AFTER")
-
-    fmt.println("=== End BVH Debug ===")
-}
-
-// Helper to print BVH entities and their primitive component info
-print_bvh_entities_primitives :: proc(using bvh_system: ^Sys_Bvh, label: string) {
-
-    fmt.printf("%s - BVH has %d entities:\n", label, len(entities))
-
-    for entity, i in entities {
-        // Get the primitive component for this entity
-        primitive := get_component(entity, Cmp_Primitive)
-        node := get_component(entity, Cmp_Node)
-
-        if primitive != nil {
-            entity_name := node.name if node != nil && len(node.name) > 0 else fmt.aprintf("Entity_%d", entity)
-            defer if node == nil || len(node.name) == 0 do delete(entity_name)
-
-            // Extract position from primitive world matrix
-            pos_x := primitive.world[3][0]
-            pos_y := primitive.world[3][1]
-            pos_z := primitive.world[3][2]
-
-            fmt.printf("  [%d] %s (ID: %d) | Pos: (%.3f, %.3f, %.3f) | Size: (%.3f, %.3f, %.3f)\n",
-                       i, entity_name, entity,
-                       pos_x, pos_y, pos_z,
-                       primitive.extents.x, primitive.extents.y, primitive.extents.z)
-        } else {
-            fmt.printf("  [%d] Entity %d - NO PRIMITIVE COMPONENT!\n", i, entity)
-        }
-    }
-
-}
-
-
-// SQT Transform procedure (main transformation logic)
-// SQT Transform procedure (main transformation logic)
-
 // SQT Transform procedure (main transformation logic)
 sqt_transform :: proc(nc: ^Cmp_Node) {
     tc := get_component(nc.entity, Cmp_Transform)
@@ -456,9 +406,9 @@ Sys_Bvh :: struct {
     num_nodes: i32,
 
     // Entity and primitive data
-    entities: [dynamic]Entity,
-    primitive_components: [dynamic]^Cmp_Primitive,
-    build_primitives: [dynamic]embree.RTCBuildPrimitive,
+    // entities: [dynamic]Entity,
+    // primitive_components: [dynamic]^Cmp_Primitive,
+    // build_primitives: [dynamic]embree.RTCBuildPrimitive,
 
     // Rebuild flag
     rebuild: bool,
@@ -468,13 +418,14 @@ Sys_Bvh :: struct {
 g_num_nodes: i32 = 0
 
 // Create a new BVH system
-bvh_system_create :: proc() -> ^Sys_Bvh {
+bvh_system_create :: proc(alloc: mem.Allocator) -> ^Sys_Bvh {
     fmt.println("creating bvh")
     system := new(Sys_Bvh)
  //   system.entities = make([dynamic]Entity)
-    system.primitive_components = make([dynamic]^Cmp_Primitive)
-    system.build_primitives = make([dynamic]embree.RTCBuildPrimitive)
-    system.rebuild = false
+    // system.primitive_components = make([dynamic]^Cmp_Primitive, alloc)
+    // system.build_primitives = make([dynamic]embree.RTCBuildPrimitive, alloc)
+    // system.entities = make([dynamic]Entity, alloc)
+    system.rebuild = true
 
     // Initialize Embree
     system.device = embree.rtcNewDevice(nil)
@@ -503,9 +454,6 @@ bvh_system_destroy :: proc(using system: ^Sys_Bvh) {
     embree.rtcReleaseBVH(bvh)
     embree.rtcReleaseDevice(device)
 
-//    delete(entities)
-    delete(primitive_components)
-    delete(build_primitives)
 
     free(system)
 }
@@ -641,21 +589,19 @@ create_leaf :: proc "c" (
 }
 
 // Build the BVH tree
-bvh_system_build :: proc(using system: ^Sys_Bvh) {
-    //First clear everything
+bvh_system_build :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
+    //context.allocator = alloc
+    if !rebuild do return
     g_num_nodes = 0
-    clear(&build_primitives)
-    clear(&entities)
-    clear(&primitive_components)
 
     //Now Begin reseriving
     archetypes := query(has(Cmp_Primitive), has(Cmp_Node), has(Cmp_Transform))
     num_ents := 0
     for a in archetypes do num_ents += len(a.entities)
 
-    reserve(&build_primitives, num_ents)
-    reserve(&entities, num_ents)
-    reserve(&primitive_components, num_ents)
+    prims := make([dynamic]embree.RTCBuildPrimitive, 0, num_ents, alloc)
+    entts := make([dynamic]Entity, 0, num_ents, alloc)
+    pcmps := make([dynamic]^Cmp_Primitive, 0, num_ents, alloc)
 
     // Asemble!
     pid := 0
@@ -677,9 +623,9 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
                 upper_z = upper.z,
                 primID = u32(pid)
             }
-            append(&primitive_components, &pc)
-            append(&entities, a.entities[i])
-            append(&build_primitives, build_prim)
+            append(&pcmps, &pc)
+            append(&entts, a.entities[i])
+            append(&prims, build_prim)
             pid += 1
        }
     }
@@ -700,9 +646,9 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
         traversalCost = 1.0,
         intersectionCost = 1.0,
         bvh = system.bvh,
-        primitives = raw_data(system.build_primitives),
-        primitiveCount = c.size_t(len(system.build_primitives)),
-        primitiveArrayCapacity = c.size_t(cap(system.build_primitives)),
+        primitives = raw_data(prims),
+        primitiveCount = c.size_t(len(prims)),
+        primitiveArrayCapacity = c.size_t(cap(prims)),
         createNode = create_inner,
         setNodeChildren = set_children,
         setNodeBounds = set_bounds,
@@ -716,80 +662,8 @@ bvh_system_build :: proc(using system: ^Sys_Bvh) {
     root_raw := embree.rtcBuildBVH(&arguments)
     system.root = root_raw
     system.num_nodes = g_num_nodes
-}
 
-// // Add entity to BVH system
-// bvh_system_add_entity :: proc(system: ^Sys_Bvh, entity: Entity) {
-//     system.rebuild = true
-//     append(&system.entities, entity)
-
-//     // Get primitive component
-//     prim_comp := get_component(entity, Cmp_Primitive)
-//     if prim_comp != nil {
-//         append(&system.primitive_components, prim_comp)
-//     }
-// }
-
-// Remove entity from BVH system
-// bvh_system_remove_entity :: proc(system: ^Sys_Bvh, entity: Entity) {
-//     system.rebuild = true
-
-//     // Find and remove entity
-//     for e, i in system.entities {
-//         if e == entity {
-//             ordered_remove(&system.entities, i)
-//             ordered_remove(&system.primitive_components, i)
-//             break
-//         }
-//     }
-// }
-
-// Check if rebuild is needed and build if so
-bvh_system_update :: proc(system: ^Sys_Bvh) {
-    if system.rebuild {
-        bvh_system_build(system)
-        system.rebuild = false
-    }
-}
-
-// // ECS integration procedures
-// bvh_system_query_entities :: proc() -> []Entity {
-//     // Query for entities with Cmp_Node, Cmp_Transform, andCmp_Primitive
-//     archetypes := query(
-//         ecs.has(Cmp_Node),
-//         ecs.has(Cmp_Transform),
-//         ecs.has(Cmp_Primitive))
-
-//     entities: [dynamic]Entity
-//     defer delete(entities)
-
-//     for archetype in archetypes {
-//         for entity in archetype.entities {
-//             append(&entities, entity)
-//         }
-//     }
-
-//     return entities[:]
-// }
-
-// Initialize BVH system with existing entities
-bvh_system_initialize :: proc(system: ^Sys_Bvh) {
-    // for arch in query(has(Cmp_Node), has(Cmp_Transform), has(Cmp_Primitive)){
-    // for entity in arch.entities {
-    //     bvh_system_add_entity(system, entity)
-    // }}
-
-    // Do initial build
-    bvh_system_build(system)
-}
-
-// Print BVH statistics (utility function)
-bvh_system_print_stats :: proc(using system: ^Sys_Bvh) {
-    fmt.printf("BVH Statistics:\n")
-//    fmt.printf("  Entities: %d\n", len(entities))
-    fmt.printf("  Primitives: %d\n", len(primitive_components))
-    fmt.printf("  Nodes: %d\n", num_nodes)
-    fmt.printf("  Root SAH: %.2f\n", bvh_sah(root))
+    update_bvh(&prims, entts, root, num_nodes)
 }
 
 //----------------------------------------------------------------------------\\

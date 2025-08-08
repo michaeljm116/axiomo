@@ -56,78 +56,72 @@ main :: proc() {
 
 	g_world = ecs.create_world()
 	g_world_ent = add_entity()
-	g_bvh = bvh_system_create()
 	defer bvh_system_destroy(g_bvh)
 
 	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 0, false})
 
 	defer ecs.delete_world(g_world)
 
-	// Create an arena allocator using context.temp_allocator
+	// Create an arena allocator for long-lived allocations (e.g., materials, models, scenes)
 	arena: mem.Arena
-	arena_data: []byte = make([]byte, 1024 * 1024 * 500, context.temp_allocator) // 1 MiB
-
-
+	arena_data: []byte = make([]byte, 1024 * 1024 * 120, context.allocator) // 120 MiB; backing on heap for persistence
 	mem.arena_init(&arena, arena_data)
-	defer mem.arena_free_all(&arena)
+	defer delete(arena_data) // Explicitly free backing buffer at program end
+	defer mem.arena_free_all(&arena) // Free all allocations from the arena (though defer delete handles backing)
 	arena_alloc := mem.arena_allocator(&arena)
+
+	// Create a per-frame arena for transient data (e.g., BVH construction primitives/nodes)
+	per_frame_arena: mem.Arena
+	per_frame_arena_data: []byte = make([]byte, 1024 * 1024 * 8, context.allocator) // 8 MiB example; monitor with tracking allocator
+	mem.arena_init(&per_frame_arena, per_frame_arena_data)
+	defer delete(per_frame_arena_data) // Explicitly free backing buffer at program end
+	defer mem.arena_free_all(&per_frame_arena) // Free all (though typically reset per frame)
+	per_frame_alloc := mem.arena_allocator(&per_frame_arena)
+
+	g_bvh = bvh_system_create(per_frame_alloc)
+
 
 	context.logger = log.create_console_logger()
 	defer free(context.logger.data)
 	rb.ctx = context
+
+
+	// begin loading data
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)
 	res.load_materials("assets/Materials.xml", &g_materials)
-	for m, i in g_materials {
-		//log.infof("Material Index: %d  | Name: %s ", i, m.name)
-	}
 	scene := sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker2.json", arena_alloc)
-
 	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
-
 	g_models = make([dynamic]res.Model, 0, arena_alloc)
 	res.load_directory("assets/Models/", &g_models)
 	poses := res.load_pose("assets/1_Jungle/Animations/Froku.anim", "Froku", arena_alloc)
 
-	// TODO: update vendor bindings to glfw 3.4 and use this to set a custom allocator.
-	// glfw.InitAllocator()
-
-	// TODO: set up Vulkan allocator.
+	//Begin renderer and scene loading
 	start_up_raytracer(arena_alloc)
-
 	load_scene(scene, arena_alloc)
-	// debug_transform_impact()
-	// if true do return
-	fmt.println("-------------------\nBefore change")
-	primitive_debug_print_hierarchy()
 	transform_sys_process()
-	//	if true do return
-	bvh_system_initialize(g_bvh)
-	//bvh_system_build(g_bvh)
-	debug_bvh_primitives(g_bvh)
+	bvh_system_build(g_bvh, per_frame_alloc)
+	//	gameplay_init()
 
-	print_update_bvh_debug(&g_bvh.build_primitives, g_bvh.entities)
-	update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
-
-	fmt.println("-------------------\nAfterChange")
-	primitive_debug_print_hierarchy()
-//if true do return
-	gameplay_init()
+	//begin renderer
 	initialize_raytracer()
 	glfw.PollEvents()
 	start_frame(&image_index)
+
+	//Update renderer
 	for !glfw.WindowShouldClose(rb.window) {
 		end_frame(&image_index)
 		// Poll and free: Move to main loop if overlapping better
 		glfw.PollEvents()
-		free_all(context.temp_allocator)
+//		free_all(context.temp_allocator)
 
-		gameplay_update(0.015)
-		bvh_system_build(g_bvh)
-		transform_sys_process()
-
-		update_bvh(&g_bvh.build_primitives, g_bvh.entities, g_bvh.root, g_bvh.num_nodes)
-		update_descriptors()
 		start_frame(&image_index)
+	//	gameplay_update(0.015)
+		transform_sys_process()
+		bvh_system_build(g_bvh, per_frame_alloc)
+		update_descriptors()
+
+		// Reset per-frame arena after all frame processing (ensures data is used before free)
+		mem.arena_free_all(&per_frame_arena)
 	}
 	vk.DeviceWaitIdle(rb.device)
 	destroy_vulkan()

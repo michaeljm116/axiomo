@@ -875,7 +875,7 @@ init_vma :: proc()
 
 	create_info := vma.AllocatorCreateInfo {
 		flags = {.EXT_MEMORY_BUDGET},
-		vulkanApiVersion = vk.API_VERSION_1_2,
+		vulkanApiVersion = vk.API_VERSION_1_4,
 		instance = rb.instance,
 		device = rb.device,
 		physicalDevice = rb.physical_device,
@@ -1366,7 +1366,7 @@ update_vulkan :: proc()
 		glfw.PollEvents()
 
 		// Wait for previous frame.
-		must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, max(u64)))
+		must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, fence_timeout_ns))
 
 		// Acquire an image from the swapchain.
 		acquire_result := vk.AcquireNextImageKHR(
@@ -2468,7 +2468,7 @@ init_staging_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int
 //----------------------------------------------------------------------------\\
 update_descriptors :: proc() {
     // Wait for fence - equivalent to vkWaitForFences with UINT64_MAX
-    vk.WaitForFences(rb.device, 1, &rt.compute.fence, true, bits.U64_MAX)
+    vk.WaitForFences(rb.device, 1, &rt.compute.fence, true, fence_timeout_ns)
 
     // Create write descriptor sets for the specific bindings you need
     // Based on your C++ code, you need bindings 6-10 for primitives, materials, lights, guis, and bvh
@@ -2543,7 +2543,7 @@ update_descriptors :: proc() {
 }
 
 update_buffers :: proc() {
-    vk.WaitForFences(rb.device, 1, &rt.compute.fence, true, max(u64))
+    vk.WaitForFences(rb.device, 1, &rt.compute.fence, true, fence_timeout_ns)
 
     if rt.update_flags == {} do return
 
@@ -2844,9 +2844,10 @@ add_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
     rt.update_flags |= {.GUI}
 }
 
+fence_timeout_ns :: 1_000_000_000 // 1 second
 start_frame :: proc(image_index: ^u32) {
     // Wait/reset graphics fence for prior frame sync (enables multi-frame overlap)
-    must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, max(u64)))
+    must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, fence_timeout_ns))
     must(vk.ResetFences(rb.device, 1, &rb.in_flight_fences[current_frame]))
 
     result := vk.AcquireNextImageKHR(
@@ -2905,7 +2906,7 @@ end_frame :: proc(image_index: ^u32) {
     // No QueueWaitIdle: Use fences for async sync instead
 
     // Compute: Wait/reset dedicated compute fence (matches C++)
-    must(vk.WaitForFences(rb.device, 1, &rt.compute.fence, true, max(u64)))
+    must(vk.WaitForFences(rb.device, 1, &rt.compute.fence, true, fence_timeout_ns))
     must(vk.ResetFences(rb.device, 1, &rt.compute.fence))
 
     compute_submit_info := vk.SubmitInfo{
