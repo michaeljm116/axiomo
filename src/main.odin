@@ -100,31 +100,28 @@ main :: proc() {
 	load_scene(scene, arena_alloc)
 	transform_sys_process()
 	bvh_system_build(g_bvh, per_frame_alloc)
-	//	gameplay_init()
+	gameplay_init()
 
 	//begin renderer
 	initialize_raytracer()
 	glfw.PollEvents()
-	start_frame(&image_index)
 
 	//Update renderer
 	for !glfw.WindowShouldClose(rb.window) {
-		end_frame(&image_index)
+    	start_frame(&image_index)
 		// Poll and free: Move to main loop if overlapping better
 		glfw.PollEvents()
-//		free_all(context.temp_allocator)
-
-		start_frame(&image_index)
-	//	gameplay_update(0.015)
 		transform_sys_process()
 		bvh_system_build(g_bvh, per_frame_alloc)
 		update_descriptors()
-
+		gameplay_update(0.015)
+		end_frame(&image_index)
 		// Reset per-frame arena after all frame processing (ensures data is used before free)
 		mem.arena_free_all(&per_frame_arena)
 	}
 	vk.DeviceWaitIdle(rb.device)
 	destroy_vulkan()
+	gameplay_destroy()
 }
 
 leak_detection :: proc() {
