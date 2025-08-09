@@ -96,7 +96,7 @@ init_vulkan :: proc()
 	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
 	glfw.WindowHint(glfw.RESIZABLE, glfw.TRUE)
 
-	rb.window = glfw.CreateWindow(800, 600, "Vulkan", nil, nil)
+	rb.window = glfw.CreateWindow(1280, 720, "Bee Killings Inn", nil, nil)
 
 	glfw.SetFramebufferSizeCallback(rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
 		rb.framebuffer_resized = true
@@ -112,10 +112,10 @@ init_vulkan :: proc()
 		sType            = .INSTANCE_CREATE_INFO,
 		pApplicationInfo = &vk.ApplicationInfo {
 			sType = .APPLICATION_INFO,
-			pApplicationName = "Shiny Afro Man",
-			applicationVersion = vk.MAKE_VERSION(1, 0, 0),
+			pApplicationName = "Bee Killings Inn",
+			applicationVersion = vk.MAKE_VERSION(0, 0, 1),
 			pEngineName = "Axiomo",
-			engineVersion = vk.MAKE_VERSION(1, 0, 0),
+			engineVersion = vk.MAKE_VERSION(0, 0, 1),
 			apiVersion = vk.API_VERSION_1_3,
 		},
 	}
