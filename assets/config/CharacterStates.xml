@@ -1,0 +1,13 @@
+<Root>
+	<Character Name="Froku">
+		<State Type="0" Name="Idle" Start="2.25" End="2.25"/>
+		<State Type="1" Name="Stab" Start="2.1" End="2.1"/>
+		<State Type="2" Name="Slash" Start="2.2" End="2.1"/>
+		<State Type="3" Name="Shield" Start="2.1" End="2.2"/>
+		<State Type="4" Name="Run" Start="2.25" End="2.25"/>
+		<State Type="5" Name="Pierce" Start="2.15" End="2.1"/>
+		<State Type="6" Name="SlashDash" Start="2.25" End="2.15"/>
+		<State Type="7" Name="Dodge" Start ="2.1" End="2.2"/>
+		<State Type="1" Name="Punch" Start ="2.05" End="2.05"/>
+	</Character>
+</Root>

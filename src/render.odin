@@ -2451,12 +2451,12 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
 }
 
 texture_paths := [6]string{
-    "assets/1_Jungle/Textures/numbers.png",
-    "assets/1_Jungle/Textures/pause.png",
-    "assets/1_Jungle/Textures/circuit.jpg",
-    "assets/1_Jungle/Textures/ARROW.png",
-    "assets/1_Jungle/Textures/debugr.png",
-    "assets/1_Jungle/Textures/title.png",
+    "assets/textures/numbers.png",
+    "assets/textures/pause.png",
+    "assets/textures/circuit.jpg",
+    "assets/textures/ARROW.png",
+    "assets/textures/debugr.png",
+    "assets/textures/title.png",
 }
 
 init_staging_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int )

@@ -388,7 +388,7 @@ cmp_transform_prs_q :: proc(pos: vec3, rot: vec4, sca: vec3) -> Cmp_Transform {
     tc.local.rot = transmute(quat)rot // math.quaternion_from_matrix4_f32(rotation_matrix)
     tc.local.pos = {pos.x, pos.y, pos.z, 0.0}
     tc.local.sca = {sca.x, sca.y, sca.z, 0.0}
-rotation_matrix := math.matrix4_from_quaternion_f32(tc.local.rot)
+    rotation_matrix := math.matrix4_from_quaternion_f32(tc.local.rot)
     // Set up world matrix
     tc.world = rotation_matrix
     tc.world[3] = {pos.x, pos.y, pos.z, 1.0}  // Set translation

@@ -1,0 +1,347 @@
+{
+  "Node": [
+    {
+      "AspectRatio": {
+        "_ratio": 1.7777777910232544
+      },
+      "FOV": {
+        "_fov": 104.0
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": -6.0,
+          "_z": -14.0
+        },
+        "Rotation": {
+          "_w": 0.9588196873664856,
+          "_x": -0.28401535749435425,
+          "_y": 2.478501626157481e-09,
+          "_z": 8.367280202037364e-09
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "Camera",
+      "_eFlags": 2228243,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Color": {
+        "_b": 255.0,
+        "_g": 255.0,
+        "_r": 255.0
+      },
+      "ID": {
+        "_id": 95
+      },
+      "Intensity": {
+        "_i": 736.6409912109375
+      },
+      "Transform": {
+        "Position": {
+          "_x": -0.8701705932617188,
+          "_y": -3.4610862731933594,
+          "_z": 0.15008926391601563
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "Light",
+      "_eFlags": 2228235,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Collider": {
+        "Extents": {
+          "_x": 20.0,
+          "_y": 4.0,
+          "_z": 20.0
+        },
+        "Local": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "_Type": 1
+      },
+      "Material": {
+        "_ID": -874053208
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Rigid": {
+        "_Rigid": true
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": -20.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 8.726646001377958e-07,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 40.0,
+          "_y": 4.0,
+          "_z": 40.0
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "Floor",
+      "_eFlags": 2334727,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Collider": {
+        "Extents": {
+          "_x": 35.0,
+          "_y": 10.0,
+          "_z": 10.0
+        },
+        "Local": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "_Type": 1
+      },
+      "Material": {
+        "_ID": -382174016
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Rigid": {
+        "_Rigid": true
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": -10.0,
+          "_z": 24.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 35.0,
+          "_y": 10.0,
+          "_z": 10.0
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "topWall",
+      "_eFlags": 2334727,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Collider": {
+        "Extents": {
+          "_x": 10.0,
+          "_y": 10.0,
+          "_z": 16.0
+        },
+        "Local": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "_Type": 1
+      },
+      "Material": {
+        "_ID": -382174016
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": 24.0,
+          "_y": -10.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 8.726646001377958e-07
+        },
+        "Scale": {
+          "_x": 10.0,
+          "_y": 10.0,
+          "_z": 16.0
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "rightWall",
+      "_eFlags": 2326535,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Collider": {
+        "Extents": {
+          "_x": 10.0,
+          "_y": 10.0,
+          "_z": 10.0
+        },
+        "Local": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "_Type": 1
+      },
+      "Material": {
+        "_ID": -382174016
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": -24.0,
+          "_y": -10.0,
+          "_z": 14.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 8.726646001377958e-07
+        },
+        "Scale": {
+          "_x": 10.0,
+          "_y": 10.0,
+          "_z": 10.0
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "leftWall_t",
+      "_eFlags": 2326535,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Collider": {
+        "Extents": {
+          "_x": 10.0,
+          "_y": 10.0,
+          "_z": 10.0
+        },
+        "Local": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "_Type": 1
+      },
+      "Material": {
+        "_ID": -382174016
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": -24.0,
+          "_y": -10.0,
+          "_z": -14.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 8.726646001377958e-07
+        },
+        "Scale": {
+          "_x": 10.0,
+          "_y": 10.0,
+          "_z": 10.0
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "leftWall_b",
+      "_eFlags": 2326535,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Collider": {
+        "Extents": {
+          "_x": 35.0,
+          "_y": 10.0,
+          "_z": 10.0
+        },
+        "Local": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "_Type": 1
+      },
+      "Material": {
+        "_ID": -382174016
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Rigid": {
+        "_Rigid": true
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": -10.0,
+          "_z": -24.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 35.0,
+          "_y": 10.0,
+          "_z": 10.0
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "bottomWall",
+      "_eFlags": 2334727,
+      "_gFlags": 0,
+      "_hasChildren": false
+    }
+  ],
+  "Scene": {
+    "_Num": 1
+  }
+}

@@ -42,7 +42,6 @@ g_world: ^ecs.World
 g_world_ent: Entity
 g_materials: [dynamic]res.Material
 g_models: [dynamic]res.Model
-g_level_dir := "../Assets/Levels/1_Jungle/"
 g_scene: [dynamic]Entity
 g_bvh: ^Sys_Bvh
 
@@ -89,11 +88,11 @@ main :: proc() {
 	// begin loading data
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)
 	res.load_materials("assets/Materials.xml", &g_materials)
-	scene := sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker.json", arena_alloc)
+	scene := sc.load_new_scene("assets/scenes/PrefabMaker.json", arena_alloc)
 	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
 	g_models = make([dynamic]res.Model, 0, arena_alloc)
-	res.load_directory("assets/Models/", &g_models)
-	poses := res.load_pose("assets/1_Jungle/Animations/Froku.anim", "Froku", arena_alloc)
+	res.load_directory("assets/models/", &g_models)
+	poses := res.load_pose("assets/animations/Froku.anim", "Froku", arena_alloc)
 
 	//Begin renderer and scene loading
 	start_up_raytracer(arena_alloc)
