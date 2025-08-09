@@ -89,7 +89,7 @@ main :: proc() {
 	// begin loading data
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)
 	res.load_materials("assets/Materials.xml", &g_materials)
-	scene := sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker2.json", arena_alloc)
+	scene := sc.load_new_scene("assets/1_Jungle/Scenes/PrefabMaker.json", arena_alloc)
 	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
 	g_models = make([dynamic]res.Model, 0, arena_alloc)
 	res.load_directory("assets/Models/", &g_models)
@@ -99,6 +99,7 @@ main :: proc() {
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, arena_alloc)
 	transform_sys_process()
+//	if true do return
 	bvh_system_build(g_bvh, per_frame_alloc)
 	gameplay_init()
 
@@ -118,6 +119,7 @@ main :: proc() {
 		end_frame(&image_index)
 		// Reset per-frame arena after all frame processing (ensures data is used before free)
 		mem.arena_free_all(&per_frame_arena)
+//		if true do return
 	}
 	vk.DeviceWaitIdle(rb.device)
 	destroy_vulkan()

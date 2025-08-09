@@ -54,10 +54,17 @@ Vector3 :: struct {
     z: f32 `json:"_z"`,
 }
 
+// Vector3 maps to JSON objects with _x, _y, _z fields
+Vector4 :: struct {
+    i: f32 `json:"_x"`,
+    j: f32 `json:"_y"`,
+    k: f32 `json:"_z"`,
+    w: f32 `json:"_w"`,
+}
 // Transform maps to Position, Rotation, Scale
 Transform :: struct {
     Position: Vector3,
-    Rotation: Vector3,
+    Rotation: Vector4,
     Scale: Vector3,
 }
 

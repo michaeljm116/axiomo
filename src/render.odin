@@ -656,8 +656,8 @@ query_swapchain_support :: proc(
 }
 
 choose_swapchain_surface_format :: proc(formats: []vk.SurfaceFormatKHR) -> vk.SurfaceFormatKHR {
-	for format in formats {
-		if format.format == .B8G8R8A8_SRGB && format.colorSpace == .SRGB_NONLINEAR {
+    for format in formats {
+		if format.format == .B8G8R8A8_UNORM && format.colorSpace == .SRGB_NONLINEAR {
 			return format
 		}
 	}
@@ -2611,6 +2611,8 @@ update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [d
         pc := get_component(prim, Cmp_Primitive)
 
         if pc != nil {
+            n := get_component(prim, Cmp_Node)
+            //fmt.printfln("Prim #%d: %s",i, n.name)
             // Convert primitive component to GPU primitive
             gpu_prim := gpu.Primitive{
                 world = transmute(mat4f)pc.world,

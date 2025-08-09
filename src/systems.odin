@@ -286,8 +286,8 @@ sqt_transform :: proc(nc: ^Cmp_Node) {
     // Combine with parent if exists
     if has_parent {
         pt := get_component(parent_ent, Cmp_Transform)
-        tc.global.sca = tc.local.sca * pt.global.sca
-        tc.global.rot = tc.local.rot * pt.global.rot
+        tc.global.sca = pt.global.sca * tc.local.sca
+        tc.global.rot = pt.global.rot * tc.local.rot
         tc.trm = pt.world * local
         local = local * scale_m
         tc.world = pt.world * local
@@ -330,11 +330,12 @@ sqt_transform :: proc(nc: ^Cmp_Node) {
             }
         }
     }
-
     // Recurse for children
     if nc.is_parent {
+        //fmt.println("Parent: ", nc.name)
         for child_ent in nc.children {
             child_nc := get_component(child_ent, Cmp_Node)
+            //fmt.println("--Child: ", child_nc.name)
             if child_nc != nil {
                 sqt_transform(child_nc)
             }
@@ -692,9 +693,9 @@ save_node :: proc(entity: Entity) -> scene.Node {
             scene_node.Transform = scene.Transform {
                 Position = {x = trans.local.pos.x, y = trans.local.pos.y, z = trans.local.pos.z},
                 Rotation = {
-                    x = trans.euler_rotation.x,
-                    y = trans.euler_rotation.y,
-                    z = trans.euler_rotation.z,
+                    i = trans.euler_rotation.x,
+                    j = trans.euler_rotation.y,
+                    k = trans.euler_rotation.z,
                 },
                 Scale = {x = trans.local.sca.x, y = trans.local.sca.y, z = trans.local.sca.z},
             }
@@ -806,9 +807,7 @@ save_scene :: proc(head_entity: Entity, scene_num: i32) -> scene.SceneData {
 load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem.Allocator) -> Entity {
     context.allocator = alloc
     entity := add_entity()
-
     e_flags := transmute(ComponentFlags)scene_node.eFlags
-
     // Add transform
     if .TRANSFORM in e_flags {
         pos := linalg.Vector3f32 {
@@ -816,18 +815,20 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
             scene_node.Transform.Position.y,
             scene_node.Transform.Position.z,
         }
-        rot := linalg.Vector3f32 {
-            scene_node.Transform.Rotation.x,
-            scene_node.Transform.Rotation.y,
-            scene_node.Transform.Rotation.z,
+        rot := linalg.Vector4f32 {
+            scene_node.Transform.Rotation.i,
+            scene_node.Transform.Rotation.j,
+            scene_node.Transform.Rotation.k,
+            scene_node.Transform.Rotation.w,
+
         }
         sca := linalg.Vector3f32 {
             scene_node.Transform.Scale.x,
             scene_node.Transform.Scale.y,
             scene_node.Transform.Scale.z,
         }
-        trans_comp := cmp_transform_prs(pos, rot, sca)
-        add_component(entity, trans_comp)
+        trans_comp := cmp_transform_prs_q(pos, rot, sca)
+            add_component(entity, trans_comp)
     } else {
         add_component(entity, Cmp_Transform{}) // Default
         e_flags += {.TRANSFORM}

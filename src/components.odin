@@ -379,6 +379,26 @@ cmp_transform_prs :: proc(pos: vec3, rot: vec3, sca: vec3) -> Cmp_Transform {
     return tc
 }
 
+cmp_transform_prs_q :: proc(pos: vec3, rot: vec4, sca: vec3) -> Cmp_Transform {
+    tc := Cmp_Transform{}
+    // Combine rotations (order: X, Y, Z)
+    // math.matrix4_from_euler_angles_xyz_f32(rot.x, rot.y, rot.z)
+
+    // Convert rotation matrix to quaternion
+    tc.local.rot = transmute(quat)rot // math.quaternion_from_matrix4_f32(rotation_matrix)
+    tc.local.pos = {pos.x, pos.y, pos.z, 0.0}
+    tc.local.sca = {sca.x, sca.y, sca.z, 0.0}
+rotation_matrix := math.matrix4_from_quaternion_f32(tc.local.rot)
+    // Set up world matrix
+    tc.world = rotation_matrix
+    tc.world[3] = {pos.x, pos.y, pos.z, 1.0}  // Set translation
+
+    // TRM is the same as world matrix in this case
+    tc.trm = rotation_matrix
+
+    return tc
+}
+
 node_component_default :: proc(entity: Entity) -> Cmp_Node {
     nc := Cmp_Node{}
     nc.entity = entity

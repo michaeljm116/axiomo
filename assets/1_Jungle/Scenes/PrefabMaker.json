@@ -1,90 +1,85 @@
 {
-  "Scene": {
-    "_Num": 1
-  },
   "Node": [
     {
-      "Transform": {
-        "Position": {
-          "_x": -2.2300148,
-          "_y": 13.549587,
-          "_z": -12.889843
-        },
-        "Rotation": {
-          "_x": -38,
-          "_y": 0,
-          "_z": 0
-        },
-        "Scale": {
-          "_x": 1,
-          "_y": 1,
-          "_z": 1
-        }
-      },
       "AspectRatio": {
-        "_ratio": 1.7777778
+        "_ratio": 1.7777777910232544
       },
       "FOV": {
-        "_fov": 104
+        "_fov": 104.0
       },
-      "_Name": "Camera",
-      "_hasChildren": false,
-      "_eFlags": 2228243,
-      "_gFlags": 0,
-      "_Dynamic": true
-    },
-    {
       "Transform": {
         "Position": {
-          "_x": -0.80078125,
-          "_y": 7.6889963,
-          "_z": -0.28022766
+          "_x": -2.2300148010253906,
+          "_y": 13.54958724975586,
+          "_z": -12.889842987060547
         },
         "Rotation": {
-          "_x": 0,
-          "_y": -0,
-          "_z": 0
+          "_w": 0.9455186128616333,
+          "_x": -0.32556816935539246,
+          "_y": 0.0,
+          "_z": 0.0
         },
         "Scale": {
-          "_x": 1,
-          "_y": 1,
-          "_z": 1
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
         }
       },
+      "_Dynamic": true,
+      "_Name": "Camera",
+      "_eFlags": 2228243,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
       "Color": {
-        "_r": 255,
-        "_g": 255,
-        "_b": 255
-      },
-      "Intensity": {
-        "_i": "1000"
+        "_b": 255.0,
+        "_g": 255.0,
+        "_r": 255.0
       },
       "ID": {
         "_id": 51
       },
-      "_Name": "Light",
-      "_hasChildren": false,
-      "_eFlags": 2228235,
-      "_gFlags": 0,
-      "_Dynamic": true
-    },
-    {
+      "Intensity": {
+        "_i": 1000.0
+      },
       "Transform": {
         "Position": {
-          "_x": 0,
-          "_y": -5,
-          "_z": 0
+          "_x": -0.80078125,
+          "_y": 7.688996315002441,
+          "_z": -0.2802276611328125
         },
         "Rotation": {
-          "_x": 0,
-          "_y": 9.9999997e-5,
-          "_z": 0
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
         },
         "Scale": {
-          "_x": 11,
-          "_y": 1,
-          "_z": 10
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
         }
+      },
+      "_Dynamic": true,
+      "_Name": "Light",
+      "_eFlags": 2228235,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Collider": {
+        "Extents": {
+          "_x": 11.0,
+          "_y": 1.0,
+          "_z": 10.0
+        },
+        "Local": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "_Type": 1
       },
       "Material": {
         "_ID": 2054138304
@@ -95,385 +90,391 @@
       "Rigid": {
         "_Rigid": true
       },
-      "Collider": {
-        "Local": {
-          "_x": 0,
-          "_y": 0,
-          "_z": 0
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": -5.0,
+          "_z": 0.0
         },
-        "Extents": {
-          "_x": 11,
-          "_y": 1,
-          "_z": 10
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 8.726646001377958e-07,
+          "_z": 0.0
         },
-        "_Type": 1
+        "Scale": {
+          "_x": 11.0,
+          "_y": 1.0,
+          "_z": 10.0
+        }
       },
+      "_Dynamic": false,
       "_Name": "Floor",
-      "_hasChildren": false,
       "_eFlags": 2334727,
       "_gFlags": 0,
-      "_Dynamic": false
+      "_hasChildren": false
     },
     {
-      "Transform": {
-        "Position": {
-          "_x": -6.2599983,
-          "_y": 0,
-          "_z": 0
-        },
-        "Rotation": {
-          "_x": 0,
-          "_y": -0,
-          "_z": 0
-        },
-        "Scale": {
-          "_x": 1,
-          "_y": 1,
-          "_z": 1
-        }
-      },
       "Material": {
         "_ID": 588622944
       },
       "Object": {
         "_ID": -1
       },
+      "Transform": {
+        "Position": {
+          "_x": -6.259998321533203,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
       "_Name": "A",
-      "_hasChildren": false,
       "_eFlags": 2129927,
       "_gFlags": 0,
-      "_Dynamic": true
+      "_hasChildren": false
     },
     {
-      "Transform": {
-        "Position": {
-          "_x": -8.4399948,
-          "_y": 0,
-          "_z": 0
-        },
-        "Rotation": {
-          "_x": 0,
-          "_y": -0,
-          "_z": 0
-        },
-        "Scale": {
-          "_x": 1,
-          "_y": 1,
-          "_z": 1
-        }
-      },
       "Material": {
         "_ID": 588622944
       },
       "Object": {
         "_ID": -1
       },
+      "Transform": {
+        "Position": {
+          "_x": -8.439994812011719,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": false,
       "_Name": "B",
-      "_hasChildren": false,
       "_eFlags": 2129927,
       "_gFlags": 0,
-      "_Dynamic": false
+      "_hasChildren": false
     },
     {
-      "Transform": {
-        "Position": {
-          "_x": -6.5599976,
-          "_y": 0,
-          "_z": 1
-        },
-        "Rotation": {
-          "_x": 0,
-          "_y": -0,
-          "_z": 0
-        },
-        "Scale": {
-          "_x": 1,
-          "_y": 1,
-          "_z": 1
-        }
-      },
       "Material": {
         "_ID": 588622944
       },
       "Object": {
         "_ID": -1
       },
+      "Transform": {
+        "Position": {
+          "_x": -6.55999755859375,
+          "_y": 0.0,
+          "_z": 1.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": false,
       "_Name": "C",
-      "_hasChildren": false,
       "_eFlags": 2129927,
       "_gFlags": 0,
-      "_Dynamic": false
+      "_hasChildren": false
     },
     {
-      "Transform": {
-        "Position": {
-          "_x": -5.8499947,
-          "_y": 0,
-          "_z": 1
-        },
-        "Rotation": {
-          "_x": 0,
-          "_y": -0,
-          "_z": 0
-        },
-        "Scale": {
-          "_x": 1,
-          "_y": 1,
-          "_z": 1
-        }
-      },
       "Material": {
         "_ID": 588622944
       },
       "Object": {
         "_ID": -1
       },
+      "Transform": {
+        "Position": {
+          "_x": -5.849994659423828,
+          "_y": 0.0,
+          "_z": 1.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": false,
       "_Name": "D",
-      "_hasChildren": false,
       "_eFlags": 2129927,
       "_gFlags": 0,
-      "_Dynamic": false
+      "_hasChildren": false
     },
     {
-      "Transform": {
-        "Position": {
-          "_x": 6.8800087,
-          "_y": -3.7609999,
-          "_z": 7.0100136
-        },
-        "Rotation": {
-          "_x": 0,
-          "_y": -0,
-          "_z": 0
-        },
-        "Scale": {
-          "_x": 1,
-          "_y": 1,
-          "_z": 1
-        }
-      },
       "Material": {
         "_ID": 588622944
       },
       "Object": {
         "_ID": -1
       },
-      "_Name": "E",
-      "_hasChildren": false,
-      "_eFlags": 2129927,
-      "_gFlags": 0,
-      "_Dynamic": false
-    },
-    {
       "Transform": {
         "Position": {
-          "_x": 2.6099777,
-          "_y": 0,
-          "_z": -4.9499893
+          "_x": 6.880008697509766,
+          "_y": -3.760999917984009,
+          "_z": 7.010013580322266
         },
         "Rotation": {
-          "_x": 0,
-          "_y": -0,
-          "_z": 0
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
         },
         "Scale": {
-          "_x": 1,
-          "_y": 1,
-          "_z": 1
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
         }
       },
+      "_Dynamic": false,
+      "_Name": "E",
+      "_eFlags": 2129927,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
       "Node": [
         {
-          "Transform": {
-            "Position": {
-              "_x": -0.60000002,
-              "_y": 0,
-              "_z": 0
-            },
-            "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 90
-            },
-            "Scale": {
-              "_x": 1,
-              "_y": 0.30000001,
-              "_z": 1
-            }
-          },
           "Material": {
             "_ID": 0
           },
           "Object": {
             "_ID": -3
           },
-          "_Name": "New Cylinder!",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": 0,
-              "_y": 0,
-              "_z": 0
+              "_x": -0.6000000238418579,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 90
+              "_w": 0.7071067690849304,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.7071067690849304
             },
             "Scale": {
-              "_x": 1,
-              "_y": 0.30000001,
-              "_z": 1
+              "_x": 1.0,
+              "_y": 0.30000001192092896,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "New Cylinder!",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 564706208
           },
           "Object": {
             "_ID": -3
           },
-          "_Name": "New Cylinder!",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": 0.60000002,
-              "_y": 0,
-              "_z": 0
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 90
+              "_w": 0.7071067690849304,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.7071067690849304
             },
             "Scale": {
-              "_x": 1,
-              "_y": 0.30000001,
-              "_z": 1
+              "_x": 1.0,
+              "_y": 0.30000001192092896,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "New Cylinder!",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 0
           },
           "Object": {
             "_ID": -3
           },
-          "_Name": "New Cylinder!",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": 1.9,
-              "_y": 0,
-              "_z": 0
+              "_x": 0.6000000238418579,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": -90
+              "_w": 0.7071067690849304,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.7071067690849304
             },
             "Scale": {
-              "_x": 1,
-              "_y": 1,
-              "_z": 1
+              "_x": 1.0,
+              "_y": 0.30000001192092896,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "New Cylinder!",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 564706208
           },
           "Object": {
             "_ID": -7
           },
-          "_Name": "Cone",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": -1.5,
-              "_y": 0,
-              "_z": 0
+              "_x": 1.899999976158142,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 0
+              "_w": -0.7071067690849304,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.7071067690849304
             },
             "Scale": {
-              "_x": 1,
-              "_y": 1,
-              "_z": 1
+              "_x": 1.0,
+              "_y": 1.0,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "Cone",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 0
           },
           "Object": {
             "_ID": -1
           },
-          "_Name": "New Sphere!",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": -1.2,
-              "_y": 0,
-              "_z": 0
+              "_x": -1.5,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 90
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Scale": {
-              "_x": 1,
-              "_y": 0.30000001,
-              "_z": 1
+              "_x": 1.0,
+              "_y": 1.0,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "New Sphere!",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 564706208
           },
           "Object": {
             "_ID": -3
           },
+          "Transform": {
+            "Position": {
+              "_x": -1.2000000476837158,
+              "_y": 0.0,
+              "_z": 0.0
+            },
+            "Rotation": {
+              "_w": 0.7071067690849304,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.7071067690849304
+            },
+            "Scale": {
+              "_x": 1.0,
+              "_y": 0.30000001192092896,
+              "_z": 1.0
+            }
+          },
+          "_Dynamic": false,
           "_Name": "New Cylinder!",
-          "_hasChildren": false,
           "_eFlags": 32775,
           "_gFlags": 0,
-          "_Dynamic": false
+          "_hasChildren": false
         },
         {
+          "Material": {
+            "_ID": 0
+          },
+          "Object": {
+            "_ID": -1
+          },
           "Transform": {
             "Position": {
-              "_x": -2,
-              "_y": 0.37,
-              "_z": 0.38999999
+              "_x": -2.0,
+              "_y": 0.3700000047683716,
+              "_z": 0.38999998569488525
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 0
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Scale": {
               "_x": 0.5,
@@ -481,29 +482,30 @@
               "_z": 0.5
             }
           },
+          "_Dynamic": true,
+          "_Name": "New Sphere!",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 0
           },
           "Object": {
             "_ID": -1
           },
-          "_Name": "New Sphere!",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": -1.98,
-              "_y": 0.37,
-              "_z": -0.41
+              "_x": -1.9800000190734863,
+              "_y": 0.3700000047683716,
+              "_z": -0.4099999964237213
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 0
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Scale": {
               "_x": 0.5,
@@ -511,235 +513,243 @@
               "_z": 0.5
             }
           },
-          "Material": {
-            "_ID": 0
-          },
-          "Object": {
-            "_ID": -1
-          },
+          "_Dynamic": false,
           "_Name": "New Sphere!",
-          "_hasChildren": false,
           "_eFlags": 32775,
           "_gFlags": 0,
-          "_Dynamic": false
+          "_hasChildren": false
         }
       ],
-      "_Name": "Bee",
-      "_hasChildren": true,
-      "_eFlags": 2097155,
-      "_gFlags": 0,
-      "_Dynamic": false
-    },
-    {
       "Transform": {
         "Position": {
-          "_x": 4.4699287,
-          "_y": 0,
-          "_z": 5.9998512
+          "_x": 2.6099777221679688,
+          "_y": 0.0,
+          "_z": -4.949989318847656
         },
         "Rotation": {
-          "_x": -3,
-          "_y": 0,
-          "_z": 0
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
         },
         "Scale": {
-          "_x": 1,
-          "_y": 1,
-          "_z": 1
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
         }
       },
+      "_Dynamic": false,
+      "_Name": "Bee",
+      "_eFlags": 2097155,
+      "_gFlags": 0,
+      "_hasChildren": true
+    },
+    {
       "Node": [
         {
-          "Transform": {
-            "Position": {
-              "_x": -0.60000002,
-              "_y": 0,
-              "_z": 0
-            },
-            "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 90
-            },
-            "Scale": {
-              "_x": 1,
-              "_y": 0.30000001,
-              "_z": 1
-            }
-          },
           "Material": {
             "_ID": 0
           },
           "Object": {
             "_ID": -3
           },
-          "_Name": "New Cylinder!",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": 0,
-              "_y": 0,
-              "_z": 0
+              "_x": -0.6000000238418579,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 90
+              "_w": 0.7071067690849304,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.7071067690849304
             },
             "Scale": {
-              "_x": 1,
-              "_y": 0.30000001,
-              "_z": 1
+              "_x": 1.0,
+              "_y": 0.30000001192092896,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "New Cylinder!",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 564706208
           },
           "Object": {
             "_ID": -3
           },
-          "_Name": "New Cylinder!",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": 0.60000002,
-              "_y": 0,
-              "_z": 0
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 90
+              "_w": 0.7071067690849304,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.7071067690849304
             },
             "Scale": {
-              "_x": 1,
-              "_y": 0.30000001,
-              "_z": 1
+              "_x": 1.0,
+              "_y": 0.30000001192092896,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "New Cylinder!",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 0
           },
           "Object": {
             "_ID": -3
           },
-          "_Name": "New Cylinder!",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": 1.9,
-              "_y": 0,
-              "_z": 0
+              "_x": 0.6000000238418579,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": -90
+              "_w": 0.7071067690849304,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.7071067690849304
             },
             "Scale": {
-              "_x": 1,
-              "_y": 1,
-              "_z": 1
+              "_x": 1.0,
+              "_y": 0.30000001192092896,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "New Cylinder!",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 564706208
           },
           "Object": {
             "_ID": -7
           },
-          "_Name": "Cone",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": -1.5,
-              "_y": 0,
-              "_z": 0
+              "_x": 1.899999976158142,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 0
+              "_w": -0.7071067690849304,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.7071067690849304
             },
             "Scale": {
-              "_x": 1,
-              "_y": 1,
-              "_z": 1
+              "_x": 1.0,
+              "_y": 1.0,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "Cone",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 0
           },
           "Object": {
             "_ID": -1
           },
-          "_Name": "New Sphere!",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": -1.2,
-              "_y": 0,
-              "_z": 0
+              "_x": -1.5,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 90
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Scale": {
-              "_x": 1,
-              "_y": 0.30000001,
-              "_z": 1
+              "_x": 1.0,
+              "_y": 1.0,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "New Sphere!",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 564706208
           },
           "Object": {
             "_ID": -3
           },
+          "Transform": {
+            "Position": {
+              "_x": -1.2000000476837158,
+              "_y": 0.0,
+              "_z": 0.0
+            },
+            "Rotation": {
+              "_w": 0.7071067690849304,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.7071067690849304
+            },
+            "Scale": {
+              "_x": 1.0,
+              "_y": 0.30000001192092896,
+              "_z": 1.0
+            }
+          },
+          "_Dynamic": false,
           "_Name": "New Cylinder!",
-          "_hasChildren": false,
           "_eFlags": 32775,
           "_gFlags": 0,
-          "_Dynamic": false
+          "_hasChildren": false
         },
         {
+          "Material": {
+            "_ID": 564706208
+          },
+          "Object": {
+            "_ID": -1
+          },
           "Transform": {
             "Position": {
-              "_x": -2,
-              "_y": 0.37,
-              "_z": 0.38999999
+              "_x": -2.0,
+              "_y": 0.3700000047683716,
+              "_z": 0.38999998569488525
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 0
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Scale": {
               "_x": 0.5,
@@ -747,29 +757,30 @@
               "_z": 0.5
             }
           },
+          "_Dynamic": true,
+          "_Name": "New Sphere!",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": 564706208
           },
           "Object": {
             "_ID": -1
           },
-          "_Name": "New Sphere!",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": -1.98,
-              "_y": 0.37,
-              "_z": -0.41
+              "_x": -1.9800000190734863,
+              "_y": 0.3700000047683716,
+              "_z": -0.4099999964237213
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 0
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Scale": {
               "_x": 0.5,
@@ -777,19 +788,19 @@
               "_z": 0.5
             }
           },
-          "Material": {
-            "_ID": 564706208
-          },
-          "Object": {
-            "_ID": -1
-          },
+          "_Dynamic": false,
           "_Name": "New Sphere!",
-          "_hasChildren": false,
           "_eFlags": 32775,
           "_gFlags": 0,
-          "_Dynamic": false
+          "_hasChildren": false
         },
         {
+          "Material": {
+            "_ID": -951317523
+          },
+          "Object": {
+            "_ID": -2
+          },
           "Transform": {
             "Position": {
               "_x": -0.75,
@@ -797,29 +808,30 @@
               "_z": 1.5
             },
             "Rotation": {
-              "_x": 1,
-              "_y": -0,
-              "_z": 0
+              "_w": 0.9999619126319885,
+              "_x": 0.008726535364985466,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Scale": {
               "_x": 0.5,
-              "_y": 0.1,
-              "_z": 1
+              "_y": 0.10000000149011612,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "New Box!",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": -951317523
           },
           "Object": {
             "_ID": -2
           },
-          "_Name": "New Box!",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
               "_x": -0.75,
@@ -827,328 +839,356 @@
               "_z": -1.5
             },
             "Rotation": {
-              "_x": 1,
-              "_y": -0,
-              "_z": 0
+              "_w": 0.9999619126319885,
+              "_x": 0.008726535364985466,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Scale": {
               "_x": 0.5,
-              "_y": 0.1,
-              "_z": 1
+              "_y": 0.10000000149011612,
+              "_z": 1.0
             }
           },
-          "Material": {
-            "_ID": -951317523
-          },
-          "Object": {
-            "_ID": -2
-          },
+          "_Dynamic": false,
           "_Name": "New Box!",
-          "_hasChildren": false,
           "_eFlags": 32775,
           "_gFlags": 0,
-          "_Dynamic": false
+          "_hasChildren": false
         }
       ],
-      "_Name": "Bee",
-      "_hasChildren": true,
-      "_eFlags": 2097155,
-      "_gFlags": 0,
-      "_Dynamic": false
-    },
-    {
       "Transform": {
         "Position": {
-          "_x": -4.2700195,
-          "_y": 0,
-          "_z": 2.0303345
+          "_x": 4.469928741455078,
+          "_y": 0.0,
+          "_z": 5.999851226806641
         },
         "Rotation": {
-          "_x": 0,
-          "_y": -0,
-          "_z": 0
+          "_w": 0.9996573328971863,
+          "_x": -0.026176948100328445,
+          "_y": 0.0,
+          "_z": 0.0
         },
         "Scale": {
-          "_x": 1,
-          "_y": 1,
-          "_z": 1
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
         }
       },
+      "_Dynamic": false,
+      "_Name": "Bee",
+      "_eFlags": 2097155,
+      "_gFlags": 0,
+      "_hasChildren": true
+    },
+    {
       "Node": [
         {
-          "Transform": {
-            "Position": {
-              "_x": 0,
-              "_y": 0,
-              "_z": 0
-            },
-            "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 0
-            },
-            "Scale": {
-              "_x": 0.2,
-              "_y": 1,
-              "_z": 1
-            }
-          },
           "Material": {
             "_ID": 564706208
           },
           "Object": {
             "_ID": -3
           },
-          "_Name": "Handle",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
           "Transform": {
             "Position": {
-              "_x": 0,
-              "_y": 1.5,
-              "_z": 0
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": -0,
-              "_z": 0
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Scale": {
-              "_x": 0.75,
-              "_y": 0.75,
-              "_z": 0.1
+              "_x": 0.20000000298023224,
+              "_y": 1.0,
+              "_z": 1.0
             }
           },
+          "_Dynamic": true,
+          "_Name": "Handle",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        },
+        {
           "Material": {
             "_ID": -951317523
           },
           "Object": {
             "_ID": -2
           },
-          "_Name": "Swatty",
-          "_hasChildren": false,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        }
-      ],
-      "_Name": "FlySwatter",
-      "_hasChildren": true,
-      "_eFlags": 2097155,
-      "_gFlags": 0,
-      "_Dynamic": false
-    },
-    {
-      "Transform": {
-        "Position": {
-          "_x": -1.0600281,
-          "_y": -0.23994446,
-          "_z": 5.6799698
-        },
-        "Rotation": {
-          "_x": 0,
-          "_y": 0,
-          "_z": 0
-        },
-        "Scale": {
-          "_x": 1,
-          "_y": 1,
-          "_z": 1
-        }
-      },
-      "Node": [
-        {
           "Transform": {
             "Position": {
-              "_x": 0,
-              "_y": 1,
-              "_z": 0
+              "_x": 0.0,
+              "_y": 1.5,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": 0,
-              "_z": 0
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Scale": {
-              "_x": 1,
-              "_y": 1,
-              "_z": 0.5
+              "_x": 0.75,
+              "_y": 0.75,
+              "_z": 0.10000000149011612
             }
           },
+          "_Dynamic": true,
+          "_Name": "Swatty",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        }
+      ],
+      "Transform": {
+        "Position": {
+          "_x": -4.27001953125,
+          "_y": 0.0,
+          "_z": 2.03033447265625
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "FlySwatter",
+      "_eFlags": 2097155,
+      "_gFlags": 0,
+      "_hasChildren": true
+    },
+    {
+      "Node": [
+        {
           "Material": {
             "_ID": 0
           },
-          "Object": {
-            "_ID": -2
-          },
           "Node": [
             {
+              "Material": {
+                "_ID": 0
+              },
+              "Node": [
+                {
+                  "Material": {
+                    "_ID": 0
+                  },
+                  "Object": {
+                    "_ID": -1
+                  },
+                  "Transform": {
+                    "Position": {
+                      "_x": -0.01953125,
+                      "_y": 2.561000108718872,
+                      "_z": 0.0
+                    },
+                    "Rotation": {
+                      "_w": 1.0,
+                      "_x": 0.0,
+                      "_y": 0.0,
+                      "_z": 0.0
+                    },
+                    "Scale": {
+                      "_x": 2.0,
+                      "_y": 2.0,
+                      "_z": 2.0
+                    }
+                  },
+                  "_Dynamic": true,
+                  "_Name": "Head",
+                  "_eFlags": 32775,
+                  "_gFlags": 0,
+                  "_hasChildren": false
+                }
+              ],
+              "Object": {
+                "_ID": -3
+              },
               "Transform": {
                 "Position": {
-                  "_x": 0,
+                  "_x": 0.0,
                   "_y": 1.5,
-                  "_z": 0
+                  "_z": 0.0
                 },
                 "Rotation": {
-                  "_x": 0,
-                  "_y": 0,
-                  "_z": 0
+                  "_w": 1.0,
+                  "_x": 0.0,
+                  "_y": 0.0,
+                  "_z": 0.0
                 },
                 "Scale": {
                   "_x": 0.5,
                   "_y": 0.5,
-                  "_z": 1
+                  "_z": 1.0
                 }
               },
+              "_Dynamic": true,
+              "_Name": "Neck",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": true
+            },
+            {
               "Material": {
                 "_ID": 0
               },
               "Object": {
                 "_ID": -3
               },
-              "Node": {
-                "Transform": {
-                  "Position": {
-                    "_x": -0.01953125,
-                    "_y": 2.5610001,
-                    "_z": 0
-                  },
-                  "Rotation": {
-                    "_x": 0,
-                    "_y": 0,
-                    "_z": 0
-                  },
-                  "Scale": {
-                    "_x": 2,
-                    "_y": 2,
-                    "_z": 2
-                  }
-                },
-                "Material": {
-                  "_ID": 0
-                },
-                "Object": {
-                  "_ID": -1
-                },
-                "_Name": "Head",
-                "_hasChildren": false,
-                "_eFlags": 32775,
-                "_gFlags": 0,
-                "_Dynamic": true
-              },
-              "_Name": "Neck",
-              "_hasChildren": true,
-              "_eFlags": 32775,
-              "_gFlags": 0,
-              "_Dynamic": true
-            },
-            {
               "Transform": {
                 "Position": {
                   "_x": -1.5,
                   "_y": -0.5,
-                  "_z": 0
+                  "_z": 0.0
                 },
                 "Rotation": {
-                  "_x": 0,
-                  "_y": 0,
-                  "_z": -45
+                  "_w": 0.9238795638084412,
+                  "_x": 0.0,
+                  "_y": 0.0,
+                  "_z": -0.3826834261417389
                 },
                 "Scale": {
                   "_x": 0.5,
                   "_y": 1.5,
-                  "_z": 2
+                  "_z": 2.0
                 }
               },
+              "_Dynamic": true,
+              "_Name": "RightArm",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            },
+            {
               "Material": {
                 "_ID": 0
               },
               "Object": {
                 "_ID": -3
               },
-              "_Name": "RightArm",
-              "_hasChildren": false,
-              "_eFlags": 32775,
-              "_gFlags": 0,
-              "_Dynamic": true
-            },
-            {
               "Transform": {
                 "Position": {
                   "_x": 1.5,
                   "_y": -0.5,
-                  "_z": 0
+                  "_z": 0.0
                 },
                 "Rotation": {
-                  "_x": 0,
-                  "_y": 0,
-                  "_z": 45
+                  "_w": 0.9238795638084412,
+                  "_x": 0.0,
+                  "_y": 0.0,
+                  "_z": 0.3826834261417389
                 },
                 "Scale": {
                   "_x": 0.5,
                   "_y": 1.5,
-                  "_z": 2
+                  "_z": 2.0
                 }
               },
-              "Material": {
-                "_ID": 0
-              },
-              "Object": {
-                "_ID": -3
-              },
+              "_Dynamic": true,
               "_Name": "LeftArm",
-              "_hasChildren": false,
               "_eFlags": 32775,
               "_gFlags": 0,
-              "_Dynamic": true
+              "_hasChildren": false
             }
           ],
-          "_Name": "UpperBody",
-          "_hasChildren": true,
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_Dynamic": true
-        },
-        {
+          "Object": {
+            "_ID": -2
+          },
           "Transform": {
             "Position": {
-              "_x": 0,
-              "_y": 0,
-              "_z": 0
+              "_x": 0.0,
+              "_y": 1.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_x": 0,
-              "_y": 0,
-              "_z": 0
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Scale": {
-              "_x": 1,
-              "_y": 1,
-              "_z": 1
+              "_x": 1.0,
+              "_y": 1.0,
+              "_z": 0.5
             }
           },
+          "_Dynamic": true,
+          "_Name": "UpperBody",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": true
+        },
+        {
           "Material": {
             "_ID": 0
           },
           "Object": {
             "_ID": -2
           },
+          "Transform": {
+            "Position": {
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
+            },
+            "Rotation": {
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
+            },
+            "Scale": {
+              "_x": 1.0,
+              "_y": 1.0,
+              "_z": 1.0
+            }
+          },
+          "_Dynamic": true,
           "_Name": "LowerBody",
-          "_hasChildren": false,
           "_eFlags": 32775,
           "_gFlags": 0,
-          "_Dynamic": true
+          "_hasChildren": false
         }
       ],
+      "Transform": {
+        "Position": {
+          "_x": -1.060028076171875,
+          "_y": -0.2399444580078125,
+          "_z": 5.679969787597656
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": false,
       "_Name": "Player",
-      "_hasChildren": true,
       "_eFlags": 2097155,
       "_gFlags": 0,
-      "_Dynamic": false
+      "_hasChildren": true
     }
-  ]
+  ],
+  "Scene": {
+    "_Num": 1
+  }
 }
