@@ -2405,6 +2405,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
             for bvh in mesh.bvhs{
                 append(&blas, gpu.BvhNode{bvh.upper, bvh.offset, bvh.lower, bvh.numChildren})
             }
+            rt.mesh_assigner[mod.unique_id + i32(i)] = {prev_ind_size,len(mesh.faces)}
         }
     }
     append(&shapes, gpu.Shape{center = {0.0, 1.0, 0.0}, type = 1})

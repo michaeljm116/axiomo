@@ -48,7 +48,7 @@ SceneData :: struct {
 }
 
 PrefabData :: struct {
-    Name: string,
+    Name: string `json:"_Name"`,
     Node: [dynamic]Node
 }
 
@@ -164,6 +164,14 @@ load_prefab :: proc(name: string, alloc := context.allocator) -> (prefab : Prefa
     data, ok := os.read_entire_file_from_filename(name, alloc)
     res.log_if_err(!ok, fmt.tprintf("Finding Prefab(%s)", name))
     json_err := json.unmarshal(data, &prefab, allocator = alloc)
+    return
+}
+
+load_prefab_node :: proc(name: string, alloc := context.allocator) -> (root: Node) {
+    data, ok := os.read_entire_file_from_filename(name, alloc)
+    res.log_if_err(!ok, fmt.tprintf("Finding Prefab(%s)", name))
+    json_err := json.unmarshal(data, &root, allocator = alloc)
+    res.log_if_err(json_err)
     return
 }
 

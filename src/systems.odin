@@ -946,13 +946,33 @@ load_scene :: proc(scene_data: scene.SceneData, alloc: mem.Allocator) {
 	}
 }
 
-load_prefab :: proc(prefab_data: scene.PrefabData, alloc : mem.Allocator) -> (prefab : Entity)
+load_prefab :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Entity)
 {
+    // First load the data from the scene module
     context.allocator = alloc
+    prefab_data := scene.load_prefab(fmt.tprintf("%s%s.json",dir,name), alloc)
     if len(prefab_data.Node) == 0 do return Entity(0)
+
+    //Create an entity
     prefab = load_node(prefab_data.Node[0], alloc = alloc)
     for node, i in prefab_data.Node{
         if(i != 0) do load_node(node, alloc = alloc)
     }
+    append(&g_scene, prefab)
+    return
+}
+
+load_prefab2 :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Entity)
+{
+    // First load the data from the scene module
+    context.allocator = alloc
+    node := scene.load_prefab_node(fmt.tprintf("%s%s.json",dir,name), alloc)
+
+    //Create an entity
+    prefab = load_node(node, alloc = alloc)
+    for node, i in node.Children{
+        if(i != 0) do load_node(node, alloc = alloc)
+    }
+    append(&g_scene, prefab)
     return
 }

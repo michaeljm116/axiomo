@@ -169,13 +169,13 @@ update_camera_rotation :: proc(delta_time: f32) {
 // Get camera forward vector
 get_camera_forward :: proc(transform: ^Cmp_Transform) -> vec3 {
     rotation_matrix := linalg.matrix4_from_quaternion_f32(transform.local.rot)
-    return -vec3{rotation_matrix[2][0], rotation_matrix[2][1], rotation_matrix[2][2]}
+    return -vec3{rotation_matrix[0][2], rotation_matrix[1][2], rotation_matrix[2][2]}
 }
 
 // Get camera right vector
 get_camera_right :: proc(transform: ^Cmp_Transform) -> vec3 {
     rotation_matrix := linalg.matrix4_from_quaternion_f32(transform.local.rot)
-    return vec3{rotation_matrix[0][0], rotation_matrix[0][1], rotation_matrix[0][2]}
+    return vec3{rotation_matrix[0][0], rotation_matrix[1][0], rotation_matrix[2][0]}
 }
 
 // Input helper functions
