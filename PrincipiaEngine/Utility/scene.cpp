@@ -45,7 +45,7 @@ void Scene::init(artemis::World& w) {
 	//LoadScene("Arena");
 
 
-	
+
 	//LoadScene("Level1/QuadsTest");
 	//LoadScene("Beginning");
 	//LoadScene("Scene3");
@@ -62,7 +62,7 @@ void Scene::doStuff() {
 
 	//for(NodeComponent* node : parents) {
 	//	//ts->recursiveTransform(node);
-	//	
+	//
 	//	if (node->engineFlags & COMPONENT_RIGIDBODY)
 	//		insertRigidBody(node);
 	//	if (node->engineFlags & COMPONENT_CCONTROLLER)
@@ -99,14 +99,14 @@ void Scene::createModel(rModel resource, std::string name, glm::vec3 pos, glm::v
 	TransformComponent* parentTransform = new TransformComponent(pos, rot, sca);
 	NodeComponent* parent = new NodeComponent(entity, name, COMPONENT_MODEL | COMPONENT_TRANSFORM | COMPONENT_AABB);// | COMPONENT_PRIMITIVE);
 
-	parent->isDynamic = dynamic; 
+	parent->isDynamic = dynamic;
 	parent->isParent = true;
 	entity->addComponent(parent);
 	entity->addComponent(parentTransform);
 	//entity->addComponent(new RenderComponent(RenderType::RENDER_PRIMITIVE));
-	
+
 	entity->refresh();
-	
+
 	//set up the subsetsx
 	int i = 0;
 	for (std::vector<rMesh>::const_iterator itr = resource.meshes.begin(); itr != resource.meshes.end(); itr++) {
@@ -159,7 +159,7 @@ void Scene::createModel(rModel resource, std::string name, glm::vec3 pos, glm::v
 		childNode->name = resource.shapes[i].name;
 		childNode->engineFlags |= COMPONENT_MATERIAL | COMPONENT_TRANSFORM | COMPONENT_PRIMITIVE;
 		parent->children.push_back(childNode);
-		
+
 		child->refresh();
 		//rs->addNode(childNode);
 		//rs->change(*child);
@@ -301,7 +301,7 @@ artemis::Entity* Scene::createGameShape(std::string name, glm::vec3 pos, glm::ve
 {
 	artemis::Entity* e = &em->create();
 	NodeComponent*		parent = new NodeComponent(e, name, COMPONENT_MATERIAL | COMPONENT_TRANSFORM | COMPONENT_PRIMITIVE);
-	TransformComponent* trans = new TransformComponent(pos, glm::vec3(0.f), scale); 
+	TransformComponent* trans = new TransformComponent(pos, glm::vec3(0.f), scale);
 	//if (type == 3)
 	// 	e->addComponent(new CollisionComponent(trans->local.position, trans->local.scale, CollisionType::Box));
 
@@ -338,12 +338,12 @@ void Scene::insertController(NodeComponent * nc)
 		controller->buttons[i].key = RESOURCEMANAGER.getConfig().controllerConfigs[controller->index].buttons[i];
 		for (int i = 0; i < 6; ++i)
 			controller->axis_buttons[i].key = to_int(RESOURCEMANAGER.getConfig().controllerConfigs[controller->index].axis[i]);
-		
+
 	}
 
 	nc->data->refresh();
 	//input->change(*nc->data);
-	
+
 	//cc->change(*nc->data);
 	//cc->characterTransform = (TransformComponent*)nc->data->getComponent<TransformComponent>();
 	//cc->characterNode = nc;
@@ -436,14 +436,14 @@ void Scene::deleteNode(std::vector<NodeComponent*>& nParents, int nIndex)
 	//First delete all children if haz childrenz
 	if (parent->children.size() > 0)
 		deleteAllChildren(parent);
-	//delete stuff 
+	//delete stuff
 	//rs->deleteNode(parent);
 	em->remove(*parent->data);
-	nParents.erase(nParents.begin() + nIndex);	
+	nParents.erase(nParents.begin() + nIndex);
 	rs->updateObjectMemory();
 }
 void Scene::deleteNode(NodeComponent* parent) {
-	//delete stuff 
+	//delete stuff
 	//rs->deleteNode(parent);
 	if (parent->children.size() > 0)
 		deleteAllChildren(parent);
@@ -458,7 +458,7 @@ void Scene::deleteNode(artemis::Entity & e)
 {
 	NodeComponent* nc = (NodeComponent*)e.getComponent<NodeComponent>();
 	em->remove(*nc->data);
-	
+
 	//YOURE GONAN HAVE A LOT OF USELESS PARENTS ithink
 
 
@@ -475,7 +475,7 @@ void Scene::copyNode(NodeComponent * node, NodeComponent* parent, std::vector<No
 	//e->getComponent<TransformComponent>();
 	//e->removeComponent<TransformComponent>();
 
-	
+
 	//create new node
 	e->addComponent(new NodeComponent(e, parent, *node));
 	NodeComponent* copy = (NodeComponent*)e->getComponent<NodeComponent>();
@@ -531,7 +531,7 @@ void Scene::copyNode(NodeComponent * node, NodeComponent* parent, std::vector<No
 	rs->updateObjectMemory();
 	e->refresh();
 	//rs->updateMeshMemory();
-	
+
 }
 
 void Scene::makeParent(NodeComponent * child)
@@ -580,7 +580,7 @@ void Scene::makeChild(NodeComponent * node, NodeComponent * parent, std::vector<
 		auto newPosRot = glm::inverse(pt->TRM) * ct->TRM;
 		ct->local.position = newPosRot[3];
 		ct->local.rotation = glm::toQuat(newPosRot);
-		ct->local.scale = ct->global.scale / pt->global.scale;		
+		ct->local.scale = ct->global.scale / pt->global.scale;
 	}
 	parent->children.push_back(node);
 	ts->recursiveTransform(node);
@@ -604,6 +604,7 @@ void Scene::updateObject(NodeComponent * node)
 
 #pragma region SAVE/LOADSCENE
 using namespace tinyxml2;
+using namespace nlohmann;
 XMLError Scene::SaveScene()// std::string name)
 {
 	//First save the directory of the level u iz in
@@ -627,6 +628,22 @@ XMLError Scene::SaveScene()// std::string name)
 	}
 	eResult = doc.SaveFile((dir+currentScene+".xml").c_str());
 	XMLCheckResult(eResult);
+
+	auto scene_data = SERIALIZENODE.saveSceneJson(parents, 1);
+
+	// Lambda for saving JSON to file (place this where needed, e.g., in your saving logic)
+	auto saveToFile = [&](const json& scene_json, const std::string& filename) {
+		std::ofstream file(filename);
+		if (file.is_open()) {
+			file << scene_json.dump(2);  // Dump with 2-space indentation
+			file.close();
+		}
+		else {
+			std::cerr << "Failed to open file: " << filename << std::endl;
+		}
+		};
+	saveToFile(scene_data, axiomo+currentScene+".json");
+
 	return eResult;
 }
 
@@ -640,14 +657,14 @@ XMLError Scene::LoadScene(std::string name)
 	XMLElement* pRoot = doc.FirstChildElement("Root");// ->FirstChildElement("Scene");
 	XMLElement* sceneN = pRoot->FirstChildElement("Scene");
 	pRoot->FirstChildElement("Scene")->QueryIntAttribute("Num", &sceneNumber); // sceneN->QueryIntAttribute("Num", &sceneNumber);
-	
+
 	int a = sceneNumber;
 
 
 	XMLElement* first = pRoot->FirstChildElement("Node");
 	XMLElement* last = pRoot->LastChildElement("Node");
 	parents = SERIALIZENODE.loadNodes(first, nullptr);
-	
+
 	//for (auto* p : parents) {
 	//	p->data->addComponent(new HeadNodeComponent());
 	//}
@@ -787,10 +804,10 @@ void Scene::deleteSceneExceptPlayer()
 
 /*
 Texture Level Creator
-	• (0,0) = black
+	ï¿½ (0,0) = black
 	* (2,1) = white
-	• (1,4) = red
-	• (4,5) = green
+	ï¿½ (1,4) = red
+	ï¿½ (4,5) = green
 	* (6,7) = blue
 */
 void Scene::LoadSceneFromTexture(std::string txtr_file)

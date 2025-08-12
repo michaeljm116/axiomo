@@ -92,7 +92,12 @@ main :: proc() {
 	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
 	g_models = make([dynamic]res.Model, 0, arena_alloc)
 	res.load_directory("assets/models/", &g_models)
+
+	for m in g_models do fmt.printfln("%s: %v", m.name, m.unique_id)
+
 	poses := res.load_pose("assets/animations/Froku.anim", "Froku", arena_alloc)
+	froku_data := sc.load_prefab("assets/prefabs/Froku.json", arena_alloc)
+	froku := load_prefab(froku_data, arena_alloc)
 
 	//Begin renderer and scene loading
 	start_up_raytracer(arena_alloc)

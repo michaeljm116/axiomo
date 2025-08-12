@@ -945,3 +945,14 @@ load_scene :: proc(scene_data: scene.SceneData, alloc: mem.Allocator) {
 		load_node(node, alloc = alloc)
 	}
 }
+
+load_prefab :: proc(prefab_data: scene.PrefabData, alloc : mem.Allocator) -> (prefab : Entity)
+{
+    context.allocator = alloc
+    if len(prefab_data.Node) == 0 do return Entity(0)
+    prefab = load_node(prefab_data.Node[0], alloc = alloc)
+    for node, i in prefab_data.Node{
+        if(i != 0) do load_node(node, alloc = alloc)
+    }
+    return
+}

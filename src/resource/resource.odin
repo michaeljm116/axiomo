@@ -254,6 +254,7 @@ load_pmodel :: proc(file_name : string, allocator: mem.Allocator) -> Model
 
     // Get num transforms??? idk why
     num_transforms := read_i32(&binaryio)
+    mod.unique_id = unique_id
     return mod
 }
 

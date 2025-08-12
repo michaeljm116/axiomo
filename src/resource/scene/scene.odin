@@ -47,6 +47,11 @@ SceneData :: struct {
     Node: [dynamic]Node,
 }
 
+PrefabData :: struct {
+    Name: string,
+    Node: [dynamic]Node
+}
+
 // Vector3 maps to JSON objects with _x, _y, _z fields
 Vector3 :: struct {
     x: f32 `json:"_x"`,
@@ -153,6 +158,13 @@ load_new_scene :: proc(name : string, allocator := context.temp_allocator) -> Sc
     //     load_node(node)
     // }
     return scene
+}
+
+load_prefab :: proc(name: string, alloc := context.allocator) -> (prefab : PrefabData) {
+    data, ok := os.read_entire_file_from_filename(name, alloc)
+    res.log_if_err(!ok, fmt.tprintf("Finding Prefab(%s)", name))
+    json_err := json.unmarshal(data, &prefab, allocator = alloc)
+    return
 }
 
 load_node :: proc(node : Node) {
