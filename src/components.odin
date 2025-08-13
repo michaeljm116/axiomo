@@ -87,9 +87,10 @@ ObjectType :: enum i32 {
 }
 
 Cmp_Node :: struct {
-    entity: Entity,                       // The entity this node represents
-    parent: Entity,                       // Parent entity (0 means no parent)
-    children: [dynamic]Entity,            // Dynamic array of child entities
+    entity: Entity,                         // The entity this node represents
+    parent: Entity,                         // Parent entity (0 means no parent)
+    child: Entity,                          // First child entity
+    brotha: Entity,                         // Next Brother Entity
     name: string,                           // Node name
     clicked: bool,                          // UI interaction state
     is_dynamic: bool,                       // Dynamic object flag
@@ -403,8 +404,9 @@ node_component_default :: proc(entity: Entity) -> Cmp_Node {
     nc := Cmp_Node{}
     nc.entity = entity
     nc.parent = Entity(0)  // 0 means no parent
+    nc.brotha = Entity(0)
+    nc.child = Entity(0)
     nc.engine_flags = {ComponentFlag.NODE}
-    nc.children = make([dynamic]Entity)
     return nc
 }
 
@@ -412,8 +414,8 @@ node_component_with_parent :: proc(entity: Entity, parent_entity: Entity) -> Cmp
     nc := Cmp_Node{}
     nc.entity = entity
     nc.parent = parent_entity
+    nc.child = Entity(0)
     nc.engine_flags = {ComponentFlag.NODE}
-    nc.children = make([dynamic]Entity)
     return nc
 }
 
@@ -423,56 +425,75 @@ node_component_named :: proc(entity: Entity, node_name: string, flags: Component
     nc.name = node_name
     nc.engine_flags = {ComponentFlag.NODE + flags}  // Combine flags
     nc.parent = Entity(0)  // 0 means no parent
-    nc.children = make([dynamic]Entity)
+    nc.child = Entity(0)
     return nc
 }
 
 // Utility procedures for node hierarchy management using the ECS
-add_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Entity) {
-    // Get parent's node component
+add_child :: proc(parent_entity, child_entity: Entity) {
     parent_node := get_component(parent_entity, Cmp_Node)
-    if parent_node == nil {
-        return  // Parent doesn't have a node component
-    }
-
-    // Get child's node component
     child_node := get_component(child_entity, Cmp_Node)
-    if child_node == nil {
-        return  // Child doesn't have a node component
-    }
+    if (parent_node == nil || child_node == nil) do return
 
-    // Add child entity to parent's children list
-    append(&parent_node.children, child_entity)
     parent_node.is_parent = true
-
-    // Update child's parent reference
     child_node.parent = parent_entity
+    if (parent_node.child == 0){
+        parent_node.child = child_entity
+    }
+    else{
+       first_child := get_component(parent_node.child, Cmp_Node)
+        last_bro := get_last_sibling(first_child)
+       last_bro.brotha = child_entity
+    }
 }
 
-remove_child :: proc(world: ^ecs.World, parent_entity: Entity, child_entity: Entity) {
+get_last_sibling :: proc(node : ^Cmp_Node) -> ^Cmp_Node{
+    last_bro := node
+    next_bro := node.brotha
+    for next_bro != Entity(0){
+        last_bro = get_component(next_bro, Cmp_Node)
+        next_bro = last_bro.brotha
+    }
+    return last_bro
+}
+
+remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
     parent_node := get_component(parent_entity, Cmp_Node)
     if parent_node == nil {
         return
     }
 
-    // Remove child from parent's children list
-    for child_ent, i in parent_node.children {
-        if child_ent == child_entity {
-            ordered_remove(&parent_node.children, i)
-            break
+    child_node := get_component(child_entity, Cmp_Node)
+    if child_node == nil {
+        return
+    }
+
+    // Check if this is the first child
+    if parent_node.child == child_entity {
+        // Update parent's first child to the next sibling
+        parent_node.child = child_node.brotha
+    } else {
+        // Find the previous sibling
+        curr := parent_node.child
+        for curr != Entity(0) {
+            curr_node := get_component(curr, Cmp_Node)
+            if curr_node.brotha == child_entity {
+                // Remove from linked list by updating previous sibling's brotha
+                curr_node.brotha = child_node.brotha
+                break
+            }
+            curr = curr_node.brotha
         }
     }
 
-    // Update parent flag
-    if len(parent_node.children) == 0 {
+    // Update parent flag if no more children
+    if parent_node.child == Entity(0) {
         parent_node.is_parent = false
     }
 
-    // Clear child's parent reference
-    child_node := get_component(child_entity, Cmp_Node)
-    if child_node != nil {
-        child_node.parent = Entity(0)
-    }
+    // Clear child's parent and sibling references
+    child_node.parent = Entity(0)
+    child_node.brotha = Entity(0)
 }
 
 get_parent :: proc(world: ^ecs.World, entity: Entity) -> Entity {
@@ -488,8 +509,20 @@ get_children :: proc(world: ^ecs.World, entity: Entity) -> []Entity {
     if node == nil {
         return nil
     }
-
-    return node.children[:]
+    
+    // Build array from linked list
+    children := make([dynamic]Entity)
+    curr := node.child
+    for curr != Entity(0) {
+        append(&children, curr)
+        curr_node := get_component(curr, Cmp_Node)
+        if curr_node != nil {
+            curr = curr_node.brotha
+        } else {
+            break
+        }
+    }
+    return children[:]
 }
 
 
@@ -512,7 +545,7 @@ create_node_entity :: proc(world: ^ecs.World, name: string, flags: ComponentFlag
 
     // If this entity has a parent, add it to the parent's children
     if parent != Entity(0) {
-        add_child(world, parent, entity)
+        add_child(parent, entity)
     }
 
     return entity
@@ -1011,17 +1044,26 @@ flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: E
         if node_comp == nil do continue
 
         // Add children to queue and graph
-        for child_ent in node_comp.children {
-            append(&queue, child_ent)
-            append(&graph.nodes, child_ent)
+        curr_child := node_comp.child
+        for curr_child != Entity(0) {
+            append(&queue, curr_child)
+            append(&graph.nodes, curr_child)
 
             // Get transform component
-            transform_comp := get_component(child_ent, Cmp_Transform)
+            transform_comp := get_component(curr_child, Cmp_Transform)
             if transform_comp != nil {
                 append(&graph.transforms, transform_comp.local)
             } else {
-                // Default transform if none exists
+                // If no transform, use identity
                 append(&graph.transforms, Sqt{})
+            }
+            
+            // Move to next sibling
+            child_node := get_component(curr_child, Cmp_Node)
+            if child_node != nil {
+                curr_child = child_node.brotha
+            } else {
+                break
             }
         }
     }

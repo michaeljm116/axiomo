@@ -99,10 +99,9 @@ main :: proc() {
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, arena_alloc)
 	froku := load_prefab2("assets/prefabs/", "Froku", arena_alloc)
-	transform_sys_process()
+	transform_sys_process2()
 	ft :Cmp_Transform= get_component(froku, Cmp_Transform)^
 	fmt.println("Froku Pos: ",ft.local.pos)
-//	if true do return
 	bvh_system_build(g_bvh, per_frame_alloc)
 	gameplay_init()
 

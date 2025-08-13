@@ -24,11 +24,44 @@ import scene "resource/scene"
 // Process all entities with Transform and Node components
 transform_sys_process :: proc() {
     archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_Root))
-
     for archetype in archetypes {
         node_comps := get_table(archetype, Cmp_Node)
-        for &node in node_comps {
-            sqt_transform(&node)
+        transform_comps := get_table(archetype, Cmp_Transform)
+        for i in 0..<len(node_comps) {
+            node := &node_comps[i]
+            fmt.printfln("Root: %s", node.name)
+
+            // Check if this is the "Froku" node and print its transform hierarchy
+            if node.name == "Froku" {
+                transform := &transform_comps[i]
+                fmt.println("\n=== Froku Transform Hierarchy ===")
+                print_entity_hierarchy(node, transform, 0)
+                fmt.println("=== End Froku Hierarchy ===\n")
+            }
+            sqt_transform(node)
+        }
+    }
+}
+
+transform_sys_process2 :: proc() {
+    archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_Root))
+    for archetype in archetypes {
+        for entity in archetype.entities do sqt_transform_e(entity)
+    }
+    for archetype in archetypes{
+        node_comps := get_table(archetype, Cmp_Node)
+        transform_comps := get_table(archetype, Cmp_Transform)
+        for i in 0..<len(node_comps) {
+            node := &node_comps[i]
+            fmt.printfln("Root: %s", node.name)
+
+            // Check if this is the "Froku" node and print its transform hierarchy
+            if node.name == "Froku" {
+                transform := &transform_comps[i]
+                fmt.println("\n=== Froku Transform Hierarchy ===")
+                print_entity_hierarchy(node, transform, 0)
+                fmt.println("=== End Froku Hierarchy ===\n")
+            }
         }
     }
 }
@@ -80,7 +113,8 @@ print_entity_hierarchy :: proc(node: ^Cmp_Node, transform: ^Cmp_Transform, depth
                transform.world[3][0], transform.world[3][1], transform.world[3][2], transform.world[3][3])
 
     // Print children recursively
-    for child_entity in node.children {
+    children := get_children(g_world, node.entity)
+    for child_entity in children {
         child_node := get_component(child_entity, Cmp_Node)
         child_transform := get_component(child_entity, Cmp_Transform)
 
@@ -139,14 +173,22 @@ print_primitive_entity_hierarchy :: proc(node: ^Cmp_Node, primitive: ^Cmp_Primit
                primitive.world[3][0], primitive.world[3][1], primitive.world[3][2], primitive.world[3][3])
 
     // Print children recursively, but only if they have all required components
-    for child_entity in node.children {
-        child_node := get_component(child_entity, Cmp_Node)
-        child_transform := get_component(child_entity, Cmp_Transform)
-        child_primitive := get_component(child_entity, Cmp_Primitive)
+    curr_child := node.child
+    for curr_child != Entity(0) {
+        child_node := get_component(curr_child, Cmp_Node)
+        child_transform := get_component(curr_child, Cmp_Transform)
+        child_primitive := get_component(curr_child, Cmp_Primitive)
 
         // Only print children that have all three required components
         if child_node != nil && child_transform != nil && child_primitive != nil {
             print_primitive_entity_hierarchy(child_node, child_primitive, depth + 1)
+        }
+        
+        // Move to next sibling
+        if child_node != nil {
+            curr_child = child_node.brotha
+        } else {
+            break
         }
     }
 }
@@ -199,14 +241,22 @@ print_primitive_debug_hierarchy :: proc(node: ^Cmp_Node, primitive: ^Cmp_Primiti
                primitive.extents.x, primitive.extents.y, primitive.extents.z)
 
     // Print children recursively, but only if they have all required components
-    for child_entity in node.children {
-        child_node := get_component(child_entity, Cmp_Node)
-        child_transform := get_component(child_entity, Cmp_Transform)
-        child_primitive := get_component(child_entity, Cmp_Primitive)
+    curr_child := node.child
+    for curr_child != Entity(0) {
+        child_node := get_component(curr_child, Cmp_Node)
+        child_transform := get_component(curr_child, Cmp_Transform)
+        child_primitive := get_component(curr_child, Cmp_Primitive)
 
         // Only print children that have all three required components
         if child_node != nil && child_transform != nil && child_primitive != nil {
             print_primitive_debug_hierarchy(child_node, child_primitive, depth + 1)
+        }
+        
+        // Move to next sibling
+        if child_node != nil {
+            curr_child = child_node.brotha
+        } else {
+            break
         }
     }
 }
@@ -333,16 +383,99 @@ sqt_transform :: proc(nc: ^Cmp_Node) {
     // Recurse for children
     if nc.is_parent {
         //fmt.println("Parent: ", nc.name)
-        for child_ent in nc.children {
-            child_nc := get_component(child_ent, Cmp_Node)
+        curr_child := nc.child
+        for curr_child != Entity(0) {
+            child_nc := get_component(curr_child, Cmp_Node)
             //fmt.println("--Child: ", child_nc.name)
             if child_nc != nil {
                 sqt_transform(child_nc)
+                curr_child = child_nc.brotha
+            } else {
+                break
             }
         }
     }
 }
 
+sqt_transform_e :: proc(entity: Entity) {
+    tc := get_component(entity, Cmp_Transform)
+    nc := get_component(entity, Cmp_Node)
+    if tc == nil { return }
+
+    parent_ent := nc.parent
+    has_parent := parent_ent != Entity(0)
+    pc := get_component(parent_ent, Cmp_Node) if has_parent else nil
+
+    // Local transform
+    local := linalg.matrix4_translate_f32(tc.local.pos.xyz) * linalg.matrix4_from_quaternion_f32(tc.local.rot)
+    scale_m := linalg.matrix4_scale_f32(tc.local.sca.xyz)
+
+    x,y,z := linalg.euler_angles_from_quaternion_f32(tc.local.rot, .XYZ)
+    tc.euler_rotation = linalg.to_degrees(vec3{x,y,z})
+
+    // Combine with parent if exists
+    if has_parent {
+        pt := get_component(parent_ent, Cmp_Transform)
+        tc.global.sca = pt.global.sca * tc.local.sca
+        tc.global.rot = pt.global.rot * tc.local.rot
+        tc.trm = pt.world * local
+        local = local * scale_m
+        tc.world = pt.world * local
+    } else {
+        tc.global.sca = tc.local.sca
+        tc.global.rot = tc.local.rot
+        tc.trm = local
+        local = local * scale_m
+        tc.world = local
+    }
+
+    // Update specific components
+    if .PRIMITIVE in nc.engine_flags {
+        obj_comp := get_component(nc.entity, Cmp_Primitive)
+        if obj_comp != nil {
+            obj_comp.extents = tc.global.sca.xyz
+            rot_mat := linalg.Matrix3f32{
+                tc.world[0].x, tc.world[0].y, tc.world[0].z,
+                tc.world[1].x, tc.world[1].y, tc.world[1].z,
+                tc.world[2].x, tc.world[2].y, tc.world[2].z
+            }
+            obj_comp.aabb_extents = rotate_aabb(rot_mat)
+            obj_comp.world = obj_comp.id < 0 ? tc.trm : tc.world
+        }
+    } else if .CAMERA in nc.engine_flags {
+        c := get_component(nc.entity, Cmp_Camera)
+        if c != nil {
+            c.rot_matrix = tc.world
+            update_camera(c) // Call update_camera from raytracer.odin
+        }
+    } else if .LIGHT in nc.engine_flags {
+        l := get_component(nc.entity, Cmp_Light)
+        if l != nil {
+            // Update light in render system
+            rt.lights[0] = gpu.Light{
+                pos = tc.world[3].xyz,
+                color = l.color,
+                intensity = l.intensity,
+                id = l.id,
+            }
+        }
+    }
+    // Recurse for children
+    if nc.is_parent {
+        //fmt.println("Parent: ", nc.name)
+        curr_child := nc.child
+        for curr_child != Entity(0) {
+            child_nc := get_component(curr_child, Cmp_Node)
+            //fmt.println("--Child: ", child_nc.name)
+            if child_nc != nil {
+                sqt_transform_e(curr_child)
+                curr_child = child_nc.brotha
+            } else {
+                break
+            }
+        }
+    }
+}
 // Rotate AABB procedure
 rotate_aabb :: proc(m: linalg.Matrix3f32) -> vec3 {
     extents := vec3{1, 1, 1}
@@ -776,9 +909,31 @@ save_node :: proc(entity: Entity) -> scene.Node {
 
     // Recurse for children
     if cmp_node.is_parent {
-        scene_node.Children = make([dynamic]scene.Node, len(cmp_node.children))
-        for child_ent, i in cmp_node.children {
-            scene_node.Children[i] = save_node(child_ent)
+        // Count children first
+        child_count := 0
+        curr_child := cmp_node.child
+        for curr_child != Entity(0) {
+            child_count += 1
+            child_node := get_component(curr_child, Cmp_Node)
+            if child_node != nil {
+                curr_child = child_node.brotha
+            } else {
+                break
+            }
+        }
+    
+        scene_node.Children = make([dynamic]scene.Node, child_count)
+        curr_child = cmp_node.child
+        i := 0
+        for curr_child != Entity(0) && i < child_count {
+            scene_node.Children[i] = save_node(curr_child)
+            i += 1
+            child_node := get_component(curr_child, Cmp_Node)
+            if child_node != nil {
+                curr_child = child_node.brotha
+            } else {
+                break
+            }
         }
     }
 
@@ -802,13 +957,7 @@ save_scene :: proc(head_entity: Entity, scene_num: i32) -> scene.SceneData {
 //----------------------------------------------------------------------------\\
 // /LOAD
 //----------------------------------------------------------------------------\\
-
-// Load a scene.Node into ECS Cmp_Node hierarchy
-load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem.Allocator) -> Entity {
-    context.allocator = alloc
-    entity := add_entity()
-    e_flags := transmute(ComponentFlags)scene_node.eFlags
-    // Add transform
+load_node_components :: proc(scene_node: scene.Node, entity: Entity, e_flags :^ComponentFlags ){
     if .TRANSFORM in e_flags {
         pos := linalg.Vector3f32 {
             scene_node.Transform.Position.x,
@@ -831,7 +980,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
             add_component(entity, trans_comp)
     } else {
         add_component(entity, Cmp_Transform{}) // Default
-        e_flags += {.TRANSFORM}
+        e_flags^ += {.TRANSFORM}
     }
 
     // Handle type-specific components
@@ -866,7 +1015,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
 
         // Rigid
         if scene_node.rigid.Rigid {
-            e_flags += {.RIGIDBODY}
+            e_flags^ += {.RIGIDBODY}
             // Add physics components if needed
         }
 
@@ -884,7 +1033,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
                 scene_node.collider.Extents.z,
             }
             // Add Cmp_Collider if defined, e.g. add_component(entity, Cmp_Collider{local=local, extents=extents, type=coll_type})
-            e_flags += {.COLIDER}
+            e_flags^ += {.COLIDER}
         }
     }
 
@@ -895,12 +1044,20 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
     if .ROOT in e_flags {
         add_component(entity, Cmp_Root{})
     }
+}
+// Load a scene.Node into ECS Cmp_Node hierarchy
+load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem.Allocator) -> Entity {
+    context.allocator = alloc
+    entity := add_entity()
+    e_flags := transmute(ComponentFlags)scene_node.eFlags
+    load_node_components(scene_node, entity, &e_flags)
 
-    // Now add Cmp_Node with final flags (children starts empty)
+    // Now add Cmp_Node with final flags
     cmp_node_local := Cmp_Node {
         entity       = entity,
         parent       = parent,  // Set parent Entity ID here
-        children     = make([dynamic]Entity, 0, alloc) if scene_node.hasChildren else {},  // Pre-allocate if known
+        child        = Entity(0),  // Will be set when loading children
+        brotha       = Entity(0),  // Will be set by parent when adding as child
         name         = strings.clone(scene_node.Name),
         is_dynamic   = scene_node.Dynamic,
         is_parent    = scene_node.hasChildren,
@@ -908,7 +1065,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
         game_flags   = scene_node.gFlags,
     }
     add_component(entity, cmp_node_local)
-
+    
     cmp_node := get_component(entity, Cmp_Node)
     if cmp_node == nil { return Entity(0) }
 
@@ -918,11 +1075,10 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
 
     // Recurse for children and link via Entity IDs
     if scene_node.hasChildren {
-        reserve(&cmp_node.children, len(scene_node.Children))  // Optional: pre-reserve
-        for &child_scene, i in scene_node.Children {
+        for &child_scene in scene_node.Children {
             child_entity := load_node(child_scene, entity, alloc)  // Pass parent entity
             if child_entity != Entity(0) {
-                append(&cmp_node.children, child_entity)
+                add_child(entity, child_entity)
                 // Optionally: Get child_node and set its parent if not already (but it's set in cmp_node_local above)
             }
         }
@@ -952,14 +1108,27 @@ load_prefab :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Entit
     context.allocator = alloc
     prefab_data := scene.load_prefab(fmt.tprintf("%s%s.json",dir,name), alloc)
     if len(prefab_data.Node) == 0 do return Entity(0)
-
     //Create an entity
     prefab = load_node(prefab_data.Node[0], alloc = alloc)
     for node, i in prefab_data.Node{
-        if(i != 0) do load_node(node, alloc = alloc)
+        if(i != 0) do load_node(node, prefab, alloc = alloc)
     }
     append(&g_scene, prefab)
     return
+}
+
+// Helper function to print the node hierarchy
+print_prefab_node_hierarchy :: proc(node: scene.Node, indent: int = 0) {
+    // Print current node with indentation
+    for i in 0..<indent {
+        fmt.print("  ")
+    }
+    fmt.printf("└─ %s\n", node.Name if node.Name != "" else "(unnamed)")
+
+    // Recursively print children
+    for child in node.Children {
+        print_prefab_node_hierarchy(child, indent + 1)
+    }
 }
 
 load_prefab2 :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Entity)
@@ -968,11 +1137,25 @@ load_prefab2 :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Enti
     context.allocator = alloc
     node := scene.load_prefab_node(fmt.tprintf("%s%s.json",dir,name), alloc)
 
+    // Print the loaded node hierarchy
+    fmt.printf("=== Prefab Node Hierarchy: %s%s ===\n", dir, name)
+    print_prefab_node_hierarchy(node)
+    fmt.println("=====================================")
+
     //Create an entity
     prefab = load_node(node, alloc = alloc)
-    for node, i in node.Children{
-        if(i != 0) do load_node(node, alloc = alloc)
+    add_component(prefab, Cmp_Root{})
+    nc := get_component(prefab,Cmp_Node)
+    children := get_children(g_world, nc.entity)
+    for n in children{
+        cc := get_component(n, Cmp_Node)
+        cc.parent = prefab
     }
+    // for node, i in node.Children{
+    //     cc := get_component(node, Cmp_Node)
+    //     ^cc.parent = prefab
+    //     //append(&nc.children, load_node(node, prefab, alloc = alloc))
+    // }
     append(&g_scene, prefab)
     return
 }
