@@ -3004,22 +3004,8 @@ rt_recreate_swapchain :: proc() {
 
 // Cleanup swap chain resources
 cleanup_swapchain_vulkan :: proc() {
-    // Destroy framebuffers
-    for framebuffer in rb.swapchain_frame_buffers {
-        vk.DestroyFramebuffer(rb.device, framebuffer, nil)
-    }
-    delete(rb.swapchain_frame_buffers)
-
-    // Render pass is destroyed in cleanup_vulkan, not here
-
-    // Destroy swapchain image views
-    for view in rb.swapchain_views {
-        vk.DestroyImageView(rb.device, view, nil)
-    }
-    delete(rb.swapchain_views)
-
-    // Destroy swapchain
-    vk.DestroySwapchainKHR(rb.device, rb.swapchain, nil)
+    // Swapchain views and swapchain are destroyed by destroy_swapchain()
+    // This function is kept for any future swapchain-specific cleanup
 }
 
 // Recreate swap chain
@@ -3079,10 +3065,16 @@ cleanup_vulkan :: proc() {
     // Destroy pipeline cache
     vk.DestroyPipelineCache(rb.device, rb.pipeline_cache, nil)
 
+    // Destroy framebuffers first
+    destroy_framebuffers()
+
     // Destroy depth resources
     destroy_depth_resources()
 
-    // Cleanup swap chain resources
+    // Destroy swapchain views and swapchain
+    destroy_swapchain()
+
+    // Cleanup any remaining swap chain resources
     cleanup_swapchain_vulkan()
     
     // Destroy render pass after swapchain cleanup
@@ -3099,7 +3091,6 @@ cleanup_vulkan :: proc() {
     // Destroy remaining graphics resources
     vk.DestroyShaderModule(rb.device, rb.vert_shader_module, nil)
     vk.DestroyShaderModule(rb.device, rb.frag_shader_module, nil)
-    vk.DestroyPipelineLayout(rb.device, rt.graphics.pipeline_layout, nil)
 
     // Destroy VMA allocator before device
     vma.DestroyAllocator(rb.vma_allocator)
