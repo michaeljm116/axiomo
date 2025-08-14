@@ -1348,23 +1348,11 @@ image_index: u32
 
 destroy_vulkan :: proc()
 {
-    defer glfw.Terminate()
-    defer glfw.DestroyWindow(rb.window)
-    defer vk.DestroyInstance(rb.instance, nil)
-    defer vk.DestroyDebugUtilsMessengerEXT(rb.instance, dbg_messenger, nil)
-    defer vk.DestroySurfaceKHR(rb.instance, rb.surface, nil)
-    defer vk.DestroyDevice(rb.device, nil)
-    defer destroy_swapchain()
-    defer vk.DestroyShaderModule(rb.device, rb.vert_shader_module, nil)
-    defer vk.DestroyShaderModule(rb.device, rb.frag_shader_module, nil)
-    defer vk.DestroyRenderPass(rb.device, rb.render_pass, nil)
-    defer vk.DestroyPipelineLayout(rb.device, rb.pipeline_layout, nil)
-    defer vk.DestroyPipeline(rb.device, rb.pipeline, nil)
-    defer vk.DestroyCommandPool(rb.device, rb.command_pool, nil)
-    defer destroy_framebuffers()
-    defer for sem in rb.image_available_semaphores {vk.DestroySemaphore(rb.device, sem, nil)}
-    defer for sem in rb.render_finished_semaphores {vk.DestroySemaphore(rb.device, sem, nil)}
-//    defer for fence in rb.in_flight_fences {vk.DestroyFence(rb.device, fence, nil)}
+    // Final cleanup after device is destroyed - only instance-level resources
+    vk.DestroyDebugUtilsMessengerEXT(rb.instance, dbg_messenger, nil)
+    vk.DestroyInstance(rb.instance, nil)
+    glfw.DestroyWindow(rb.window)
+    glfw.Terminate()
 }
 
 //----------------------------------------------------------------------------\\
@@ -2980,43 +2968,24 @@ end :: proc() {
 
 cleanup :: proc() {
     vk.DeviceWaitIdle(rb.device)
+    
+    // Cleanup swapchain first
     cleanup_swapchain()
 
-    destroy_compute()
-
+    // Destroy descriptor pool and layout before other resources
     vk.DestroyDescriptorPool(rb.device, rt.descriptor_pool, nil)
     vk.DestroyDescriptorSetLayout(rb.device, rt.graphics.descriptor_set_layout, nil)
 
-    vk.DestroyCommandPool(rb.device, rb.command_pool, nil)
-
+    // Now cleanup everything else including the device
     cleanup_vulkan()
+    
+    // Final cleanup of instance-level resources
+    destroy_vulkan()
 }
 
 destroy_compute :: proc() {
-    gpu.vbuffer_destroy(&rt.compute.uniform_buffer, &rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.verts, &rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.faces, &rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.blas, &rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.shapes, &rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.primitives, &rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.materials, &rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.lights, &rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.guis, &rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.bvh, &rb.vma_allocator)
-
-    texture_destroy(&rt.compute_texture, rb.device, &rb.vma_allocator)
-    for &t in rt.gui_textures {
-        texture_destroy(&t, rb.device, &rb.vma_allocator)
-    }
-    for &t in rt.bindless_textures {
-        texture_destroy(&t, rb.device, &rb.vma_allocator)
-    }
-    vk.DestroyPipelineCache(rb.device, rb.pipeline_cache, nil)
-    vk.DestroyPipeline(rb.device, rt.compute.pipeline, nil)
-    vk.DestroyPipelineLayout(rb.device, rt.compute.pipeline_layout, nil)
-    vk.DestroyDescriptorSetLayout(rb.device, rt.compute.descriptor_set_layout, nil)
-    vk.DestroyFence(rb.device, rt.compute.fence, nil)
-    vk.DestroyCommandPool(rb.device, rt.compute.command_pool, nil)
+    // This function is now handled by cleanup_vulkan to ensure proper ordering
+    // All compute resource cleanup moved to cleanup_vulkan()
 }
 
 cleanup_swapchain :: proc() {
@@ -3035,18 +3004,13 @@ rt_recreate_swapchain :: proc() {
 
 // Cleanup swap chain resources
 cleanup_swapchain_vulkan :: proc() {
-    // Destroy depth image view, image, and memory
-    vk.DestroyImageView(rb.device, rb.depth_view, nil)
-    vma.DestroyImage(rb.vma_allocator, rb.depth_image, rb.depth_allocation)
-
     // Destroy framebuffers
     for framebuffer in rb.swapchain_frame_buffers {
         vk.DestroyFramebuffer(rb.device, framebuffer, nil)
     }
     delete(rb.swapchain_frame_buffers)
 
-    // Destroy render pass
-    vk.DestroyRenderPass(rb.device, rb.render_pass, nil)
+    // Render pass is destroyed in cleanup_vulkan, not here
 
     // Destroy swapchain image views
     for view in rb.swapchain_views {
@@ -3079,24 +3043,7 @@ recreate_swapchain_vulkan :: proc() {
 cleanup_vulkan :: proc() {
     vk.DeviceWaitIdle(rb.device)
 
-    // Destroy semaphores
-    for sem in rb.image_available_semaphores {
-        vk.DestroySemaphore(rb.device, sem, nil)
-    }
-    for sem in rb.render_finished_semaphores {
-        vk.DestroySemaphore(rb.device, sem, nil)
-    }
-    // for fence in rb.in_flight_fences {
-    //     vk.DestroyFence(rb.device, fence, nil)
-    // }
-
-    // Destroy surface
-    vk.DestroySurfaceKHR(rb.instance, rb.surface, nil)
-
-    // Destroy device
-    vk.DestroyDevice(rb.device, nil)
-
-    // Additional compute cleanup from DestroyCompute
+    // First cleanup all VMA buffers (must be done before device destruction)
     gpu.vbuffer_destroy(&rt.compute.uniform_buffer, &rb.vma_allocator)
     gpu.vbuffer_destroy(&rt.compute.storage_buffers.verts, &rb.vma_allocator)
     gpu.vbuffer_destroy(&rt.compute.storage_buffers.faces, &rb.vma_allocator)
@@ -3108,31 +3055,58 @@ cleanup_vulkan :: proc() {
     gpu.vbuffer_destroy(&rt.compute.storage_buffers.guis, &rb.vma_allocator)
     gpu.vbuffer_destroy(&rt.compute.storage_buffers.bvh, &rb.vma_allocator)
 
-    // Destroy compute texture
+    // Destroy textures
     texture_destroy(&rt.compute_texture, rb.device, &rb.vma_allocator)
-
-    // Destroy GUI textures
     for &tex in rt.gui_textures {
         texture_destroy(&tex, rb.device, &rb.vma_allocator)
     }
-
-    // Destroy bindless textures
     for &tex in rt.bindless_textures {
         texture_destroy(&tex, rb.device, &rb.vma_allocator)
     }
 
-    // Destroy pipeline cache
-    vk.DestroyPipelineCache(rb.device, rb.pipeline_cache, nil)
+    // Destroy command pools (this automatically frees command buffers)
+    vk.DestroyCommandPool(rb.device, rt.compute.command_pool, nil)
+    vk.DestroyCommandPool(rb.device, rb.command_pool, nil)
+
+    // Destroy fence
+    vk.DestroyFence(rb.device, rt.compute.fence, nil)
 
     // Destroy pipelines and layouts
     vk.DestroyPipeline(rb.device, rt.compute.pipeline, nil)
     vk.DestroyPipelineLayout(rb.device, rt.compute.pipeline_layout, nil)
     vk.DestroyDescriptorSetLayout(rb.device, rt.compute.descriptor_set_layout, nil)
 
-    // Destroy fence and command pool
-    vk.DestroyFence(rb.device, rt.compute.fence, nil)
-    vk.DestroyCommandPool(rb.device, rt.compute.command_pool, nil)
+    // Destroy pipeline cache
+    vk.DestroyPipelineCache(rb.device, rb.pipeline_cache, nil)
 
-    // Cleanup swap chain if not already done
+    // Destroy depth resources
+    destroy_depth_resources()
+
+    // Cleanup swap chain resources
     cleanup_swapchain_vulkan()
+    
+    // Destroy render pass after swapchain cleanup
+    vk.DestroyRenderPass(rb.device, rb.render_pass, nil)
+
+    // Destroy semaphores
+    for sem in rb.image_available_semaphores {
+        vk.DestroySemaphore(rb.device, sem, nil)
+    }
+    for sem in rb.render_finished_semaphores {
+        vk.DestroySemaphore(rb.device, sem, nil)
+    }
+
+    // Destroy remaining graphics resources
+    vk.DestroyShaderModule(rb.device, rb.vert_shader_module, nil)
+    vk.DestroyShaderModule(rb.device, rb.frag_shader_module, nil)
+    vk.DestroyPipelineLayout(rb.device, rt.graphics.pipeline_layout, nil)
+
+    // Destroy VMA allocator before device
+    vma.DestroyAllocator(rb.vma_allocator)
+
+    // Finally destroy device
+    vk.DestroyDevice(rb.device, nil)
+
+    // Destroy surface after device
+    vk.DestroySurfaceKHR(rb.instance, rb.surface, nil)
 }

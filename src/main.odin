@@ -123,8 +123,7 @@ main :: proc() {
 		mem.arena_free_all(&per_frame_arena)
 //		if true do return
 	}
-	vk.DeviceWaitIdle(rb.device)
-	destroy_vulkan()
+	cleanup()
 	gameplay_destroy()
 }
 
