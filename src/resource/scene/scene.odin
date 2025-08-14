@@ -32,7 +32,7 @@ ComponentFlag :: enum {
     GUI         = 18,
     BUTTON      = 19,
     JOINT       = 20,
-    ROOT    = 21,
+    ROOT        = 21,
     PREFAB      = 22,
 }
 ComponentFlags :: bit_set[ComponentFlag; u32]

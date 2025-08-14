@@ -344,7 +344,8 @@ load_materials :: proc(file : string, materials : ^[dynamic]Material)
     found : bool = true
     for found == true {
         mat_id, found = xml.find_child_by_ident(doc, 0, "Material", nth_mat)
-        if xml2.log_if_not_found(found, "Material") do return
+        if !found do return
+        //if xml2.log_if_not_found(found, "Material") do return
         nth_mat += 1
 
         temp_mat : Material
