@@ -182,7 +182,6 @@ init_vulkan :: proc()
 	set_compute_queue_family_index(rb.physical_device, &indices)
 	rb.compute_queue_family_index = indices.compute.?
 	{
-		// TODO: this is kinda messy.
 		indices_set := make(map[u32]struct {}, allocator = context.temp_allocator)
 		indices_set[indices.graphics.?] = {}
 		indices_set[indices.present.?] = {}
@@ -342,80 +341,6 @@ init_vulkan :: proc()
 
 	create_pipeline_cache()
 
-
-	// // Set up pipeline.
-	// {
-	// 	dynamic_states := []vk.DynamicState{.VIEWPORT, .SCISSOR}
-	// 	dynamic_state := vk.PipelineDynamicStateCreateInfo {
-	// 		sType             = .PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-	// 		dynamicStateCount = 2,
-	// 		pDynamicStates    = raw_data(dynamic_states),
-	// 	}
-
-	// 	vertex_input_info := vk.PipelineVertexInputStateCreateInfo {
-	// 		sType = .PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-	// 	}
-
-	// 	input_assembly := vk.PipelineInputAssemblyStateCreateInfo {
-	// 		sType    = .PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-	// 		topology = .TRIANGLE_LIST,
-	// 	}
-
-	// 	viewport_state := vk.PipelineViewportStateCreateInfo {
-	// 		sType         = .PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-	// 		viewportCount = 1,
-	// 		scissorCount  = 1,
-	// 	}
-
-	// 	rasterizer := vk.PipelineRasterizationStateCreateInfo {
-	// 		sType       = .PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-	// 		polygonMode = .FILL,
-	// 		lineWidth   = 1,
-	// 		cullMode    = {.BACK},
-	// 		frontFace   = .CLOCKWISE,
-	// 	}
-
-	// 	multisampling := vk.PipelineMultisampleStateCreateInfo {
-	// 		sType                = .PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-	// 		rasterizationSamples = {._1},
-	// 		minSampleShading     = 1,
-	// 	}
-
-	// 	color_blend_attachment := vk.PipelineColorBlendAttachmentState {
-	// 		colorWriteMask = {.R, .G, .B, .A},
-	// 	}
-
-	// 	color_blending := vk.PipelineColorBlendStateCreateInfo {
-	// 		sType           = .PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-	// 		attachmentCount = 1,
-	// 		pAttachments    = &color_blend_attachment,
-	// 	}
-
-	// 	pipeline_layout := vk.PipelineLayoutCreateInfo {
-	// 		sType = .PIPELINE_LAYOUT_CREATE_INFO,
-	// 	}
-	// 	must(vk.CreatePipelineLayout(rb.device, &pipeline_layout, nil, &rb.pipeline_layout))
-
-	// 	pipeline := vk.GraphicsPipelineCreateInfo {
-	// 		sType               = .GRAPHICS_PIPELINE_CREATE_INFO,
-	// 		stageCount          = 2,
-	// 		pStages             = &rb.shader_stages[0],
-	// 		pVertexInputState   = &vertex_input_info,
-	// 		pInputAssemblyState = &input_assembly,
-	// 		pViewportState      = &viewport_state,
-	// 		pRasterizationState = &rasterizer,
-	// 		pMultisampleState   = &multisampling,
-	// 		pColorBlendState    = &color_blending,
-	// 		pDynamicState       = &dynamic_state,
-	// 		layout              = rb.pipeline_layout,
-	// 		renderPass          = rb.render_pass,
-	// 		subpass             = 0,
-	// 		basePipelineIndex   = -1,
-	// 	}
-	// 	must(vk.CreateGraphicsPipelines(rb.device, 0, 1, &pipeline, nil, &rb.pipeline))
-	// }
-
-
 	// Create command pool.
 	{
 		pool_info := vk.CommandPoolCreateInfo {
@@ -424,14 +349,6 @@ init_vulkan :: proc()
 			queueFamilyIndex = indices.graphics.?,
 		}
 		must(vk.CreateCommandPool(rb.device, &pool_info, nil, &rb.command_pool))
-
-		// alloc_info := vk.CommandBufferAllocateInfo {
-		// 	sType              = .COMMAND_BUFFER_ALLOCATE_INFO,
-		// 	commandPool        = rb.command_pool,
-		// 	level              = .PRIMARY,
-		// 	commandBufferCount = u32(len(rb.swapchain_images)),
-		// }
-		// must(vk.AllocateCommandBuffers(rb.device, &alloc_info, &rb.command_buffers[0]))
 	}
 
 	create_depth_resources()

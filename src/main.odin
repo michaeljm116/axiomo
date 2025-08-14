@@ -44,17 +44,20 @@ g_materials: [dynamic]res.Material
 g_models: [dynamic]res.Model
 g_scene: [dynamic]Entity
 g_bvh: ^Sys_Bvh
+g_enemies : map[string]Entity
+
 
 track_alloc: mem.Tracking_Allocator
 
 main :: proc() {
-	fmt.println("HI")
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
 
 	g_world = ecs.create_world()
 	g_world_ent = add_entity()
+
+
 	defer bvh_system_destroy(g_bvh)
 
 	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 0, false})
@@ -92,16 +95,13 @@ main :: proc() {
 	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
 	g_models = make([dynamic]res.Model, 0, arena_alloc)
 	res.load_directory("assets/models/", &g_models)
-	for m in g_models do fmt.printfln("%s: %d", m.name, m.unique_id)
 	poses := res.load_pose("assets/animations/Froku.anim", "Froku", arena_alloc)
 
 	//Begin renderer and scene loading
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, arena_alloc)
 	froku := load_prefab2("assets/prefabs/", "Froku", arena_alloc)
-	transform_sys_process2()
-	ft :Cmp_Transform= get_component(froku, Cmp_Transform)^
-	fmt.println("Froku Pos: ",ft.local.pos)
+	transform_sys_process_e()
 	bvh_system_build(g_bvh, per_frame_alloc)
 	gameplay_init()
 
@@ -114,7 +114,7 @@ main :: proc() {
     	start_frame(&image_index)
 		// Poll and free: Move to main loop if overlapping better
 		glfw.PollEvents()
-		transform_sys_process()
+		transform_sys_process_e()
 		bvh_system_build(g_bvh, per_frame_alloc)
 		update_descriptors()
 		gameplay_update(0.015)

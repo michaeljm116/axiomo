@@ -26,294 +26,16 @@ transform_sys_process :: proc() {
     archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_Root))
     for archetype in archetypes {
         node_comps := get_table(archetype, Cmp_Node)
-        transform_comps := get_table(archetype, Cmp_Transform)
-        for i in 0..<len(node_comps) {
-            node := &node_comps[i]
-            fmt.printfln("Root: %s", node.name)
-
-            // Check if this is the "Froku" node and print its transform hierarchy
-            if node.name == "Froku" {
-                transform := &transform_comps[i]
-                fmt.println("\n=== Froku Transform Hierarchy ===")
-                print_entity_hierarchy(node, transform, 0)
-                fmt.println("=== End Froku Hierarchy ===\n")
-            }
-            sqt_transform(node)
+        for &node in node_comps {
+            sqt_transform(&node)
         }
     }
 }
 
-transform_sys_process2 :: proc() {
+transform_sys_process_e :: proc() {
     archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_Root))
     for archetype in archetypes {
         for entity in archetype.entities do sqt_transform_e(entity)
-    }
-    for archetype in archetypes{
-        node_comps := get_table(archetype, Cmp_Node)
-        transform_comps := get_table(archetype, Cmp_Transform)
-        for i in 0..<len(node_comps) {
-            node := &node_comps[i]
-            fmt.printfln("Root: %s", node.name)
-
-            // Check if this is the "Froku" node and print its transform hierarchy
-            if node.name == "Froku" {
-                transform := &transform_comps[i]
-                fmt.println("\n=== Froku Transform Hierarchy ===")
-                print_entity_hierarchy(node, transform, 0)
-                fmt.println("=== End Froku Hierarchy ===\n")
-            }
-        }
-    }
-}
-
-transform_print_hierarchy :: proc() {
-    fmt.println("=== Transform Hierarchy ===")
-
-    // Find all root entities (entities with Cmp_Root)
-    root_archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_Root))
-
-    for archetype in root_archetypes {
-        node_comps := get_table(archetype, Cmp_Node)
-        transform_comps := get_table(archetype, Cmp_Transform)
-
-        for i in 0..<len(node_comps) {
-            node := &node_comps[i]
-            transform := &transform_comps[i]
-
-            // Print this root node and its hierarchy
-            print_entity_hierarchy(node, transform, 0)
-        }
-    }
-
-    fmt.println("=== End Hierarchy ===")
-}
-
-// Helper procedure to recursively print entity hierarchy
-print_entity_hierarchy :: proc(node: ^Cmp_Node, transform: ^Cmp_Transform, depth: int) {
-    // Create indentation based on depth
-    indent := ""
-    for i in 0..<depth {
-        indent = fmt.aprintf("%s  ", indent)
-    }
-    defer delete(indent)
-
-    // Print entity information
-    entity_name := node.name if len(node.name) > 0 else fmt.aprintf("Entity_%d", node.entity)
-    defer if len(node.name) == 0 do delete(entity_name)
-
-    fmt.printf("%s├─ %s (ID: %d)\n", indent, entity_name, node.entity)
-    fmt.printf("%s│  World Matrix:\n", indent)
-    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
-               transform.world[0][0], transform.world[0][1], transform.world[0][2], transform.world[0][3])
-    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
-               transform.world[1][0], transform.world[1][1], transform.world[1][2], transform.world[1][3])
-    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
-               transform.world[2][0], transform.world[2][1], transform.world[2][2], transform.world[2][3])
-    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
-               transform.world[3][0], transform.world[3][1], transform.world[3][2], transform.world[3][3])
-
-    // Print children recursively
-    children := get_children(g_world, node.entity)
-    for child_entity in children {
-        child_node := get_component(child_entity, Cmp_Node)
-        child_transform := get_component(child_entity, Cmp_Transform)
-
-        if child_node != nil && child_transform != nil {
-            print_entity_hierarchy(child_node, child_transform, depth + 1)
-        }
-    }
-}
-
-// Prints transform hierarchy for entities with Transform, Primitive, and Node components
-// Uses the world matrix from Cmp_Primitive instead of Cmp_Transform
-primitive_transform_print_hierarchy :: proc() {
-    fmt.println("=== Primitive Transform Hierarchy ===")
-
-    // Find all root entities with the required components
-    root_archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Primitive), ecs.has(Cmp_Node))
-
-    for archetype in root_archetypes {
-        node_comps := get_table(archetype, Cmp_Node)
-        primitive_comps := get_table(archetype, Cmp_Primitive)
-
-        for i in 0..<len(node_comps) {
-            node := &node_comps[i]
-            primitive := &primitive_comps[i]
-
-            // Print this root node and its hierarchy
-            print_primitive_entity_hierarchy(node, primitive, 0)
-        }
-    }
-
-    fmt.println("=== End Primitive Hierarchy ===")
-}
-
-// Helper procedure to recursively print entity hierarchy using primitive component world matrix
-print_primitive_entity_hierarchy :: proc(node: ^Cmp_Node, primitive: ^Cmp_Primitive, depth: int) {
-    // Create indentation based on depth
-    indent := ""
-    for i in 0..<depth {
-        indent = fmt.aprintf("%s  ", indent)
-    }
-    defer delete(indent)
-
-    // Print entity information
-    entity_name := node.name if len(node.name) > 0 else fmt.aprintf("Entity_%d", node.entity)
-    defer if len(node.name) == 0 do delete(entity_name)
-
-    fmt.printf("%s├─ %s (ID: %d)\n", indent, entity_name, node.entity)
-    fmt.printf("%s│  Primitive World Matrix:\n", indent)
-    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
-               primitive.world[0][0], primitive.world[0][1], primitive.world[0][2], primitive.world[0][3])
-    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
-               primitive.world[1][0], primitive.world[1][1], primitive.world[1][2], primitive.world[1][3])
-    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
-               primitive.world[2][0], primitive.world[2][1], primitive.world[2][2], primitive.world[2][3])
-    fmt.printf("%s│  [%.3f, %.3f, %.3f, %.3f]\n", indent,
-               primitive.world[3][0], primitive.world[3][1], primitive.world[3][2], primitive.world[3][3])
-
-    // Print children recursively, but only if they have all required components
-    curr_child := node.child
-    for curr_child != Entity(0) {
-        child_node := get_component(curr_child, Cmp_Node)
-        child_transform := get_component(curr_child, Cmp_Transform)
-        child_primitive := get_component(curr_child, Cmp_Primitive)
-
-        // Only print children that have all three required components
-        if child_node != nil && child_transform != nil && child_primitive != nil {
-            print_primitive_entity_hierarchy(child_node, child_primitive, depth + 1)
-        }
-        
-        // Move to next sibling
-        if child_node != nil {
-            curr_child = child_node.brotha
-        } else {
-            break
-        }
-    }
-}
-
-// Prints simplified transform hierarchy for entities with Transform, Primitive, and Node components
-// Shows only position and extents for easy debugging
-primitive_debug_print_hierarchy :: proc() {
-    fmt.println("=== Primitive Debug Hierarchy (Position + Size) ===")
-
-    // Find all root entities with the required components
-    root_archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Primitive), ecs.has(Cmp_Node))
-
-    for archetype in root_archetypes {
-        node_comps := get_table(archetype, Cmp_Node)
-        primitive_comps := get_table(archetype, Cmp_Primitive)
-
-        for i in 0..<len(node_comps) {
-            node := &node_comps[i]
-            primitive := &primitive_comps[i]
-
-            // Print this root node and its hierarchy
-            print_primitive_debug_hierarchy(node, primitive, 0)
-        }
-    }
-
-    fmt.println("=== End Debug Hierarchy ===")
-}
-
-// Helper procedure to recursively print simplified entity hierarchy
-print_primitive_debug_hierarchy :: proc(node: ^Cmp_Node, primitive: ^Cmp_Primitive, depth: int) {
-    // Create indentation based on depth
-    indent := ""
-    for i in 0..<depth {
-        indent = fmt.aprintf("%s  ", indent)
-    }
-    defer delete(indent)
-
-    // Print entity information
-    entity_name := node.name if len(node.name) > 0 else fmt.aprintf("Entity_%d", node.entity)
-    defer if len(node.name) == 0 do delete(entity_name)
-
-    // Extract position from world matrix (4th column, first 3 elements)
-    pos_x := primitive.world[3][0]
-    pos_y := primitive.world[3][1]
-    pos_z := primitive.world[3][2]
-
-    fmt.printf("%s├─ %s (ID: %d) | Pos: (%.3f, %.3f, %.3f) | Size: (%.3f, %.3f, %.3f)\n",
-               indent, entity_name, node.entity,
-               pos_x, pos_y, pos_z,
-               primitive.extents.x, primitive.extents.y, primitive.extents.z)
-
-    // Print children recursively, but only if they have all required components
-    curr_child := node.child
-    for curr_child != Entity(0) {
-        child_node := get_component(curr_child, Cmp_Node)
-        child_transform := get_component(curr_child, Cmp_Transform)
-        child_primitive := get_component(curr_child, Cmp_Primitive)
-
-        // Only print children that have all three required components
-        if child_node != nil && child_transform != nil && child_primitive != nil {
-            print_primitive_debug_hierarchy(child_node, child_primitive, depth + 1)
-        }
-        
-        // Move to next sibling
-        if child_node != nil {
-            curr_child = child_node.brotha
-        } else {
-            break
-        }
-    }
-}
-
-// Debug function to track what happens to entities during transform processing
-debug_transform_impact :: proc() {
-    fmt.println("=== Debugging Transform Impact ===")
-
-    // Get entities before transform processing
-    before_archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Primitive), ecs.has(Cmp_Node))
-    before_entities: [dynamic]Entity
-    defer delete(before_entities)
-
-    for archetype in before_archetypes {
-        node_comps := get_table(archetype, Cmp_Node)
-        for i in 0..<len(node_comps) {
-            append(&before_entities, node_comps[i].entity)
-        }
-    }
-
-    fmt.printf("Before: Found %d entities with all components\n", len(before_entities))
-
-    // Run transform processing
-    transform_sys_process()
-
-    // Get entities after transform processing
-    after_archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Primitive), ecs.has(Cmp_Node))
-    after_entities: [dynamic]Entity
-    defer delete(after_entities)
-
-    for archetype in after_archetypes {
-        node_comps := get_table(archetype, Cmp_Node)
-        for i in 0..<len(node_comps) {
-            append(&after_entities, node_comps[i].entity)
-        }
-    }
-
-    fmt.printf("After: Found %d entities with all components\n", len(after_entities))
-
-    // Find missing entities
-    for before_entity in before_entities {
-        found := false
-        for after_entity in after_entities {
-            if before_entity == after_entity {
-                found = true
-                break
-            }
-        }
-        if !found {
-            fmt.printf("LOST: Entity %d\n", before_entity)
-            // Check what components this entity still has
-            node := get_component(before_entity, Cmp_Node)
-            transform := get_component(before_entity, Cmp_Transform)
-            primitive := get_component(before_entity, Cmp_Primitive)
-            fmt.printf("  - Node: %v, Transform: %v, Primitive: %v\n",
-                      node != nil, transform != nil, primitive != nil)
-        }
     }
 }
 
@@ -529,22 +251,10 @@ geometry_transform_converter :: proc(nc: ^Cmp_Node) {
 //----------------------------------------------------------------------------\\
 
 Sys_Bvh :: struct {
-    // ECS world reference
-
-    // Embree data
     device: embree.RTCDevice,
     bvh: embree.RTCBVH,
-
-    // BVH tree data
     root: BvhNode,
     num_nodes: i32,
-
-    // Entity and primitive data
-    // entities: [dynamic]Entity,
-    // primitive_components: [dynamic]^Cmp_Primitive,
-    // build_primitives: [dynamic]embree.RTCBuildPrimitive,
-
-    // Rebuild flag
     rebuild: bool,
 }
 
@@ -555,10 +265,6 @@ g_num_nodes: i32 = 0
 bvh_system_create :: proc(alloc: mem.Allocator) -> ^Sys_Bvh {
     fmt.println("creating bvh")
     system := new(Sys_Bvh)
- //   system.entities = make([dynamic]Entity)
-    // system.primitive_components = make([dynamic]^Cmp_Primitive, alloc)
-    // system.build_primitives = make([dynamic]embree.RTCBuildPrimitive, alloc)
-    // system.entities = make([dynamic]Entity, alloc)
     system.rebuild = true
 
     // Initialize Embree
@@ -702,11 +408,6 @@ create_leaf :: proc "c" (
     MIN_LEAF_SIZE :: 1
     MAX_LEAF_SIZE :: 1
 
-    //assert(numPrims >= MIN_LEAF_SIZE && numPrims <= MAX_LEAF_SIZE)
-    // if !(numPrims >= MIN_LEAF_SIZE && numPrims <= MAX_LEAF_SIZE) {
-    //     fmt.println("BVH Exceeded max leaf size. its: ", numPrims)
-    //     return nil
-    // }
     ptr := embree.rtcThreadLocalAlloc(alloc, size_of(LeafBvhNode), 16)
      g_num_nodes += 1
 
@@ -921,7 +622,7 @@ save_node :: proc(entity: Entity) -> scene.Node {
                 break
             }
         }
-    
+
         scene_node.Children = make([dynamic]scene.Node, child_count)
         curr_child = cmp_node.child
         i := 0
@@ -1065,7 +766,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
         game_flags   = scene_node.gFlags,
     }
     add_component(entity, cmp_node_local)
-    
+
     cmp_node := get_component(entity, Cmp_Node)
     if cmp_node == nil { return Entity(0) }
 
@@ -1117,30 +818,11 @@ load_prefab :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Entit
     return
 }
 
-// Helper function to print the node hierarchy
-print_prefab_node_hierarchy :: proc(node: scene.Node, indent: int = 0) {
-    // Print current node with indentation
-    for i in 0..<indent {
-        fmt.print("  ")
-    }
-    fmt.printf("└─ %s\n", node.Name if node.Name != "" else "(unnamed)")
-
-    // Recursively print children
-    for child in node.Children {
-        print_prefab_node_hierarchy(child, indent + 1)
-    }
-}
-
 load_prefab2 :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Entity)
 {
     // First load the data from the scene module
     context.allocator = alloc
     node := scene.load_prefab_node(fmt.tprintf("%s%s.json",dir,name), alloc)
-
-    // Print the loaded node hierarchy
-    fmt.printf("=== Prefab Node Hierarchy: %s%s ===\n", dir, name)
-    print_prefab_node_hierarchy(node)
-    fmt.println("=====================================")
 
     //Create an entity
     prefab = load_node(node, alloc = alloc)
@@ -1151,11 +833,7 @@ load_prefab2 :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Enti
         cc := get_component(n, Cmp_Node)
         cc.parent = prefab
     }
-    // for node, i in node.Children{
-    //     cc := get_component(node, Cmp_Node)
-    //     ^cc.parent = prefab
-    //     //append(&nc.children, load_node(node, prefab, alloc = alloc))
-    // }
+
     append(&g_scene, prefab)
     return
 }

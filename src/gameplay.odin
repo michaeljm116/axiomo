@@ -60,10 +60,7 @@ find_camera_entity :: proc() {
         entities := archetype.entities
         if len(entities) > 0 {
             g_camera_entity = entities[0]
-            fmt.printf("Found camera entity: %d\n", g_camera_entity)
             ct := get_component(g_camera_entity, Cmp_Transform)
-            fmt.printfln("Camera rotation :", ct.euler_rotation)
-            fmt.println("Camera positoin: " , ct.world[3])
             return
         }
     }
