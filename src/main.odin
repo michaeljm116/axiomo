@@ -93,7 +93,7 @@ main :: proc() {
 	res.load_materials("assets/Materials.xml", &g_materials)
 	scene := sc.load_new_scene("assets/scenes/PrefabMaker.json", arena_alloc)
 	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
-	g_models = make([dynamic]res.Model, 0, arena_alloc)
+    g_models = make([dynamic]res.Model, 0, arena_alloc)
 	res.load_directory("assets/models/", &g_models)
 	poses := res.load_pose("assets/animations/Froku.anim", "Froku", arena_alloc)
 
@@ -101,6 +101,7 @@ main :: proc() {
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, arena_alloc)
 	froku := load_prefab2("assets/prefabs/", "Froku", arena_alloc)
+
 	transform_sys_process_e()
 	bvh_system_build(g_bvh, per_frame_alloc)
 	gameplay_init()
