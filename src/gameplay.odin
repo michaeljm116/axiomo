@@ -74,6 +74,9 @@ gameplay_update :: proc(delta_time: f32) {
         find_camera_entity()
         return
     }
+    if g_player == 0 {
+        find_player_entity()
+    }
 
     // Clear just pressed/released states
     for i in 0..<len(g_input.keys_just_pressed) {
@@ -81,8 +84,50 @@ gameplay_update :: proc(delta_time: f32) {
         g_input.keys_just_released[i] = false
     }
 
-    update_camera_movement(delta_time)
+    //update_camera_movement(delta_time)
+    update_player_movement(delta_time)
     update_camera_rotation(delta_time)
+}
+
+find_player_entity :: proc() {
+    player_archetypes := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
+
+    for archetype in player_archetypes {
+        nodes := get_table(archetype, Cmp_Node)
+        for node, i in nodes {
+            if node.name == "Froku" {
+                g_player = archetype.entities[i]
+                return
+            }
+        }
+    }
+}
+
+update_player_movement :: proc(delta_time: f32)
+{
+    tc := get_component(g_player, Cmp_Transform)
+    if tc == nil do return
+
+    move_speed :f32= .10
+    if is_key_pressed(glfw.KEY_W) {
+        tc.local.pos.z += move_speed
+    }
+    if is_key_pressed(glfw.KEY_S) {
+        tc.local.pos.z -= move_speed
+    }
+    if is_key_pressed(glfw.KEY_A) {
+        tc.local.pos.x -= move_speed
+    }
+    if is_key_pressed(glfw.KEY_D) {
+        tc.local.pos.x += move_speed
+    }
+    // Verticaltc.local.pos.x
+    if is_key_pressed(glfw.KEY_SPACE) {
+        tc.local.pos.y += move_speed
+    }
+    if is_key_pressed(glfw.KEY_LEFT_SHIFT) {
+        tc.local.pos.y -= move_speed
+    }
 }
 
 // Handle camera movement with WASD

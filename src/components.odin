@@ -1,13 +1,12 @@
 package main
 import "core:fmt"
-import math "core:math/linalg"
+import "core:math/linalg"
 import "external/ecs"
 import "core:hash/xxhash"
 import "core:strings"
 import res "resource"
 import sdl "vendor:sdl2"
 import sdl_mixer "vendor:sdl2/mixer"
-
 //components
 // ✅bvh
 // ✅light
@@ -353,8 +352,8 @@ sqt_is_equal :: proc(a: Sqt, b: Sqt) -> bool {
 
 move_2d_xz :: proc(rot: quat) -> [2]f32 {
     // Extract yaw from quaternion (rotation around Y-axis)
-    yaw := math.atan2(2.0 * (rot.w * rot.y + rot.x * rot.z), 1.0 - 2.0 * (rot.y * rot.y + rot.z * rot.z))
-    return {math.cos(yaw), math.sin(yaw)}
+    yaw := linalg.atan2(2.0 * (rot.w * rot.y + rot.x * rot.z), 1.0 - 2.0 * (rot.y * rot.y + rot.z * rot.z))
+    return {linalg.cos(yaw), linalg.sin(yaw)}
 }
 
 // Full constructor equivalent
@@ -363,10 +362,10 @@ cmp_transform_prs :: proc(pos: vec3, rot: vec3, sca: vec3) -> Cmp_Transform {
     tc.euler_rotation = rot
 
     // Combine rotations (order: X, Y, Z)
-    rotation_matrix := math.matrix4_from_euler_angles_xyz_f32(rot.x, rot.y, rot.z)
+    rotation_matrix := linalg.matrix4_from_euler_angles_xyz_f32(rot.x, rot.y, rot.z)
 
     // Convert rotation matrix to quaternion
-    tc.local.rot = math.quaternion_from_matrix4_f32(rotation_matrix)
+    tc.local.rot = linalg.quaternion_from_matrix4_f32(rotation_matrix)
     tc.local.pos = {pos.x, pos.y, pos.z, 0.0}
     tc.local.sca = {sca.x, sca.y, sca.z, 0.0}
 
@@ -383,13 +382,13 @@ cmp_transform_prs :: proc(pos: vec3, rot: vec3, sca: vec3) -> Cmp_Transform {
 cmp_transform_prs_q :: proc(pos: vec3, rot: vec4, sca: vec3) -> Cmp_Transform {
     tc := Cmp_Transform{}
     // Combine rotations (order: X, Y, Z)
-    // math.matrix4_from_euler_angles_xyz_f32(rot.x, rot.y, rot.z)
+    // linalg.matrix4_from_euler_angles_xyz_f32(rot.x, rot.y, rot.z)
 
     // Convert rotation matrix to quaternion
-    tc.local.rot = transmute(quat)rot // math.quaternion_from_matrix4_f32(rotation_matrix)
+    tc.local.rot = transmute(quat)rot // linalg.quaternion_from_matrix4_f32(rotation_matrix)
     tc.local.pos = {pos.x, pos.y, pos.z, 0.0}
     tc.local.sca = {sca.x, sca.y, sca.z, 0.0}
-    rotation_matrix := math.matrix4_from_quaternion_f32(tc.local.rot)
+    rotation_matrix := linalg.matrix4_from_quaternion_f32(tc.local.rot)
     // Set up world matrix
     tc.world = rotation_matrix
     tc.world[3] = {pos.x, pos.y, pos.z, 1.0}  // Set translation
@@ -509,7 +508,7 @@ get_children :: proc(world: ^ecs.World, entity: Entity) -> []Entity {
     if node == nil {
         return nil
     }
-    
+
     // Build array from linked list
     children := make([dynamic]Entity)
     curr := node.child
@@ -580,13 +579,13 @@ mesh_component_with_ids :: proc(model_id: i32, resource_index: i32) -> Cmp_Mesh 
 
 primitive_component_default :: proc() -> Cmp_Primitive {
     return Cmp_Primitive{
-        world = math.MATRIX4F32_IDENTITY,
+        world = linalg.MATRIX4F32_IDENTITY,
     }
 }
 
 primitive_component_with_id :: proc(component_id: i32) -> Cmp_Primitive {
     return Cmp_Primitive{
-        world = math.MATRIX4F32_IDENTITY,
+        world = linalg.MATRIX4F32_IDENTITY,
         id = component_id,
     }
 }
@@ -749,7 +748,7 @@ camera_component_default :: proc() -> Cmp_Camera {
     return Cmp_Camera{
         aspect_ratio = 0.0,
         fov = 0.0,
-        rot_matrix = math.MATRIX4F32_IDENTITY,
+        rot_matrix = linalg.MATRIX4F32_IDENTITY,
     }
 }
 
@@ -757,7 +756,7 @@ camera_component_with_params :: proc(aspect_ratio: f32, fov: f32) -> Cmp_Camera 
     return Cmp_Camera{
         aspect_ratio = aspect_ratio,
         fov = fov,
-        rot_matrix = math.MATRIX4F32_IDENTITY,
+        rot_matrix = linalg.MATRIX4F32_IDENTITY,
     }
 }
 
@@ -772,8 +771,8 @@ camera_create :: proc() -> Camera {
         movement_speed = 1.0,
         aspect = 0.0,
         matrices = CameraMatrices{
-            perspective = math.MATRIX4F32_IDENTITY,
-            view = math.MATRIX4F32_IDENTITY,
+            perspective = linalg.MATRIX4F32_IDENTITY,
+            view = linalg.MATRIX4F32_IDENTITY,
         },
         znear = 0.0,
         zfar = 1000.0,
@@ -781,14 +780,14 @@ camera_create :: proc() -> Camera {
 }
 
 camera_update_view_matrix :: proc(camera: ^Camera) {
-    rot_matrix := math.MATRIX4F32_IDENTITY
-    trans_matrix := math.MATRIX4F32_IDENTITY
+    rot_matrix := linalg.MATRIX4F32_IDENTITY
+    trans_matrix := linalg.MATRIX4F32_IDENTITY
     // Apply rotations
-    rot_matrix = math.matrix4_rotate_f32(math.to_radians(camera.rotation.x), vec3{1,0,0}) * rot_matrix
-    rot_matrix = math.matrix4_rotate_f32(math.to_radians(camera.rotation.y), vec3{0,1,0}) * rot_matrix
-    rot_matrix = math.matrix4_rotate_f32(math.to_radians(camera.rotation.z), vec3{0,0,1}) * rot_matrix
+    rot_matrix = linalg.matrix4_rotate_f32(linalg.to_radians(camera.rotation.x), vec3{1,0,0}) * rot_matrix
+    rot_matrix = linalg.matrix4_rotate_f32(linalg.to_radians(camera.rotation.y), vec3{0,1,0}) * rot_matrix
+    rot_matrix = linalg.matrix4_rotate_f32(linalg.to_radians(camera.rotation.z), vec3{0,0,1}) * rot_matrix
 
-    trans_matrix = math.matrix4_translate_f32(camera.position)
+    trans_matrix = linalg.matrix4_translate_f32(camera.position)
 
     switch camera.type {
     case .FIRSTPERSON:
@@ -803,12 +802,12 @@ camera_set_perspective :: proc(camera: ^Camera, fov: f32, aspect: f32, znear: f3
     camera.znear = znear
     camera.zfar = zfar
     camera.aspect = aspect
-    camera.matrices.perspective = math.matrix4_perspective_f32(math.to_radians(fov), aspect, znear, zfar)
+    camera.matrices.perspective = linalg.matrix4_perspective_f32(linalg.to_radians(fov), aspect, znear, zfar)
 }
 
 camera_update_aspect_ratio :: proc(camera: ^Camera, aspect: f32) {
     camera.aspect = aspect
-    camera.matrices.perspective = math.matrix4_perspective_f32(math.to_radians(camera.fov), aspect, camera.znear, camera.zfar)
+    camera.matrices.perspective = linalg.matrix4_perspective_f32(linalg.to_radians(camera.fov), aspect, camera.znear, camera.zfar)
 }
 
 camera_set_position :: proc(camera: ^Camera, position: vec3) {
@@ -845,10 +844,10 @@ camera_update :: proc(camera: ^Camera, delta_time: f32) {
     if camera.type == .FIRSTPERSON {
         if camera_moving(camera) {
             cam_front: vec3
-            cam_front.x = -math.cos(math.to_radians(camera.rotation.x)) * math.sin(math.to_radians(camera.rotation.y))
-            cam_front.y = math.sin(math.to_radians(camera.rotation.x))
-            cam_front.z = math.cos(math.to_radians(camera.rotation.x)) * math.cos(math.to_radians(camera.rotation.y))
-            cam_front = math.normalize(cam_front)
+            cam_front.x = -linalg.cos(linalg.to_radians(camera.rotation.x)) * linalg.sin(linalg.to_radians(camera.rotation.y))
+            cam_front.y = linalg.sin(linalg.to_radians(camera.rotation.x))
+            cam_front.z = linalg.cos(linalg.to_radians(camera.rotation.x)) * linalg.cos(linalg.to_radians(camera.rotation.y))
+            cam_front = linalg.normalize(cam_front)
 
             move_speed := delta_time * camera.movement_speed
 
@@ -869,10 +868,10 @@ camera_update_pad :: proc(camera: ^Camera, axis_left: vec2f, axis_right: vec2f, 
         RANGE :: 1.0 - DEAD_ZONE
 
         cam_front: vec3
-        cam_front.x = -math.cos(math.to_radians(camera.rotation.x)) * math.sin(math.to_radians(camera.rotation.y))
-        cam_front.y = math.sin(math.to_radians(camera.rotation.x))
-        cam_front.z = math.cos(math.to_radians(camera.rotation.x)) * math.cos(math.to_radians(camera.rotation.y))
-        cam_front = math.normalize(cam_front)
+        cam_front.x = -linalg.cos(linalg.to_radians(camera.rotation.x)) * linalg.sin(linalg.to_radians(camera.rotation.y))
+        cam_front.y = linalg.sin(linalg.to_radians(camera.rotation.x))
+        cam_front.z = linalg.cos(linalg.to_radians(camera.rotation.x)) * linalg.cos(linalg.to_radians(camera.rotation.y))
+        cam_front = linalg.normalize(cam_front)
 
         move_speed := delta_time * camera.movement_speed * 2.0
         rot_speed := delta_time * camera.rotation_speed * 50.0
@@ -888,7 +887,7 @@ camera_update_pad :: proc(camera: ^Camera, axis_left: vec2f, axis_right: vec2f, 
         if abs(axis_left.x) > DEAD_ZONE {
             pos := (abs(axis_left.x) - DEAD_ZONE) / RANGE
             sign :f32= axis_left.x < 0.0 ? -1.0 : 1.0
-            right := math.normalize(math.cross(cam_front, vec3{0,1,0}))
+            right := linalg.normalize(linalg.cross(cam_front, vec3{0,1,0}))
             camera.position += right * pos * sign * move_speed
             ret_val = true
         }
@@ -936,8 +935,8 @@ bvh_bounds_with_points :: proc(a: vec3, b: vec3) -> BvhBounds {
 // Helper procedures for BVH operations
 bvh_merge :: proc(a, b: BvhBounds) -> BvhBounds {
     return BvhBounds{
-        lower = math.min(a.lower, b.lower),
-        upper = math.max(a.upper, b.upper),
+        lower = linalg.min(a.lower, b.lower),
+        upper = linalg.max(a.upper, b.upper),
     }
 }
 
@@ -1057,7 +1056,7 @@ flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: E
                 // If no transform, use identity
                 append(&graph.transforms, Sqt{})
             }
-            
+
             // Move to next sibling
             child_node := get_component(curr_child, Cmp_Node)
             if child_node != nil {

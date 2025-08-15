@@ -45,7 +45,7 @@ g_models: [dynamic]res.Model
 g_scene: [dynamic]Entity
 g_bvh: ^Sys_Bvh
 g_enemies : map[string]Entity
-
+g_player : Entity
 
 track_alloc: mem.Tracking_Allocator
 
@@ -55,14 +55,14 @@ main :: proc() {
 	defer leak_detection()
 
 	g_world = ecs.create_world()
+	defer ecs.delete_world(g_world)
 	g_world_ent = add_entity()
+
 
 
 	defer bvh_system_destroy(g_bvh)
 
 	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 0, false})
-
-	defer ecs.delete_world(g_world)
 
 	// Create an arena allocator for long-lived allocations (e.g., materials, models, scenes)
 	arena: mem.Arena
@@ -82,7 +82,6 @@ main :: proc() {
 
 	g_bvh = bvh_system_create(per_frame_alloc)
 
-
 	context.logger = log.create_console_logger()
 	defer free(context.logger.data)
 	rb.ctx = context
@@ -92,7 +91,6 @@ main :: proc() {
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)
 	res.load_materials("assets/Materials.xml", &g_materials)
 	scene := sc.load_new_scene("assets/scenes/PrefabMaker.json", arena_alloc)
-	mod := res.load_pmodel("assets/froku.pm", arena_alloc)
     g_models = make([dynamic]res.Model, 0, arena_alloc)
 	res.load_directory("assets/models/", &g_models)
 	poses := res.load_pose("assets/animations/Froku.anim", "Froku", arena_alloc)
@@ -100,7 +98,7 @@ main :: proc() {
 	//Begin renderer and scene loading
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, arena_alloc)
-	froku := load_prefab2("assets/prefabs/", "Froku", arena_alloc)
+	g_player := load_prefab2("assets/prefabs/", "Froku", arena_alloc)
 
 	transform_sys_process_e()
 	bvh_system_build(g_bvh, per_frame_alloc)
@@ -109,23 +107,23 @@ main :: proc() {
 	//begin renderer
 	initialize_raytracer()
 	glfw.PollEvents()
-
 	//Update renderer
 	for !glfw.WindowShouldClose(rb.window) {
     	start_frame(&image_index)
 		// Poll and free: Move to main loop if overlapping better
 		glfw.PollEvents()
+		gameplay_update(0.015)
 		transform_sys_process_e()
 		bvh_system_build(g_bvh, per_frame_alloc)
+		update_buffers()
 		update_descriptors()
-		gameplay_update(0.015)
 		end_frame(&image_index)
 		// Reset per-frame arena after all frame processing (ensures data is used before free)
 		mem.arena_free_all(&per_frame_arena)
 //		if true do return
 	}
-	cleanup()
 	gameplay_destroy()
+	cleanup()
 }
 
 leak_detection :: proc() {

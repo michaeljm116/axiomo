@@ -2,20 +2,18 @@ package main
 import "base:runtime"
 import "core:c"
 import "core:fmt"
+import "core:log"
 import "core:mem"
 import "core:slice"
-import ecs "external/ecs"
-import embree "external/embree"
-
-import "gpu"
-import math "core:math"
-import linalg "core:math/linalg"
-
-
 import "core:strings"
-import res "resource"
-import scene "resource/scene"
+import "core:math"
+import "core:math/linalg"
+import "external/ecs"
+import "external/embree"
 
+import "resource/scene"
+import "gpu"
+import "resource"
 
 //----------------------------------------------------------------------------\\
 // /Transform System /ts
@@ -143,9 +141,11 @@ sqt_transform_e :: proc(entity: Entity) {
         tc.trm = pt.world * local
         local = local * scale_m
         tc.world = pt.world * local
+        tc.global.pos = tc.trm[3].xyzw
     } else {
         tc.global.sca = tc.local.sca
         tc.global.rot = tc.local.rot
+        tc.global.pos = tc.local.pos
         tc.trm = local
         local = local * scale_m
         tc.world = local
@@ -184,11 +184,9 @@ sqt_transform_e :: proc(entity: Entity) {
     }
     // Recurse for children
     if nc.is_parent {
-        //fmt.println("Parent: ", nc.name)
         curr_child := nc.child
         for curr_child != Entity(0) {
             child_nc := get_component(curr_child, Cmp_Node)
-            //fmt.println("--Child: ", child_nc.name)
             if child_nc != nil {
                 sqt_transform_e(curr_child)
                 curr_child = child_nc.brotha
@@ -245,7 +243,6 @@ geometry_transform_converter :: proc(nc: ^Cmp_Node) {
     }
 }
 
-
 //----------------------------------------------------------------------------\\
 // /BVH System
 //----------------------------------------------------------------------------\\
@@ -263,16 +260,14 @@ g_num_nodes: i32 = 0
 
 // Create a new BVH system
 bvh_system_create :: proc(alloc: mem.Allocator) -> ^Sys_Bvh {
-    fmt.println("creating bvh")
     system := new(Sys_Bvh)
     system.rebuild = true
 
     // Initialize Embree
     system.device = embree.rtcNewDevice(nil)
     if system.device == nil {
-        fmt.println("Error creating Embree device")
         free(system)
-        return nil
+        log.panicf("Error creating Embree device")
     }
 
     system.bvh = embree.rtcNewBVH(system.device)
@@ -282,20 +277,14 @@ bvh_system_create :: proc(alloc: mem.Allocator) -> ^Sys_Bvh {
         proc "c" (userPtr: rawptr, bytes: c.ssize_t, post: bool) -> bool {
             return true
         }, nil)
-    fmt.println("bvh created")
     return system
 }
 
 // Destroy BVH system
 bvh_system_destroy :: proc(using system: ^Sys_Bvh) {
     if system == nil do return
-
-    bvh_destroy(root)
     embree.rtcReleaseBVH(bvh)
     embree.rtcReleaseDevice(device)
-
-
-    free(system)
 }
 
 bvh_destroy :: proc(node: BvhNode) {
@@ -645,7 +634,7 @@ save_node :: proc(entity: Entity) -> scene.Node {
 save_scene :: proc(head_entity: Entity, scene_num: i32) -> scene.SceneData {
     scene_data := scene.SceneData {
         Scene = scene.Scene{Num = scene_num},
-        Node = make([dynamic]scene.Node, 1),
+
     }
     scene_data.Node[0] = save_node(head_entity)
 
@@ -835,5 +824,5 @@ load_prefab2 :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Enti
     }
 
     append(&g_scene, prefab)
-    return
+    return prefab
 }

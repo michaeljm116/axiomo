@@ -102,7 +102,7 @@ test_get_last_sibling :: proc(t: ^testing.T) {
 @test
 test_load_froku_model :: proc(t: ^testing.T) {
     allocator := context.allocator
-    file_name := "assets/froku.pm" // Replace with the actual path to the binary model file
+    file_name := "assets/models/froku.pm"
 
     model := resource.load_pmodel(file_name, allocator)
     defer resource.destroy_model(&model)

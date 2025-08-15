@@ -17,19 +17,13 @@ quat :: math.Quaternionf32
 vec3 :: math.Vector3f32
 vec4 :: math.Vector4f32
 mat4 :: math.Matrix4f32
-
-
-// Helper types for vectors/matrices
-vec2f :: [2]f32
-vec3f :: [3]f32
-mat4f :: [4][4]f32
-
+vec2 :: math.Vector2f32
 
 Gui :: struct {
-    min:        vec2f,
-    extents:    vec2f,
-    align_min:  vec2f,
-    align_ext:  vec2f,
+    min:        vec2,
+    extents:    vec2,
+    align_min:  vec2,
+    align_ext:  vec2,
     layer:      i32,
     id:         i32,
     pad:        i32,
@@ -37,8 +31,8 @@ Gui :: struct {
 }
 
 Primitive :: struct {
-    world:      mat4f,
-    extents:    vec3f,
+    world:      mat4,
+    extents:    vec3,
     num_children: i32,
     id:         i32,
     mat_id:     i32,
@@ -47,9 +41,9 @@ Primitive :: struct {
 }
 
 Vert :: struct {
-    pos:    vec3f,
+    pos:    vec3,
     u:      f32,
-    norm:   vec3f,
+    norm:   vec3,
     v:      f32,
 }
 
@@ -63,16 +57,16 @@ Index :: struct {
 }
 
 Shape :: struct {
-    center:     vec3f,
+    center:     vec3,
     mat_id:     i32,
-    extents:    vec3f,
+    extents:    vec3,
     type:       i32,
 }
 
 Light :: struct {
-    pos:        vec3f,
+    pos:        vec3,
     intensity:  f32,
-    color:      vec3f,
+    color:      vec3,
     id:         i32,
 }
 
@@ -283,7 +277,7 @@ vbuffer_init_storage_buffer_with_staging :: proc(vbuf: ^VBuffer($T), allocator: 
 vbuffer_init_storage_buffer_with_staging_device :: proc(vbuf: ^VBuffer($T), device: vk.Device, allocator: ^vma.Allocator, command_pool: vk.CommandPool, queue: vk.Queue, objects: []T, mul: u32, usage: vk.BufferUsageFlags = {.VERTEX_BUFFER, .INDEX_BUFFER, .STORAGE_BUFFER, .TRANSFER_DST}) {
     buffer_size := vk.DeviceSize(size_of(T) * mul)
     if(buffer_size == 0) do return
-    
+
     // Create staging buffer
     staging_buffer: vk.Buffer
     staging_alloc: vma.Allocation

@@ -94,14 +94,14 @@ Archetype :: struct {
 	remove_edges:     map[ComponentID]^Archetype,
 }
 
-create_world :: proc() -> ^World {
-	world := new(World)
-	world.component_info = make(map[ComponentID]ComponentTypeInfo)
-	world.entity_index = make(map[EntityID]EntityInfo)
-	world.archetypes = make(map[ArchetypeID]^Archetype)
-	world.component_archetypes = make(map[ComponentID]map[ArchetypeID]^Archetype)
+create_world :: proc(alloc := context.allocator) -> ^World {
+	world := new(World, alloc)
+	world.component_info = make(map[ComponentID]ComponentTypeInfo, alloc)
+	world.entity_index = make(map[EntityID]EntityInfo, alloc)
+	world.archetypes = make(map[ArchetypeID]^Archetype, alloc)
+	world.component_archetypes = make(map[ComponentID]map[ArchetypeID]^Archetype, alloc)
 	world.next_entity_id = EntityID(1)
-	world.queries = make([dynamic]^Query)
+	world.queries = make([dynamic]^Query, alloc)
 	return world
 }
 

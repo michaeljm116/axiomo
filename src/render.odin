@@ -68,7 +68,7 @@ RenderBase :: struct{
 
 	image_available_semaphores: [MAX_FRAMES_IN_FLIGHT]vk.Semaphore,
 	render_finished_semaphores: [MAX_FRAMES_IN_FLIGHT]vk.Semaphore,
-	//in_flight_fences: [MAX_FRAMES_IN_FLIGHT]vk.Fence,
+	in_flight_fences: [MAX_FRAMES_IN_FLIGHT]vk.Fence,
 
 	vma_allocator: vma.Allocator,
 
@@ -366,7 +366,7 @@ init_vulkan :: proc()
 		for i in 0 ..< MAX_FRAMES_IN_FLIGHT {
 			must(vk.CreateSemaphore(rb.device, &sem_info, nil, &rb.image_available_semaphores[i]))
 			must(vk.CreateSemaphore(rb.device, &sem_info, nil, &rb.render_finished_semaphores[i]))
-//			must(vk.CreateFence(rb.device, &fence_info, nil, &rb.in_flight_fences[i]))
+			must(vk.CreateFence(rb.device, &fence_info, nil, &rb.in_flight_fences[i]))
 		}
 	}
 
@@ -2312,7 +2312,9 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
             }
             rt.mesh_assigner[mod.unique_id + i32(i)] = {prev_ind_size, prev_ind_size + len(mesh.faces)}
         }
+
     }
+
     append(&shapes, gpu.Shape{center = {0.0, 1.0, 0.0}, type = 1})
     append(&blas, gpu.BvhNode{} )
 
@@ -2521,7 +2523,7 @@ update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [d
             //fmt.printfln("Prim #%d: %s",i, n.name)
             // Convert primitive component to GPU primitive
             gpu_prim := gpu.Primitive{
-                world = transmute(mat4f)pc.world,
+                world = pc.world,
                 extents = pc.extents,
                 num_children = pc.num_children,
                 id = pc.id,
@@ -2756,14 +2758,14 @@ add_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
 fence_timeout_ns :: 10_000_000_000 // 1 second
 start_frame :: proc(image_index: ^u32) {
     // Wait/reset graphics fence for prior frame sync (enables multi-frame overlap)
-    // must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, fence_timeout_ns))
-    // must(vk.ResetFences(rb.device, 1, &rb.in_flight_fences[current_frame]))
+    must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, fence_timeout_ns))
+    must(vk.ResetFences(rb.device, 1, &rb.in_flight_fences[current_frame]))
 
     result := vk.AcquireNextImageKHR(
         rb.device,
         rb.swapchain,
         max(u64),
-        rb.image_available_semaphores[0],
+        rb.image_available_semaphores[current_frame],
         {},
         image_index
     )
@@ -2783,19 +2785,19 @@ start_frame :: proc(image_index: ^u32) {
         commandBufferCount = 1,
         pCommandBuffers = &rb.command_buffers[image_index^],
         waitSemaphoreCount = 1,
-        pWaitSemaphores = &rb.image_available_semaphores[0],
+        pWaitSemaphores = &rb.image_available_semaphores[current_frame],
         pWaitDstStageMask = &wait_stages,
         signalSemaphoreCount = 1,
-        pSignalSemaphores = &rb.render_finished_semaphores[0]
+        pSignalSemaphores = &rb.render_finished_semaphores[current_frame]
     }
-    must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, 0))  // Fence for graphics
+    must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, rb.in_flight_fences[current_frame]))  // Fence for graphics
 }
 
 end_frame :: proc(image_index: ^u32) {
     present_info := vk.PresentInfoKHR{
         sType = .PRESENT_INFO_KHR,
         waitSemaphoreCount = 1,  // Fixed to 1 (matches signal)
-        pWaitSemaphores = &rb.render_finished_semaphores[0],
+        pWaitSemaphores = &rb.render_finished_semaphores[current_frame],
         swapchainCount = 1,
         pSwapchains = &rb.swapchain,
         pImageIndices = image_index,
@@ -2968,7 +2970,7 @@ end :: proc() {
 
 cleanup :: proc() {
     vk.DeviceWaitIdle(rb.device)
-    
+
     // Cleanup swapchain first
     cleanup_swapchain()
 
@@ -2978,7 +2980,7 @@ cleanup :: proc() {
 
     // Now cleanup everything else including the device
     cleanup_vulkan()
-    
+
     // Final cleanup of instance-level resources
     destroy_vulkan()
 }
@@ -3076,7 +3078,7 @@ cleanup_vulkan :: proc() {
 
     // Cleanup any remaining swap chain resources
     cleanup_swapchain_vulkan()
-    
+
     // Destroy render pass after swapchain cleanup
     vk.DestroyRenderPass(rb.device, rb.render_pass, nil)
 
@@ -3086,6 +3088,9 @@ cleanup_vulkan :: proc() {
     }
     for sem in rb.render_finished_semaphores {
         vk.DestroySemaphore(rb.device, sem, nil)
+    }
+    for fence in rb.in_flight_fences {
+        vk.DestroyFence(rb.device, fence, nil)
     }
 
     // Destroy remaining graphics resources

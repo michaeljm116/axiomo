@@ -25,24 +25,21 @@ quat :: math.Quaternionf32
 vec3 :: math.Vector3f32
 vec4 :: math.Vector4f32
 mat4 :: math.Matrix4f32
-
-
-// Helper types for vectors/matrices
-vec2f :: [2]f32
-vec3f :: [3]f32
-mat4f :: [4][4]f32
+vec2 :: math.Vector2f32
 
 Vertex :: struct{
     pos : vec3,
     norm : vec3,
-    uv : [2]f32
+    uv : vec2
 }
+
 Shape :: struct{
     name : string,
     type : i32,
     center : vec3,
     extents :vec3
 }
+
 Mesh :: struct{
     verts : [dynamic]Vertex,
     faces : [dynamic]vec4i,
