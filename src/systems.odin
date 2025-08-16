@@ -135,7 +135,7 @@ sqt_transform_e :: proc(entity: Entity) {
 
     // Combine with parent if exists
     if has_parent {
-        pt := get_component(parent_ent, Cmp_Transform)
+        pt := get_component(parent_ent, Cmp_Transform)^
         tc.global.sca = pt.global.sca * tc.local.sca
         tc.global.rot = pt.global.rot * tc.local.rot
         tc.trm = pt.world * local
@@ -748,7 +748,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
         parent       = parent,  // Set parent Entity ID here
         child        = Entity(0),  // Will be set when loading children
         brotha       = Entity(0),  // Will be set by parent when adding as child
-        name         = strings.clone(scene_node.Name),
+        name         = strings.clone(scene_node.Name, context.temp_allocator),
         is_dynamic   = scene_node.Dynamic,
         is_parent    = scene_node.hasChildren,
         engine_flags = e_flags,
@@ -783,7 +783,6 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
 
 // Load entire scene
 load_scene :: proc(scene_data: scene.SceneData, alloc: mem.Allocator) {
-    context.allocator = alloc
 	if len(scene_data.Node) == 0 {
 		return // Entity(0)
 	}

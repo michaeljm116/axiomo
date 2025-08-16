@@ -54,17 +54,6 @@ main :: proc() {
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
 
-	g_world = ecs.create_world()
-	defer ecs.delete_world(g_world)
-	g_world_ent = add_entity()
-
-
-
-	defer bvh_system_destroy(g_bvh)
-
-	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 0, false})
-
-	// Create an arena allocator for long-lived allocations (e.g., materials, models, scenes)
 	arena: mem.Arena
 	arena_data: []byte = make([]byte, 1024 * 1024 * 120, context.allocator) // 120 MiB; backing on heap for persistence
 	mem.arena_init(&arena, arena_data)
@@ -72,13 +61,25 @@ main :: proc() {
 	defer mem.arena_free_all(&arena) // Free all allocations from the arena (though defer delete handles backing)
 	arena_alloc := mem.arena_allocator(&arena)
 
-	// Create a per-frame arena for transient data (e.g., BVH construction primitives/nodes)
 	per_frame_arena: mem.Arena
 	per_frame_arena_data: []byte = make([]byte, 1024 * 1024 * 8, context.allocator) // 8 MiB example; monitor with tracking allocator
 	mem.arena_init(&per_frame_arena, per_frame_arena_data)
 	defer delete(per_frame_arena_data) // Explicitly free backing buffer at program end
 	defer mem.arena_free_all(&per_frame_arena) // Free all (though typically reset per frame)
 	per_frame_alloc := mem.arena_allocator(&per_frame_arena)
+
+	g_world = ecs.create_world()
+	defer ecs.delete_world(g_world)
+	g_world_ent = add_entity()
+
+
+	defer bvh_system_destroy(g_bvh)
+
+	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 0, false})
+
+	// Create an arena allocator for long-lived allocations (e.g., materials, models, scenes)
+
+	// Create a per-frame arena for transient data (e.g., BVH construction primitives/nodes)
 
 	g_bvh = bvh_system_create(per_frame_alloc)
 
@@ -97,8 +98,8 @@ main :: proc() {
 
 	//Begin renderer and scene loading
 	start_up_raytracer(arena_alloc)
-	load_scene(scene, arena_alloc)
-	g_player := load_prefab2("assets/prefabs/", "Froku", arena_alloc)
+	load_scene(scene, context.allocator)
+	g_player := load_prefab2("assets/prefabs/", "Froku", context.allocator)
 
 	transform_sys_process_e()
 	bvh_system_build(g_bvh, per_frame_alloc)
