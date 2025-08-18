@@ -72,7 +72,6 @@ main :: proc() {
 	defer ecs.delete_world(g_world)
 	g_world_ent = add_entity()
 
-
 	defer bvh_system_destroy(g_bvh)
 
 	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 0, false})
@@ -86,7 +85,6 @@ main :: proc() {
 	context.logger = log.create_console_logger()
 	defer free(context.logger.data)
 	rb.ctx = context
-
 
 	// begin loading data
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)

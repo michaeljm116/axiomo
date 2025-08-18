@@ -10,6 +10,7 @@ import "core:math"
 import "core:math/linalg"
 import "external/ecs"
 import "external/embree"
+import "vendor:box2d"
 
 import "resource/scene"
 import "gpu"
@@ -285,6 +286,7 @@ bvh_system_destroy :: proc(using system: ^Sys_Bvh) {
     if system == nil do return
     embree.rtcReleaseBVH(bvh)
     embree.rtcReleaseDevice(device)
+    free(system)
 }
 
 bvh_destroy :: proc(node: BvhNode) {
@@ -822,6 +824,10 @@ load_prefab2 :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Enti
         cc.parent = prefab
     }
 
-    append(&g_scene, prefab)
+    //append(&g_scene, prefab)
     return prefab
 }
+
+//----------------------------------------------------------------------------\\
+// /Physics System /ps
+//----------------------------------------------------------------------------\\

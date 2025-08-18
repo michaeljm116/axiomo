@@ -1441,8 +1441,8 @@ ComputeRaytracer :: struct {
     light_comps: [dynamic]Cmp_Light,
 
     mesh_assigner: map[i32][2]int,
-    joint_assigner: map[i32][2]int,
-    shape_assigner: map[i32][2]int,
+    //joint_assigner: map[i32][2]int,
+    //shape_assigner: map[i32][2]int,
 
     compute_texture: Texture,
     gui_textures: [MAX_TEXTURES]Texture,
@@ -2131,7 +2131,7 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
     // Allocate command buffers if not already done
     if len(rb.command_buffers) == 0
     {
-        rb.command_buffers = make([]vk.CommandBuffer, len(rb.swapchain_frame_buffers))
+        rb.command_buffers = make([]vk.CommandBuffer, len(rb.swapchain_frame_buffers), context.temp_allocator)
         command_buffer_info := vk.CommandBufferAllocateInfo{
             sType = .COMMAND_BUFFER_ALLOCATE_INFO,
             commandPool = rb.command_pool,
@@ -2290,6 +2290,8 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     defer delete(faces)
     defer delete(verts)
 
+    rt.mesh_assigner = make(map[i32][2]int, alloc)
+
     for mod in g_models
     {
         for mesh, i in mod.meshes
@@ -2312,7 +2314,6 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
             }
             rt.mesh_assigner[mod.unique_id + i32(i)] = {prev_ind_size, prev_ind_size + len(mesh.faces)}
         }
-
     }
 
     append(&shapes, gpu.Shape{center = {0.0, 1.0, 0.0}, type = 1})
@@ -2507,6 +2508,7 @@ update_camera_component :: proc(camera: ^Cmp_Camera) {
 
 update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity, root: BvhNode, num_nodes : i32)
 {
+    context.allocator = context.temp_allocator
     num_prims := len(ordered_prims)
     if(num_prims == 0) do return
     clear(&rt.primitives)
