@@ -777,9 +777,9 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
     }
 
     // If this is a root (no parent), append to g_scene
-    if parent == Entity(0) && .ROOT in cmp_node.engine_flags {
-        append(&g_scene, entity)
-    }
+    // if parent == Entity(0) && .ROOT in cmp_node.engine_flags {
+    //     append(&g_scene, entity)
+    // }
     return entity
 }
 
@@ -808,14 +808,14 @@ load_prefab :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Entit
     return
 }
 
-load_prefab2 :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Entity)
+load_prefab2 :: proc(dir, name: string, ecs_alloc, resource_alloc : mem.Allocator) -> (prefab : Entity)
 {
     // First load the data from the scene module
-    context.allocator = alloc
-    node := scene.load_prefab_node(fmt.tprintf("%s%s.json",dir,name), alloc)
+    context.allocator = ecs_alloc
+    node := scene.load_prefab_node(fmt.tprintf("%s%s.json",dir,name), resource_alloc)
 
     //Create an entity
-    prefab = load_node(node, alloc = alloc)
+    prefab = load_node(node, alloc = ecs_alloc)
     add_component(prefab, Cmp_Root{})
     nc := get_component(prefab,Cmp_Node)
     children := get_children(g_world, nc.entity)

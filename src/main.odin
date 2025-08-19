@@ -97,7 +97,7 @@ main :: proc() {
 	//Begin renderer and scene loading
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, context.allocator)
-	g_player := load_prefab2("assets/prefabs/", "Froku", context.allocator)
+	g_player := load_prefab2("assets/prefabs/", "Froku", resource_alloc = arena_alloc, ecs_alloc = context.allocator)
 
 	transform_sys_process_e()
 	bvh_system_build(g_bvh, per_frame_alloc)

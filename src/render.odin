@@ -512,6 +512,7 @@ find_queue_families :: proc(device: vk.PhysicalDevice) -> (ids: Queue_Family_Ind
 
 set_compute_queue_family_index :: proc(device: vk.PhysicalDevice, ids: ^Queue_Family_Indices)
 {
+
    count: u32
    vk.GetPhysicalDeviceQueueFamilyProperties(device, &count, nil)
    fams := make([]vk.QueueFamilyProperties, count, context.temp_allocator)
@@ -519,6 +520,9 @@ set_compute_queue_family_index :: proc(device: vk.PhysicalDevice, ids: ^Queue_Fa
 
    compute_fams : [dynamic]vk.QueueFamilyProperties
    c : [dynamic] u32
+   defer delete(compute_fams)
+   defer delete(c)
+
    i : u32
    for fam, i in fams{
        if .COMPUTE in fam.queueFlags{
@@ -3054,6 +3058,17 @@ cleanup_vulkan :: proc() {
         texture_destroy(&tex, rb.device, &rb.vma_allocator)
     }
 
+    // Destroy all dynamic objects
+    delete(rt.primitives)
+    delete(rt.materials)
+    delete(rt.lights)
+    delete(rt.guis)
+    delete(rt.bvh)
+    delete(rt.mesh_comps)
+    delete(rt.light_comps)
+    delete(rt.mesh_assigner)
+    delete(rt.bindless_textures)
+    delete(rt.ordered_prims_map)
     // Destroy command pools (this automatically frees command buffers)
     vk.DestroyCommandPool(rb.device, rt.compute.command_pool, nil)
     vk.DestroyCommandPool(rb.device, rb.command_pool, nil)
