@@ -95,7 +95,7 @@ find_player_entity :: proc() {
     for archetype in player_archetypes {
         nodes := get_table(archetype, Cmp_Node)
         for node, i in nodes {
-            if node.name == "Froku" {
+            if node.name == "Parent" {
                 g_player = archetype.entities[i]
                 return
             }
@@ -178,7 +178,7 @@ update_camera_movement :: proc(delta_time: f32) {
 
 // Handle camera rotation with mouse
 update_camera_rotation :: proc(delta_time: f32) {
-    camera_transform := get_component(g_camera_entity, Cmp_Transform)
+    camera_transform := get_component(g_player, Cmp_Transform)
 
     if camera_transform == nil {
         return

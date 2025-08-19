@@ -1,0 +1,128 @@
+{
+  "Material": {
+    "_ID": 0
+  },
+  "Node": [
+    {
+      "Material": {
+        "_ID": 0
+      },
+      "Node": [
+        {
+          "Material": {
+            "_ID": 0
+          },
+          "Object": {
+            "_ID": -2
+          },
+          "Transform": {
+            "Position": {
+              "_x": 2.0199999809265137,
+              "_y": 0.0,
+              "_z": -2.0399999618530273
+            },
+            "Rotation": {
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
+            },
+            "Scale": {
+              "_x": 2.0,
+              "_y": 2.0,
+              "_z": 2.0
+            }
+          },
+          "_Dynamic": true,
+          "_Name": "GrandChild1",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": false
+        }
+      ],
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": 1.5,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 0.9238795638084412,
+          "_x": 0.0,
+          "_y": 0.3826834261417389,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 0.5,
+          "_y": 0.5,
+          "_z": 0.5
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "Child1",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": true
+    },
+    {
+      "Material": {
+        "_ID": 0
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": 3.2899999618530273,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 0.9238795638084412,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.3826834261417389
+        },
+        "Scale": {
+          "_x": 0.75,
+          "_y": 0.75,
+          "_z": 0.75
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "Child2",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    }
+  ],
+  "Object": {
+    "_ID": -2
+  },
+  "Transform": {
+    "Position": {
+      "_x": -8.12002182006836,
+      "_y": -3.3700084686279297,
+      "_z": -7.700004577636719
+    },
+    "Rotation": {
+      "_w": 1.0,
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Scale": {
+      "_x": 1.0,
+      "_y": 1.0,
+      "_z": 1.0
+    }
+  },
+  "_Dynamic": true,
+  "_Name": "Parent",
+  "_eFlags": 32775,
+  "_gFlags": 0,
+  "_hasChildren": true
+}
