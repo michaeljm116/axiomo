@@ -183,19 +183,22 @@ sqt_transform_e :: proc(entity: Entity) {
             }
         }
     }
+    if nc.brotha != Entity(0) do sqt_transform_e(nc.brotha)
+    if nc.child != Entity(0) do sqt_transform_e(nc.child)
+
     // Recurse for children
-    if nc.is_parent {
-        curr_child := nc.child
-        for curr_child != Entity(0) {
-            child_nc := get_component(curr_child, Cmp_Node)
-            if child_nc != nil {
-                sqt_transform_e(curr_child)
-                curr_child = child_nc.brotha
-            } else {
-                break
-            }
-        }
-    }
+    // if nc.is_parent {
+    //     curr_child := nc.child
+    //     for curr_child != Entity(0) {
+    //         child_nc := get_component(curr_child, Cmp_Node)
+    //         if child_nc != nil {
+    //             sqt_transform_e(curr_child)
+    //             curr_child = child_nc.brotha
+    //         } else {
+    //             break
+    //         }
+    //     }
+    // }
 }
 // Rotate AABB procedure
 rotate_aabb :: proc(m: linalg.Matrix3f32) -> vec3 {

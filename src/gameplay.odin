@@ -31,6 +31,14 @@ g_input: InputState
 // Camera entity - will be set by gameplay system
 g_camera_entity: Entity = 0
 
+// Light entity used for simple orbiting demo (will be detected if present)
+g_light_entity: Entity = 0
+
+// Orbit parameters (world units / radians)
+g_light_orbit_radius: f32 = 5.0
+g_light_orbit_speed: f32 = 1.0   // radians per second
+g_light_orbit_angle: f32 = 0.0
+
 // Initialize the gameplay system
 gameplay_init :: proc() {
     g_input = InputState{
@@ -50,6 +58,9 @@ gameplay_init :: proc() {
 
     // Find the camera entity
     find_camera_entity()
+
+    // Try to find a light entity in the scene so we can orbit it
+    find_light_entity()
 }
 
 // Find the camera entity in the scene
@@ -84,6 +95,9 @@ gameplay_update :: proc(delta_time: f32) {
         g_input.keys_just_released[i] = false
     }
 
+    // Update light orbit (if a light entity was found)
+    update_light_orbit(delta_time)
+
     //update_camera_movement(delta_time)
     update_player_movement(delta_time)
     update_camera_rotation(delta_time)
@@ -95,12 +109,64 @@ find_player_entity :: proc() {
     for archetype in player_archetypes {
         nodes := get_table(archetype, Cmp_Node)
         for node, i in nodes {
-            if node.name == "Parent" {
+            if node.name == "Froku" {
                 g_player = archetype.entities[i]
                 return
             }
         }
     }
+}
+
+// Find the first light entity in the scene and cache it for orbit updates.
+// Looks for entities with Light, Transform, and Node components.
+find_light_entity :: proc() {
+    light_archetypes := query(has(Cmp_Light), has(Cmp_Transform), has(Cmp_Node))
+
+    for archetype in light_archetypes {
+        entities := archetype.entities
+        if len(entities) > 0 {
+            g_light_entity = entities[0]
+            return
+        }
+    }
+
+    // No light found -> leave g_light_entity as 0
+}
+
+// Update the cached light entity so it orbits around a center point.
+// If a player exists, orbit around the player's world position; otherwise use world origin.
+update_light_orbit :: proc(delta_time: f32) {
+    if g_light_entity == 0 {
+        return
+    }
+
+    lc := get_component(g_light_entity, Cmp_Light)
+    tc := get_component(g_light_entity, Cmp_Transform)
+    if tc == nil || lc == nil {
+        return
+    }
+
+    // Determine orbit center: prefer player position if available
+    center := vec3{0.0, 1.5, 0.0}
+    if g_player != 0 {
+        pc := get_component(g_player, Cmp_Transform)
+        if pc != nil {
+            center = pc.local.pos.xyz
+        }
+    }
+
+    // Advance angle
+    g_light_orbit_angle += g_light_orbit_speed * delta_time
+
+    // Compute new local position on XZ plane; keep Y relative to center
+    new_x := center.x + math.cos(g_light_orbit_angle) * g_light_orbit_radius
+    new_z := center.z + math.sin(g_light_orbit_angle) * g_light_orbit_radius
+    new_y := center.y + 1.5 // offset above center (tweak as desired)
+
+    // Update transform local position so the transform system will update world matrix
+    tc.local.pos.x = new_x
+    tc.local.pos.z = new_z
+    tc.local.pos.y = new_y
 }
 
 update_player_movement :: proc(delta_time: f32)
