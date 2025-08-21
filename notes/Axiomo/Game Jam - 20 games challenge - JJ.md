@@ -28,4 +28,6 @@ OnStart:
 * Move character up
 * Make static obstacle
 * PrintF obstacle collisions
+* GameLoop!!! 
+* 
 *

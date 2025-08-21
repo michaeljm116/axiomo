@@ -5,6 +5,7 @@ import "core:math"
 import "core:fmt"
 import "core:time"
 import "core:math/linalg"
+import b2"vendor:box2d"
 
 // Input state tracking
 InputState :: struct {
@@ -36,8 +37,8 @@ g_light_entity: Entity = 0
 
 // Orbit parameters (world units / radians)
 g_light_orbit_radius: f32 = 5.0
-g_light_orbit_speed: f32 = 1.0   // radians per second
-g_light_orbit_angle: f32 = 0.0
+g_light_orbit_speed: f32 = 0.25   // radians per second
+g_light_orbit_angle: f32 = 15.0
 
 // Initialize the gameplay system
 gameplay_init :: proc() {
@@ -122,11 +123,11 @@ find_light_entity :: proc() {
     light_archetypes := query(has(Cmp_Light), has(Cmp_Transform), has(Cmp_Node))
 
     for archetype in light_archetypes {
-        entities := archetype.entities
-        if len(entities) > 0 {
-            g_light_entity = entities[0]
-            return
-        }
+       for entity in archetype.entities{
+           fmt.println("Light found")
+           g_light_entity = entity
+           return
+       }
     }
 
     // No light found -> leave g_light_entity as 0
@@ -166,6 +167,8 @@ update_light_orbit :: proc(delta_time: f32) {
     tc.local.pos.x = new_x
     tc.local.pos.z = new_z
     tc.local.pos.y = new_y
+
+    rt.update_flags += {.LIGHT}
 }
 
 update_player_movement :: proc(delta_time: f32)
@@ -241,9 +244,21 @@ update_camera_movement :: proc(delta_time: f32) {
     }
 }
 
+face_left :: proc(entity : entity)
+{
+    tc := get_component(entity, cmp_transform)
+    tc.local.rot = linalg.quaternion_angle_axis_f32(90, {0,1,0})
+}
+
+face_right :: proc(entity : entity)
+{
+    tc := get_component(entity, cmp_transform)
+    tc.local.rot = linalg.quaternion_angle_axis_f32(-90, {0,1,0})
+}
+
 // Handle camera rotation with mouse
 update_camera_rotation :: proc(delta_time: f32) {
-    camera_transform := get_component(g_player, Cmp_Transform)
+    camera_transform := get_component(g_camera_entity, Cmp_Transform)
 
     if camera_transform == nil {
         return
@@ -323,6 +338,8 @@ update_camera_rotation :: proc(delta_time: f32) {
     // Reset mouse delta
     g_input.mouse_delta_x = 0
     g_input.mouse_delta_y = 0
+
+    Face_Left(g_player)
 }
 // Get camera forward vector
 get_camera_forward :: proc(transform: ^Cmp_Transform) -> vec3 {
@@ -447,4 +464,21 @@ gameplay_destroy :: proc() {
 
     // Release mouse cursor
     glfw.SetInputMode(rb.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
+}
+
+//----------------------------------------------------------------------------\\
+// /Physics System /ps
+//----------------------------------------------------------------------------\\
+MAX_DYANMIC_OBJECTS :: 1000
+g_world_def := b2.DefaultWorldDef()
+g_world_id : b2.WorldId
+g_b2scale := f32(1)
+g_debug_draw : b2.DebugDraw
+g_debug_col := false
+g_debug_stats := false
+
+setup_physics :: proc (){
+   // b2.SetLengthUnitsPerMeter(g_b2scale)
+
+
 }
