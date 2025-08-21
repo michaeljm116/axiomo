@@ -44,7 +44,7 @@ gameplay_init :: proc() {
     g_input = InputState{
         mouse_sensitivity = 0.1,
         movement_speed = 5.0,
-        rotation_speed = 2.0,
+        rotation_speed = 20.0,
         first_mouse = true,
     }
 
@@ -58,9 +58,8 @@ gameplay_init :: proc() {
 
     // Find the camera entity
     find_camera_entity()
-
-    // Try to find a light entity in the scene so we can orbit it
     find_light_entity()
+    find_player_entity()
 }
 
 // Find the camera entity in the scene
@@ -250,30 +249,81 @@ update_camera_rotation :: proc(delta_time: f32) {
         return
     }
 
-    // Apply mouse sensitivity
-    yaw_delta := -f32(g_input.mouse_delta_x) * g_input.mouse_sensitivity * delta_time * g_input.rotation_speed
-    pitch_delta := -f32(g_input.mouse_delta_y) * g_input.mouse_sensitivity * delta_time * g_input.rotation_speed
+    // Apply mouse sensitivity (deltas are treated as degrees). Convert to radians for quaternion math.
+    yaw_delta_deg := -f32(g_input.mouse_delta_x) * g_input.mouse_sensitivity * delta_time * g_input.rotation_speed
+    pitch_delta_deg := -f32(g_input.mouse_delta_y) * g_input.mouse_sensitivity * delta_time * g_input.rotation_speed
 
-    // Update euler rotation
-    camera_transform.euler_rotation.y += yaw_delta
-    camera_transform.euler_rotation.x += pitch_delta
+    // Convert deltas to radians immediately
+    yaw_r := math.to_radians(yaw_delta_deg)
+    pitch_r := math.to_radians(pitch_delta_deg)
 
-    // Clamp pitch to prevent flipping
-    camera_transform.euler_rotation.x = math.clamp(camera_transform.euler_rotation.x, -89.0, 89.0)
+    // Extract current pitch from the current orientation quaternion (radians) and clamp the new pitch.
+    q_curr := camera_transform.local.rot
+    curr_pitch := linalg.pitch_from_quaternion_f32(q_curr) // returns radians
+    min_pitch := math.to_radians(f32(-89.0))
+    max_pitch := math.to_radians(f32(89.0))
 
-    // Convert euler to quaternion
-    rotation_matrix := linalg.matrix4_from_euler_angles_xyz_f32(
-        math.to_radians(camera_transform.euler_rotation.x),
-        math.to_radians(camera_transform.euler_rotation.y),
-        math.to_radians(camera_transform.euler_rotation.z)
-    )
-    camera_transform.local.rot = linalg.quaternion_from_matrix4_f32(rotation_matrix)
+    desired_pitch := math.clamp(curr_pitch + pitch_r, min_pitch, max_pitch)
+    actual_pitch_delta := desired_pitch - curr_pitch
+
+    // If nothing to apply, early out and reset deltas
+    if yaw_r == 0.0 && actual_pitch_delta == 0.0 {
+        g_input.mouse_delta_x = 0
+        g_input.mouse_delta_y = 0
+        return
+    }
+
+    // Use linalg helper to create a delta quaternion from pitch/yaw (pitch, yaw, roll).
+    // We'll build a single delta quaternion and apply it to the current orientation.
+    // Note: linalg.quaternion_from_pitch_yaw_roll expects angles in radians.
+    //
+    // We intentionally remove the custom axis-angle helper and rely on the linalg helper
+    // for clearer, tested quaternion-from-euler behavior.
+    //
+    // (Actual delta quaternion will be constructed below where both pitch/yaw deltas are available.)
+
+    quat_mul := proc(a: quat, b: quat) -> quat {
+        r: quat
+        r.w = a.w*b.w - a.x*b.x - a.y*b.y - a.z*b.z
+        r.x = a.w*b.x + a.x*b.w + a.y*b.z - a.z*b.y
+        r.y = a.w*b.y - a.x*b.z + a.y*b.w + a.z*b.x
+        r.z = a.w*b.z + a.x*b.y - a.y*b.x + a.z*b.w
+        return r
+    }
+
+    quat_normalize := proc(q: quat) -> quat {
+        len := math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w)
+        if len == 0.0 {
+            r: quat
+            r.x = 0.0
+            r.y = 0.0
+            r.z = 0.0
+            r.w = 1.0
+            return r
+        }
+        inv := 1.0 / len
+        r: quat
+        r.x = q.x * inv
+        r.y = q.y * inv
+        r.z = q.z * inv
+        r.w = q.w * inv
+        return r
+    }
+
+    // Build delta quaternion from pitch & yaw using linalg helper (pitch, yaw, roll).
+    // We pass the pitch and yaw deltas (already converted to radians as pitch_r and yaw_r).
+    q_delta := linalg.quaternion_from_pitch_yaw_roll_f32(pitch_r, yaw_r, 0.0)
+
+    // Apply delta: q_new = q_delta * q_curr
+    q_new := quat_mul(q_delta, q_curr)
+    q_new = quat_normalize(q_new)
+
+    camera_transform.local.rot = q_new
 
     // Reset mouse delta
     g_input.mouse_delta_x = 0
     g_input.mouse_delta_y = 0
 }
-
 // Get camera forward vector
 get_camera_forward :: proc(transform: ^Cmp_Transform) -> vec3 {
     rotation_matrix := linalg.matrix4_from_quaternion_f32(transform.local.rot)

@@ -1,0 +1,121 @@
+{
+  "Node": [
+    {
+      "AspectRatio": {
+        "_ratio": 1.7777777910232544
+      },
+      "FOV": {
+        "_fov": 104.0
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": 2.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": -0.7071067690849304,
+          "_x": 0.7071067690849304,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "Camera",
+      "_eFlags": 2228243,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Color": {
+        "_b": 255.0,
+        "_g": 255.0,
+        "_r": 255.0
+      },
+      "ID": {
+        "_id": 99
+      },
+      "Intensity": {
+        "_i": 1000.0
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": 10.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "Light",
+      "_eFlags": 2228235,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Collider": {
+        "Extents": {
+          "_x": 11.0,
+          "_y": 1.0,
+          "_z": 10.0
+        },
+        "Local": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "_Type": 1
+      },
+      "Material": {
+        "_ID": -874053208
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Rigid": {
+        "_Rigid": true
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 8.726646001377958e-07,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 10.0,
+          "_y": 1.0,
+          "_z": 10.0
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "Floor",
+      "_eFlags": 2334727,
+      "_gFlags": 0,
+      "_hasChildren": false
+    }
+  ],
+  "Scene": {
+    "_Num": 1
+  }
+}

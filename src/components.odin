@@ -274,7 +274,7 @@ AnimFlags :: bit_field u16{
 
 // Breadth-First Graph Component
 Cmp_BFGraph :: struct {
-    nodes: [dynamic]Entity,  // Using entity IDs instead of pointers
+    nodes: [dynamic]Entity,
     transforms: [dynamic]Sqt,
 }
 

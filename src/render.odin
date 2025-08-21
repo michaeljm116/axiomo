@@ -96,7 +96,7 @@ init_vulkan :: proc()
 	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
 	glfw.WindowHint(glfw.RESIZABLE, glfw.TRUE)
 
-	rb.window = glfw.CreateWindow(1280, 720, "Bee Killings Inn", nil, nil)
+	rb.window = glfw.CreateWindow(1280, 720, "Jetpack Joyrade", nil, nil)
 
 	glfw.SetFramebufferSizeCallback(rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
 		rb.framebuffer_resized = true
@@ -112,7 +112,7 @@ init_vulkan :: proc()
 		sType            = .INSTANCE_CREATE_INFO,
 		pApplicationInfo = &vk.ApplicationInfo {
 			sType = .APPLICATION_INFO,
-			pApplicationName = "Bee Killings Inn",
+			pApplicationName = "JetpackJoyrayde",
 			applicationVersion = vk.MAKE_VERSION(0, 0, 1),
 			pEngineName = "Axiomo",
 			engineVersion = vk.MAKE_VERSION(0, 0, 1),
@@ -2306,7 +2306,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
 
             reserve(&verts, prev_vert_size + len(mesh.verts))
             for vert in mesh.verts{
-                append(&verts, gpu.Vert{pos = vert.pos, norm = vert.norm, u = vert.uv.x, v = vert.uv.y})
+                append(&verts, gpu.Vert{pos = vert.pos / mesh.extents, norm = vert.norm, u = vert.uv.x, v = vert.uv.y})
             }
             reserve(&faces, prev_ind_size + len(mesh.faces))
             for face in mesh.faces{

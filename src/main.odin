@@ -89,7 +89,7 @@ main :: proc() {
 	// begin loading data
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)
 	res.load_materials("assets/Materials.xml", &g_materials)
-	scene := sc.load_new_scene("assets/scenes/PrefabMaker.json", arena_alloc)
+	scene := sc.load_new_scene("assets/scenes/JetpackJoy.json", arena_alloc)
     g_models = make([dynamic]res.Model, 0, arena_alloc)
 	res.load_directory("assets/models/", &g_models)
 	poses := res.load_pose("assets/animations/Froku.anim", "Froku", arena_alloc)
