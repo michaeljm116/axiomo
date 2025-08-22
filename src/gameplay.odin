@@ -244,15 +244,15 @@ update_camera_movement :: proc(delta_time: f32) {
     }
 }
 
-face_left :: proc(entity : entity)
+face_left :: proc(entity : Entity)
 {
-    tc := get_component(entity, cmp_transform)
+    tc := get_component(entity, Cmp_Transform)
     tc.local.rot = linalg.quaternion_angle_axis_f32(90, {0,1,0})
 }
 
-face_right :: proc(entity : entity)
+face_right :: proc(entity : Entity)
 {
-    tc := get_component(entity, cmp_transform)
+    tc := get_component(entity, Cmp_Transform)
     tc.local.rot = linalg.quaternion_angle_axis_f32(-90, {0,1,0})
 }
 
@@ -339,7 +339,7 @@ update_camera_rotation :: proc(delta_time: f32) {
     g_input.mouse_delta_x = 0
     g_input.mouse_delta_y = 0
 
-    Face_Left(g_player)
+    face_left(g_player)
 }
 // Get camera forward vector
 get_camera_forward :: proc(transform: ^Cmp_Transform) -> vec3 {
