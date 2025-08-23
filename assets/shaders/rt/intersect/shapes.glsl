@@ -151,10 +151,16 @@ vec4 quadTexIntersectS(in Ray ray, in Primitive quad)
     return vec4(tN, nor);
 }
 vec3 boxTexture(in vec3 pos, in vec3 norm, in Primitive box, sampler2D t) {
+    // Transform the world-space position into the box's local/object space
+    // by multiplying the inverse world matrix on the left (mat * vec).
     mat4 invWorld = inverse(box.world);
-    vec3 div = 1 / box.extents * 0.5f;
-    vec3 iPos = (vec4(pos, 1) * invWorld).xyz;
-    vec3 iNorm = (vec4(norm, 0) * invWorld).xyz;
+    vec3 div = 1.0 / box.extents * 0.5;
+    vec3 iPos = (invWorld * vec4(pos, 1.0)).xyz;
+
+    // Normals require transformation by the inverse-transpose (normal matrix).
+    // Use the 3x3 transpose of the inverse world matrix to get correct local-space normals.
+    mat3 normalMatrix = transpose(mat3(invWorld));
+    vec3 iNorm = normalize(normalMatrix * norm);
 
     vec4 xTxtr = texture(t, div.x * iPos.yz);
     vec4 yTxtr = texture(t, div.y * iPos.zx);
