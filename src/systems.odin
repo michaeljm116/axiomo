@@ -817,10 +817,15 @@ load_prefab2 :: proc(dir, name: string, ecs_alloc, resource_alloc : mem.Allocato
     //prev_alloc := context.allocator
     //defer context.allocator = prev_alloc
 
-    //context.allocator = ecs_alloc
-    node := scene.load_prefab_node(fmt.tprintf("%s%s.json",dir,name), resource_alloc)
+    // Save/restore global allocator so nested calls don't leave a changed allocator
+    prev_alloc := context.allocator
+    context.allocator = ecs_alloc
+    defer context.allocator = prev_alloc
 
-    //Create an entity
+    // Load prefab node using the resource allocator (strings/resources should be allocated in a long-lived allocator)
+    node := scene.load_prefab_node(fmt.tprintf("%s%s.json", dir, name), resource_alloc)
+
+    // Create the entity using the requested ECS allocator
     prefab = load_node(node, alloc = ecs_alloc)
     add_component(prefab, Cmp_Root{})
     nc := get_component(prefab,Cmp_Node)

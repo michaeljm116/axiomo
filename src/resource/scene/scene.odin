@@ -171,6 +171,22 @@ load_prefab_node :: proc(name: string, alloc := context.allocator) -> (root: Nod
     data, ok := os.read_entire_file_from_filename(name, alloc)
     res.log_if_err(!ok, fmt.tprintf("Finding Prefab(%s)", name))
     json_err := json.unmarshal(data, &root, allocator = alloc)
+    // If there's a JSON error, print helpful debug info: filename, data length and first bytes
+    if json_err != nil {
+        fmt.printf("DEBUG: JSON unmarshal error loading prefab '%s': %v\n", name, json_err)
+        if data != nil && len(data) > 0 {
+            maxb := len(data)
+            if maxb > 64 { maxb = 64 } // print up to first 64 bytes
+            fmt.printf("DEBUG: prefab '%s' data length=%d first_%d_bytes= ", name, len(data), maxb)
+            for i in 0..<maxb {
+                // Print hex bytes for easier inspection of corrupted/incorrect data
+                fmt.printf("%02X ", int(data[i]))
+            }
+            fmt.printf("\n")
+        } else {
+            fmt.printf("DEBUG: prefab '%s' has empty data buffer\n", name)
+        }
+    }
     res.log_if_err(json_err)
     return
 }

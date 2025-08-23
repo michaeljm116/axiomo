@@ -19,6 +19,8 @@ set_up_arenas :: proc()
     for i in 0..<2{
         distance_arena_data[i] = make([]byte, 1024 * 1024 * 1, context.allocator)
         mem.arena_init(&distance_arena[i], distance_arena_data[i])
+        // Provide an allocator handle for callers to use when loading resources into this arena
+        distance_arena_alloc[i] = mem.arena_allocator(&distance_arena[i])
     }
 }
 
@@ -587,7 +589,7 @@ setup_physics :: proc (){
         col.shapedef.density = 0
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
     }
-    //create_barrel({1, 2})
+    create_barrel({1, 2})
 }
 
 create_barrel :: proc(pos : b2.Vec2)
