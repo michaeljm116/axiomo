@@ -814,7 +814,10 @@ load_prefab :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Entit
 load_prefab2 :: proc(dir, name: string, ecs_alloc, resource_alloc : mem.Allocator) -> (prefab : Entity)
 {
     // First load the data from the scene module
-    context.allocator = ecs_alloc
+    //prev_alloc := context.allocator
+    //defer context.allocator = prev_alloc
+
+    //context.allocator = ecs_alloc
     node := scene.load_prefab_node(fmt.tprintf("%s%s.json",dir,name), resource_alloc)
 
     //Create an entity

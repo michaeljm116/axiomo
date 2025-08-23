@@ -587,13 +587,15 @@ setup_physics :: proc (){
         col.shapedef.density = 0
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
     }
-
-//    create_barrel({1, 2})
+    //create_barrel({1, 2})
 }
 
 create_barrel :: proc(pos : b2.Vec2)
 {
-    barrel := load_prefab2("assets/prefabs/","Barrel", resource_alloc = arena_alloc, ecs_alloc = context.allocator)
+
+    fmt.printf("DEBUG create_barrel - BEFORE load_prefab2: context.allocator=%v arena_alloc=%v\n", context.allocator, arena_alloc)
+    barrel := load_prefab2("assets/prefabs/","Barrel", resource_alloc = distance_arena_alloc[curr_phase], ecs_alloc = context.allocator)
+    fmt.printf("DEBUG create_barrel - AFTER load_prefab2: barrel=%v context.allocator=%v arena_alloc=%v\n", barrel, context.allocator, arena_alloc)
     bt := get_component(barrel, Cmp_Transform)
 
     col := Cmp_Collision2D{
@@ -616,7 +618,7 @@ create_barrel :: proc(pos : b2.Vec2)
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
     movable : Cmp_Movable
-
+    fmt.println("Created Barrel, now adding component")
     add_component(barrel, col)
     add_component(barrel, movable)
 }
