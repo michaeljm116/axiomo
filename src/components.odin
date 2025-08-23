@@ -7,6 +7,7 @@ import "core:strings"
 import res "resource"
 import sdl "vendor:sdl2"
 import sdl_mixer "vendor:sdl2/mixer"
+import b2 "vendor:box2d"
 //components
 // ✅bvh
 // ✅light
@@ -338,6 +339,33 @@ Cmp_Audio :: struct {
     file_name: string,
     channel: i32,  // SDL mixer channel for this audio
 }
+
+ShapeType :: enum{
+    Capsule,
+    Circle,
+    Box
+}
+
+CollisionCategory :: enum
+{
+    Player,
+    Enemy,
+    Projectile,
+    EnemyProjectile,
+    Environment
+}
+CollisionCategories :: bit_set[CollisionCategory; u64]
+
+
+Cmp_Collision2D :: struct
+{
+    bodydef: b2.BodyDef,
+    bodyid: b2.BodyId,
+    shapedef: b2.ShapeDef,
+    shapeid: b2.ShapeId,
+    type : ShapeType
+}
+
 
 //----------------------------------------------------------------------------\\
 // /PROCS

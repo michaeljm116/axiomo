@@ -46,6 +46,7 @@ g_scene: [dynamic]Entity
 g_bvh: ^Sys_Bvh
 g_enemies : map[string]Entity
 g_player : Entity
+g_floor : Entity
 
 track_alloc: mem.Tracking_Allocator
 
@@ -106,6 +107,8 @@ main :: proc() {
 	//begin renderer
 	initialize_raytracer()
 	glfw.PollEvents()
+	// gameplay_update(0.015)
+	// if true do return
 	//Update renderer
 	for !glfw.WindowShouldClose(rb.window) {
     	start_frame(&image_index)

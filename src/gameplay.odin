@@ -61,6 +61,7 @@ gameplay_init :: proc() {
     find_camera_entity()
     find_light_entity()
     find_player_entity()
+    setup_physics()
 }
 
 // Find the camera entity in the scene
@@ -99,7 +100,8 @@ gameplay_update :: proc(delta_time: f32) {
     update_light_orbit(delta_time)
 
     //update_camera_movement(delta_time)
-    update_player_movement(delta_time)
+    //update_player_movement(delta_time)
+    update_physics(delta_time)
     update_camera_rotation(delta_time)
 }
 
@@ -111,6 +113,21 @@ find_player_entity :: proc() {
         for node, i in nodes {
             if node.name == "Froku" {
                 g_player = archetype.entities[i]
+                fmt.println("Found Player")
+                return
+            }
+        }
+    }
+}
+
+find_floor_entity :: proc() {
+    arcs := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
+    for archetype in arcs {
+        nodes := get_table(archetype, Cmp_Node)
+        for node, i in nodes {
+            if node.name == "Floor" {
+                g_floor = archetype.entities[i]
+                fmt.println("found floor")
                 return
             }
         }
@@ -477,8 +494,119 @@ g_debug_draw : b2.DebugDraw
 g_debug_col := false
 g_debug_stats := false
 
+ContactDensities :: struct
+{
+    Player : f32,
+    Vax : f32,
+    Doctor : f32,
+    Projectiles : f32,
+    Wall : f32
+}
+g_contact_identifier := ContactDensities {
+	Player      = 9.0,
+	Vax         = 50.0,
+	Doctor      = 200.0,
+	Projectiles = 8.0,
+	Wall        = 800.0
+}
+
 setup_physics :: proc (){
-   // b2.SetLengthUnitsPerMeter(g_b2scale)
+    fmt.println("Setting up phsyics")
+    b2.SetLengthUnitsPerMeter(g_b2scale)
+    g_world_id = b2.CreateWorld(g_world_def)
 
+    //Set Player's body def
+    {
+        find_player_entity()
+        pt := get_component(g_player, Cmp_Transform)
+        col := Cmp_Collision2D{
+            bodydef = b2.DefaultBodyDef(),
+            shapedef = b2.DefaultShapeDef(),
+            type = .Capsule
+        }
+        col.bodydef.fixedRotation = true
+        col.bodydef.type = .dynamicBody
+        col.bodydef.position = {pt.local.pos.x, pt.local.pos.y + 5}
+        col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
+        half_sca := b2.Vec2{pt.global.sca.x * 0.5, pt.global.sca.y * 0.5}
+        top := b2.Vec2{pt.world[3].x, pt.world[3].y - half_sca.y}
+        bottom := b2.Vec2{pt.world[3].x, pt.world[3].y + half_sca.y}
+        capsule := b2.Capsule{top, bottom, half_sca.x}
 
+        col.shapedef = b2.DefaultShapeDef()
+        col.shapedef.filter.categoryBits = u64(CollisionCategories{.Player})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Environment})
+        col.shapedef.enableContactEvents = true
+        col.shapedef.density = g_contact_identifier.Player
+        col.shapeid = b2.CreateCapsuleShape(col.bodyid, col.shapedef, capsule)
+        add_component(g_player, col)
+        add_component(g_player, capsule)
+    }
+
+    //Set Floor's body def
+    {
+        find_floor_entity()
+        pt := get_component(g_floor, Cmp_Transform)
+        col := Cmp_Collision2D{
+            bodydef = b2.DefaultBodyDef(),
+            shapedef = b2.DefaultShapeDef(),
+            type = .Box
+        }
+        col.bodydef.fixedRotation = true
+        col.bodydef.type = .staticBody
+        col.bodydef.position = pt.local.pos.xy
+        col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
+
+        half_sca := b2.Vec2{pt.global.sca.x * 0.5, pt.global.sca.y * 0.5}
+        box := b2.MakeBox(half_sca.x, half_sca.y)
+
+        col.shapedef = b2.DefaultShapeDef()
+        col.shapedef.filter.categoryBits = u64(CollisionCategories{.Environment})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player})
+        col.shapedef.enableContactEvents = true
+        col.shapedef.density = g_contact_identifier.Player
+        col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
+        add_component(g_floor, col)
+        add_component(g_floor, box)
+    }
+}
+
+update_physics :: proc(delta_time: f32)
+{
+    b2.World_Step(g_world_id, delta_time, 4)
+   update_player_movement_phys(delta_time)
+   arcs := query(has(Cmp_Transform), has(Cmp_Collision2D))
+   for arc in arcs{
+       trans := get_table(arc,Cmp_Transform)
+       colis := get_table(arc,Cmp_Collision2D)
+       for _, i in arc.entities{
+           trans[i].local.pos.xy = b2.Body_GetPosition(colis[i].bodyid)
+          fmt.println("b2Position:" , b2.Body_GetPosition(colis[i].bodyid), "position: ", trans[i].local.pos.xy)
+       }
+   }
+}
+
+update_player_movement_phys :: proc(delta_time: f32)
+{
+    cc := get_component(g_player, Cmp_Collision2D)
+    //nc := get_component(g_player, Cmp_Node)
+    if cc == nil do return
+    vel := b2.Vec2{0,0}
+    move_speed :f32= 10.0
+    if is_key_pressed(glfw.KEY_A) {
+        vel.x -= move_speed
+    }
+    if is_key_pressed(glfw.KEY_D) {
+        vel.x += move_speed
+    }
+    // Verticalvel.x
+    if is_key_pressed(glfw.KEY_SPACE) {
+        vel.y += move_speed
+    }
+    if is_key_pressed(glfw.KEY_LEFT_SHIFT) {
+        vel.y -= move_speed
+    }
+    //child := get_component(nc.child, Cmp_Node)
+    //fmt.println(nc.name, "'s Velocity: ", vel, "Has Child: ", child.name)
+    b2.Body_SetLinearVelocity(cc.bodyid, delta_time * 50 * vel)
 }
