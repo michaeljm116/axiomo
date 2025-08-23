@@ -31,3 +31,18 @@ OnStart:
 * GameLoop!!! 
 * 
 *
+
+Question: how will we do the endless world?
+* 2 overlapping arenas
+	* distance based arenas....
+* 2 floors attached by the seam
+	* attached to those arenas obvs
+	* Then create dynamic objects based off that
+* you can create the arenas in the gameplay.odin itself if ya want
+* Make a json with 2 floors floor1 and 2
+	* assign them to floor entitiies
+	* each with their own respectivearenas
+	* make floor 2 like 100 right of 1 maybe even programmatically
+	* once floor 1 gets to -100 then mak
+	* once A floor gets to 0 then the OTHER floor is that floors.x + 100 but also yadayada reset
+	* 

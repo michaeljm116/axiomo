@@ -30,6 +30,9 @@ add_entity :: proc() -> ecs.EntityID {
 	return ecs.add_entity(g_world)
 }
 
+remove_entity :: proc(entity: ecs.EntityID){
+    ecs.remove_entity(g_world, entity)
+}
 // Component management
 add_component :: proc(entity: ecs.EntityID, component: $T) {
 	ecs.add_component(g_world, entity, component)

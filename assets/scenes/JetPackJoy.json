@@ -99,17 +99,64 @@
         "Rotation": {
           "_w": 1.0,
           "_x": 0.0,
-          "_y": 8.726646001377958e-7,
+          "_y": 0.0,
           "_z": 0.0
         },
         "Scale": {
-          "_x": 10.0,
+          "_x": 50.0,
           "_y": 1.0,
           "_z": 10.0
         }
       },
       "_Dynamic": false,
-      "_Name": "Floor",
+      "_Name": "Floor1",
+      "_eFlags": 2334727,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Collider": {
+        "Extents": {
+          "_x": 11.0,
+          "_y": 1.0,
+          "_z": 10.0
+        },
+        "Local": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "_Type": 1
+      },
+      "Material": {
+        "_ID": -874053208
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Rigid": {
+        "_Rigid": true
+      },
+      "Transform": {
+        "Position": {
+          "_x": 100.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 50.000001,
+          "_y": 1.0,
+          "_z": 50.0
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "Floor2",
       "_eFlags": 2334727,
       "_gFlags": 0,
       "_hasChildren": false

@@ -25,7 +25,6 @@ g_scene: [dynamic]Entity
 g_bvh: ^Sys_Bvh
 g_enemies: map[string]Entity
 g_player: Entity
-g_floor: Entity
 
 track_alloc: mem.Tracking_Allocator
 
@@ -41,6 +40,7 @@ g_frame := FrameRate {
 	physics_time_step = 1.0 / 60.0,
 }
 
+arena_alloc: mem.Allocator
 
 main :: proc() {
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
@@ -53,7 +53,7 @@ main :: proc() {
 	mem.arena_init(&arena, arena_data)
 	defer delete(arena_data) // Explicitly free backing buffer at program end
 	defer mem.arena_free_all(&arena) // Free all allocations from the arena (though defer delete handles backing)
-	arena_alloc := mem.arena_allocator(&arena)
+	arena_alloc = mem.arena_allocator(&arena)
 
 
 	// Create a per-frame arena for transient data (e.g., BVH construction primitives/nodes)
@@ -89,12 +89,7 @@ main :: proc() {
 	//Begin renderer and scene loading
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, context.allocator)
-	g_player := load_prefab2(
-		"assets/prefabs/",
-		"Froku",
-		resource_alloc = arena_alloc,
-		ecs_alloc = context.allocator,
-	)
+	g_player := load_prefab2("assets/prefabs/", "Froku", resource_alloc = arena_alloc, ecs_alloc = context.allocator)
 
 	transform_sys_process_e()
 	bvh_system_build(g_bvh, per_frame_alloc)

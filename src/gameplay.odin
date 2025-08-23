@@ -1,11 +1,34 @@
 package main
 
-import "vendor:glfw"
-import "core:math"
 import "core:fmt"
+import "core:mem"
+import "core:math"
 import "core:time"
 import "core:math/linalg"
+
+import "vendor:glfw"
 import b2"vendor:box2d"
+
+curr_phase : u8 = 0
+distance_arena: [2]mem.Arena
+distance_arena_data: [2][]byte
+distance_arena_alloc: [2]mem.Allocator
+
+set_up_arenas :: proc()
+{
+    for i in 0..<2{
+        distance_arena_data[i] = make([]byte, 1024 * 1024 * 1, context.allocator)
+        mem.arena_init(&distance_arena[i], distance_arena_data[i])
+    }
+}
+
+destroy_arenas :: proc()
+{
+    for i in 0..<2{
+        delete(distance_arena_data[i])
+        mem.arena_free_all(&distance_arena[i])
+    }
+}
 
 // Input state tracking
 InputState :: struct {
@@ -28,11 +51,7 @@ InputState :: struct {
 
 // Global input state
 g_input: InputState
-
-// Camera entity - will be set by gameplay system
 g_camera_entity: Entity = 0
-
-// Light entity used for simple orbiting demo (will be detected if present)
 g_light_entity: Entity = 0
 
 // Orbit parameters (world units / radians)
@@ -40,8 +59,12 @@ g_light_orbit_radius: f32 = 5.0
 g_light_orbit_speed: f32 = 0.25   // radians per second
 g_light_orbit_angle: f32 = 15.0
 
+g_floor : [2]Entity
+g_objects : [2][dynamic]Entity
+
 // Initialize the gameplay system
 gameplay_init :: proc() {
+    set_up_arenas()
     g_input = InputState{
         mouse_sensitivity = 0.1,
         movement_speed = 5.0,
@@ -61,6 +84,7 @@ gameplay_init :: proc() {
     find_camera_entity()
     find_light_entity()
     find_player_entity()
+
     setup_physics()
 }
 
@@ -121,16 +145,13 @@ find_player_entity :: proc() {
     }
 }
 
-find_floor_entity :: proc() {
+find_floor_entities :: proc() {
     arcs := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
     for archetype in arcs {
         nodes := get_table(archetype, Cmp_Node)
         for node, i in nodes {
-            if node.name == "Floor" {
-                g_floor = archetype.entities[i]
-                fmt.println("found floor")
-                return
-            }
+            if node.name == "Floor1" do g_floor[0] = archetype.entities[i]
+            if node.name == "Floor2" do g_floor[1] = archetype.entities[i]
         }
     }
 }
@@ -482,6 +503,8 @@ gameplay_destroy :: proc() {
 
     // Release mouse cursor
     glfw.SetInputMode(rb.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
+
+    destroy_arenas()
 }
 
 //----------------------------------------------------------------------------\\
@@ -517,7 +540,7 @@ setup_physics :: proc (){
     g_world_id = b2.CreateWorld(g_world_def)
     magic_scale_number :f32=1
     b2.World_SetGravity(g_world_id, b2.Vec2{0,-98 * magic_scale_number})
-    find_floor_entity()
+    find_floor_entities()
     //Set Player's body def
     {
         find_player_entity()
@@ -543,7 +566,7 @@ setup_physics :: proc (){
         col.shapedef.density = g_contact_identifier.Player
         col.shapeid = b2.CreateCapsuleShape(col.bodyid, col.shapedef, capsule)
         add_component(g_player, col)
-        add_component(g_player, capsule)
+        //add_component(g_player, capsule)
     }
     //create static floor
     {
@@ -564,6 +587,38 @@ setup_physics :: proc (){
         col.shapedef.density = 0
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
     }
+
+//    create_barrel({1, 2})
+}
+
+create_barrel :: proc(pos : b2.Vec2)
+{
+    barrel := load_prefab2("assets/prefabs/","Barrel", resource_alloc = arena_alloc, ecs_alloc = context.allocator)
+    bt := get_component(barrel, Cmp_Transform)
+
+    col := Cmp_Collision2D{
+        bodydef = b2.DefaultBodyDef(),
+        shapedef = b2.DefaultShapeDef(),
+        type = .Box
+    }
+    col.bodydef.fixedRotation = true
+    col.bodydef.type = .dynamicBody
+    col.bodydef.position = pos
+
+    col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
+
+    box := b2.MakeBox(1000, .1)
+    col.shapedef = b2.DefaultShapeDef()
+    col.shapedef.filter.categoryBits = u64(CollisionCategories{.Environment})
+    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Environment})
+    col.shapedef.enableContactEvents = true
+    col.shapedef.density = g_contact_identifier.Player
+    col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
+
+    movable : Cmp_Movable
+
+    add_component(barrel, col)
+    add_component(barrel, movable)
 }
 
 // All objects except the main player will have this
@@ -573,16 +628,27 @@ Cmp_Movable :: struct{
 update_movables :: proc(delta_time: f32)
 {
     //First just the visible g_floor
-    fc := get_component(g_floor, Cmp_Transform)
-    fc.local.pos.x -= 1.0 * delta_time
+    for i in 0..<2{
+        fc := get_component(g_floor[i], Cmp_Transform)
+        fc.local.pos.x -= 1.0 * delta_time
 
-    // movables := query(has(Cmp_Movable), has(Cmp_Collision2D))
-    // for movable in movables{
-    //     cols := get_table(movable, Cmp_Collision2D)
-    //     for _, i in movable.entities{
-    //         cols[i].bodyid
-    //     }
-    // }
+        //refresh world if done
+        if fc.local.pos.x <= -25.0 {
+            for e in g_objects[curr_phase] do remove_entity(e)
+            mem.arena_free_all(&distance_arena[curr_phase])
+            curr_phase = (curr_phase + 1) % 2
+        }
+    }
+    movables := query(has(Cmp_Movable), has(Cmp_Collision2D))
+    for movable in movables{
+        cols := get_table(movable, Cmp_Collision2D)
+        for e, i in movable.entities{
+            nc := get_component(e, Cmp_Node)
+            tc := get_component(e, Cmp_Transform)
+            if nc.name == "Barrel" do fmt.println("Barrel Pos: ", tc.local.pos.xy)
+            b2.Body_SetLinearVelocity(cols[i].bodyid, delta_time * 1)
+        }
+    }
 }
 
 update_physics :: proc(delta_time: f32)
