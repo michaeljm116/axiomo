@@ -28,6 +28,20 @@ import b2 "vendor:box2d"
 //  - static
 // audio
 
+FrameRate :: struct
+{
+    prev_time : f64,
+    curr_time : f64,
+    wait_time : f64,
+    delta_time : f32,
+
+    locked : b32,
+    target : f32,
+    target_dt : f64,
+    physics_acc_time : f32,
+    physics_time_step : f64
+}
+
 Sqt :: struct
 {
     rot : quat,

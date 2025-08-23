@@ -1,42 +1,21 @@
-/*
-Vulkan triangle example by laytan, source:
-https://gist.github.com/laytan/ba57af3e5a59ab5cb2fca9e25bcfe262
-
-Compile and run using:
-
-	odin run .
-
-This example comes with pre-compiled shaders. During compilation the shaders
-will be loaded from `vert.spv` and `frag.spv`.
-
-If you make any changes to the shader source files (`shader.vert` or
-`shader.frag`), then you must recompile them using `glslc`:
-
-	glslc shader.vert -o vert.spv
-	glslc shader.frag -o frag.spv
-
-`glslc` is part of the Vulkan SDK, which you can find here:
-https://vulkan.lunarg.com/sdk/home
-
-This example uses glfw for window management.
-*/
 package main
 
+import "base:intrinsics"
 import "base:runtime"
 
-import "base:intrinsics"
+import "core:fmt"
 import "core:log"
 import "core:mem"
-import "core:slice"
-
-import "core:fmt"
 import "core:os"
 import "core:path/filepath"
+import "core:slice"
+
+import "vendor:glfw"
+import vk "vendor:vulkan"
+
 import "external/ecs"
 import res "resource"
 import sc "resource/scene"
-import "vendor:glfw"
-import vk "vendor:vulkan"
 
 g_world: ^ecs.World
 g_world_ent: Entity
@@ -44,17 +23,31 @@ g_materials: [dynamic]res.Material
 g_models: [dynamic]res.Model
 g_scene: [dynamic]Entity
 g_bvh: ^Sys_Bvh
-g_enemies : map[string]Entity
-g_player : Entity
-g_floor : Entity
+g_enemies: map[string]Entity
+g_player: Entity
+g_floor: Entity
 
 track_alloc: mem.Tracking_Allocator
+
+g_frame := FrameRate {
+	prev_time         = glfw.GetTime(),
+	curr_time         = 0,
+	wait_time         = 0,
+	delta_time        = 0,
+	target            = 120.0,
+	target_dt         = (1.0 / 120.0),
+	locked            = true,
+	physics_acc_time  = 0,
+	physics_time_step = 1.0 / 60.0,
+}
+
 
 main :: proc() {
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
 
+	// Create an arena allocator for long-lived allocations (e.g., materials, models, scenes)
 	arena: mem.Arena
 	arena_data: []byte = make([]byte, 1024 * 1024 * 120, context.allocator) // 120 MiB; backing on heap for persistence
 	mem.arena_init(&arena, arena_data)
@@ -62,6 +55,8 @@ main :: proc() {
 	defer mem.arena_free_all(&arena) // Free all allocations from the arena (though defer delete handles backing)
 	arena_alloc := mem.arena_allocator(&arena)
 
+
+	// Create a per-frame arena for transient data (e.g., BVH construction primitives/nodes)
 	per_frame_arena: mem.Arena
 	per_frame_arena_data: []byte = make([]byte, 1024 * 1024 * 8, context.allocator) // 8 MiB example; monitor with tracking allocator
 	mem.arena_init(&per_frame_arena, per_frame_arena_data)
@@ -77,10 +72,6 @@ main :: proc() {
 
 	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 0, false})
 
-	// Create an arena allocator for long-lived allocations (e.g., materials, models, scenes)
-
-	// Create a per-frame arena for transient data (e.g., BVH construction primitives/nodes)
-
 	g_bvh = bvh_system_create(per_frame_alloc)
 
 	context.logger = log.create_console_logger()
@@ -91,14 +82,19 @@ main :: proc() {
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)
 	res.load_materials("assets/Materials.xml", &g_materials)
 	scene := sc.load_new_scene("assets/scenes/JetpackJoy.json", arena_alloc)
-    g_models = make([dynamic]res.Model, 0, arena_alloc)
+	g_models = make([dynamic]res.Model, 0, arena_alloc)
 	res.load_directory("assets/models/", &g_models)
 	poses := res.load_pose("assets/animations/Froku.anim", "Froku", arena_alloc)
 
 	//Begin renderer and scene loading
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, context.allocator)
-	g_player := load_prefab2("assets/prefabs/", "Froku", resource_alloc = arena_alloc, ecs_alloc = context.allocator)
+	g_player := load_prefab2(
+		"assets/prefabs/",
+		"Froku",
+		resource_alloc = arena_alloc,
+		ecs_alloc = context.allocator,
+	)
 
 	transform_sys_process_e()
 	bvh_system_build(g_bvh, per_frame_alloc)
@@ -107,22 +103,30 @@ main :: proc() {
 	//begin renderer
 	initialize_raytracer()
 	glfw.PollEvents()
+	g_frame.prev_time = glfw.GetTime()
 	// gameplay_update(0.015)
 	// if true do return
 	//Update renderer
 	for !glfw.WindowShouldClose(rb.window) {
-    	start_frame(&image_index)
+		start_frame(&image_index)
 		// Poll and free: Move to main loop if overlapping better
 		glfw.PollEvents()
-		gameplay_update(0.015)
-		transform_sys_process_e()
-		bvh_system_build(g_bvh, per_frame_alloc)
+		g_frame.curr_time = glfw.GetTime()
+		frame_time := g_frame.curr_time - g_frame.prev_time
+		g_frame.prev_time = g_frame.curr_time
+		if frame_time > 0.25 {frame_time = 0.25}
+		g_frame.delta_time = f32(frame_time)
+		g_frame.physics_acc_time += f32(frame_time)
+		for g_frame.physics_acc_time >= f32(g_frame.physics_time_step) {
+			gameplay_update(f32(g_frame.physics_time_step))
+			transform_sys_process_e()
+			bvh_system_build(g_bvh, per_frame_alloc)
+			mem.arena_free_all(&per_frame_arena)
+			g_frame.physics_acc_time -= f32(g_frame.physics_time_step)
+		}
 		update_buffers()
 		update_descriptors()
 		end_frame(&image_index)
-		// Reset per-frame arena after all frame processing (ensures data is used before free)
-		mem.arena_free_all(&per_frame_arena)
-//		if true do return
 	}
 	gameplay_destroy()
 	cleanup()

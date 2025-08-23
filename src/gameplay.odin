@@ -526,7 +526,7 @@ setup_physics :: proc (){
         }
         col.bodydef.fixedRotation = true
         col.bodydef.type = .dynamicBody
-        col.bodydef.position = {pt.local.pos.x, pt.local.pos.y + 5}
+        col.bodydef.position = {pt.local.pos.x, pt.local.pos.y + 2}
         col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
         half_sca := b2.Vec2{pt.global.sca.x * 0.5, pt.global.sca.y * 0.5}
         top := b2.Vec2{pt.world[3].x, pt.world[3].y - half_sca.y}
@@ -574,16 +574,15 @@ setup_physics :: proc (){
 update_physics :: proc(delta_time: f32)
 {
     b2.World_Step(g_world_id, delta_time, 4)
-   update_player_movement_phys(delta_time)
-   arcs := query(has(Cmp_Transform), has(Cmp_Collision2D))
-   for arc in arcs{
-       trans := get_table(arc,Cmp_Transform)
-       colis := get_table(arc,Cmp_Collision2D)
-       for _, i in arc.entities{
-           trans[i].local.pos.xy = b2.Body_GetPosition(colis[i].bodyid)
-          fmt.println("b2Position:" , b2.Body_GetPosition(colis[i].bodyid), "position: ", trans[i].local.pos.xy)
-       }
-   }
+    update_player_movement_phys(delta_time)
+    arcs := query(has(Cmp_Transform), has(Cmp_Collision2D))
+    for arc in arcs{
+        trans := get_table(arc,Cmp_Transform)
+        colis := get_table(arc,Cmp_Collision2D)
+        for _, i in arc.entities{
+            trans[i].local.pos.xy = b2.Body_GetPosition(colis[i].bodyid)
+        }
+    }
 }
 
 update_player_movement_phys :: proc(delta_time: f32)
