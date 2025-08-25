@@ -589,7 +589,7 @@ setup_physics :: proc (){
         col.shapedef.density = 0
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
     }
-    create_barrel({1, 2})
+    create_barrel({10, 2})
 }
 
 create_barrel :: proc(pos : b2.Vec2)
@@ -611,7 +611,7 @@ create_barrel :: proc(pos : b2.Vec2)
 
     col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
-    box := b2.MakeBox(1000, .1)
+    box := b2.MakeBox(1, 1)
     col.shapedef = b2.DefaultShapeDef()
     col.shapedef.filter.categoryBits = u64(CollisionCategories{.Environment})
     col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Environment})
@@ -619,7 +619,7 @@ create_barrel :: proc(pos : b2.Vec2)
     col.shapedef.density = g_contact_identifier.Player
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
-    movable : Cmp_Movable
+    movable := Cmp_Movable{-1.0, 800.0}
     fmt.println("Created Barrel, now adding component")
     add_component(barrel, col)
     add_component(barrel, movable)
@@ -627,6 +627,8 @@ create_barrel :: proc(pos : b2.Vec2)
 
 // All objects except the main player will have this
 Cmp_Movable :: struct{
+    speed : f32,
+    density : f32
 }
 
 update_movables :: proc(delta_time: f32)
@@ -650,7 +652,7 @@ update_movables :: proc(delta_time: f32)
             nc := get_component(e, Cmp_Node)
             tc := get_component(e, Cmp_Transform)
             if nc.name == "Barrel" do fmt.println("Barrel Pos: ", tc.local.pos.xy)
-            b2.Body_SetLinearVelocity(cols[i].bodyid, delta_time * 1)
+            b2.Body_SetLinearVelocity(cols[i].bodyid, delta_time * -1.0)
         }
     }
 }

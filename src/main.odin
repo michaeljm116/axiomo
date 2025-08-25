@@ -26,7 +26,6 @@ g_bvh: ^Sys_Bvh
 g_enemies: map[string]Entity
 g_player: Entity
 
-track_alloc: mem.Tracking_Allocator
 
 g_frame := FrameRate {
 	prev_time         = glfw.GetTime(),
@@ -41,6 +40,8 @@ g_frame := FrameRate {
 }
 
 arena_alloc: mem.Allocator
+track_alloc: mem.Tracking_Allocator
+ecs_alloc: mem.Allocator
 
 main :: proc() {
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
@@ -64,7 +65,7 @@ main :: proc() {
 	defer mem.arena_free_all(&per_frame_arena) // Free all (though typically reset per frame)
 	per_frame_alloc := mem.arena_allocator(&per_frame_arena)
 
-	g_world = ecs.create_world()
+	g_world = create_world()
 	defer ecs.delete_world(g_world)
 	g_world_ent = add_entity()
 

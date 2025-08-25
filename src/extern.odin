@@ -24,7 +24,10 @@ World :: ecs.World
 // /ECS
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
-
+create_world :: proc() -> ^World {
+    ecs_alloc = context.allocator
+    return ecs.create_world()
+}
 // Entity management
 add_entity :: proc() -> ecs.EntityID {
 	return ecs.add_entity(g_world)
@@ -35,11 +38,24 @@ remove_entity :: proc(entity: ecs.EntityID){
 }
 // Component management
 add_component :: proc(entity: ecs.EntityID, component: $T) {
+    prev_alloc := context.allocator
+    defer context.allocator = prev_alloc
+    context.allocator = ecs_alloc
 	ecs.add_component(g_world, entity, component)
+}
+
+remove_component :: proc(entity: ecs.EntityID, $T: typeid){
+    prev_alloc := context.allocator
+    defer context.allocator = prev_alloc
+    context.allocator = ecs_alloc
+    ecs.remove_component(g_world, entity, typeid)
 }
 
 // Query system
 query :: proc(terms: ..ecs.Term) -> []^ecs.Archetype {
+    prev_alloc := context.allocator
+    defer context.allocator = prev_alloc
+    context.allocator = ecs_alloc
 	return ecs.query(g_world, ..terms)
 }
 

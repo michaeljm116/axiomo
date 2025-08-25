@@ -552,8 +552,7 @@ get_children :: proc(world: ^ecs.World, entity: Entity) -> []Entity {
     }
 
     // Build array from linked list
-    context.allocator = context.temp_allocator
-    children := make([dynamic]Entity)
+    children := make([dynamic]Entity, context.temp_allocator)
     curr := node.child
     for curr != Entity(0) {
         append(&children, curr)
