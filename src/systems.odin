@@ -818,7 +818,7 @@ load_prefab2 :: proc(dir, name: string, ecs_alloc, resource_alloc : mem.Allocato
     prefab = load_node(node, alloc = ecs_alloc)
     add_component(prefab, Cmp_Root{})
     nc := get_component(prefab,Cmp_Node)
-    children := get_children(g_world, nc.entity)
+    children := get_children(nc.entity)
     for n in children{
         cc := get_component(n, Cmp_Node)
         cc.parent = prefab

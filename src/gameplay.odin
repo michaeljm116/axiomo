@@ -589,7 +589,7 @@ setup_physics :: proc (){
         col.shapedef.density = 0
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
     }
-    create_barrel({10, 2})
+//    create_barrel({10, 2})
 }
 
 create_barrel :: proc(pos : b2.Vec2)

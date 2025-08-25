@@ -537,7 +537,7 @@ remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
     child_node.brotha = Entity(0)
 }
 
-get_parent :: proc(world: ^ecs.World, entity: Entity) -> Entity {
+get_parent :: proc(entity: Entity) -> Entity {
     node := get_component(entity, Cmp_Node)
     if node == nil {
         return Entity(0)
@@ -545,7 +545,7 @@ get_parent :: proc(world: ^ecs.World, entity: Entity) -> Entity {
     return node.parent
 }
 
-get_children :: proc(world: ^ecs.World, entity: Entity) -> []Entity {
+get_children :: proc(entity: Entity) -> []Entity {
     node := get_component(entity, Cmp_Node)
     if node == nil {
         return nil
@@ -576,13 +576,13 @@ check_any :: proc(component: Cmp_Node, flags: ComponentFlags) -> bool {
 }
 
 // Utility to create a hierarchical entity withCmp_Node
-create_node_entity :: proc(world: ^ecs.World, name: string, flags: ComponentFlag, parent: Entity = Entity(0)) -> Entity {
-    entity := ecs.add_entity(world)
+create_node_entity :: proc(name: string, flags: ComponentFlag, parent: Entity = Entity(0)) -> Entity {
+    entity := add_entity()
     node_comp := parent == Entity(0) ? node_component_named(entity, name, flags) : node_component_with_parent(entity, parent)
     node_comp.name = name
     node_comp.engine_flags += {flags}
 
-    ecs.add_component(world, entity, node_comp)
+    add_component(entity, node_comp)
 
     // If this entity has a parent, add it to the parent's children
     if parent != Entity(0) {
@@ -593,13 +593,13 @@ create_node_entity :: proc(world: ^ecs.World, name: string, flags: ComponentFlag
 }
 
 // Query helper to find all entities withCmp_Node
-query_nodes :: proc(world: ^ecs.World) -> []^ecs.Archetype {
-    return ecs.query(world, ecs.has(Cmp_Node))
+query_nodes :: proc() -> []^ecs.Archetype {
+    return query(ecs.has(Cmp_Node))
 }
 
 // Query helper to find all head nodes
-query_head_nodes :: proc(world: ^ecs.World) -> []^ecs.Archetype {
-    return ecs.query(world, ecs.has(Cmp_Node), ecs.has(Cmp_Root))
+query_head_nodes :: proc() -> []^ecs.Archetype {
+    return query(ecs.has(Cmp_Node), ecs.has(Cmp_Root))
 }
 
 mesh_component_default :: proc() -> Cmp_Mesh {
@@ -1066,7 +1066,7 @@ bf_graph_component_destroy :: proc(graph: ^Cmp_BFGraph) {
 }
 
 // Flatten function - converts hierarchy to breadth-first order
-flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: Entity) {
+flatten_hierarchy :: proc(graph: ^Cmp_BFGraph, head_entity: Entity) {
     clear(&graph.nodes)
     clear(&graph.transforms)
 
@@ -1111,7 +1111,7 @@ flatten_hierarchy :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, head_entity: E
 }
 
 // Set pose from animation data
-set_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, pose: []res.PoseSqt) {
+set_pose :: proc(graph: ^Cmp_BFGraph, pose: []res.PoseSqt) {
     for p in pose {
         if p.id >= 0 && p.id < i32(len(graph.nodes)) {
             entity := graph.nodes[p.id]
@@ -1126,7 +1126,7 @@ set_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph, pose: []res.PoseSqt) {
 }
 
 // Reset pose to default
-reset_pose :: proc(world: ^ecs.World, graph: ^Cmp_BFGraph) {
+reset_pose :: proc(graph: ^Cmp_BFGraph) {
     for i in 0..<len(graph.nodes) {
         entity := graph.nodes[i]
         transform_comp := get_component(entity, Cmp_Transform)
