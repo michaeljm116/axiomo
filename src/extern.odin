@@ -26,7 +26,11 @@ World :: ecs.World
 // Helper functions that assume g_world
 create_world :: proc() -> ^World {
     ecs_alloc = context.allocator
-    return ecs.create_world()
+    return ecs.create_world(ecs_alloc)
+}
+delete_world :: proc(){
+	context.allocator = ecs_alloc
+	ecs.delete_world(g_world)
 }
 // Entity management
 add_entity :: proc() -> ecs.EntityID {

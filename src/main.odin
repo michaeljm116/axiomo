@@ -6,6 +6,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:log"
 import "core:mem"
+import vmem "core:mem/virtual"
 import "core:os"
 import "core:path/filepath"
 import "core:slice"
@@ -49,24 +50,26 @@ main :: proc() {
 	defer leak_detection()
 
 	// Create an arena allocator for long-lived allocations (e.g., materials, models, scenes)
-	arena: mem.Arena
-	arena_data: []byte = make([]byte, 1024 * 1024 * 120, context.allocator) // 120 MiB; backing on heap for persistence
-	mem.arena_init(&arena, arena_data)
-	defer delete(arena_data) // Explicitly free backing buffer at program end
-	defer mem.arena_free_all(&arena) // Free all allocations from the arena (though defer delete handles backing)
-	arena_alloc = mem.arena_allocator(&arena)
+	arena: vmem.Arena
+	arena_err := vmem.arena_init_growing(&arena, mem.Megabyte * 16) // Start at 16 MiB, grow to 1 GiB max
+	assert(arena_err == nil)
+	//arena_data: []byte = make([]byte, mem.Megabyte * 120, context.allocator) // 120 MiB; backing on heap for persistence
+	//mem.arena_init(&arena, arena_data)
+	//defer delete(arena_data) // Explicitly free backing buffer at program end
+	defer vmem.arena_free_all(&arena) // Free all allocations from the arena (though defer delete handles backing)
+	arena_alloc = vmem.arena_allocator(&arena)
 
 
 	// Create a per-frame arena for transient data (e.g., BVH construction primitives/nodes)
 	per_frame_arena: mem.Arena
-	per_frame_arena_data: []byte = make([]byte, 1024 * 1024 * 8, context.allocator) // 8 MiB example; monitor with tracking allocator
+	per_frame_arena_data: []byte = make([]byte, mem.Megabyte * 8, context.allocator) // 8 MiB example; monitor with tracking allocator
 	mem.arena_init(&per_frame_arena, per_frame_arena_data)
 	defer delete(per_frame_arena_data) // Explicitly free backing buffer at program end
 	defer mem.arena_free_all(&per_frame_arena) // Free all (though typically reset per frame)
 	per_frame_alloc := mem.arena_allocator(&per_frame_arena)
 
 	g_world = create_world()
-	defer ecs.delete_world(g_world)
+	//defer delete_world()
 	g_world_ent = add_entity()
 
 	defer bvh_system_destroy(g_bvh)
@@ -90,7 +93,7 @@ main :: proc() {
 	//Begin renderer and scene loading
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, context.allocator)
-	g_player := load_prefab2("assets/prefabs/", "Froku", resource_alloc = arena_alloc, ecs_alloc = context.allocator)
+	g_player := load_prefab2("assets/prefabs/", "Froku", resource_alloc = arena_alloc)
 
 	transform_sys_process_e()
 	bvh_system_build(g_bvh, per_frame_alloc)

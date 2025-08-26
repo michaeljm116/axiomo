@@ -589,14 +589,19 @@ setup_physics :: proc (){
         col.shapedef.density = 0
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
     }
-//    create_barrel({10, 2})
+   create_barrel({10, 2})
+}
+// All objects except the main player will have this
+Cmp_Movable :: struct{
+    speed : f32,
+    density : f32
 }
 
 create_barrel :: proc(pos : b2.Vec2)
 {
 
     fmt.printf("DEBUG create_barrel - BEFORE load_prefab2: context.allocator=%v arena_alloc=%v\n", context.allocator, arena_alloc)
-    barrel := load_prefab2("assets/prefabs/","Barrel", resource_alloc = distance_arena_alloc[curr_phase], ecs_alloc = context.allocator)
+    barrel := load_prefab2("assets/prefabs/","Barrel", resource_alloc = distance_arena_alloc[curr_phase])
     fmt.printf("DEBUG create_barrel - AFTER load_prefab2: barrel=%v context.allocator=%v arena_alloc=%v\n", barrel, context.allocator, arena_alloc)
     bt := get_component(barrel, Cmp_Transform)
 
@@ -619,17 +624,13 @@ create_barrel :: proc(pos : b2.Vec2)
     col.shapedef.density = g_contact_identifier.Player
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
-    movable := Cmp_Movable{-1.0, 800.0}
+    // movable := Cmp_Movable{-1.0, 800.0}
     fmt.println("Created Barrel, now adding component")
-    add_component(barrel, col)
-    add_component(barrel, movable)
+    //add_component(barrel, col)
+    // add_component(barrel, movable)
 }
 
-// All objects except the main player will have this
-Cmp_Movable :: struct{
-    speed : f32,
-    density : f32
-}
+
 
 update_movables :: proc(delta_time: f32)
 {
