@@ -6,10 +6,10 @@ import "base:runtime"
 import "core:fmt"
 import "core:log"
 import "core:mem"
-import vmem "core:mem/virtual"
 import "core:os"
 import "core:path/filepath"
 import "core:slice"
+import vmem "core:mem/virtual"
 
 import "vendor:glfw"
 import vk "vendor:vulkan"
@@ -22,11 +22,12 @@ g_world: ^ecs.World
 g_world_ent: Entity
 g_materials: [dynamic]res.Material
 g_models: [dynamic]res.Model
+g_prefabs: map[string]sc.Node
 g_scene: [dynamic]Entity
 g_bvh: ^Sys_Bvh
 g_enemies: map[string]Entity
 g_player: Entity
-
+g_barrel: Entity
 
 g_frame := FrameRate {
 	prev_time         = glfw.GetTime(),
@@ -51,7 +52,7 @@ main :: proc() {
 
 	// Create an arena allocator for long-lived allocations (e.g., materials, models, scenes)
 	arena: vmem.Arena
-	arena_err := vmem.arena_init_growing(&arena, mem.Megabyte * 16) // Start at 16 MiB, grow to 1 GiB max
+	arena_err := vmem.arena_init_growing(&arena, mem.Megabyte * 16,) // Start at 16 MiB, grow to 1 GiB max
 	assert(arena_err == nil)
 	//arena_data: []byte = make([]byte, mem.Megabyte * 120, context.allocator) // 120 MiB; backing on heap for persistence
 	//mem.arena_init(&arena, arena_data)
@@ -69,7 +70,7 @@ main :: proc() {
 	per_frame_alloc := mem.arena_allocator(&per_frame_arena)
 
 	g_world = create_world()
-	//defer delete_world()
+	defer delete_world()
 	g_world_ent = add_entity()
 
 	defer bvh_system_destroy(g_bvh)
@@ -85,15 +86,20 @@ main :: proc() {
 	// begin loading data
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)
 	res.load_materials("assets/Materials.xml", &g_materials)
-	scene := sc.load_new_scene("assets/scenes/JetpackJoy.json", arena_alloc)
 	g_models = make([dynamic]res.Model, 0, arena_alloc)
+	scene := sc.load_new_scene("assets/scenes/JetpackJoy.json", arena_alloc)
 	res.load_directory("assets/models/", &g_models)
 	poses := res.load_pose("assets/animations/Froku.anim", "Froku", arena_alloc)
+	g_prefabs = make(map[string]sc.Node, 0, arena_alloc)
+	sc.load_prefab_directory("assets/prefabs", &g_prefabs, arena_alloc)
+
 
 	//Begin renderer and scene loading
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, context.allocator)
-	g_player := load_prefab2("assets/prefabs/", "Froku", resource_alloc = arena_alloc)
+
+	g_player = load_prefab2("Froku")
+	g_barrel = load_prefab2("Barrel")
 
 	transform_sys_process_e()
 	bvh_system_build(g_bvh, per_frame_alloc)

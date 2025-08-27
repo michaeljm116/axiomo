@@ -5,7 +5,8 @@ import "core:os"
 import "core:io"
 import "core:fmt"
 import "core:encoding/json"
-
+import path2 "../../extensions/filepath2"
+import "core:strings"
 //----------------------------------------------------------------------------\\
 // /STRUCTS
 //----------------------------------------------------------------------------\\
@@ -189,6 +190,18 @@ load_prefab_node :: proc(name: string, alloc := context.allocator) -> (root: Nod
     }
     res.log_if_err(json_err)
     return
+}
+
+load_prefab_directory :: proc(directory : string, prefabs : ^map[string]Node, alloc := context.allocator){
+    files := path2.get_dir_files(directory)
+    for f in files{
+        stem := path2.get_file_stem(f.name, context.temp_allocator)
+        if strings.compare(".json", stem) == 0 {
+            prefab := load_prefab_node(f.fullpath, alloc)
+            prefabs[prefab.Name] = prefab
+        }
+    }
+    os.file_info_slice_delete(files)
 }
 
 load_node :: proc(node : Node) {

@@ -810,9 +810,9 @@ load_prefab :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Entit
     return
 }
 
-load_prefab2 :: proc(dir, name: string, resource_alloc : mem.Allocator) -> (prefab : Entity)
+load_prefab2 :: proc(name: string) -> (prefab : Entity)
 {
-    node := scene.load_prefab_node(fmt.tprintf("%s%s.json", dir, name), resource_alloc)
+    node := g_prefabs[name]
     // Create the entity using the requested ECS allocator
     prefab = load_node(node)
     add_component(prefab, Cmp_Root{})

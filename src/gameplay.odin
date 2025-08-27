@@ -5,22 +5,24 @@ import "core:mem"
 import "core:math"
 import "core:time"
 import "core:math/linalg"
+import vmem "core:mem/virtual"
 
 import "vendor:glfw"
 import b2"vendor:box2d"
 
 curr_phase : u8 = 0
-distance_arena: [2]mem.Arena
+distance_arena: [2]vmem.Arena
 distance_arena_data: [2][]byte
 distance_arena_alloc: [2]mem.Allocator
 
 set_up_arenas :: proc()
 {
     for i in 0..<2{
-        distance_arena_data[i] = make([]byte, 1024 * 1024 * 1, context.allocator)
-        mem.arena_init(&distance_arena[i], distance_arena_data[i])
-        // Provide an allocator handle for callers to use when loading resources into this arena
-        distance_arena_alloc[i] = mem.arena_allocator(&distance_arena[i])
+        //distance_arena_data[i] = make([]byte, mem.Megabyte, context.allocator)
+        //mem.arena_init(&distance_arena[i], distance_arena_data[i])
+        arena_err := vmem.arena_init_growing(&distance_arena[i], mem.Megabyte,)
+        assert(arena_err == nil)
+        distance_arena_alloc[i] = vmem.arena_allocator(&distance_arena[i])
     }
 }
 
@@ -28,7 +30,7 @@ destroy_arenas :: proc()
 {
     for i in 0..<2{
         delete(distance_arena_data[i])
-        mem.arena_free_all(&distance_arena[i])
+        vmem.arena_free_all(&distance_arena[i])
     }
 }
 
@@ -141,6 +143,21 @@ find_player_entity :: proc() {
             if node.name == "Froku" {
                 g_player = archetype.entities[i]
                 fmt.println("Found Player")
+                return
+            }
+        }
+    }
+}
+
+find_barrel_entity :: proc() {
+    player_archetypes := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
+
+    for archetype in player_archetypes {
+        nodes := get_table(archetype, Cmp_Node)
+        for node, i in nodes {
+            if node.name == "Barrel" {
+                g_barrel = archetype.entities[i]
+                fmt.println("Found barrel")
                 return
             }
         }
@@ -515,7 +532,7 @@ gameplay_destroy :: proc() {
 MAX_DYANMIC_OBJECTS :: 1000
 g_world_def := b2.DefaultWorldDef()
 g_world_id : b2.WorldId
-g_b2scale := f32(1)
+g_b2scale := f32(100)
 g_debug_draw : b2.DebugDraw
 g_debug_col := false
 g_debug_stats := false
@@ -540,7 +557,7 @@ setup_physics :: proc (){
     fmt.println("Setting up phsyics")
     b2.SetLengthUnitsPerMeter(g_b2scale)
     g_world_id = b2.CreateWorld(g_world_def)
-    magic_scale_number :f32=1
+    magic_scale_number :f32= 1
     b2.World_SetGravity(g_world_id, b2.Vec2{0,-98 * magic_scale_number})
     find_floor_entities()
     //Set Player's body def
@@ -590,6 +607,7 @@ setup_physics :: proc (){
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
     }
    create_barrel({10, 2})
+   create_barrel({8, 2})
 }
 // All objects except the main player will have this
 Cmp_Movable :: struct{
@@ -600,9 +618,8 @@ Cmp_Movable :: struct{
 create_barrel :: proc(pos : b2.Vec2)
 {
 
-    fmt.printf("DEBUG create_barrel - BEFORE load_prefab2: context.allocator=%v arena_alloc=%v\n", context.allocator, arena_alloc)
-    barrel := load_prefab2("assets/prefabs/","Barrel", resource_alloc = distance_arena_alloc[curr_phase])
-    fmt.printf("DEBUG create_barrel - AFTER load_prefab2: barrel=%v context.allocator=%v arena_alloc=%v\n", barrel, context.allocator, arena_alloc)
+    barrel := load_prefab2("Barrel")
+    // find_barrel_entity()
     bt := get_component(barrel, Cmp_Transform)
 
     col := Cmp_Collision2D{
@@ -624,13 +641,11 @@ create_barrel :: proc(pos : b2.Vec2)
     col.shapedef.density = g_contact_identifier.Player
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
-    // movable := Cmp_Movable{-1.0, 800.0}
+    movable := Cmp_Movable{-1.0, 800.0}
     fmt.println("Created Barrel, now adding component")
-    //add_component(barrel, col)
-    // add_component(barrel, movable)
+    add_component(barrel, col)
+    add_component(barrel, movable)
 }
-
-
 
 update_movables :: proc(delta_time: f32)
 {
@@ -642,7 +657,7 @@ update_movables :: proc(delta_time: f32)
         //refresh world if done
         if fc.local.pos.x <= -25.0 {
             for e in g_objects[curr_phase] do remove_entity(e)
-            mem.arena_free_all(&distance_arena[curr_phase])
+            vmem.arena_free_all(&distance_arena[curr_phase])
             curr_phase = (curr_phase + 1) % 2
         }
     }
@@ -653,7 +668,7 @@ update_movables :: proc(delta_time: f32)
             nc := get_component(e, Cmp_Node)
             tc := get_component(e, Cmp_Transform)
             if nc.name == "Barrel" do fmt.println("Barrel Pos: ", tc.local.pos.xy)
-            b2.Body_SetLinearVelocity(cols[i].bodyid, delta_time * -1.0)
+            b2.Body_SetLinearVelocity(cols[i].bodyid, {delta_time * -100.0, 0})
         }
     }
 }
