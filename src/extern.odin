@@ -25,11 +25,10 @@ World :: ecs.World
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
 create_world :: proc() -> ^World {
-    ecs_alloc = context.allocator
-    return ecs.create_world(ecs_alloc)
+     return ecs.create_world( track_alloc.backing)
 }
 delete_world :: proc(){
-	context.allocator = ecs_alloc
+	context.allocator = track_alloc.backing
 	ecs.delete_world(g_world)
 }
 // Entity management
@@ -44,14 +43,14 @@ remove_entity :: proc(entity: ecs.EntityID){
 add_component :: proc(entity: ecs.EntityID, component: $T) {
     prev_alloc := context.allocator
     defer context.allocator = prev_alloc
-    context.allocator = ecs_alloc
+    context.allocator = track_alloc.backing
 	ecs.add_component(g_world, entity, component)
 }
 
 remove_component :: proc(entity: ecs.EntityID, $T: typeid){
     prev_alloc := context.allocator
     defer context.allocator = prev_alloc
-    context.allocator = ecs_alloc
+    context.allocator = track_alloc.backing
     ecs.remove_component(g_world, entity, typeid)
 }
 
@@ -59,7 +58,7 @@ remove_component :: proc(entity: ecs.EntityID, $T: typeid){
 query :: proc(terms: ..ecs.Term) -> []^ecs.Archetype {
     prev_alloc := context.allocator
     defer context.allocator = prev_alloc
-    context.allocator = ecs_alloc
+    context.allocator = track_alloc.backing
 	return ecs.query(g_world, ..terms)
 }
 

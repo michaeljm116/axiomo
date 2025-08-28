@@ -366,7 +366,8 @@ CollisionCategory :: enum
     Enemy,
     Projectile,
     EnemyProjectile,
-    Environment
+    Environment,
+    MovingEnvironment
 }
 CollisionCategories :: bit_set[CollisionCategory; u64]
 

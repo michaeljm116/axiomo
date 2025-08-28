@@ -35,5 +35,4 @@ get_file_stem :: proc (file_path : string, alloc : mem.Allocator) -> string
     }
     sub , ok := strings.substring(file_path, index, len(file_path))
     return sub
-
 }

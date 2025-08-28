@@ -156,7 +156,7 @@ find_barrel_entity :: proc() {
         nodes := get_table(archetype, Cmp_Node)
         for node, i in nodes {
             if node.name == "Barrel" {
-                g_barrel = archetype.entities[i]
+                //g_barrel = archetype.entities[i]
                 fmt.println("Found barrel")
                 return
             }
@@ -532,7 +532,7 @@ gameplay_destroy :: proc() {
 MAX_DYANMIC_OBJECTS :: 1000
 g_world_def := b2.DefaultWorldDef()
 g_world_id : b2.WorldId
-g_b2scale := f32(100)
+g_b2scale := f32(1)
 g_debug_draw : b2.DebugDraw
 g_debug_col := false
 g_debug_stats := false
@@ -558,12 +558,14 @@ setup_physics :: proc (){
     b2.SetLengthUnitsPerMeter(g_b2scale)
     g_world_id = b2.CreateWorld(g_world_def)
     magic_scale_number :f32= 1
-    b2.World_SetGravity(g_world_id, b2.Vec2{0,-98 * magic_scale_number})
+    b2.World_SetGravity(g_world_id, b2.Vec2{0,-9.8 * magic_scale_number})
     find_floor_entities()
     //Set Player's body def
     {
         find_player_entity()
         pt := get_component(g_player, Cmp_Transform)
+
+        // Build collision components. Body position is the body origin in world space.
         col := Cmp_Collision2D{
             bodydef = b2.DefaultBodyDef(),
             shapedef = b2.DefaultShapeDef(),
@@ -571,11 +573,16 @@ setup_physics :: proc (){
         }
         col.bodydef.fixedRotation = true
         col.bodydef.type = .dynamicBody
-        col.bodydef.position = {pt.local.pos.x, pt.local.pos.y + 2}
+
+        // Place the body origin at the transform world position (pt.world[3] should be the object's world origin)
+        col.bodydef.position = {pt.world[3].x, pt.world[3].y}
         col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
+
+        // Define the capsule in body-local coordinates (centered on the body origin).
+        // Use half extents from the transform scale. magic_scale_number still applied to y if needed.
         half_sca := b2.Vec2{pt.global.sca.x * 0.5, pt.global.sca.y * magic_scale_number}
-        top := b2.Vec2{pt.world[3].x, 0}// pt.world[3].y + half_sca.y}
-        bottom := b2.Vec2{pt.world[3].x,0}// pt.world[3].y - half_sca.y}
+        top := b2.Vec2{0.0,  half_sca.y}
+        bottom := b2.Vec2{0.0, -half_sca.y}
         capsule := b2.Capsule{top, bottom, half_sca.x}
 
         col.shapedef = b2.DefaultShapeDef()
@@ -598,10 +605,11 @@ setup_physics :: proc (){
         col.bodydef.type = .staticBody
         col.bodydef.position = {0,0}
         col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
-        box := b2.MakeBox(1000, .1)
+        box := b2.MakeBox(500, .1)
+
         col.shapedef = b2.DefaultShapeDef()
         col.shapedef.filter.categoryBits = u64(CollisionCategories{.Environment})
-        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .MovingEnvironment})
         col.shapedef.enableContactEvents = true
         col.shapedef.density = 0
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
@@ -614,12 +622,10 @@ Cmp_Movable :: struct{
     speed : f32,
     density : f32
 }
-
+barrel : Entity
 create_barrel :: proc(pos : b2.Vec2)
 {
-
-    barrel := load_prefab2("Barrel")
-    // find_barrel_entity()
+    barrel = load_prefab("Barrel")
     bt := get_component(barrel, Cmp_Transform)
 
     col := Cmp_Collision2D{
@@ -633,16 +639,15 @@ create_barrel :: proc(pos : b2.Vec2)
 
     col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
-    box := b2.MakeBox(1, 1)
+    box := b2.MakeBox(0.5, 1)
     col.shapedef = b2.DefaultShapeDef()
-    col.shapedef.filter.categoryBits = u64(CollisionCategories{.Environment})
-    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Environment})
+    col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingEnvironment})
+    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment})
     col.shapedef.enableContactEvents = true
     col.shapedef.density = g_contact_identifier.Player
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
     movable := Cmp_Movable{-1.0, 800.0}
-    fmt.println("Created Barrel, now adding component")
     add_component(barrel, col)
     add_component(barrel, movable)
 }
@@ -668,7 +673,8 @@ update_movables :: proc(delta_time: f32)
             nc := get_component(e, Cmp_Node)
             tc := get_component(e, Cmp_Transform)
             if nc.name == "Barrel" do fmt.println("Barrel Pos: ", tc.local.pos.xy)
-            b2.Body_SetLinearVelocity(cols[i].bodyid, {delta_time * -100.0, 0})
+            // b2.Body_SetLinearVelocity(cols[i].bodyid, {delta_time * -1.0, 0})
+            b2.Body_ApplyLinearImpulse(cols[i].bodyid, {-1.5,0}, {0,0}, true)
         }
     }
 }
@@ -683,6 +689,7 @@ update_physics :: proc(delta_time: f32)
         colis := get_table(arc,Cmp_Collision2D)
         for _, i in arc.entities{
             trans[i].local.pos.xy = b2.Body_GetPosition(colis[i].bodyid)
+            trans[i].local.pos.z = 1
         }
     }
 }
@@ -692,9 +699,9 @@ update_player_movement_phys :: proc(delta_time: f32)
     cc := get_component(g_player, Cmp_Collision2D)
     if cc == nil do return
     vel := b2.Vec2{0,0}
-    move_speed :f32= 10.0
+    move_speed :f32= 50.0
     if is_key_pressed(glfw.KEY_SPACE) {
-        vel.y += move_speed
+        vel.y -= move_speed
+        b2.Body_ApplyForce(cc.bodyid, vel, {0,0}, true)
     }
-    b2.Body_SetLinearVelocity(cc.bodyid, delta_time * 50 * vel)
 }

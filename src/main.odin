@@ -43,7 +43,6 @@ g_frame := FrameRate {
 
 arena_alloc: mem.Allocator
 track_alloc: mem.Tracking_Allocator
-ecs_alloc: mem.Allocator
 
 main :: proc() {
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
@@ -98,12 +97,12 @@ main :: proc() {
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, context.allocator)
 
-	g_player = load_prefab2("Froku")
-	g_barrel = load_prefab2("Barrel")
+	g_player = load_prefab("Froku")
+	g_barrel = load_prefab("Barrel")
+	gameplay_init()
 
 	transform_sys_process_e()
 	bvh_system_build(g_bvh, per_frame_alloc)
-	gameplay_init()
 
 	//begin renderer
 	initialize_raytracer()
