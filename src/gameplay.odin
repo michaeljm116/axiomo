@@ -88,7 +88,7 @@ gameplay_init :: proc() {
     find_camera_entity()
     find_light_entity()
     find_player_entity()
-
+    face_left(g_player)
     setup_physics()
 }
 
@@ -131,7 +131,6 @@ gameplay_update :: proc(delta_time: f32) {
     //update_player_movement(delta_time)
     update_movables(delta_time)
     update_physics(delta_time)
-    update_camera_rotation(delta_time)
 }
 
 find_player_entity :: proc() {
@@ -149,21 +148,6 @@ find_player_entity :: proc() {
     }
 }
 
-find_barrel_entity :: proc() {
-    player_archetypes := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
-
-    for archetype in player_archetypes {
-        nodes := get_table(archetype, Cmp_Node)
-        for node, i in nodes {
-            if node.name == "Barrel" {
-                //g_barrel = archetype.entities[i]
-                fmt.println("Found barrel")
-                return
-            }
-        }
-    }
-}
-
 find_floor_entities :: proc() {
     arcs := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
     for archetype in arcs {
@@ -174,6 +158,8 @@ find_floor_entities :: proc() {
         }
     }
 }
+
+
 
 // Find the first light entity in the scene and cache it for orbit updates.
 // Looks for entities with Light, Transform, and Node components.
@@ -256,52 +242,6 @@ update_player_movement :: proc(delta_time: f32)
     }
 }
 
-// Handle camera movement with WASD
-update_camera_movement :: proc(delta_time: f32) {
-    camera_transform := get_component(g_camera_entity, Cmp_Transform)
-    camera_node := get_component(g_camera_entity, Cmp_Node)
-
-    if camera_transform == nil || camera_node == nil {
-        return
-    }
-
-    move_speed := g_input.movement_speed * delta_time
-
-    // Get camera forward, right, and up vectors from current rotation
-    forward := get_camera_forward(camera_transform)
-    right := get_camera_right(camera_transform)
-    up := vec3{0, 1, 0} // World up
-
-    movement := vec3{0, 0, 0}
-
-    // WASD movement
-    if is_key_pressed(glfw.KEY_W) {
-        movement += forward * move_speed
-    }
-    if is_key_pressed(glfw.KEY_S) {
-        movement -= forward * move_speed
-    }
-    if is_key_pressed(glfw.KEY_A) {
-        movement -= right * move_speed
-    }
-    if is_key_pressed(glfw.KEY_D) {
-        movement += right * move_speed
-    }
-
-    // Vertical movement
-    if is_key_pressed(glfw.KEY_SPACE) {
-        movement += up * move_speed
-    }
-    if is_key_pressed(glfw.KEY_LEFT_SHIFT) {
-        movement -= up * move_speed
-    }
-
-    // Apply movement
-    if linalg.length(movement) > 0 {
-        camera_transform.local.pos.xyz += movement
-    }
-}
-
 face_left :: proc(entity : Entity)
 {
     tc := get_component(entity, Cmp_Transform)
@@ -314,91 +254,6 @@ face_right :: proc(entity : Entity)
     tc.local.rot = linalg.quaternion_angle_axis_f32(-90, {0,1,0})
 }
 
-// Handle camera rotation with mouse
-update_camera_rotation :: proc(delta_time: f32) {
-    camera_transform := get_component(g_camera_entity, Cmp_Transform)
-
-    if camera_transform == nil {
-        return
-    }
-
-    // Apply mouse sensitivity (deltas are treated as degrees). Convert to radians for quaternion math.
-    yaw_delta_deg := -f32(g_input.mouse_delta_x) * g_input.mouse_sensitivity * delta_time * g_input.rotation_speed
-    pitch_delta_deg := -f32(g_input.mouse_delta_y) * g_input.mouse_sensitivity * delta_time * g_input.rotation_speed
-
-    // Convert deltas to radians immediately
-    yaw_r := math.to_radians(yaw_delta_deg)
-    pitch_r := math.to_radians(pitch_delta_deg)
-
-    // Extract current pitch from the current orientation quaternion (radians) and clamp the new pitch.
-    q_curr := camera_transform.local.rot
-    curr_pitch := linalg.pitch_from_quaternion_f32(q_curr) // returns radians
-    min_pitch := math.to_radians(f32(-89.0))
-    max_pitch := math.to_radians(f32(89.0))
-
-    desired_pitch := math.clamp(curr_pitch + pitch_r, min_pitch, max_pitch)
-    actual_pitch_delta := desired_pitch - curr_pitch
-
-    // If nothing to apply, early out and reset deltas
-    if yaw_r == 0.0 && actual_pitch_delta == 0.0 {
-        g_input.mouse_delta_x = 0
-        g_input.mouse_delta_y = 0
-        return
-    }
-
-    // Use linalg helper to create a delta quaternion from pitch/yaw (pitch, yaw, roll).
-    // We'll build a single delta quaternion and apply it to the current orientation.
-    // Note: linalg.quaternion_from_pitch_yaw_roll expects angles in radians.
-    //
-    // We intentionally remove the custom axis-angle helper and rely on the linalg helper
-    // for clearer, tested quaternion-from-euler behavior.
-    //
-    // (Actual delta quaternion will be constructed below where both pitch/yaw deltas are available.)
-
-    quat_mul := proc(a: quat, b: quat) -> quat {
-        r: quat
-        r.w = a.w*b.w - a.x*b.x - a.y*b.y - a.z*b.z
-        r.x = a.w*b.x + a.x*b.w + a.y*b.z - a.z*b.y
-        r.y = a.w*b.y - a.x*b.z + a.y*b.w + a.z*b.x
-        r.z = a.w*b.z + a.x*b.y - a.y*b.x + a.z*b.w
-        return r
-    }
-
-    quat_normalize := proc(q: quat) -> quat {
-        len := math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w)
-        if len == 0.0 {
-            r: quat
-            r.x = 0.0
-            r.y = 0.0
-            r.z = 0.0
-            r.w = 1.0
-            return r
-        }
-        inv := 1.0 / len
-        r: quat
-        r.x = q.x * inv
-        r.y = q.y * inv
-        r.z = q.z * inv
-        r.w = q.w * inv
-        return r
-    }
-
-    // Build delta quaternion from pitch & yaw using linalg helper (pitch, yaw, roll).
-    // We pass the pitch and yaw deltas (already converted to radians as pitch_r and yaw_r).
-    q_delta := linalg.quaternion_from_pitch_yaw_roll_f32(pitch_r, yaw_r, 0.0)
-
-    // Apply delta: q_new = q_delta * q_curr
-    q_new := quat_mul(q_delta, q_curr)
-    q_new = quat_normalize(q_new)
-
-    camera_transform.local.rot = q_new
-
-    // Reset mouse delta
-    g_input.mouse_delta_x = 0
-    g_input.mouse_delta_y = 0
-
-    face_left(g_player)
-}
 // Get camera forward vector
 get_camera_forward :: proc(transform: ^Cmp_Transform) -> vec3 {
     rotation_matrix := linalg.matrix4_from_quaternion_f32(transform.local.rot)
@@ -545,6 +400,7 @@ ContactDensities :: struct
     Projectiles : f32,
     Wall : f32
 }
+
 g_contact_identifier := ContactDensities {
 	Player      = 9.0,
 	Vax         = 50.0,
@@ -559,7 +415,6 @@ setup_physics :: proc (){
     g_world_id = b2.CreateWorld(g_world_def)
     magic_scale_number :f32= 1
     b2.World_SetGravity(g_world_id, b2.Vec2{0,-9.8 * magic_scale_number})
-    find_floor_entities()
     //Set Player's body def
     {
         find_player_entity()
@@ -569,7 +424,8 @@ setup_physics :: proc (){
         col := Cmp_Collision2D{
             bodydef = b2.DefaultBodyDef(),
             shapedef = b2.DefaultShapeDef(),
-            type = .Capsule
+            type = .Capsule,
+            flags = {.Player}
         }
         col.bodydef.fixedRotation = true
         col.bodydef.type = .dynamicBody
@@ -603,35 +459,66 @@ setup_physics :: proc (){
         }
         col.bodydef.fixedRotation = true
         col.bodydef.type = .staticBody
-        col.bodydef.position = {0,0}
+        col.bodydef.position = {0,-1.0}
         col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
         box := b2.MakeBox(500, .1)
 
         col.shapedef = b2.DefaultShapeDef()
         col.shapedef.filter.categoryBits = u64(CollisionCategories{.Environment})
-        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .MovingEnvironment})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .MovingEnvironment, .MovingFloor})
         col.shapedef.enableContactEvents = true
         col.shapedef.density = 0
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
     }
-   create_barrel({10, 2})
-   create_barrel({8, 2})
+    fmt.println("Floor created")
+    set_floor_entities()
+    create_barrel({5, 2})
+    create_barrel({3, 2})
 }
-// All objects except the main player will have this
-Cmp_Movable :: struct{
-    speed : f32,
-    density : f32
+
+set_floor_entities :: proc()
+{
+    find_floor_entities()
+    for floor, i in g_floor{
+        fc := get_component(floor, Cmp_Transform)
+        col := Cmp_Collision2D{
+            bodydef = b2.DefaultBodyDef(),
+            shapedef = b2.DefaultShapeDef(),
+            type = .Box,
+            flags = {.Movable}
+        }
+        // move := Cmp_Movable{speed = -2.0}
+        col.bodydef.fixedRotation = true
+        col.bodydef.type = .dynamicBody
+        col.bodydef.position = fc.world[3].xy
+        col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
+        box := b2.MakeBox(fc.local.sca.x, fc.local.sca.y)
+
+        col.shapedef = b2.DefaultShapeDef()
+        col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingFloor})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.MovingFloor, .Environment})
+        col.shapedef.enableContactEvents = true
+        col.shapedef.density = 1000.0
+        col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
+
+        add_component(floor, col)
+    }
 }
+
 barrel : Entity
 create_barrel :: proc(pos : b2.Vec2)
 {
+    fmt.println("Barrel creating")
     barrel = load_prefab("Barrel")
+    fmt.println("Prefab loaded")
     bt := get_component(barrel, Cmp_Transform)
+    if bt == nil do return
 
     col := Cmp_Collision2D{
         bodydef = b2.DefaultBodyDef(),
         shapedef = b2.DefaultShapeDef(),
-        type = .Box
+        type = .Box,
+        flags = CollisionFlags{.Movable}
     }
     col.bodydef.fixedRotation = true
     col.bodydef.type = .dynamicBody
@@ -639,42 +526,53 @@ create_barrel :: proc(pos : b2.Vec2)
 
     col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
-    box := b2.MakeBox(0.5, 1)
+    box := b2.MakeBox(bt.local.sca.x, bt.local.sca.y)
     col.shapedef = b2.DefaultShapeDef()
     col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingEnvironment})
-    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment})
+    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment, .MovingFloor})
     col.shapedef.enableContactEvents = true
     col.shapedef.density = g_contact_identifier.Player
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
-    movable := Cmp_Movable{-1.0, 800.0}
+    // movable := Cmp_Movable{-1.0}
+
+    fmt.println("Movable component added")
     add_component(barrel, col)
-    add_component(barrel, movable)
+    fmt.println("Collision component added")
+    //add_component(barrel, movable)
 }
 
 update_movables :: proc(delta_time: f32)
 {
     //First just the visible g_floor
-    for i in 0..<2{
-        fc := get_component(g_floor[i], Cmp_Transform)
-        fc.local.pos.x -= 1.0 * delta_time
+    // for i in 0..<2{
+    //     fc := get_component(g_floor[i], Cmp_Transform)
+    //     fc.local.pos.x -= 1.0 * delta_time
 
-        //refresh world if done
-        if fc.local.pos.x <= -25.0 {
-            for e in g_objects[curr_phase] do remove_entity(e)
-            vmem.arena_free_all(&distance_arena[curr_phase])
-            curr_phase = (curr_phase + 1) % 2
-        }
-    }
-    movables := query(has(Cmp_Movable), has(Cmp_Collision2D))
+    //     //refresh world if done
+    //     if fc.local.pos.x <= -25.0 {
+    //         for e in g_objects[curr_phase] do remove_entity(e)
+    //         vmem.arena_free_all(&distance_arena[curr_phase])
+    //         curr_phase = (curr_phase + 1) % 2
+    //     }
+    // }
+    movables := query(has(Cmp_Collision2D))
     for movable in movables{
         cols := get_table(movable, Cmp_Collision2D)
         for e, i in movable.entities{
-            nc := get_component(e, Cmp_Node)
-            tc := get_component(e, Cmp_Transform)
-            if nc.name == "Barrel" do fmt.println("Barrel Pos: ", tc.local.pos.xy)
-            // b2.Body_SetLinearVelocity(cols[i].bodyid, {delta_time * -1.0, 0})
-            b2.Body_ApplyLinearImpulse(cols[i].bodyid, {-1.5,0}, {0,0}, true)
+            if .Movable in cols[i].flags{
+                nc := get_component(e, Cmp_Node)
+                tc := get_component(e, Cmp_Transform)
+                fmt.println("movable, ", nc.name)
+                // b2.Body_SetLinearVelocity(cols[i].bodyid, {delta_time * -1.0, 0})
+                // b2.Body_ApplyLinearImpulse(cols[i].bodyid, {-2.0,0}, {0.5,0.5}, true)
+                vel := b2.Body_GetLinearVelocity(cols[i].bodyid)
+                vel.x = -1
+                b2.Body_SetLinearVelocity(cols[i].bodyid, vel)
+                // b2.Body_ApplyLinearImpulseToCenter(cols[i].bodyid, {-2.0,0}, true)
+                fmt.println("Entity ", nc.name, ": ", tc.local.pos.xy, " | Force : ", b2.Body_GetLinearVelocity(cols[i].bodyid))
+                //fmt.printfln("Entity")
+            }
         }
     }
 }

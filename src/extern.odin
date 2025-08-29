@@ -2,6 +2,7 @@ package main
 import math "core:math/linalg"
 import ecs "external/ecs"
 import embree "external/embree"
+import "core:fmt"
 import vma "external/vma"
 import "resource"
 import "resource/scene"

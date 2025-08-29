@@ -42,6 +42,7 @@ FrameRate :: struct
     physics_time_step : f64
 }
 
+
 Sqt :: struct
 {
     rot : quat,
@@ -367,10 +368,17 @@ CollisionCategory :: enum
     Projectile,
     EnemyProjectile,
     Environment,
-    MovingEnvironment
+    MovingEnvironment,
+    MovingFloor
 }
 CollisionCategories :: bit_set[CollisionCategory; u64]
 
+CollisionFlag :: enum
+{
+    Player,
+    Movable,
+}
+CollisionFlags ::bit_set[CollisionFlag; u32]
 
 Cmp_Collision2D :: struct
 {
@@ -378,7 +386,8 @@ Cmp_Collision2D :: struct
     bodyid: b2.BodyId,
     shapedef: b2.ShapeDef,
     shapeid: b2.ShapeId,
-    type : ShapeType
+    type : ShapeType,
+    flags : CollisionFlags
 }
 
 

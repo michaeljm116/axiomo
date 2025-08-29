@@ -27,7 +27,6 @@ g_scene: [dynamic]Entity
 g_bvh: ^Sys_Bvh
 g_enemies: map[string]Entity
 g_player: Entity
-g_barrel: Entity
 
 g_frame := FrameRate {
 	prev_time         = glfw.GetTime(),
@@ -98,7 +97,6 @@ main :: proc() {
 	load_scene(scene, context.allocator)
 
 	g_player = load_prefab("Froku")
-	g_barrel = load_prefab("Barrel")
 	gameplay_init()
 
 	transform_sys_process_e()

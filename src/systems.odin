@@ -761,7 +761,10 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0)) -> Entity 
     add_component(entity, cmp_node_local)
 
     cmp_node := get_component(entity, Cmp_Node)
-    if cmp_node == nil { return Entity(0) }
+    if cmp_node == nil {
+        fmt.println("[load_node] ERROR: missing Cmp_Node after add")
+        return Entity(0)
+    }
 
     // Set is_parent for camera and light as in original
     if .CAMERA in cmp_node.engine_flags { cmp_node.is_parent = true }
@@ -797,10 +800,15 @@ load_scene :: proc(scene_data: scene.SceneData, alloc: mem.Allocator) {
 
 load_prefab :: proc(name: string) -> (prefab : Entity)
 {
-    node := g_prefabs[name]
+    node, ok := g_prefabs[name]
+    if !ok{
+        fmt.printf("[load_prefab] Prefab '%s' not found in g_prefabs map \n", name)
+        return 0
+    }
     // Create the entity using the requested ECS allocator
+    fmt.println("Loaidng node: ", node.Name)
     prefab = load_node(node)
-    add_component(prefab, Cmp_Root{})
+    fmt.println("Loaded node: ", node.Name)
     nc := get_component(prefab,Cmp_Node)
     children := get_children(nc.entity)
     for n in children{

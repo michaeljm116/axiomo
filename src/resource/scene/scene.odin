@@ -191,6 +191,11 @@ load_prefab_directory :: proc(directory : string, prefabs : ^map[string]Node, al
         stem := path2.get_file_stem(f.name, context.temp_allocator)
         if strings.compare(".json", stem) == 0 {
             prefab := load_prefab_node(f.fullpath, alloc)
+            e_flags := transmute(ComponentFlags)prefab.eFlags
+            if(.ROOT not_in e_flags){
+                e_flags += {.ROOT}
+            }
+            prefab.eFlags = transmute(u32)e_flags
             prefabs[prefab.Name] = prefab
         }
     }
