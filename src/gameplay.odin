@@ -413,8 +413,7 @@ setup_physics :: proc (){
     fmt.println("Setting up phsyics")
     b2.SetLengthUnitsPerMeter(g_b2scale)
     g_world_id = b2.CreateWorld(g_world_def)
-    magic_scale_number :f32= 1
-    b2.World_SetGravity(g_world_id, b2.Vec2{0,-9.8 * magic_scale_number})
+    b2.World_SetGravity(g_world_id, b2.Vec2{0,-9.8})
     //Set Player's body def
     {
         find_player_entity()
@@ -428,28 +427,37 @@ setup_physics :: proc (){
             flags = {.Player}
         }
         col.bodydef.fixedRotation = true
-        col.bodydef.type = .dynamicBody
-
+        col.bodydef.type = .kinematicBody
+        col.bodydef.isEnabled = true
         // Place the body origin at the transform world position (pt.world[3] should be the object's world origin)
         col.bodydef.position = {pt.world[3].x, pt.world[3].y}
         col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
         // Define the capsule in body-local coordinates (centered on the body origin).
         // Use half extents from the transform scale. magic_scale_number still applied to y if needed.
-        half_sca := b2.Vec2{pt.global.sca.x * 0.5, pt.global.sca.y * magic_scale_number}
+        half_sca := b2.Vec2{pt.global.sca.x * 0.5, pt.global.sca.y}
         top := b2.Vec2{0.0,  half_sca.y}
         bottom := b2.Vec2{0.0, -half_sca.y}
         capsule := b2.Capsule{top, bottom, half_sca.x}
 
         col.shapedef = b2.DefaultShapeDef()
         col.shapedef.filter.categoryBits = u64(CollisionCategories{.Player})
-        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Environment})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Environment, .MovingFloor, .MovingEnvironment})
         col.shapedef.enableContactEvents = true
         col.shapedef.density = g_contact_identifier.Player
         col.shapeid = b2.CreateCapsuleShape(col.bodyid, col.shapedef, capsule)
         add_component(g_player, col)
         //add_component(g_player, capsule)
     }
+
+    fmt.println("Floor created")
+    set_floor_entities()
+    create_barrel({5, 2})
+    create_barrel({3, 2})
+}
+
+set_floor_entities :: proc()
+{
     //create static floor
     {
         col := Cmp_Collision2D{
@@ -465,19 +473,12 @@ setup_physics :: proc (){
 
         col.shapedef = b2.DefaultShapeDef()
         col.shapedef.filter.categoryBits = u64(CollisionCategories{.Environment})
-        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .MovingEnvironment, .MovingFloor})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Player, .MovingEnvironment, .MovingFloor})
         col.shapedef.enableContactEvents = true
         col.shapedef.density = 0
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
     }
-    fmt.println("Floor created")
-    set_floor_entities()
-    create_barrel({5, 2})
-    create_barrel({3, 2})
-}
 
-set_floor_entities :: proc()
-{
     find_floor_entities()
     for floor, i in g_floor{
         fc := get_component(floor, Cmp_Transform)
@@ -496,7 +497,7 @@ set_floor_entities :: proc()
 
         col.shapedef = b2.DefaultShapeDef()
         col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingFloor})
-        col.shapedef.filter.maskBits = u64(CollisionCategories{.MovingFloor, .Environment})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Environment, .Player, .MovingEnvironment})
         col.shapedef.enableContactEvents = true
         col.shapedef.density = 1000.0
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
@@ -529,7 +530,7 @@ create_barrel :: proc(pos : b2.Vec2)
     box := b2.MakeBox(bt.local.sca.x, bt.local.sca.y)
     col.shapedef = b2.DefaultShapeDef()
     col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingEnvironment})
-    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment, .MovingFloor})
+    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment, .MovingFloor, .MovingEnvironment})
     col.shapedef.enableContactEvents = true
     col.shapedef.density = g_contact_identifier.Player
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
@@ -563,14 +564,13 @@ update_movables :: proc(delta_time: f32)
             if .Movable in cols[i].flags{
                 nc := get_component(e, Cmp_Node)
                 tc := get_component(e, Cmp_Transform)
-                fmt.println("movable, ", nc.name)
+                // fmt.println("movable, ", nc.name)
                 // b2.Body_SetLinearVelocity(cols[i].bodyid, {delta_time * -1.0, 0})
                 // b2.Body_ApplyLinearImpulse(cols[i].bodyid, {-2.0,0}, {0.5,0.5}, true)
                 vel := b2.Body_GetLinearVelocity(cols[i].bodyid)
                 vel.x = -1
                 b2.Body_SetLinearVelocity(cols[i].bodyid, vel)
                 // b2.Body_ApplyLinearImpulseToCenter(cols[i].bodyid, {-2.0,0}, true)
-                fmt.println("Entity ", nc.name, ": ", tc.local.pos.xy, " | Force : ", b2.Body_GetLinearVelocity(cols[i].bodyid))
                 //fmt.printfln("Entity")
             }
         }
@@ -579,8 +579,8 @@ update_movables :: proc(delta_time: f32)
 
 update_physics :: proc(delta_time: f32)
 {
-    b2.World_Step(g_world_id, delta_time, 4)
     update_player_movement_phys(delta_time)
+    b2.World_Step(g_world_id, delta_time, 4)
     arcs := query(has(Cmp_Transform), has(Cmp_Collision2D))
     for arc in arcs{
         trans := get_table(arc,Cmp_Transform)
@@ -597,9 +597,12 @@ update_player_movement_phys :: proc(delta_time: f32)
     cc := get_component(g_player, Cmp_Collision2D)
     if cc == nil do return
     vel := b2.Vec2{0,0}
-    move_speed :f32= 50.0
+    move_speed :f32= 5000.0
     if is_key_pressed(glfw.KEY_SPACE) {
-        vel.y -= move_speed
-        b2.Body_ApplyForce(cc.bodyid, vel, {0,0}, true)
+        // vel.y += move_speed
+        b2.Body_ApplyLinearImpulse(cc.bodyid, {0,move_speed},{0,0}, true)
+        b2.Body_ApplyForce(cc.bodyid, {move_speed,move_speed},{0,0}, true)
+        b2.Body_ApplyLinearImpulseToCenter(cc.bodyid, {0,move_speed}, true)
+        fmt.println("Entity ", " | Force : ", b2.Body_GetLinearVelocity(cc.bodyid))
     }
 }

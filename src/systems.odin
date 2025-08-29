@@ -806,9 +806,7 @@ load_prefab :: proc(name: string) -> (prefab : Entity)
         return 0
     }
     // Create the entity using the requested ECS allocator
-    fmt.println("Loaidng node: ", node.Name)
     prefab = load_node(node)
-    fmt.println("Loaded node: ", node.Name)
     nc := get_component(prefab,Cmp_Node)
     children := get_children(nc.entity)
     for n in children{
