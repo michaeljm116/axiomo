@@ -88,7 +88,7 @@ gameplay_init :: proc() {
     find_camera_entity()
     find_light_entity()
     find_player_entity()
-    // face_left(g_player)
+    face_180(g_player)
     setup_physics()
 }
 
@@ -248,7 +248,11 @@ face_left :: proc(entity : Entity)
     tc := get_component(entity, Cmp_Transform)
     tc.local.rot = linalg.quaternion_angle_axis_f32(90, {0,1,0})
 }
-
+face_180 :: proc(entity : Entity)
+{
+    tc := get_component(entity, Cmp_Transform)
+    tc.local.rot = linalg.quaternion_angle_axis_f32(180, {0,1,0})
+}
 face_right :: proc(entity : Entity)
 {
     tc := get_component(entity, Cmp_Transform)
@@ -414,15 +418,10 @@ setup_physics :: proc (){
     b2.World_SetGravity(g_world_id, b2.Vec2{0,-9.8})
     //Set Player's body def
     {
-        // find_player_entity()
+        find_player_entity()
         ///////////////////////////////////
         // /plr
         ///////////////////////////////////
-        x :f32= 0
-        y :f32= 2
-        w :f32= 1
-        h :f32= 1
-        g_player = create_debug_cube({x,y}, {w,h})
         pt := get_component(g_player, Cmp_Transform)
         // Build collision components. Body position is the body origin in world space.
         col := Cmp_Collision2D{
@@ -434,17 +433,12 @@ setup_physics :: proc (){
         col.bodydef.fixedRotation = true
         col.bodydef.type = .dynamicBody
         // Place the body origin at the transform world position (pt.world[3] should be the object's world origin)
-        col.bodydef.position = {x, y}
+        col.bodydef.position = pt.world[3].xy
         col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
         // Define the capsule in body-local coordinates (centered on the body origin).
         // Use half extents from the transform scale. magic_scale_number still applied to y if needed.
-        half_sca := b2.Vec2{pt.global.sca.x, pt.global.sca.y}
-        top := b2.Vec2{0.0,.5}//  half_sca.y}
-        bottom := b2.Vec2{0.0,.5}// -half_sca.y}
-        // capsule := b2.Capsule{top, bottom, half_sca.x}
-        // box := b2.MakeBox(1,pt.local.sca.y)
-        box := b2.MakeBox(w,h)
+        box := b2.MakeBox(pt.local.sca.x,pt.local.sca.y)
         col.shapedef = b2.DefaultShapeDef()
         col.shapedef.filter.categoryBits = u64(CollisionCategories{.Player})
         col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Environment, .MovingEnvironment})
@@ -629,7 +623,7 @@ update_player_movement_phys :: proc(delta_time: f32)
     cc := get_component(g_player, Cmp_Collision2D)
     if cc == nil do return
     vel := b2.Body_GetLinearVelocity(cc.bodyid).y
-    move_speed :f32= 1.0
+    move_speed :f32= 0.40
     if is_key_pressed(glfw.KEY_SPACE) do vel += move_speed
     b2.Body_SetLinearVelocity(cc.bodyid, {0,vel})
     // b2.Body_ApplyForceToCenter(cc.bodyid, {0,100}, true)

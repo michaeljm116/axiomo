@@ -1,0 +1,337 @@
+{
+  "Node": [
+    {
+      "Material": {
+        "_ID": 0
+      },
+      "Object": {
+        "_ID": -3
+      },
+      "Transform": {
+        "Position": {
+          "_x": -0.6000000238418579,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 0.7071067690849304,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.7071067690849304
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 0.30000001192092896,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "New Cylinder!",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": 564706208
+      },
+      "Object": {
+        "_ID": -3
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 0.7071067690849304,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.7071067690849304
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 0.30000001192092896,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "New Cylinder!",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": 0
+      },
+      "Object": {
+        "_ID": -3
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.6000000238418579,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 0.7071067690849304,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.7071067690849304
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 0.30000001192092896,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "New Cylinder!",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": 564706208
+      },
+      "Object": {
+        "_ID": -7
+      },
+      "Transform": {
+        "Position": {
+          "_x": 1.899999976158142,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": -0.7071067690849304,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.7071067690849304
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "Cone",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": 0
+      },
+      "Object": {
+        "_ID": -1
+      },
+      "Transform": {
+        "Position": {
+          "_x": -1.5,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "New Sphere!",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": 564706208
+      },
+      "Object": {
+        "_ID": -3
+      },
+      "Transform": {
+        "Position": {
+          "_x": -1.2000000476837158,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 0.7071067690849304,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.7071067690849304
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 0.30000001192092896,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "New Cylinder!",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": 564706208
+      },
+      "Object": {
+        "_ID": -1
+      },
+      "Transform": {
+        "Position": {
+          "_x": -2.0,
+          "_y": 0.3700000047683716,
+          "_z": 0.38999998569488525
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 0.5,
+          "_y": 0.5,
+          "_z": 0.5
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "New Sphere!",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": 564706208
+      },
+      "Object": {
+        "_ID": -1
+      },
+      "Transform": {
+        "Position": {
+          "_x": -1.9800000190734863,
+          "_y": 0.3700000047683716,
+          "_z": -0.4099999964237213
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 0.5,
+          "_y": 0.5,
+          "_z": 0.5
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "New Sphere!",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": -951317523
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": -0.75,
+          "_y": 0.25,
+          "_z": 1.5
+        },
+        "Rotation": {
+          "_w": 0.9999619126319885,
+          "_x": 0.008726535364985466,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 0.5,
+          "_y": 0.10000000149011612,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "New Box!",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": -951317523
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": -0.75,
+          "_y": 0.25,
+          "_z": -1.5
+        },
+        "Rotation": {
+          "_w": 0.9999619126319885,
+          "_x": 0.008726535364985466,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 0.5,
+          "_y": 0.10000000149011612,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "New Box!",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    }
+  ],
+  "Transform": {
+    "Position": {
+      "_x": 0.0,
+      "_y": 2.0,
+      "_z": -2.0
+    },
+    "Rotation": {
+      "_w": 1.0,
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Scale": {
+      "_x": 0.4,
+      "_y": 0.4,
+      "_z": 0.4
+    }
+  },
+  "_Dynamic": false,
+  "_Name": "Bee",
+  "_eFlags": 2097155,
+  "_gFlags": 0,
+  "_hasChildren": true
+}
