@@ -388,9 +388,6 @@ MAX_DYANMIC_OBJECTS :: 1000
 g_world_def := b2.DefaultWorldDef()
 g_world_id : b2.WorldId
 g_b2scale := f32(1)
-g_debug_draw : b2.DebugDraw
-g_debug_col := false
-g_debug_stats := false
 
 ContactDensities :: struct
 {
@@ -412,10 +409,6 @@ g_contact_identifier := ContactDensities {
 setup_physics :: proc (){
     fmt.println("Setting up phsyics")
     b2.SetLengthUnitsPerMeter(g_b2scale)
-    g_debug_draw = b2.DebugDraw{
-       DrawPolygonFcn = draw_b2_polygon,
-       DrawSolidPolygonFcn = draw_b2_solid_polygon
-    }
     g_world_id = b2.CreateWorld(g_world_def)
     b2.World_SetGravity(g_world_id, b2.Vec2{0,-9.8})
     //Set Player's body def
@@ -457,9 +450,11 @@ setup_physics :: proc (){
     fmt.println("Floor created")
     set_floor_entities()
     create_barrel({5, 2})
-    create_barrel({3, 2})
+    // create_barrel({3, 2})
+    // create_barrel({4, 2})
     // create_debug_quad({2,2,1}, {0,0,0,0}, {1,1,.1})
-    create_debug_cube({2,2,1}, {0,0,0,0}, {1,1,.1})
+    create_debug_cube_with_col({2,2}, {1,1})
+    create_debug_cube({3,2}, {1,1})
 }
 
 set_floor_entities :: proc()
@@ -529,10 +524,12 @@ create_barrel :: proc(pos : b2.Vec2)
     }
     col.bodydef.fixedRotation = true
     col.bodydef.type = .dynamicBody
-    col.bodydef.position = pos
+    // Body position must be scaled to Box2D units
+    col.bodydef.position = b2.Vec2{ pos.x * g_b2scale, pos.y * g_b2scale }
     col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
-    box := b2.MakeBox(bt.local.sca.x, bt.local.sca.y * 2)
+    // Scale shape extents to Box2D units (bt.local.sca holds half-extents in our transform)
+    box := b2.MakeBox(bt.local.sca.x * g_b2scale, bt.local.sca.y * 2 * g_b2scale)
     col.shapedef = b2.DefaultShapeDef()
     col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingEnvironment})
     col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment, .MovingFloor, .MovingEnvironment})
@@ -595,7 +592,6 @@ update_physics :: proc(delta_time: f32)
             trans[i].local.pos.z = 1
         }
     }
-    b2.World_Draw(g_world_id, &g_debug_draw)
 }
 
 update_player_movement_phys :: proc(delta_time: f32)
@@ -613,189 +609,69 @@ update_player_movement_phys :: proc(delta_time: f32)
 ///////////////////////////////
 // /debug lines
 // ///////////////////////////
-// Debug geometry helpers -- paste into axiomo/src/gameplay.odin
-
-// Create a quad primitive entity in world space.
-// pos: center world position
-// rot_q: quaternion (vec4) rotation
-// extents: local scale extents (x = half-length, y = half-height, z = half-depth)
-// mat_unique_id: material unique id used by your material system (use existing id if unsure)
-create_debug_quad :: proc(pos: vec3, rot_q: vec4, extents: vec3, mat_unique_id: i32 = 1) -> Entity {
-    // Create entity and node + flags (PRIMITIVE)
+create_debug_quad :: proc(pos: b2.Vec2, extents: b2.Vec2, mat_unique_id: i32 = 1125783744) -> Entity {
     e := create_node_entity("debug_quad", ComponentFlag.PRIMITIVE)
-
-    // Transform component (use quaternion form helper)
-    add_component(e, cmp_transform_prs_q(pos, rot_q, extents))
-
-    // Material: use helper to set material component (unique id as second param)
-    // If you don't have a specific material, mat_unique_id=1 should be safe as a default in this project.
+    pos3 := vec3{ pos.x, pos.y, 0.0 }
+    half_ext := vec3{ extents.x * 0.5, extents.y * 0.5, 0.1 }
+    rot_q := vec4{ 0.0, 0.0, 0.0, 1.0 } // identity rotation
+    add_component(e, cmp_transform_prs_q(pos3, rot_q, half_ext))
     add_component(e, material_component(i32(mat_unique_id)))
-
-    // Primitive component with builtin quad id (-6)
     add_component(e, primitive_component_with_id(-6))
-
-    // Tell renderer this entity is a primitive to be included in the RT scene
-    add_component(e, Cmp_Render{ type = {.PRIMITIVE} })
-
-    // Register the entity with the render system so it updates the RT scene immediately
-    added_entity(e)
-
-    return e
-}
-
-// Create a thin quad between two world points to represent a 'line'.
-// start, end: world positions
-// thickness: world-space thickness (height of the thin quad)
-// depth: small depth to avoid z-fighting (or use very small z extent)
-create_debug_line :: proc(start: vec3, end: vec3, thickness: f32 = 0.02, depth: f32 = 0.01) -> Entity {
-    dir := end - start
-    length := linalg.length(dir)
-    if length <= 1e-6 { // degenerate: make tiny quad at start
-        center := start
-        rot_q := linalg.QUATERNIONF32_IDENTITY
-        // extents: half-length on X, half-thickness on Y, half-depth on Z
-        ext := vec3{0.001, thickness * 0.5, depth * 0.5}
-        return create_debug_quad(center, transmute(vec4)rot_q, ext)
-    }
-
-    // center & extents
-    center := start + dir * 0.5
-    half_length := length * 0.5
-    ext := vec3{half_length, thickness * 0.5, depth * 0.5}
-
-    // Build a rotation matrix so the quad's local +X axis points along dir and local +Y will be up
-    forward := linalg.normalize(dir)
-    // Choose a world 'up' to build a stable basis; fall back if parallel
-    world_up := vec3{0.0, 1.0, 0.0}
-    if abs(linalg.dot(forward, world_up)) > 0.999 { // nearly parallel
-        world_up = vec3{1.0, 0.0, 0.0}
-    }
-    right := linalg.normalize(linalg.cross(world_up, forward))
-    up := linalg.cross(forward, right)
-
-    // Construct a 3x3 rotation matrix (columns are right, up, forward)
-    rot_mat := linalg.Matrix4f32{
-        right.x,  right.y,  right.z,  0.0,
-        up.x,     up.y,     up.z,     0.0,
-        forward.x,forward.y,forward.z,0.0,
-        0.0,      0.0,      0.0,      1.0,
-    }
-
-    rot_q := linalg.quaternion_from_matrix4_f32(rot_mat)
-    return create_debug_quad(center, transmute(vec4)rot_q, ext)
-}
-
-// Debug cube helpers
-
-// Create a box (cube) primitive entity in world space.
-// pos: center world position
-// rot_q: quaternion (vec4) rotation
-// half_extents: half-size along x,y,z (i.e. half width/height/depth)
-// mat_unique_id: material unique id used by your material system (default 1)
-create_debug_cube :: proc(pos: vec3, rot_q: vec4, half_extents: vec3, mat_unique_id: i32 = 1125783744) -> Entity {
-    e := create_node_entity("debug_cube", ComponentFlag.PRIMITIVE)
-
-    // transform uses local.sca to feed primitives.extents (system copies local.sca -> prim.extents)
-    add_component(e, cmp_transform_prs_q(pos, rot_q, half_extents))
-
-    // material
-    add_component(e, material_component(i32(mat_unique_id)))
-
-    // built-in box primitive id is -2 (mapped by hit_type -> TYPE_BOX)
-    add_component(e, primitive_component_with_id(-2))
-
-    // Mark for rendering as primitive
     add_component(e, Cmp_Render{ type = {.PRIMITIVE} })
     add_component(e, Cmp_Root{})
-
-    // Register with renderer so it gets added to the RT buffers
+    add_component(e, Cmp_Node{engine_flags = {.ROOT}})
     added_entity(e)
-
-
     return e
 }
-draw_b2_solid_polygon :: proc "c"(transform: b2.Transform, vertices: [^]b2.Vec2, vertexCount: c.int, radius: f32, colr: b2.HexColor, ctx: rawptr )
-{
-    draw_b2_polygon(vertices, vertexCount, colr, ctx)
+
+create_debug_cube :: proc(pos: b2.Vec2, extents: b2.Vec2, mat_unique_id: i32 = 1125783744) -> Entity {
+    e := create_node_entity("debug_cube", ComponentFlag.PRIMITIVE)
+    pos3 := vec3{ pos.x, pos.y, 0.0 }
+    half_ext := vec3{ extents.x * 0.5, extents.y * 0.5, 0.1 }
+    rot_q := vec4{ 0.0, 0.0, 0.0, 1.0 } // identity rotation
+    add_component(e, cmp_transform_prs_q(pos3, rot_q, half_ext))
+    add_component(e, material_component(i32(mat_unique_id)))
+    add_component(e, primitive_component_with_id(-2))
+    add_component(e, Cmp_Render{ type = {.PRIMITIVE} })
+    add_component(e, Cmp_Root{})
+    add_component(e, Cmp_Node{engine_flags = {.ROOT}})
+    added_entity(e)
+    return e
 }
-draw_b2_polygon :: proc "c" (vertices: [^]b2.Vec2, vertexCount: c.int, color: b2.HexColor, ctx: rawptr)
-{
-    // Ensure engine context is available for add_component/create helpers
-    context = rb.ctx
 
-    // Basic guard
-    cnt := int(vertexCount)
-    if cnt <= 0 { return }
+// Create a debug cube (visual) and also attach collision similar to create_barrel.
+// pos and extents are in world units; collision is created in Box2D space using g_b2scale.
+create_debug_cube_with_col :: proc(pos: b2.Vec2, extents: b2.Vec2, mat_unique_id: i32 = 1125783744) -> Entity {
+    // create visual cube first
+    e := create_debug_cube(pos, extents, mat_unique_id)
 
-    // Initialize min/max and sums from first vertex
-    first := vertices[0]
-    minx := first.x
-    maxx := first.x
-    miny := first.y
-    maxy := first.y
-    sumx := first.x
-    sumy := first.y
+    // get transform (visual) to base collision on
+    bt := get_component(e, Cmp_Transform)
+    if bt == nil do return e
 
-    // Accumulate bounds and center sums
-    for i in 1..<cnt {
-        v := vertices[i]
-        sumx += v.x
-        sumy += v.y
-        if v.x < minx { minx = v.x }
-        if v.x > maxx { maxx = v.x }
-        if v.y < miny { miny = v.y }
-        if v.y > maxy { maxy = v.y }
+    col := Cmp_Collision2D{
+        bodydef = b2.DefaultBodyDef(),
+        shapedef = b2.DefaultShapeDef(),
+        type = .Box,
+        flags = CollisionFlags{.Movable}
     }
+    col.bodydef.fixedRotation = true
+    col.bodydef.type = .dynamicBody
+    // convert world position to Box2D space
+    col.bodydef.position = b2.Vec2{ pos.x * g_b2scale, pos.y * g_b2scale }
+    col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
-    // Centroid (world-space XY)
-    cx := sumx / f32(cnt)
-    cy := sumy / f32(cnt)
+    // extents parameter is full size; Box2D MakeBox expects half-extents, in Box2D units
+    half := b2.Vec2{ (extents.x * 0.5) * g_b2scale, (extents.y * 0.5) * g_b2scale }
+    box := b2.MakeBox(half.x, half.y)
 
-    // Axis-aligned extents (width/height)
-    width := maxx - minx
-    height := maxy - miny
+    col.shapedef = b2.DefaultShapeDef()
+    col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingEnvironment})
+    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment, .MovingFloor, .MovingEnvironment})
+    col.shapedef.enableContactEvents = true
+    col.shapedef.density = g_contact_identifier.Player
+    col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
-    // Fallback small extents if degenerate
-    if width <= 1e-6 { width = 0.01 }
-    if height <= 1e-6 { height = 0.01 }
-
-    half_x := width * 0.5
-    half_y := height * 0.5
-
-    // Orientation: use first edge as local X to compute rotation about Z
-    edge := b2.Vec2{0.0, 0.0}
-    if cnt > 1 {
-        e := vertices[1]
-        edge.x = e.x - vertices[0].x
-        edge.y = e.y - vertices[0].y
-
-        // if edge degenerate, fallback to world +X
-        // avoid needing a vec2 type / linalg overload by testing squared length
-        eps2 := f32(1e-8)
-        if (edge.x * edge.x + edge.y * edge.y) <= eps2 {
-            edge = b2.Vec2{1.0, 0.0}
-        }
-    } else {
-        edge = b2.Vec2{1.0, 0.0}
-    }
-
-    // Angle in radians -> degrees (projected into XY plane -> rotate about Z)
-    angle_rad := linalg.atan2(edge.y, edge.x)
-    angle_deg := linalg.to_degrees(angle_rad)
-
-    // Build rotation quaternion (rotate around Z)
-    rot_quat := linalg.quaternion_angle_axis_f32(angle_deg, vec3{0.0, 0.0, 1.0})
-    rot_vec4 := transmute(vec4)rot_quat
-
-    // World-space center (place debug cube at z = 1.0 to match physics->transform mapping)
-    center := vec3{cx, cy, 1.0}
-
-    // Depth (Z half-extent) — thin box so it doesn't interfere; tweak as desired
-    depth_half := f32(0.05)
-
-    // Assemble half-extents (box primitive expects half-extents)
-    half_extents := vec3{half_x, half_y, depth_half}
-
-    // Create the debug cube primitive
-    create_debug_cube(center, rot_vec4, half_extents)
+    add_component(e, col)
+    return e
 }

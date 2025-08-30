@@ -297,7 +297,8 @@ get_relation_type :: proc(c: PairType($R, $T)) -> typeid {
 	return R
 }
 
-add_component :: proc(world: ^World, entity: EntityID, component: $T) {
+add_component :: proc(world: ^World, entity: EntityID, component: $T, alloc : mem.Allocator = context.allocator) {
+	context.allocator = alloc
     cid: ComponentID
     ok: bool
 

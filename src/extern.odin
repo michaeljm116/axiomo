@@ -45,7 +45,7 @@ add_component :: proc(entity: ecs.EntityID, component: $T) {
     prev_alloc := context.allocator
     defer context.allocator = prev_alloc
     context.allocator = track_alloc.backing
-	ecs.add_component(g_world, entity, component)
+	ecs.add_component(g_world, entity, component, track_alloc.backing)
 }
 
 remove_component :: proc(entity: ecs.EntityID, $T: typeid){
