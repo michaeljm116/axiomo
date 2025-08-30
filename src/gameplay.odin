@@ -517,6 +517,7 @@ set_floor_entities :: proc()
         col.bodydef.fixedRotation = true
         col.bodydef.type = .dynamicBody
         col.bodydef.position = {fc.world[3].x, fc.world[3].y - 1}
+        col.bodydef.gravityScale = 0
         col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
         box := b2.MakeBox(fc.local.sca.x, fc.local.sca.y)
 
@@ -613,8 +614,11 @@ update_physics :: proc(delta_time: f32)
         trans := get_table(arc,Cmp_Transform)
         colis := get_table(arc,Cmp_Collision2D)
         for _, i in arc.entities{
-            if(.Floor not_in colis[i].flags) do trans[i].local.pos.xy = b2.Body_GetPosition(colis[i].bodyid)
-            else do trans[i].local.pos.x = b2.Body_GetPosition(colis[i].bodyid).x
+            pos := b2.Body_GetPosition(colis[i].bodyid)
+            if(.Floor not_in colis[i].flags) do trans[i].local.pos.xy = pos
+            else{
+                trans[i].local.pos.x = pos.x
+            }
             trans[i].local.pos.z = 1
         }
     }
@@ -698,27 +702,5 @@ create_debug_cube_with_col :: proc(pos: b2.Vec2, extents: b2.Vec2, mat_unique_id
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
     add_component(e, col)
-    return e
-}
-create_debug_cube_2 :: proc(pos: vec3, rot_q: vec4, half_extents: vec3, mat_unique_id: i32 = 1125783744) -> Entity {
-    e := create_node_entity("debug_cube", ComponentFlag.PRIMITIVE)
-
-    // transform uses local.sca to feed primitives.extents (system copies local.sca -> prim.extents)
-    add_component(e, cmp_transform_prs_q(pos, rot_q, half_extents))
-
-    // material
-    add_component(e, material_component(i32(mat_unique_id)))
-
-    // built-in box primitive id is -2 (mapped by hit_type -> TYPE_BOX)
-    add_component(e, primitive_component_with_id(-2))
-
-    // Mark for rendering as primitive
-    add_component(e, Cmp_Render{ type = {.PRIMITIVE} })
-    add_component(e, Cmp_Root{})
-
-    // Register with renderer so it gets added to the RT buffers
-    added_entity(e)
-
-
     return e
 }

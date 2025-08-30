@@ -36,8 +36,21 @@
               "icon": "lucide-git-fork",
               "title": "Graph view"
             }
+          },
+          {
+            "id": "a98d8a0bffa01286",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.9.10"
+              },
+              "icon": "lucide-book-up",
+              "title": "Release Notes 1.9.10"
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -186,7 +199,7 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "4b5e7189623d836a",
+  "active": "a98d8a0bffa01286",
   "lastOpenFiles": [
     "Untitled.md",
     "Game Jam - 20 games challenge - JJ.md"
