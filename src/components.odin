@@ -377,6 +377,7 @@ CollisionFlag :: enum
 {
     Player,
     Movable,
+    Floor
 }
 CollisionFlags ::bit_set[CollisionFlag; u32]
 

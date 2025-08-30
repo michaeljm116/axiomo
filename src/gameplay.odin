@@ -415,8 +415,14 @@ setup_physics :: proc (){
     //Set Player's body def
     {
         // find_player_entity()
-
-        g_player = create_debug_cube({0,1}, {1,1})
+        ///////////////////////////////////
+        // /plr
+        ///////////////////////////////////
+        x :f32= 0
+        y :f32= 2
+        w :f32= 1
+        h :f32= 1
+        g_player = create_debug_cube({x,y}, {w,h})
         pt := get_component(g_player, Cmp_Transform)
         // Build collision components. Body position is the body origin in world space.
         col := Cmp_Collision2D{
@@ -428,16 +434,17 @@ setup_physics :: proc (){
         col.bodydef.fixedRotation = true
         col.bodydef.type = .dynamicBody
         // Place the body origin at the transform world position (pt.world[3] should be the object's world origin)
-        col.bodydef.position = {pt.world[3].x, pt.world[3].y}
+        col.bodydef.position = {x, y}
         col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
         // Define the capsule in body-local coordinates (centered on the body origin).
         // Use half extents from the transform scale. magic_scale_number still applied to y if needed.
-        half_sca := b2.Vec2{pt.global.sca.x * 0.5, pt.global.sca.y}
+        half_sca := b2.Vec2{pt.global.sca.x, pt.global.sca.y}
         top := b2.Vec2{0.0,.5}//  half_sca.y}
         bottom := b2.Vec2{0.0,.5}// -half_sca.y}
         // capsule := b2.Capsule{top, bottom, half_sca.x}
-        box := b2.MakeBox(1,pt.local.sca.y)
+        // box := b2.MakeBox(1,pt.local.sca.y)
+        box := b2.MakeBox(w,h)
         col.shapedef = b2.DefaultShapeDef()
         col.shapedef.filter.categoryBits = u64(CollisionCategories{.Player})
         col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Environment, .MovingEnvironment})
@@ -470,11 +477,12 @@ setup_physics :: proc (){
     // create_debug_quad({2,2,1}, {0,0,0,0}, {1,1,.1})
     //create_debug_cube_with_col({2,2}, {10,10})
     //
-    create_debug_cube_with_col({4,2}, {1,1})
+    create_debug_cube_with_col({5,2}, {1,1})
    }
 
 set_floor_entities :: proc()
 {
+    // /flr
     //create static floor
     {
         col := Cmp_Collision2D{
@@ -503,18 +511,18 @@ set_floor_entities :: proc()
             bodydef = b2.DefaultBodyDef(),
             shapedef = b2.DefaultShapeDef(),
             type = .Box,
-            flags = {.Movable}
+            flags = {.Movable, .Floor}
         }
         // move := Cmp_Movable{speed = -2.0}
         col.bodydef.fixedRotation = true
         col.bodydef.type = .dynamicBody
-        col.bodydef.position = {fc.world[3].x, -1.06}
+        col.bodydef.position = {fc.world[3].x, fc.world[3].y - 1}
         col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
-        box := b2.MakeBox(fc.local.sca.x, 0.01)
+        box := b2.MakeBox(fc.local.sca.x, fc.local.sca.y)
 
         col.shapedef = b2.DefaultShapeDef()
         col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingFloor})
-        col.shapedef.filter.maskBits = u64(CollisionCategories{.Environment,.MovingEnvironment})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Environment})
         col.shapedef.enableContactEvents = true
         col.shapedef.density = 1000.0
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
@@ -548,7 +556,7 @@ create_barrel :: proc(pos : b2.Vec2)
     box := b2.MakeBox(bt.local.sca.x * g_b2scale, bt.local.sca.y * 2 * g_b2scale)
     col.shapedef = b2.DefaultShapeDef()
     col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingEnvironment})
-    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment, .MovingFloor, .MovingEnvironment})
+    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment, .MovingEnvironment})
     col.shapedef.enableContactEvents = true
     col.shapedef.density = g_contact_identifier.Player
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
@@ -590,6 +598,7 @@ update_movables :: proc(delta_time: f32)
                 b2.Body_SetLinearVelocity(cols[i].bodyid, vel)
                 // b2.Body_ApplyForceToCenter(cols[i].bodyid, {0,1000.0}, true)
                 //fmt.printfln("Entity")
+                fmt.println("Entity: ",nc.name, " | Position : ", b2.Body_GetPosition(cols[i].bodyid), " | ")
             }
         }
     }
@@ -604,7 +613,8 @@ update_physics :: proc(delta_time: f32)
         trans := get_table(arc,Cmp_Transform)
         colis := get_table(arc,Cmp_Collision2D)
         for _, i in arc.entities{
-            trans[i].local.pos.xy = b2.Body_GetPosition(colis[i].bodyid)
+            if(.Floor not_in colis[i].flags) do trans[i].local.pos.xy = b2.Body_GetPosition(colis[i].bodyid)
+            else do trans[i].local.pos.x = b2.Body_GetPosition(colis[i].bodyid).x
             trans[i].local.pos.z = 1
         }
     }
@@ -620,6 +630,7 @@ update_player_movement_phys :: proc(delta_time: f32)
     b2.Body_SetLinearVelocity(cc.bodyid, {0,vel})
     // b2.Body_ApplyForceToCenter(cc.bodyid, {0,100}, true)
     // fmt.println("Entity ",g_player, " | Force : ", b2.Body_GetLinearVelocity(cc.bodyid), " | ")
+    fmt.println("Entity ",g_player, " | Position : ", b2.Body_GetPosition(cc.bodyid), " | ")
 }
 
 ///////////////////////////////
@@ -676,14 +687,14 @@ create_debug_cube_with_col :: proc(pos: b2.Vec2, extents: b2.Vec2, mat_unique_id
     col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
     // extents parameter is full size; Box2D MakeBox expects half-extents, in Box2D units
-    half := b2.Vec2{ (extents.x * 0.5) * g_b2scale, (extents.y * 0.5) * g_b2scale }
+    half := b2.Vec2{ (extents.x) * g_b2scale, (extents.y) * g_b2scale }
     box := b2.MakeBox(half.x, half.y)
 
     col.shapedef = b2.DefaultShapeDef()
     col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingEnvironment})
     col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment, .MovingFloor})
     col.shapedef.enableContactEvents = true
-    col.shapedef.density = g_contact_identifier.Player
+    col.shapedef.density = g_contact_identifier.Wall
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
     add_component(e, col)
