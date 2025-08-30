@@ -9,20 +9,26 @@
 
 vec4 box_texture(in vec3 pos, in vec3 norm, in Primitive box, sampler2D t)
 {
+    // Transform the hit position into the box's local/object space using the inverse world matrix.
     mat4 invWorld = inverse(box.world);
-    vec3 div = 1 / box.extents * 0.5f;
-    vec3 iPos = (vec4(pos, 1) * invWorld).xyz;
-    vec3 iNorm = (vec4(norm, 0) * invWorld).xyz;
+    vec3 div = 1.0 / box.extents * 0.5;
+    vec3 iPos = (invWorld * vec4(pos, 1.0)).xyz;
 
-    vec4 xTxtr = texture(t, div.x * iPos.yz);
-    vec4 yTxtr = texture(t, div.y * iPos.zx);
-    vec4 zTxtr = texture(t, div.z * iPos.xy);
+    // Transform normals correctly using the inverse-transpose (normal matrix).
+    mat3 normalMatrix = transpose(mat3(invWorld));
+    vec3 iNorm = normalize(normalMatrix * norm);
+
+    // Sample projected textures on each axis in object space and blend by the absolute
+    // value of the object-space normal to determine which face contributes.
+    vec4 xTxtr = texture(t, iPos.yz * div.x);
+    vec4 yTxtr = texture(t, iPos.zx * div.y);
+    vec4 zTxtr = texture(t, iPos.xy * div.z);
 
     vec3 ret =
         abs(iNorm.x) * xTxtr.rgb * xTxtr.a +
             abs(iNorm.y) * yTxtr.rgb * yTxtr.a +
             abs(iNorm.z) * zTxtr.rgb * zTxtr.a;
-    return vec4(ret, 1.f);
+    return vec4(ret, 1.0);
 }
 
 vec4 get_texture(HitInfo info, vec3 ray_pos, Material mat)

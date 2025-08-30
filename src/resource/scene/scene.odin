@@ -5,7 +5,8 @@ import "core:os"
 import "core:io"
 import "core:fmt"
 import "core:encoding/json"
-
+import path2 "../../extensions/filepath2"
+import "core:strings"
 //----------------------------------------------------------------------------\\
 // /STRUCTS
 //----------------------------------------------------------------------------\\
@@ -160,52 +161,43 @@ load_new_scene :: proc(name : string, allocator := context.temp_allocator) -> Sc
     return scene
 }
 
-load_prefab :: proc(name: string, alloc := context.allocator) -> (prefab : PrefabData) {
-    data, ok := os.read_entire_file_from_filename(name, alloc)
-    res.log_if_err(!ok, fmt.tprintf("Finding Prefab(%s)", name))
-    json_err := json.unmarshal(data, &prefab, allocator = alloc)
-    return
-}
-
 load_prefab_node :: proc(name: string, alloc := context.allocator) -> (root: Node) {
     data, ok := os.read_entire_file_from_filename(name, alloc)
     res.log_if_err(!ok, fmt.tprintf("Finding Prefab(%s)", name))
     json_err := json.unmarshal(data, &root, allocator = alloc)
+    // If there's a JSON error, print helpful debug info: filename, data length and first bytes
+    if json_err != nil {
+        fmt.printf("DEBUG: JSON unmarshal error loading prefab '%s': %v\n", name, json_err)
+        if data != nil && len(data) > 0 {
+            maxb := len(data)
+            if maxb > 64 { maxb = 64 } // print up to first 64 bytes
+            fmt.printf("DEBUG: prefab '%s' data length=%d first_%d_bytes= ", name, len(data), maxb)
+            for i in 0..<maxb {
+                // Print hex bytes for easier inspection of corrupted/incorrect data
+                fmt.printf("%02X ", int(data[i]))
+            }
+            fmt.printf("\n")
+        } else {
+            fmt.printf("DEBUG: prefab '%s' has empty data buffer\n", name)
+        }
+    }
     res.log_if_err(json_err)
     return
 }
 
-load_node :: proc(node : Node) {
-    flags := transmute(ComponentFlags)node.eFlags
-
-    if .CAMERA in flags {
-        fmt.printf("Processing Camera Node: %s, AspectRatio: %f, FOV: %f\n",
-            node.Name, node.aspect_ratio.ratio, node.fov.fov)
-        // Add logic to map to ECS components (e.g., call serialize.load_node)
-    } else if .LIGHT in flags {
-        fmt.printf("Processing Light Node: %s, Color: (%f, %f, %f), Intensity: %f, ID: %d\n",
-            node.Name, node.color.r, node.color.g, node.color.b,
-            node.intensity.i, node.id.id)
-        // Add logic to map to ECS components
-    } else if .PRIMITIVE in flags || .SPHERE in flags || .ROOT in flags || .COLIDER in flags {
-        fmt.printf("Processing Object Node: %s, Material ID: %d, Object ID: %d, Rigid: %v, Children: %v",
-            node.Name, node.material.ID, node.object.ID, node.rigid.Rigid, len(node.Children))
-        fmt.printf("|  Transform  | Position x:%f, y:%f, z:%f,  |  Scale x:%f, y:%f, z:%f\n",
-            node.Transform.Position.x, node.Transform.Position.y, node.Transform.Position.z,
-            node.Transform.Scale.x, node.Transform.Scale.y, node.Transform.Scale.z)
-        if node.collider.Type != 0 {
-            fmt.printf("Collider: Type=%d, Local=(%f, %f, %f), Extents=(%f, %f, %f)\n",
-                node.collider.Type,
-                node.collider.Local.x, node.collider.Local.y, node.collider.Local.z,
-                node.collider.Extents.x, node.collider.Extents.y, node.collider.Extents.z)
-        }
-        // Add logic to map to ECS components
-    }
-
-    // Recursively process children
-    if node.hasChildren {
-        for child in node.Children {
-            load_node(child)
+load_prefab_directory :: proc(directory : string, prefabs : ^map[string]Node, alloc := context.allocator){
+    files := path2.get_dir_files(directory)
+    for f in files{
+        stem := path2.get_file_stem(f.name, context.temp_allocator)
+        if strings.compare(".json", stem) == 0 {
+            prefab := load_prefab_node(f.fullpath, alloc)
+            e_flags := transmute(ComponentFlags)prefab.eFlags
+            if(.ROOT not_in e_flags){
+                e_flags += {.ROOT}
+            }
+            prefab.eFlags = transmute(u32)e_flags
+            prefabs[prefab.Name] = prefab
         }
     }
+    os.file_info_slice_delete(files)
 }

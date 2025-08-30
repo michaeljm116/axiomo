@@ -2,6 +2,7 @@ package main
 import math "core:math/linalg"
 import ecs "external/ecs"
 import embree "external/embree"
+import "core:fmt"
 import vma "external/vma"
 import "resource"
 import "resource/scene"
@@ -24,19 +25,41 @@ World :: ecs.World
 // /ECS
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
-
+create_world :: proc() -> ^World {
+     return ecs.create_world( track_alloc.backing)
+}
+delete_world :: proc(){
+	context.allocator = track_alloc.backing
+	ecs.delete_world(g_world)
+}
 // Entity management
 add_entity :: proc() -> ecs.EntityID {
 	return ecs.add_entity(g_world)
 }
 
+remove_entity :: proc(entity: ecs.EntityID){
+    ecs.remove_entity(g_world, entity)
+}
 // Component management
 add_component :: proc(entity: ecs.EntityID, component: $T) {
+    prev_alloc := context.allocator
+    defer context.allocator = prev_alloc
+    context.allocator = track_alloc.backing
 	ecs.add_component(g_world, entity, component)
+}
+
+remove_component :: proc(entity: ecs.EntityID, $T: typeid){
+    prev_alloc := context.allocator
+    defer context.allocator = prev_alloc
+    context.allocator = track_alloc.backing
+    ecs.remove_component(g_world, entity, typeid)
 }
 
 // Query system
 query :: proc(terms: ..ecs.Term) -> []^ecs.Archetype {
+    prev_alloc := context.allocator
+    defer context.allocator = prev_alloc
+    context.allocator = track_alloc.backing
 	return ecs.query(g_world, ..terms)
 }
 

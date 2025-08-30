@@ -5,6 +5,58 @@ import ecs "external/ecs"
 import "resource"
 import "core:fmt"
 import "core:math"
+import path2 "extensions/filepath2"
+
+@(test)
+test_get_file_stem_basic :: proc(t: ^testing.T) {
+    alloc := context.allocator
+
+    stem := path2.get_file_stem("file.txt", alloc)
+    testing.expect_value(t, stem, ".txt")
+}
+
+@(test)
+test_get_file_stem_archive :: proc(t: ^testing.T) {
+    alloc := context.allocator
+
+    stem := path2.get_file_stem("archive.tar.gz", alloc)
+    testing.expect_value(t, stem, ".tar.gz")
+}
+
+@(test)
+test_get_file_stem_hidden :: proc(t: ^testing.T) {
+    alloc := context.allocator
+
+    stem := path2.get_file_stem(".hiddenfile", alloc)
+    testing.expect_value(t, stem, ".hiddenfile")
+}
+
+@(test)
+test_get_file_stem_no_extension :: proc(t: ^testing.T) {
+    alloc := context.allocator
+
+    stem := path2.get_file_stem("noextension", alloc)
+    testing.expect_value(t, stem, "noextension")
+}
+
+@(test)
+test_get_file_stem_empty :: proc(t: ^testing.T) {
+    alloc := context.allocator
+
+    stem := path2.get_file_stem("", alloc)
+    testing.expect_value(t, stem, "")
+}
+
+@(test)
+test_get_file_stem_path_with_dot_in_dir :: proc(t: ^testing.T) {
+    alloc := context.allocator
+
+    // NOTE: current implementation finds the first '.' anywhere in the string.
+    // For "dir.name/file.txt" it will return the substring starting at the '.' in the directory name.
+    stem := path2.get_file_stem("dir.name/file.txt", alloc)
+    testing.expect_value(t, stem, ".name/file.txt")
+}
+
 @(test)
 test_get_last_sibling :: proc(t: ^testing.T) {
     // Set up test world

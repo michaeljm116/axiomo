@@ -1,6 +1,8 @@
 #ifndef TRAVERSE_GLSL
 #define TRAVERSE_GLSL
 #include "helpers.glsl"
+#include "shapes.glsl"
+#include "mesh.glsl"
 
 void traverse_blas(inout Ray ray, Ray inv_ray, Primitive prim, inout HitInfo hit)
 {

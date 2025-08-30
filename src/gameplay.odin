@@ -1,11 +1,38 @@
 package main
 
-import "vendor:glfw"
-import "core:math"
 import "core:fmt"
+import "core:mem"
+import "core:math"
 import "core:time"
 import "core:math/linalg"
+import vmem "core:mem/virtual"
+
+import "vendor:glfw"
 import b2"vendor:box2d"
+
+curr_phase : u8 = 0
+distance_arena: [2]vmem.Arena
+distance_arena_data: [2][]byte
+distance_arena_alloc: [2]mem.Allocator
+
+set_up_arenas :: proc()
+{
+    for i in 0..<2{
+        //distance_arena_data[i] = make([]byte, mem.Megabyte, context.allocator)
+        //mem.arena_init(&distance_arena[i], distance_arena_data[i])
+        arena_err := vmem.arena_init_growing(&distance_arena[i], mem.Megabyte,)
+        assert(arena_err == nil)
+        distance_arena_alloc[i] = vmem.arena_allocator(&distance_arena[i])
+    }
+}
+
+destroy_arenas :: proc()
+{
+    for i in 0..<2{
+        delete(distance_arena_data[i])
+        vmem.arena_free_all(&distance_arena[i])
+    }
+}
 
 // Input state tracking
 InputState :: struct {
@@ -28,11 +55,7 @@ InputState :: struct {
 
 // Global input state
 g_input: InputState
-
-// Camera entity - will be set by gameplay system
 g_camera_entity: Entity = 0
-
-// Light entity used for simple orbiting demo (will be detected if present)
 g_light_entity: Entity = 0
 
 // Orbit parameters (world units / radians)
@@ -40,8 +63,12 @@ g_light_orbit_radius: f32 = 5.0
 g_light_orbit_speed: f32 = 0.25   // radians per second
 g_light_orbit_angle: f32 = 15.0
 
+g_floor : [2]Entity
+g_objects : [2][dynamic]Entity
+
 // Initialize the gameplay system
 gameplay_init :: proc() {
+    set_up_arenas()
     g_input = InputState{
         mouse_sensitivity = 0.1,
         movement_speed = 5.0,
@@ -61,6 +88,8 @@ gameplay_init :: proc() {
     find_camera_entity()
     find_light_entity()
     find_player_entity()
+    face_left(g_player)
+    setup_physics()
 }
 
 // Find the camera entity in the scene
@@ -99,8 +128,9 @@ gameplay_update :: proc(delta_time: f32) {
     update_light_orbit(delta_time)
 
     //update_camera_movement(delta_time)
-    update_player_movement(delta_time)
-    update_camera_rotation(delta_time)
+    //update_player_movement(delta_time)
+    update_movables(delta_time)
+    update_physics(delta_time)
 }
 
 find_player_entity :: proc() {
@@ -111,11 +141,25 @@ find_player_entity :: proc() {
         for node, i in nodes {
             if node.name == "Froku" {
                 g_player = archetype.entities[i]
+                fmt.println("Found Player")
                 return
             }
         }
     }
 }
+
+find_floor_entities :: proc() {
+    arcs := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
+    for archetype in arcs {
+        nodes := get_table(archetype, Cmp_Node)
+        for node, i in nodes {
+            if node.name == "Floor1" do g_floor[0] = archetype.entities[i]
+            if node.name == "Floor2" do g_floor[1] = archetype.entities[i]
+        }
+    }
+}
+
+
 
 // Find the first light entity in the scene and cache it for orbit updates.
 // Looks for entities with Light, Transform, and Node components.
@@ -198,52 +242,6 @@ update_player_movement :: proc(delta_time: f32)
     }
 }
 
-// Handle camera movement with WASD
-update_camera_movement :: proc(delta_time: f32) {
-    camera_transform := get_component(g_camera_entity, Cmp_Transform)
-    camera_node := get_component(g_camera_entity, Cmp_Node)
-
-    if camera_transform == nil || camera_node == nil {
-        return
-    }
-
-    move_speed := g_input.movement_speed * delta_time
-
-    // Get camera forward, right, and up vectors from current rotation
-    forward := get_camera_forward(camera_transform)
-    right := get_camera_right(camera_transform)
-    up := vec3{0, 1, 0} // World up
-
-    movement := vec3{0, 0, 0}
-
-    // WASD movement
-    if is_key_pressed(glfw.KEY_W) {
-        movement += forward * move_speed
-    }
-    if is_key_pressed(glfw.KEY_S) {
-        movement -= forward * move_speed
-    }
-    if is_key_pressed(glfw.KEY_A) {
-        movement -= right * move_speed
-    }
-    if is_key_pressed(glfw.KEY_D) {
-        movement += right * move_speed
-    }
-
-    // Vertical movement
-    if is_key_pressed(glfw.KEY_SPACE) {
-        movement += up * move_speed
-    }
-    if is_key_pressed(glfw.KEY_LEFT_SHIFT) {
-        movement -= up * move_speed
-    }
-
-    // Apply movement
-    if linalg.length(movement) > 0 {
-        camera_transform.local.pos.xyz += movement
-    }
-}
-
 face_left :: proc(entity : Entity)
 {
     tc := get_component(entity, Cmp_Transform)
@@ -256,91 +254,6 @@ face_right :: proc(entity : Entity)
     tc.local.rot = linalg.quaternion_angle_axis_f32(-90, {0,1,0})
 }
 
-// Handle camera rotation with mouse
-update_camera_rotation :: proc(delta_time: f32) {
-    camera_transform := get_component(g_camera_entity, Cmp_Transform)
-
-    if camera_transform == nil {
-        return
-    }
-
-    // Apply mouse sensitivity (deltas are treated as degrees). Convert to radians for quaternion math.
-    yaw_delta_deg := -f32(g_input.mouse_delta_x) * g_input.mouse_sensitivity * delta_time * g_input.rotation_speed
-    pitch_delta_deg := -f32(g_input.mouse_delta_y) * g_input.mouse_sensitivity * delta_time * g_input.rotation_speed
-
-    // Convert deltas to radians immediately
-    yaw_r := math.to_radians(yaw_delta_deg)
-    pitch_r := math.to_radians(pitch_delta_deg)
-
-    // Extract current pitch from the current orientation quaternion (radians) and clamp the new pitch.
-    q_curr := camera_transform.local.rot
-    curr_pitch := linalg.pitch_from_quaternion_f32(q_curr) // returns radians
-    min_pitch := math.to_radians(f32(-89.0))
-    max_pitch := math.to_radians(f32(89.0))
-
-    desired_pitch := math.clamp(curr_pitch + pitch_r, min_pitch, max_pitch)
-    actual_pitch_delta := desired_pitch - curr_pitch
-
-    // If nothing to apply, early out and reset deltas
-    if yaw_r == 0.0 && actual_pitch_delta == 0.0 {
-        g_input.mouse_delta_x = 0
-        g_input.mouse_delta_y = 0
-        return
-    }
-
-    // Use linalg helper to create a delta quaternion from pitch/yaw (pitch, yaw, roll).
-    // We'll build a single delta quaternion and apply it to the current orientation.
-    // Note: linalg.quaternion_from_pitch_yaw_roll expects angles in radians.
-    //
-    // We intentionally remove the custom axis-angle helper and rely on the linalg helper
-    // for clearer, tested quaternion-from-euler behavior.
-    //
-    // (Actual delta quaternion will be constructed below where both pitch/yaw deltas are available.)
-
-    quat_mul := proc(a: quat, b: quat) -> quat {
-        r: quat
-        r.w = a.w*b.w - a.x*b.x - a.y*b.y - a.z*b.z
-        r.x = a.w*b.x + a.x*b.w + a.y*b.z - a.z*b.y
-        r.y = a.w*b.y - a.x*b.z + a.y*b.w + a.z*b.x
-        r.z = a.w*b.z + a.x*b.y - a.y*b.x + a.z*b.w
-        return r
-    }
-
-    quat_normalize := proc(q: quat) -> quat {
-        len := math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w)
-        if len == 0.0 {
-            r: quat
-            r.x = 0.0
-            r.y = 0.0
-            r.z = 0.0
-            r.w = 1.0
-            return r
-        }
-        inv := 1.0 / len
-        r: quat
-        r.x = q.x * inv
-        r.y = q.y * inv
-        r.z = q.z * inv
-        r.w = q.w * inv
-        return r
-    }
-
-    // Build delta quaternion from pitch & yaw using linalg helper (pitch, yaw, roll).
-    // We pass the pitch and yaw deltas (already converted to radians as pitch_r and yaw_r).
-    q_delta := linalg.quaternion_from_pitch_yaw_roll_f32(pitch_r, yaw_r, 0.0)
-
-    // Apply delta: q_new = q_delta * q_curr
-    q_new := quat_mul(q_delta, q_curr)
-    q_new = quat_normalize(q_new)
-
-    camera_transform.local.rot = q_new
-
-    // Reset mouse delta
-    g_input.mouse_delta_x = 0
-    g_input.mouse_delta_y = 0
-
-    face_left(g_player)
-}
 // Get camera forward vector
 get_camera_forward :: proc(transform: ^Cmp_Transform) -> vec3 {
     rotation_matrix := linalg.matrix4_from_quaternion_f32(transform.local.rot)
@@ -464,6 +377,8 @@ gameplay_destroy :: proc() {
 
     // Release mouse cursor
     glfw.SetInputMode(rb.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
+
+    destroy_arenas()
 }
 
 //----------------------------------------------------------------------------\\
@@ -477,8 +392,213 @@ g_debug_draw : b2.DebugDraw
 g_debug_col := false
 g_debug_stats := false
 
+ContactDensities :: struct
+{
+    Player : f32,
+    Vax : f32,
+    Doctor : f32,
+    Projectiles : f32,
+    Wall : f32
+}
+
+g_contact_identifier := ContactDensities {
+	Player      = 9.0,
+	Vax         = 50.0,
+	Doctor      = 200.0,
+	Projectiles = 8.0,
+	Wall        = 800.0
+}
+
 setup_physics :: proc (){
-   // b2.SetLengthUnitsPerMeter(g_b2scale)
+    fmt.println("Setting up phsyics")
+    b2.SetLengthUnitsPerMeter(g_b2scale)
+    g_world_id = b2.CreateWorld(g_world_def)
+    b2.World_SetGravity(g_world_id, b2.Vec2{0,-9.8})
+    //Set Player's body def
+    {
+        find_player_entity()
+        pt := get_component(g_player, Cmp_Transform)
 
+        // Build collision components. Body position is the body origin in world space.
+        col := Cmp_Collision2D{
+            bodydef = b2.DefaultBodyDef(),
+            shapedef = b2.DefaultShapeDef(),
+            type = .Capsule,
+            flags = {.Player}
+        }
+        col.bodydef.fixedRotation = true
+        col.bodydef.type = .dynamicBody
+        // Place the body origin at the transform world position (pt.world[3] should be the object's world origin)
+        col.bodydef.position ={0,3}// {pt.world[3].x, pt.world[3].y + 2}
+        col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
+        // Define the capsule in body-local coordinates (centered on the body origin).
+        // Use half extents from the transform scale. magic_scale_number still applied to y if needed.
+        half_sca := b2.Vec2{pt.global.sca.x * 0.5, pt.global.sca.y}
+        top := b2.Vec2{0.0,.5}//  half_sca.y}
+        bottom := b2.Vec2{0.0,.5}// -half_sca.y}
+        // capsule := b2.Capsule{top, bottom, half_sca.x}
+        box := b2.MakeBox(0.5,0.5)
+        col.shapedef = b2.DefaultShapeDef()
+        col.shapedef.filter.categoryBits = u64(CollisionCategories{.Player})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Environment, .MovingEnvironment})
+        col.shapedef.enableContactEvents = true
+        col.shapedef.density = g_contact_identifier.Player
+        // col.shapeid = b2.CreateCapsuleShape(col.bodyid, col.shapedef, capsule)
+        col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
+        add_component(g_player, col)
+        //add_component(g_player, capsule)
+    }
+
+    fmt.println("Floor created")
+    set_floor_entities()
+    create_barrel({5, 2})
+    create_barrel({3, 2})
+}
+
+set_floor_entities :: proc()
+{
+    //create static floor
+    {
+        col := Cmp_Collision2D{
+            bodydef = b2.DefaultBodyDef(),
+            shapedef = b2.DefaultShapeDef(),
+            type = .Box
+        }
+        col.bodydef.fixedRotation = true
+        col.bodydef.type = .staticBody
+        col.bodydef.position = {0,-10.0}
+        col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
+        box := b2.MakeBox(500, -9.0)
+
+        col.shapedef = b2.DefaultShapeDef()
+        col.shapedef.filter.categoryBits = u64(CollisionCategories{.Environment})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Player, .MovingEnvironment, .MovingFloor})
+        col.shapedef.enableContactEvents = true
+        col.shapedef.density = 0
+        col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
+    }
+
+    find_floor_entities()
+    for floor, i in g_floor{
+        fc := get_component(floor, Cmp_Transform)
+        col := Cmp_Collision2D{
+            bodydef = b2.DefaultBodyDef(),
+            shapedef = b2.DefaultShapeDef(),
+            type = .Box,
+            flags = {.Movable}
+        }
+        // move := Cmp_Movable{speed = -2.0}
+        col.bodydef.fixedRotation = true
+        col.bodydef.type = .dynamicBody
+        col.bodydef.position = fc.world[3].xy
+        col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
+        box := b2.MakeBox(fc.local.sca.x, fc.local.sca.y)
+
+        col.shapedef = b2.DefaultShapeDef()
+        col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingFloor})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Environment, .Player, .MovingEnvironment})
+        col.shapedef.enableContactEvents = true
+        col.shapedef.density = 1000.0
+        col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
+
+        add_component(floor, col)
+    }
+}
+
+barrel : Entity
+create_barrel :: proc(pos : b2.Vec2)
+{
+    fmt.println("Barrel creating")
+    barrel = load_prefab("Barrel")
+    fmt.println("Prefab loaded")
+    bt := get_component(barrel, Cmp_Transform)
+    if bt == nil do return
+
+    col := Cmp_Collision2D{
+        bodydef = b2.DefaultBodyDef(),
+        shapedef = b2.DefaultShapeDef(),
+        type = .Box,
+        flags = CollisionFlags{.Movable}
+    }
+    col.bodydef.fixedRotation = true
+    col.bodydef.type = .dynamicBody
+    col.bodydef.position = pos
+    col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
+
+    box := b2.MakeBox(bt.local.sca.x, bt.local.sca.y)
+    col.shapedef = b2.DefaultShapeDef()
+    col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingEnvironment})
+    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment, .MovingFloor, .MovingEnvironment})
+    col.shapedef.enableContactEvents = true
+    col.shapedef.density = g_contact_identifier.Player
+    col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
+
+    // movable := Cmp_Movable{-1.0}
+
+    fmt.println("Movable component added")
+    add_component(barrel, col)
+    fmt.println("Collision component added")
+    //add_component(barrel, movable)
+}
+
+update_movables :: proc(delta_time: f32)
+{
+    //First just the visible g_floor
+    // for i in 0..<2{
+    //     fc := get_component(g_floor[i], Cmp_Transform)
+    //     fc.local.pos.x -= 1.0 * delta_time
+
+    //     //refresh world if done
+    //     if fc.local.pos.x <= -25.0 {
+    //         for e in g_objects[curr_phase] do remove_entity(e)
+    //         vmem.arena_free_all(&distance_arena[curr_phase])
+    //         curr_phase = (curr_phase + 1) % 2
+    //     }
+    // }
+    movables := query(has(Cmp_Collision2D))
+    for movable in movables{
+        cols := get_table(movable, Cmp_Collision2D)
+        for e, i in movable.entities{
+            if .Movable in cols[i].flags{
+                nc := get_component(e, Cmp_Node)
+                tc := get_component(e, Cmp_Transform)
+                // fmt.println("movable, ", nc.name)
+                // b2.Body_SetLinearVelocity(cols[i].bodyid, {delta_time * -1.0, 0})
+                // b2.Body_ApplyLinearImpulse(cols[i].bodyid, {-2.0,0}, {0.5,0.5}, true)
+                vel := b2.Body_GetLinearVelocity(cols[i].bodyid)
+                vel.x = -1
+                b2.Body_SetLinearVelocity(cols[i].bodyid, vel)
+                // b2.Body_ApplyForceToCenter(cols[i].bodyid, {0,1000.0}, true)
+                //fmt.printfln("Entity")
+            }
+        }
+    }
+}
+
+update_physics :: proc(delta_time: f32)
+{
+    update_player_movement_phys(delta_time)
+    b2.World_Step(g_world_id, delta_time, 4)
+    arcs := query(has(Cmp_Transform), has(Cmp_Collision2D))
+    for arc in arcs{
+        trans := get_table(arc,Cmp_Transform)
+        colis := get_table(arc,Cmp_Collision2D)
+        for _, i in arc.entities{
+            trans[i].local.pos.xy = b2.Body_GetPosition(colis[i].bodyid)
+            trans[i].local.pos.z = 1
+        }
+    }
+}
+
+update_player_movement_phys :: proc(delta_time: f32)
+{
+    cc := get_component(g_player, Cmp_Collision2D)
+    if cc == nil do return
+    vel := b2.Body_GetLinearVelocity(cc.bodyid).y
+    move_speed :f32= 1.0
+    if is_key_pressed(glfw.KEY_SPACE) do vel += move_speed
+    b2.Body_SetLinearVelocity(cc.bodyid, {0,vel})
+    // b2.Body_ApplyForceToCenter(cc.bodyid, {0,100}, true)
+    fmt.println("Entity ",g_player, " | Force : ", b2.Body_GetLinearVelocity(cc.bodyid), " | ")
 }

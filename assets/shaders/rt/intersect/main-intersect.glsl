@@ -1,13 +1,7 @@
 #ifndef _MAIN_INTERSECT_GLSL
 #define _MAIN_INTERSECT_GLSL
 
-#include "plane.glsl"
-#include "box.glsl"
-#include "sphere.glsl"
-#include "mesh.glsl"
-#include "cylinder.glsl"
-#include "cone.glsl"
-#include "disk.glsl"
+#include "shapes.glsl"
 #include "bvh.glsl"
 #include "helpers.glsl"
 #include "traverse.glsl"

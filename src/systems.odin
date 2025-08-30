@@ -741,8 +741,7 @@ load_node_components :: proc(scene_node: scene.Node, entity: Entity, e_flags :^C
     }
 }
 // Load a scene.Node into ECS Cmp_Node hierarchy
-load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem.Allocator) -> Entity {
-    context.allocator = alloc
+load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0)) -> Entity {
     entity := add_entity()
     e_flags := transmute(ComponentFlags)scene_node.eFlags
     load_node_components(scene_node, entity, &e_flags)
@@ -762,7 +761,10 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
     add_component(entity, cmp_node_local)
 
     cmp_node := get_component(entity, Cmp_Node)
-    if cmp_node == nil { return Entity(0) }
+    if cmp_node == nil {
+        fmt.println("[load_node] ERROR: missing Cmp_Node after add")
+        return Entity(0)
+    }
 
     // Set is_parent for camera and light as in original
     if .CAMERA in cmp_node.engine_flags { cmp_node.is_parent = true }
@@ -771,7 +773,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc: mem
     // Recurse for children and link via Entity IDs
     if scene_node.hasChildren {
         for &child_scene in scene_node.Children {
-            child_entity := load_node(child_scene, entity, alloc)  // Pass parent entity
+            child_entity := load_node(child_scene, entity)  // Pass parent entity
             if child_entity != Entity(0) {
                 add_child(entity, child_entity)
                 // Optionally: Get child_node and set its parent if not already (but it's set in cmp_node_local above)
@@ -792,41 +794,25 @@ load_scene :: proc(scene_data: scene.SceneData, alloc: mem.Allocator) {
 		return // Entity(0)
 	}
 	for node in scene_data.Node {
-		load_node(node, alloc = alloc)
+		load_node(node)
 	}
 }
 
-load_prefab :: proc(dir, name: string, alloc : mem.Allocator) -> (prefab : Entity)
+load_prefab :: proc(name: string) -> (prefab : Entity)
 {
-    // First load the data from the scene module
-    context.allocator = alloc
-    prefab_data := scene.load_prefab(fmt.tprintf("%s%s.json",dir,name), alloc)
-    if len(prefab_data.Node) == 0 do return Entity(0)
-    //Create an entity
-    prefab = load_node(prefab_data.Node[0], alloc = alloc)
-    for node, i in prefab_data.Node{
-        if(i != 0) do load_node(node, prefab, alloc = alloc)
+    node, ok := g_prefabs[name]
+    if !ok{
+        fmt.printf("[load_prefab] Prefab '%s' not found in g_prefabs map \n", name)
+        return 0
     }
-    append(&g_scene, prefab)
-    return
-}
-
-load_prefab2 :: proc(dir, name: string, ecs_alloc, resource_alloc : mem.Allocator) -> (prefab : Entity)
-{
-    // First load the data from the scene module
-    context.allocator = ecs_alloc
-    node := scene.load_prefab_node(fmt.tprintf("%s%s.json",dir,name), resource_alloc)
-
-    //Create an entity
-    prefab = load_node(node, alloc = ecs_alloc)
-    add_component(prefab, Cmp_Root{})
+    // Create the entity using the requested ECS allocator
+    prefab = load_node(node)
     nc := get_component(prefab,Cmp_Node)
-    children := get_children(g_world, nc.entity)
+    children := get_children(nc.entity)
     for n in children{
         cc := get_component(n, Cmp_Node)
         cc.parent = prefab
     }
-
     //append(&g_scene, prefab)
     return prefab
 }

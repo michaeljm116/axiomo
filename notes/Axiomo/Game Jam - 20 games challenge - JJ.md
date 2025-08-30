@@ -31,3 +31,30 @@ OnStart:
 * GameLoop!!! 
 * 
 *
+
+Question: how will we do the endless world?
+* 2 overlapping arenas
+	* distance based arenas....
+* 2 floors attached by the seam
+	* attached to those arenas obvs
+	* Then create dynamic objects based off that
+* you can create the arenas in the gameplay.odin itself if ya want
+* Make a json with 2 floors floor1 and 2
+	* assign them to floor entitiies
+	* each with their own respectivearenas
+	* make floor 2 like 100 right of 1 maybe even programmatically
+	* once floor 1 gets to -100 then mak
+	* once A floor gets to 0 then the OTHER floor is that floors.x + 100 but also yadayada reset
+
+
+
+### PHSHsycysics
+Things you need to know abou thte phycis is..
+1. should the ground physically move or be sttatic
+2. this could make eveyrthing in the thing attached to the floor behat too but...
+3. then the player would move along with the lfoor
+4. unless you make it so there's a static floor that only the player interacts with
+5. same with the top 
+6. and then there's a second floor for the environment
+7. that secnd floor has a texture blah blah and moves with the  level instead of it bien g just a blank texture and have it suber dense blah blah but yeah that keeps it in check with teh you know what
+8. 

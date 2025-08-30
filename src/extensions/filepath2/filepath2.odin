@@ -1,6 +1,7 @@
 package filepath2
 import "core:os"
 import "core:fmt"
+import "core:mem"
 import "core:strings"
 
 get_dir_files :: proc (directory: string) -> []os.File_Info {
@@ -17,4 +18,21 @@ get_dir_files :: proc (directory: string) -> []os.File_Info {
         return nil
     }
     return entries
+}
+
+get_file_stem :: proc (file_path : string, alloc : mem.Allocator) -> string
+{
+    context.allocator = alloc
+    i := len(file_path)
+    index := 0
+    for j in 0..<i
+    {
+        if file_path[j] == '.'
+        {
+            index = j
+            break
+        }
+    }
+    sub , ok := strings.substring(file_path, index, len(file_path))
+    return sub
 }
