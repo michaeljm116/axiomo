@@ -88,7 +88,7 @@ gameplay_init :: proc() {
     find_camera_entity()
     find_light_entity()
     find_player_entity()
-    face_left(g_player)
+    // face_left(g_player)
     setup_physics()
 }
 
@@ -115,6 +115,7 @@ gameplay_update :: proc(delta_time: f32) {
         return
     }
     if g_player == 0 {
+        fmt.println("Lost player")
         find_player_entity()
     }
 
@@ -413,9 +414,10 @@ setup_physics :: proc (){
     b2.World_SetGravity(g_world_id, b2.Vec2{0,-9.8})
     //Set Player's body def
     {
-        find_player_entity()
-        pt := get_component(g_player, Cmp_Transform)
+        // find_player_entity()
 
+        g_player = create_debug_cube({0,1}, {1,1})
+        pt := get_component(g_player, Cmp_Transform)
         // Build collision components. Body position is the body origin in world space.
         col := Cmp_Collision2D{
             bodydef = b2.DefaultBodyDef(),
@@ -449,13 +451,27 @@ setup_physics :: proc (){
 
     fmt.println("Floor created")
     set_floor_entities()
-    create_barrel({5, 2})
     // create_barrel({3, 2})
+    // create_barrel({1, 2})
+    // create_barrel({2, 2})
+    // create_barrel({4, 2})
+    // create_barrel({5, 2})
+    // create_barrel({6, 2})
+    // create_barrel({7, 2})
+    // create_barrel({8, 2})
+    // create_barrel({9, 2})
+    // create_barrel({10, 2})
+    // create_barrel({15, 2})
+    // create_barrel({11, 2})
+    // create_barrel({12, 2})
+    // create_barrel({13, 2})
+    // create_barrel({14.5, 2})
     // create_barrel({4, 2})
     // create_debug_quad({2,2,1}, {0,0,0,0}, {1,1,.1})
-    create_debug_cube_with_col({2,2}, {1,1})
-    create_debug_cube({3,2}, {1,1})
-}
+    //create_debug_cube_with_col({2,2}, {10,10})
+    //
+    create_debug_cube_with_col({4,2}, {1,1})
+   }
 
 set_floor_entities :: proc()
 {
@@ -566,7 +582,7 @@ update_movables :: proc(delta_time: f32)
             if .Movable in cols[i].flags{
                 nc := get_component(e, Cmp_Node)
                 tc := get_component(e, Cmp_Transform)
-                fmt.println("movable, ", nc.name)
+                // fmt.println("movable, ", nc.name)
                 // b2.Body_SetLinearVelocity(cols[i].bodyid, {delta_time * -1.0, 0})
                 // b2.Body_ApplyLinearImpulse(cols[i].bodyid, {-2.0,0}, {0.5,0.5}, true)
                 vel := b2.Body_GetLinearVelocity(cols[i].bodyid)
@@ -603,7 +619,7 @@ update_player_movement_phys :: proc(delta_time: f32)
     if is_key_pressed(glfw.KEY_SPACE) do vel += move_speed
     b2.Body_SetLinearVelocity(cc.bodyid, {0,vel})
     // b2.Body_ApplyForceToCenter(cc.bodyid, {0,100}, true)
-    fmt.println("Entity ",g_player, " | Force : ", b2.Body_GetLinearVelocity(cc.bodyid), " | ")
+    // fmt.println("Entity ",g_player, " | Force : ", b2.Body_GetLinearVelocity(cc.bodyid), " | ")
 }
 
 ///////////////////////////////
@@ -626,15 +642,13 @@ create_debug_quad :: proc(pos: b2.Vec2, extents: b2.Vec2, mat_unique_id: i32 = 1
 
 create_debug_cube :: proc(pos: b2.Vec2, extents: b2.Vec2, mat_unique_id: i32 = 1125783744) -> Entity {
     e := create_node_entity("debug_cube", ComponentFlag.PRIMITIVE)
-    pos3 := vec3{ pos.x, pos.y, 0.0 }
-    half_ext := vec3{ extents.x * 0.5, extents.y * 0.5, 0.1 }
+    pos3 := vec3{ pos.x, pos.y, 1.0 }
     rot_q := vec4{ 0.0, 0.0, 0.0, 1.0 } // identity rotation
-    add_component(e, cmp_transform_prs_q(pos3, rot_q, half_ext))
+    add_component(e, cmp_transform_prs_q(pos3, rot_q, {extents.x, extents.y, .1}))
     add_component(e, material_component(i32(mat_unique_id)))
     add_component(e, primitive_component_with_id(-2))
     add_component(e, Cmp_Render{ type = {.PRIMITIVE} })
     add_component(e, Cmp_Root{})
-    add_component(e, Cmp_Node{engine_flags = {.ROOT}})
     added_entity(e)
     return e
 }
@@ -667,11 +681,33 @@ create_debug_cube_with_col :: proc(pos: b2.Vec2, extents: b2.Vec2, mat_unique_id
 
     col.shapedef = b2.DefaultShapeDef()
     col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingEnvironment})
-    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment, .MovingFloor, .MovingEnvironment})
+    col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Player, .Environment, .MovingFloor})
     col.shapedef.enableContactEvents = true
     col.shapedef.density = g_contact_identifier.Player
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
     add_component(e, col)
+    return e
+}
+create_debug_cube_2 :: proc(pos: vec3, rot_q: vec4, half_extents: vec3, mat_unique_id: i32 = 1125783744) -> Entity {
+    e := create_node_entity("debug_cube", ComponentFlag.PRIMITIVE)
+
+    // transform uses local.sca to feed primitives.extents (system copies local.sca -> prim.extents)
+    add_component(e, cmp_transform_prs_q(pos, rot_q, half_extents))
+
+    // material
+    add_component(e, material_component(i32(mat_unique_id)))
+
+    // built-in box primitive id is -2 (mapped by hit_type -> TYPE_BOX)
+    add_component(e, primitive_component_with_id(-2))
+
+    // Mark for rendering as primitive
+    add_component(e, Cmp_Render{ type = {.PRIMITIVE} })
+    add_component(e, Cmp_Root{})
+
+    // Register with renderer so it gets added to the RT buffers
+    added_entity(e)
+
+
     return e
 }
