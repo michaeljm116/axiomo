@@ -297,8 +297,8 @@ get_relation_type :: proc(c: PairType($R, $T)) -> typeid {
 	return R
 }
 
-add_component :: proc(world: ^World, entity: EntityID, component: $T, alloc : mem.Allocator = context.allocator) {
-	context.allocator = alloc
+add_component :: proc(world: ^World, entity: EntityID, component: $T) {
+	//context.allocator = world.allocator
     cid: ComponentID
     ok: bool
 
@@ -373,6 +373,7 @@ add_component :: proc(world: ^World, entity: EntityID, component: $T, alloc : me
             new_archetype = get_or_create_archetype(world, new_component_ids[:], new_tag_ids[:])
 
             old_archetype.add_edges[cid] = new_archetype
+            new_archetype.remove_edges[cid] = old_archetype
         }
 
         move_entity(world, entity, info, old_archetype, new_archetype)
