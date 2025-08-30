@@ -427,25 +427,25 @@ setup_physics :: proc (){
             flags = {.Player}
         }
         col.bodydef.fixedRotation = true
-        col.bodydef.type = .kinematicBody
-        col.bodydef.isEnabled = true
+        col.bodydef.type = .dynamicBody
         // Place the body origin at the transform world position (pt.world[3] should be the object's world origin)
-        col.bodydef.position = {pt.world[3].x, pt.world[3].y}
+        col.bodydef.position ={0,3}// {pt.world[3].x, pt.world[3].y + 2}
         col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
         // Define the capsule in body-local coordinates (centered on the body origin).
         // Use half extents from the transform scale. magic_scale_number still applied to y if needed.
         half_sca := b2.Vec2{pt.global.sca.x * 0.5, pt.global.sca.y}
-        top := b2.Vec2{0.0,  half_sca.y}
-        bottom := b2.Vec2{0.0, -half_sca.y}
-        capsule := b2.Capsule{top, bottom, half_sca.x}
-
+        top := b2.Vec2{0.0,.5}//  half_sca.y}
+        bottom := b2.Vec2{0.0,.5}// -half_sca.y}
+        // capsule := b2.Capsule{top, bottom, half_sca.x}
+        box := b2.MakeBox(0.5,0.5)
         col.shapedef = b2.DefaultShapeDef()
         col.shapedef.filter.categoryBits = u64(CollisionCategories{.Player})
-        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Environment, .MovingFloor, .MovingEnvironment})
+        col.shapedef.filter.maskBits = u64(CollisionCategories{.Enemy,.EnemyProjectile,.Environment, .MovingEnvironment})
         col.shapedef.enableContactEvents = true
         col.shapedef.density = g_contact_identifier.Player
-        col.shapeid = b2.CreateCapsuleShape(col.bodyid, col.shapedef, capsule)
+        // col.shapeid = b2.CreateCapsuleShape(col.bodyid, col.shapedef, capsule)
+        col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
         add_component(g_player, col)
         //add_component(g_player, capsule)
     }
@@ -467,9 +467,9 @@ set_floor_entities :: proc()
         }
         col.bodydef.fixedRotation = true
         col.bodydef.type = .staticBody
-        col.bodydef.position = {0,-1.0}
+        col.bodydef.position = {0,-10.0}
         col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
-        box := b2.MakeBox(500, .1)
+        box := b2.MakeBox(500, -9.0)
 
         col.shapedef = b2.DefaultShapeDef()
         col.shapedef.filter.categoryBits = u64(CollisionCategories{.Environment})
@@ -524,7 +524,6 @@ create_barrel :: proc(pos : b2.Vec2)
     col.bodydef.fixedRotation = true
     col.bodydef.type = .dynamicBody
     col.bodydef.position = pos
-
     col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
 
     box := b2.MakeBox(bt.local.sca.x, bt.local.sca.y)
@@ -570,7 +569,7 @@ update_movables :: proc(delta_time: f32)
                 vel := b2.Body_GetLinearVelocity(cols[i].bodyid)
                 vel.x = -1
                 b2.Body_SetLinearVelocity(cols[i].bodyid, vel)
-                // b2.Body_ApplyLinearImpulseToCenter(cols[i].bodyid, {-2.0,0}, true)
+                // b2.Body_ApplyForceToCenter(cols[i].bodyid, {0,1000.0}, true)
                 //fmt.printfln("Entity")
             }
         }
@@ -596,13 +595,10 @@ update_player_movement_phys :: proc(delta_time: f32)
 {
     cc := get_component(g_player, Cmp_Collision2D)
     if cc == nil do return
-    vel := b2.Vec2{0,0}
-    move_speed :f32= 5000.0
-    if is_key_pressed(glfw.KEY_SPACE) {
-        // vel.y += move_speed
-        b2.Body_ApplyLinearImpulse(cc.bodyid, {0,move_speed},{0,0}, true)
-        b2.Body_ApplyForce(cc.bodyid, {move_speed,move_speed},{0,0}, true)
-        b2.Body_ApplyLinearImpulseToCenter(cc.bodyid, {0,move_speed}, true)
-        fmt.println("Entity ", " | Force : ", b2.Body_GetLinearVelocity(cc.bodyid))
-    }
+    vel := b2.Body_GetLinearVelocity(cc.bodyid).y
+    move_speed :f32= 1.0
+    if is_key_pressed(glfw.KEY_SPACE) do vel += move_speed
+    b2.Body_SetLinearVelocity(cc.bodyid, {0,vel})
+    // b2.Body_ApplyForceToCenter(cc.bodyid, {0,100}, true)
+    fmt.println("Entity ",g_player, " | Force : ", b2.Body_GetLinearVelocity(cc.bodyid), " | ")
 }
