@@ -13,45 +13,57 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Game Jam - 20 games challenge - JJ.md",
+                "file": "BeeKillingsInn/Epics.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Game Jam - 20 games challenge - JJ"
-            }
-          }
-        ]
-      },
-      {
-        "id": "bca7e5db13218456",
-        "type": "tabs",
-        "children": [
-          {
-            "id": "4b5e7189623d836a",
-            "type": "leaf",
-            "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "title": "Epics"
             }
           },
           {
-            "id": "a98d8a0bffa01286",
+            "id": "31d139b1478a8ac2",
             "type": "leaf",
             "state": {
-              "type": "bases",
+              "type": "markdown",
               "state": {
-                "file": "Untitled.base",
-                "viewName": "Table"
+                "file": "BeeKillingsInn/Bee Ideas.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-table",
-              "title": "Untitled"
+              "icon": "lucide-file",
+              "title": "Bee Ideas"
+            }
+          },
+          {
+            "id": "675394e8054caaf2",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "BeeKillingsInn/Bee Ideas.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Bee Ideas"
+            }
+          },
+          {
+            "id": "796d81f087976357",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "BeeKillingsInn/Bee Ideas.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Bee Ideas"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -201,8 +213,13 @@
   },
   "active": "4501eeb13631867f",
   "lastOpenFiles": [
+    "BeeKillingsInn/Bee Ideas.md",
+    "BeeKillingsInn/Epics.md",
+    "Game Jam - 20 games challenge - JJ.md",
     "Untitled.base",
+    "Untitled 1.md",
     "Untitled.md",
-    "Game Jam - 20 games challenge - JJ.md"
+    "BeeKillingsInn/KillerBee prototype.md",
+    "BeeKillingsInn"
   ]
 }
