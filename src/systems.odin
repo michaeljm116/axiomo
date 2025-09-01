@@ -59,7 +59,7 @@ sqt_transform :: proc(nc: ^Cmp_Node) {
         pt := get_component(parent_ent, Cmp_Transform)
         tc.global.sca = pt.global.sca * tc.local.sca
         tc.global.rot = pt.global.rot * tc.local.rot
-        tc.trm = pt.world * local
+        tc.trm = pt.trm * local
         local = local * scale_m
         tc.world = pt.world * local
     } else {
