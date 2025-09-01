@@ -192,7 +192,7 @@ update_light_orbit :: proc(delta_time: f32) {
     }
 
     // Determine orbit center: prefer player position if available
-    center := vec3{0.0, 1.5, 0.0}
+    center := vec3{0.0, 11.5, 0.0}
     if g_player != 0 {
         pc := get_component(g_player, Cmp_Transform)
         if pc != nil {
@@ -206,7 +206,7 @@ update_light_orbit :: proc(delta_time: f32) {
     // Compute new local position on XZ plane; keep Y relative to center
     new_x := center.x + math.cos(g_light_orbit_angle) * g_light_orbit_radius
     new_z := center.z + math.sin(g_light_orbit_angle) * g_light_orbit_radius
-    new_y := center.y + 1.5 // offset above center (tweak as desired)
+    new_y := center.y + 10.5 // offset above center (tweak as desired)
 
     // Update transform local position so the transform system will update world matrix
     tc.local.pos.x = new_x
@@ -248,11 +248,14 @@ face_left :: proc(entity : Entity)
     tc := get_component(entity, Cmp_Transform)
     tc.local.rot = linalg.quaternion_angle_axis_f32(90, {0,1,0})
 }
+
 face_180 :: proc(entity : Entity)
 {
     tc := get_component(entity, Cmp_Transform)
-    tc.local.rot = linalg.quaternion_angle_axis_f32(180, {0,1,0})
+    tc.local.rot = linalg.quaternion_angle_axis_f32(179, {0,1,0})
+    fmt.println(linalg.angle_axis_from_quaternion(tc.local.rot))
 }
+
 face_right :: proc(entity : Entity)
 {
     tc := get_component(entity, Cmp_Transform)
@@ -471,7 +474,7 @@ setup_physics :: proc (){
     // create_debug_quad({2,2,1}, {0,0,0,0}, {1,1,.1})
     //create_debug_cube_with_col({2,2}, {10,10})
     //
-    create_debug_cube_with_col({5,2}, {1,1})
+    create_debug_cube_with_col({25,2}, {2,2})
    }
 
 set_floor_entities :: proc()
@@ -567,17 +570,24 @@ create_barrel :: proc(pos : b2.Vec2)
 update_movables :: proc(delta_time: f32)
 {
     //First just the visible g_floor
-    // for i in 0..<2{
-    //     fc := get_component(g_floor[i], Cmp_Transform)
-    //     fc.local.pos.x -= 1.0 * delta_time
+    for i in 0..<2{
+        fc := get_component(g_floor[i], Cmp_Transform)
+        fc.local.pos.x -= 1.0 * delta_time
 
-    //     //refresh world if done
-    //     if fc.local.pos.x <= -25.0 {
-    //         for e in g_objects[curr_phase] do remove_entity(e)
-    //         vmem.arena_free_all(&distance_arena[curr_phase])
-    //         curr_phase = (curr_phase + 1) % 2
-    //     }
-    // }
+        //refresh world if done
+        if fc.local.pos.x <= -100.0 {
+            fmt.println("Floor  ", i, "  | Trans: ", fc.local.pos.xy)
+            for e in g_objects[curr_phase] do remove_entity(e)
+            vmem.arena_free_all(&distance_arena[curr_phase])
+            curr_phase = (curr_phase + 1) % 2
+
+            col := get_component(g_floor[i], Cmp_Collision2D)
+            fc.local.pos.x += 200.0
+            trans := b2.Body_GetTransform(col.bodyid)
+            trans.p.x = fc.local.pos.x
+            b2.Body_SetTransform(col.bodyid, trans.p, trans.q)
+        }
+    }
     movables := query(has(Cmp_Collision2D))
     for movable in movables{
         cols := get_table(movable, Cmp_Collision2D)
@@ -589,11 +599,11 @@ update_movables :: proc(delta_time: f32)
                 // b2.Body_SetLinearVelocity(cols[i].bodyid, {delta_time * -1.0, 0})
                 // b2.Body_ApplyLinearImpulse(cols[i].bodyid, {-2.0,0}, {0.5,0.5}, true)
                 vel := b2.Body_GetLinearVelocity(cols[i].bodyid)
-                vel.x = -1
+                vel.x = -4
                 b2.Body_SetLinearVelocity(cols[i].bodyid, vel)
                 // b2.Body_ApplyForceToCenter(cols[i].bodyid, {0,1000.0}, true)
                 //fmt.printfln("Entity")
-                fmt.println("Entity: ",nc.name, " | Position : ", b2.Body_GetPosition(cols[i].bodyid), " | ")
+                // fmt.println("Entity: ",nc.name, " | Position : ", b2.Body_GetPosition(cols[i].bodyid), " | Trans: ", tc.local.pos.xy)
             }
         }
     }
@@ -628,7 +638,7 @@ update_player_movement_phys :: proc(delta_time: f32)
     b2.Body_SetLinearVelocity(cc.bodyid, {0,vel})
     // b2.Body_ApplyForceToCenter(cc.bodyid, {0,100}, true)
     // fmt.println("Entity ",g_player, " | Force : ", b2.Body_GetLinearVelocity(cc.bodyid), " | ")
-    fmt.println("Entity ",g_player, " | Position : ", b2.Body_GetPosition(cc.bodyid), " | ")
+    // fmt.println("Entity ",g_player, " | Position : ", b2.Body_GetPosition(cc.bodyid), " | ")
 }
 
 ///////////////////////////////
