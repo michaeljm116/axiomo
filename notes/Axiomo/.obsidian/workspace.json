@@ -41,12 +41,13 @@
             "id": "a98d8a0bffa01286",
             "type": "leaf",
             "state": {
-              "type": "release-notes",
+              "type": "bases",
               "state": {
-                "currentVersion": "1.9.10"
+                "file": "Untitled.base",
+                "viewName": "Table"
               },
-              "icon": "lucide-book-up",
-              "title": "Release Notes 1.9.10"
+              "icon": "lucide-table",
+              "title": "Untitled"
             }
           }
         ],
@@ -107,8 +108,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "954f4e27756410bd",
@@ -199,8 +199,9 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "a98d8a0bffa01286",
+  "active": "4501eeb13631867f",
   "lastOpenFiles": [
+    "Untitled.base",
     "Untitled.md",
     "Game Jam - 20 games challenge - JJ.md"
   ]
