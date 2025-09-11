@@ -96,7 +96,7 @@ init_vulkan :: proc()
 	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
 	glfw.WindowHint(glfw.RESIZABLE, glfw.TRUE)
 
-	rb.window = glfw.CreateWindow(1280, 720, "Jetpack Joyrade", nil, nil)
+	rb.window = glfw.CreateWindow(1280, 720, "Bee Killins Inn", nil, nil)
 
 	glfw.SetFramebufferSizeCallback(rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
 		rb.framebuffer_resized = true

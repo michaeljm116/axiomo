@@ -89,7 +89,12 @@ gameplay_init :: proc() {
     find_light_entity()
     find_player_entity()
     face_180(g_player)
-    setup_physics()
+    //setup_physics()
+
+    init_level1()
+    find_floor_entities()
+    set_grid_scale(g_floor, &g_level)
+    set_player_on_tile(g_floor, g_player, g_level, g_level.player.pos.x, g_level.player.pos.y)
 }
 
 // Find the camera entity in the scene
@@ -130,8 +135,8 @@ gameplay_update :: proc(delta_time: f32) {
 
     //update_camera_movement(delta_time)
     //update_player_movement(delta_time)
-    update_movables(delta_time)
-    update_physics(delta_time)
+    // update_movables(delta_time)
+    // update_physics(delta_time)
 }
 
 find_player_entity :: proc() {
@@ -384,6 +389,7 @@ gameplay_destroy :: proc() {
     glfw.SetInputMode(rb.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
 
     destroy_arenas()
+	destroy_level(&g_level)
 }
 
 //----------------------------------------------------------------------------\\

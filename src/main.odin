@@ -97,9 +97,10 @@ main :: proc() {
 	load_scene(scene, context.allocator)
 
 	g_player = load_prefab("Bee")
-	gameplay_init()
-
 	transform_sys_process_e()
+	gameplay_init()
+		defer gameplay_destroy()
+
 	bvh_system_build(g_bvh, per_frame_alloc)
 
 	//begin renderer
@@ -130,7 +131,6 @@ main :: proc() {
 		update_descriptors()
 		end_frame(&image_index)
 	}
-	gameplay_destroy()
 	cleanup()
 }
 

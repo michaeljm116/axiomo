@@ -29,6 +29,7 @@ Level :: struct
     weapons : []Weapon,
     grid : Grid,
     grid_data : []Tile,
+    grid_scale : vec2f
 }
 
 bks_main :: proc() {
@@ -50,7 +51,6 @@ bks_main :: proc() {
     bees := make([dynamic]Bee, 2, context.temp_allocator)
     g_state = .PlayerTurn
     init_level1()
-    defer destroy_scene(&g_level)
     for (g_level.player.health > 0) && (len(g_level.bees) > 0) do run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
     bufio.scanner_destroy(&s)
 }
@@ -88,7 +88,6 @@ init_level1 :: proc(alloc : mem.Allocator = context.allocator)
     player.abilities[1] = Ability{type = .Focused, use_on = &bees[1], level = 1, uses = 1}
 
     //Shuffle bee BeeDeck
-    fmt.println("Shuffled Deck:")
     init_bee_deck(&g_level.deck, 36)
 }
 
@@ -249,8 +248,6 @@ init_bee_deck :: proc(deck : ^BeeDeck, size : int = 36)
     for i in 0..<deck.CrawlTowards.freq do append(&temp_deck, BeeAction.CrawlTowards)
     for i in 0..<deck.CrawlAway.freq do append(&temp_deck, BeeAction.CrawlAway)
     for i in 0..<deck.Sting.freq do append(&temp_deck, BeeAction.Sting)
-
-   display_temp_deck(temp_deck)
 
     queue.init(&deck.deck, 36)
     queue.init(&deck.discard, 36)
@@ -566,7 +563,7 @@ GameState :: enum
     Pause,
 }
 
-destroy_scene :: proc (scene : ^Level)
+destroy_level :: proc (scene : ^Level)
 {
     queue.destroy(&scene.deck.deck)
     queue.destroy(&scene.deck.discard)
@@ -574,6 +571,7 @@ destroy_scene :: proc (scene : ^Level)
     delete(scene.weapons)
     delete(scene.grid_data)
     delete(scene.grid)
+    delete(scene.player.abilities)
 }
 
 //----------------------------------------------------------------------------\\
@@ -745,4 +743,120 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
         }
     }
     return best_path
+}
+
+//----------------------------------------------------------------------------\\
+// /Grid
+//----------------------------------------------------------------------------\\
+
+//Set the scale of the level to always match the size of the floor
+//So lets say you have a 3 x 3 grid but a 90 x 90 level, 1 grid block is 30
+set_grid_scale :: proc(floor : Entity, lvl : ^Level)
+{
+    assert(len(lvl.grid) > 0)
+    assert(len(lvl.grid[0]) > 0)
+
+    tc := get_component(floor, Cmp_Transform)
+    if tc == nil do return
+
+    lvl.grid_scale.x = tc.global.sca.x / f32(len(lvl.grid))
+    lvl.grid_scale.y = tc.global.sca.z / f32(len(lvl.grid[0]))
+}
+
+// Sets a player on a tile in the level so that they are...
+// Flush with the floor and in center of that tile
+set_player_on_tile :: proc(floor : Entity, player : Entity, lvl : Level, x, y : i16)
+{
+    ft := get_component(floor, Cmp_Transform)
+    pt := get_component(player, Cmp_Transform)
+    if ft == nil || pt == nil do return
+
+    // Determine tile center in world space.
+    // Note: `ft.global.sca` is treated consistently with primitives in the renderer (half-extents).
+    full_cell_x := 2.0 * lvl.grid_scale.x
+    full_cell_z := 2.0 * lvl.grid_scale.y
+
+    // left / bottom world edges (x and z) of the floor
+    left_x := ft.global.pos.x - ft.global.sca.x
+    bottom_z := ft.global.pos.z - ft.global.sca.z
+
+    tile_center_x := left_x + full_cell_x * (f32(x) + 0.5)
+    tile_center_z := bottom_z + full_cell_z * (f32(y) + 0.5)
+
+    // Set player's horizontal position to tile center (preserve w component)
+    pt.local.pos.x = tile_center_x
+    pt.local.pos.z = tile_center_z
+
+    // Now align vertically so the player's bottom is flush with the floor top.
+    floor_top := get_top_of_entity(floor)
+    player_bottom := get_bottom_of_entity(player)
+
+    if player_bottom == -999999.0 { return }
+
+    dy := floor_top - player_bottom
+    pt.local.pos.y += dy
+}
+
+// Finds the lowest part of an entity in a scene hierarchy
+// cycles through the entire entity's transform to find
+// .. the lowest extent of the lowest part
+get_bottom_of_entity :: proc(e : Entity) -> f32
+{
+    min_y :f32= 999999.0
+    stackq: queue.Queue(Entity)
+    queue.init(&stackq, 64)
+    defer queue.destroy(&stackq)
+    queue.push_front(&stackq, e)
+
+    for queue.len(stackq) > 0 {
+        curr := queue.pop_front(&stackq)
+        pc := get_component(curr, Cmp_Primitive)
+        if pc != nil {
+            center := primitive_get_center(pc^)
+            bottom_y := center.y - pc^.extents.y
+            if bottom_y < min_y do min_y = bottom_y
+        }
+        else {
+            tc := get_component(curr, Cmp_Transform)
+            if tc != nil {
+                bottom_y := tc.global.pos.y - tc.global.sca.y
+                if bottom_y < min_y do min_y = bottom_y
+            }
+        }
+        children := get_children(curr)
+        for c in children do queue.push_front(&stackq, c)
+    }
+    if min_y == 999999.0 do return -999999.0
+    return min_y
+}
+
+get_top_of_entity :: proc(e : Entity) -> f32
+{
+    max_y :f32= -999999.0
+    stackq: queue.Queue(Entity)
+    queue.init(&stackq, 64)
+    defer queue.destroy(&stackq)
+    queue.push_front(&stackq, e)
+
+    for queue.len(stackq) > 0 {
+        curr := queue.pop_front(&stackq)
+        pc := get_component(curr, Cmp_Primitive)
+        if pc != nil {
+            center := primitive_get_center(pc^)
+            top_y := center.y + pc^.extents.y
+            if top_y > max_y do max_y = top_y
+        } else {
+            tc := get_component(curr, Cmp_Transform)
+            if tc != nil {
+                top_y := tc.global.pos.y + tc.global.sca.y
+                if top_y > max_y do max_y = top_y
+            }
+        }
+        children := get_children(curr)
+        for c in children {
+            queue.push_front(&stackq, c)
+        }
+    }
+    if max_y == -999999.0 do return -999999.0
+    return max_y
 }

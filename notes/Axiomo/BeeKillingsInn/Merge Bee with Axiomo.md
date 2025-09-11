@@ -33,4 +33,9 @@ So the main question is should everything be wrapped under axiomo ? 
 	* THe plan might be to just go ahead and design the level 
 	* set the camera
 	* pretty much do everything you said above
-	
+	* you need to set up a scale system
+	* that takes the floor size and divides it by the games grid size
+	* hmm... decide on physics or nah...
+	* so you'lre gonna need some just like... straight up grid forcing options
+		* Set Player on Tile (x,y)
+		* SetGrid 
