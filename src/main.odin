@@ -44,6 +44,10 @@ arena_alloc: mem.Allocator
 track_alloc: mem.Tracking_Allocator
 
 main :: proc() {
+
+    //----------------------------------------------------------------------------\\
+    // /MEMORY
+    //----------------------------------------------------------------------------\\
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
@@ -52,9 +56,6 @@ main :: proc() {
 	arena: vmem.Arena
 	arena_err := vmem.arena_init_growing(&arena, mem.Megabyte * 16,) // Start at 16 MiB, grow to 1 GiB max
 	assert(arena_err == nil)
-	//arena_data: []byte = make([]byte, mem.Megabyte * 120, context.allocator) // 120 MiB; backing on heap for persistence
-	//mem.arena_init(&arena, arena_data)
-	//defer delete(arena_data) // Explicitly free backing buffer at program end
 	defer vmem.arena_free_all(&arena) // Free all allocations from the arena (though defer delete handles backing)
 	arena_alloc = vmem.arena_allocator(&arena)
 
@@ -67,19 +68,18 @@ main :: proc() {
 	defer mem.arena_free_all(&per_frame_arena) // Free all (though typically reset per frame)
 	per_frame_alloc := mem.arena_allocator(&per_frame_arena)
 
-	g_world = create_world()
-	defer delete_world()
-	g_world_ent = add_entity()
-
-	defer bvh_system_destroy(g_bvh)
-
-	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 0, false})
-
-	g_bvh = bvh_system_create(per_frame_alloc)
-
 	context.logger = log.create_console_logger()
 	defer free(context.logger.data)
 	rb.ctx = context
+
+	//----------------------------------------------------------------------------\\
+    // /World Creation
+    //----------------------------------------------------------------------------\\
+	g_world = create_world()
+	defer delete_world()
+	g_world_ent = add_entity()
+	g_bvh = bvh_system_create(per_frame_alloc)
+	defer bvh_system_destroy(g_bvh)
 
 	// begin loading data
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)
@@ -91,8 +91,8 @@ main :: proc() {
 	g_prefabs = make(map[string]sc.Node, 0, arena_alloc)
 	sc.load_prefab_directory("assets/prefabs", &g_prefabs, arena_alloc)
 
-
 	//Begin renderer and scene loading
+	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 0, false})
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, context.allocator)
 

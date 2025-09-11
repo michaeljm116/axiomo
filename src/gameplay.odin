@@ -160,8 +160,6 @@ find_floor_entities :: proc() {
     }
 }
 
-
-
 // Find the first light entity in the scene and cache it for orbit updates.
 // Looks for entities with Light, Transform, and Node components.
 find_light_entity :: proc() {
