@@ -63,7 +63,7 @@ g_light_orbit_radius: f32 = 5.0
 g_light_orbit_speed: f32 = 0.25   // radians per second
 g_light_orbit_angle: f32 = 15.0
 
-g_floor : [2]Entity
+g_floor : Entity
 g_objects : [2][dynamic]Entity
 
 // Initialize the gameplay system
@@ -126,7 +126,7 @@ gameplay_update :: proc(delta_time: f32) {
     }
 
     // Update light orbit (if a light entity was found)
-    update_light_orbit(delta_time)
+    // update_light_orbit(delta_time)
 
     //update_camera_movement(delta_time)
     //update_player_movement(delta_time)
@@ -154,8 +154,7 @@ find_floor_entities :: proc() {
     for archetype in arcs {
         nodes := get_table(archetype, Cmp_Node)
         for node, i in nodes {
-            if node.name == "Floor1" do g_floor[0] = archetype.entities[i]
-            if node.name == "Floor2" do g_floor[1] = archetype.entities[i]
+            if node.name == "Floor" do g_floor = archetype.entities[i]
         }
     }
 }
@@ -500,31 +499,29 @@ set_floor_entities :: proc()
     }
 
     find_floor_entities()
-    for floor, i in g_floor{
-        fc := get_component(floor, Cmp_Transform)
-        col := Cmp_Collision2D{
-            bodydef = b2.DefaultBodyDef(),
-            shapedef = b2.DefaultShapeDef(),
-            type = .Box,
-            flags = {.Movable, .Floor}
-        }
-        // move := Cmp_Movable{speed = -2.0}
-        col.bodydef.fixedRotation = true
-        col.bodydef.type = .dynamicBody
-        col.bodydef.position = {fc.world[3].x, fc.world[3].y - 1}
-        col.bodydef.gravityScale = 0
-        col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
-        box := b2.MakeBox(fc.local.sca.x, fc.local.sca.y)
-
-        col.shapedef = b2.DefaultShapeDef()
-        col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingFloor})
-        col.shapedef.filter.maskBits = u64(CollisionCategories{.Environment})
-        col.shapedef.enableContactEvents = true
-        col.shapedef.density = 1000.0
-        col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
-
-        add_component(floor, col)
+    fc := get_component(g_floor, Cmp_Transform)
+    col := Cmp_Collision2D{
+        bodydef = b2.DefaultBodyDef(),
+        shapedef = b2.DefaultShapeDef(),
+        type = .Box,
+        flags = {.Movable, .Floor}
     }
+    // move := Cmp_Movable{speed = -2.0}
+    col.bodydef.fixedRotation = true
+    col.bodydef.type = .dynamicBody
+    col.bodydef.position = {fc.world[3].x, fc.world[3].y - 1}
+    col.bodydef.gravityScale = 0
+    col.bodyid = b2.CreateBody(g_world_id, col.bodydef)
+    box := b2.MakeBox(fc.local.sca.x, fc.local.sca.y)
+
+    col.shapedef = b2.DefaultShapeDef()
+    col.shapedef.filter.categoryBits = u64(CollisionCategories{.MovingFloor})
+    col.shapedef.filter.maskBits = u64(CollisionCategories{.Environment})
+    col.shapedef.enableContactEvents = true
+    col.shapedef.density = 1000.0
+    col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
+
+    add_component(g_floor, col)
 }
 
 barrel : Entity
@@ -569,7 +566,7 @@ update_movables :: proc(delta_time: f32)
 {
     //First just the visible g_floor
     for i in 0..<2{
-        fc := get_component(g_floor[i], Cmp_Transform)
+        fc := get_component(g_floor, Cmp_Transform)
         fc.local.pos.x -= 1.0 * delta_time
 
         //refresh world if done
@@ -579,7 +576,7 @@ update_movables :: proc(delta_time: f32)
             vmem.arena_free_all(&distance_arena[curr_phase])
             curr_phase = (curr_phase + 1) % 2
 
-            col := get_component(g_floor[i], Cmp_Collision2D)
+            col := get_component(g_floor, Cmp_Collision2D)
             fc.local.pos.x += 200.0
             trans := b2.Body_GetTransform(col.bodyid)
             trans.p.x = fc.local.pos.x

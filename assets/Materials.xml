@@ -16,9 +16,9 @@
     <Material Name="BrownSkin" DiffuseR="0.41666669" DiffuseG="0.31321955" DiffuseB="0.1654412" Reflective="0" Roughness="0.96600002" Transparency="0" Refractive="0" TextureID="0"/>
     <Material Name="CarpetRed" DiffuseR="0.25980395" DiffuseG="0" DiffuseB="0" Reflective="0" Roughness="0.35499999" Transparency="0" Refractive="0" TextureID="0"/>
     <Material Name="Floor1" DiffuseR="0.2352941" DiffuseG="0.018454438" DiffuseB="0.018454438" Reflective="0" Roughness="1" Transparency="0" Refractive="0" TextureID="4"/>
-    <Material Name="Wall1" DiffuseR="0.05392158" DiffuseG="0.0023788924" DiffuseB="0.0023788924" Reflective="0.191" Roughness="1" Transparency="0" Refractive="0" TextureID="0"/>
+    <Material Name="Wall1" DiffuseR="0.05392158" DiffuseG="0.0023788924" DiffuseB="0.0023788924" Reflective="0.191" Roughness="1" Transparency="0" Refractive="0" TextureID="4"/>
     <Material Name="Floor2" DiffuseR="1" DiffuseG="0.20098037" DiffuseB="0.20098037" Reflective="0" Roughness="0.72600001" Transparency="0" Refractive="0" TextureID="4"/>
-    <Material Name="Wall2" DiffuseR="0.054901961" DiffuseG="0" DiffuseB="0.0039215689" Reflective="0.171" Roughness="0" Transparency="0" Refractive="0" TextureID="0"/>
+    <Material Name="Wall2" DiffuseR="0.054901961" DiffuseG="0" DiffuseB="0.0039215689" Reflective="0.171" Roughness="0" Transparency="0" Refractive="0" TextureID="4"/>
     <Material Name="LighterBlack" DiffuseR="0.05882353" DiffuseG="0.05882353" DiffuseB="0.05882353" Reflective="0.103" Roughness="0" Transparency="0" Refractive="0" TextureID="0"/>
     <Material Name="ShinyBlocky" DiffuseR="1" DiffuseG="1" DiffuseB="1" Reflective="1" Roughness="1" Transparency="0" Refractive="0" TextureID="0"/>
     <Material Name="HeartAltar" DiffuseR="1e-06" DiffuseG="9.9998999e-07" DiffuseB="9.9998999e-07" Reflective="0" Roughness="0" Transparency="0" Refractive="0" TextureID="0"/>
