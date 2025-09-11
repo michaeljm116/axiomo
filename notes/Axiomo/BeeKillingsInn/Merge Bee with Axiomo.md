@@ -29,3 +29,8 @@ So the main question is should everything be wrapped under axiomo ? 
       * Once you have all the assets and you have those functions..  
       * you need function for moving from 1 grid piece to another  
       *
+* Okay so plan:
+	* THe plan might be to just go ahead and design the level 
+	* set the camera
+	* pretty much do everything you said above
+	
