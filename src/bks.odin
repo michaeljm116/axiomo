@@ -100,8 +100,11 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
             state^ = .PlayerTurn
             break
         case .PlayerTurn:
-            move_player(player)
-            state^ = .BeesTurn
+            input, moved := get_input()
+            if(moved){
+                move_player(player, input)
+                state^ = .BeesTurn
+            }
             break
         case .BeesTurn:
             for &bee in bees do bee_turn(&bee, deck)
@@ -115,21 +118,21 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
     }
 }
 
-get_input :: proc() -> string
+get_input :: proc() -> (string, bool)
 {
     if is_key_pressed(glfw.KEY_W) {
-       return "w"
+       return "w", true
     }
     if is_key_pressed(glfw.KEY_S) {
-       return "s"
+       return "s", true
     }
     if is_key_pressed(glfw.KEY_A) {
-       return "a"
+       return "a", true
     }
     if is_key_pressed(glfw.KEY_D) {
-       return "d"
+       return "d", true
     }
-    return get_input()
+    return "", false
 }
 
 Tile :: enum
@@ -491,13 +494,11 @@ dice_rolls :: proc() -> i8 {
 // Death occurs when health = 0
 // Bee's only attack when alerted
 //----------------------------------------------------------------------------\\
-
-move_player :: proc(p : ^Player)
+move_player :: proc(p : ^Player, key : string)
 {
-    input := get_input()
     display_level(g_level)
     dir : vec2
-    switch (input)
+    switch (key)
     {
         case "w":
             dir.y = 1
@@ -512,7 +513,7 @@ move_player :: proc(p : ^Player)
     if bounds_check(bounds, g_level.grid) {
         p.pos = bounds
     }
-    move_player_to_tile(g_player, g_level.grid_scale, p.pos)
+    move_entity_to_tile(g_player, g_level.grid_scale, p.pos)
 
     if weap_check(p.pos, &g_level.grid) {
         pick_up_weapon(p, g_level.weapons)
@@ -802,9 +803,9 @@ set_player_on_tile :: proc(floor : Entity, player : Entity, lvl : Level, x, y : 
 }
 
 // Move pLayer to block
-move_player_to_tile :: proc(player : Entity, scale : vec2f, pos : vec2)
+move_entity_to_tile :: proc(entity : Entity, scale : vec2f, pos : vec2)
 {
-    pt := get_component(player, Cmp_Transform)
+    pt := get_component(entity, Cmp_Transform)
     if pt == nil do return
 
     pt.local.pos.x = f32(pos.x) * scale.x
