@@ -22,49 +22,21 @@
             }
           },
           {
-            "id": "a7a501a477819a0e",
+            "id": "43c16ffabe968f15",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "markdown",
               "state": {
-                "file": "Untitled Kanban.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false
-                  ]
-                }
+                "file": "BeeKillingsInn/Merge Bee with Axiomo.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-trello",
-              "title": "Untitled Kanban"
-            }
-          },
-          {
-            "id": "b47c04f3ca1234e3",
-            "type": "leaf",
-            "state": {
-              "type": "excalidraw",
-              "state": {
-                "file": "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md"
-              },
-              "icon": "excalidraw-icon",
-              "title": "Drawing 2025-09-12 11.27.18.excalidraw"
-            }
-          },
-          {
-            "id": "0c3942e6d5d47f78",
-            "type": "leaf",
-            "state": {
-              "type": "empty",
-              "state": {},
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "Merge Bee with Axiomo"
             }
           }
         ],
-        "currentTab": 2
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -214,14 +186,15 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "b47c04f3ca1234e3",
+  "active": "43c16ffabe968f15",
   "lastOpenFiles": [
-    "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md",
     "Untitled Kanban.md",
+    "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
+    "BeeKillingsInn/Rules Engine.md",
+    "Excalidraw/Drawing 2025-09-12 12.43.00.excalidraw.md",
     "BeeKillingsInn/Merge Bee with Axiomo.md",
     "Excalidraw",
-    "BeeKillingsInn/Rules Engine.md",
     "BeeKillingsInn/Code.md",
     "BeeKillingsInn/Bee Ideas.md",
     "BeeKillingsInn/bg.md",

@@ -59,7 +59,7 @@ init_level1 :: proc(alloc : mem.Allocator = context.allocator)
 {
     context.allocator = alloc
     using g_level
-
+    g_state = .PlayerTurn
     // Clear and initialize grid contiguously
     grid_data = make([]Tile, GRID_WIDTH * GRID_HEIGHT)
     grid = make([][]Tile, GRID_WIDTH)
