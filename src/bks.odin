@@ -10,7 +10,6 @@ import "core:math/rand"
 import "core:container/queue"
 import "core:mem"
 import "base:intrinsics"
-import "core:sys/windows"
 import "vendor:glfw"
 
 vec2 :: [2]i16
@@ -30,11 +29,11 @@ Level :: struct
     weapons : []Weapon,
     grid : Grid,
     grid_data : []Tile,
-    grid_scale : vec2f
+    grid_scale : vec2f,
+    chests : [dynamic]Entity,
 }
 
 bks_main :: proc() {
-    windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
     track_alloc: mem.Tracking_Allocator
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
 	context.allocator = mem.tracking_allocator(&track_alloc)
@@ -76,7 +75,6 @@ init_level1 :: proc(alloc : mem.Allocator = context.allocator)
     db := WeaponsDB
     weapons = make([]Weapon, len(db))
     for i, w in db do weapons[w] = i
-
 
     // Initialize Player and Bee
     player = {'🧔', vec2{0,2}, 1, db[.Hand], {}}
@@ -487,6 +485,13 @@ dice_rolls :: proc() -> i8 {
    d2 := rand.int31() % 6 + 1
    fmt.printf("Dice rolls: %d + %d = %d\n", d1, d2, d1 + d2)
    return i8(d1 + d2)
+}
+
+place_chest_on_grid :: proc(pos : vec2, lvl : ^Level)
+{
+    chest := load_prefab("Chest")
+    append(&lvl.chests, chest)
+    set_entity_on_tile(g_floor, chest, lvl^, pos.x, pos.y)
 }
 
 //----------------------------------------------------------------------------\\

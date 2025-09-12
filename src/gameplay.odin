@@ -98,6 +98,16 @@ gameplay_init :: proc() {
     for bee in g_level.bees{
         set_entity_on_tile(g_floor, bee.ent, g_level, bee.pos.x, bee.pos.y)
     }
+    place_chest_on_grid(vec2{2,0}, &g_level)
+    place_chest_on_grid(vec2{4,3}, &g_level)
+}
+
+gameplay_post_init :: proc()
+{
+    chest := g_level.chests[0]
+    chest2 := g_level.chests[1]
+    move_entity_to_tile(chest, g_level.grid_scale, vec2{2,0})
+    move_entity_to_tile(chest2, g_level.grid_scale, vec2{4,3})
 }
 
 // Find the camera entity in the scene

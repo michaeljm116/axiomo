@@ -3,6 +3,7 @@ package main
 import "base:intrinsics"
 import "base:runtime"
 
+import "core:sys/windows"
 import "core:fmt"
 import "core:log"
 import "core:mem"
@@ -44,7 +45,7 @@ arena_alloc: mem.Allocator
 track_alloc: mem.Tracking_Allocator
 
 main :: proc() {
-
+    windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
     //----------------------------------------------------------------------------\\
     // /MEMORY
     //----------------------------------------------------------------------------\\
@@ -101,6 +102,8 @@ main :: proc() {
 	gameplay_init()
 		defer gameplay_destroy()
 
+	transform_sys_process_e()
+	gameplay_post_init()
 	bvh_system_build(g_bvh, per_frame_alloc)
 
 	//begin renderer
