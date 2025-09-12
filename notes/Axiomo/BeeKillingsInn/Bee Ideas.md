@@ -164,3 +164,11 @@ bee, bee
 * In the mean time... tech wise... i think a grid is a go!
 	* i wish i can odin this but...
 	* like honestly it's disgusting
+
+### The UI
+* Bee Killings Inn
+* StartGame
+* EndGame
+* Pause
+* You Win
+* You Lose

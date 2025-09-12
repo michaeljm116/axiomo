@@ -39,3 +39,10 @@ So the main question is should everything be wrapped under axiomo ? 
 	* so you'lre gonna need some just like... straight up grid forcing options
 		* Set Player on Tile (x,y)
 		* SetGrid 
+* Okay so I think its time to get hte UI System working
+	* if there's a library for like vulkan texts being shown on like things that'd be great
+
+
+Okay now lets talk UI
+* each ui elemennt will have its own entity with its own cmp gui you'll also have a texture that and tbh its a megatexture that has many different gui components like start game end game etc that you can then click on and etc etc
+* instead of it being the singleton entity it'll be its own thing
