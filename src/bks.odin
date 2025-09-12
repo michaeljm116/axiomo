@@ -11,6 +11,7 @@ import "core:container/queue"
 import "core:mem"
 import "base:intrinsics"
 import "core:sys/windows"
+import "vendor:glfw"
 
 vec2 :: [2]i16
 GRID_WIDTH :: 7
@@ -117,17 +118,19 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
 
 get_input :: proc() -> string
 {
-    tok : string
-    if bufio.scanner_scan(&s) {
-        tok = bufio.scanner_text(&s)
-        if tok == "q" {
-            fmt.println("Goodbye.")
-            bufio.scanner_destroy(&s)
-            os.exit(0)
-        }
-        else do return tok
+    if is_key_pressed(glfw.KEY_W) {
+       return "w"
     }
-    return ""
+    if is_key_pressed(glfw.KEY_S) {
+       return "s"
+    }
+    if is_key_pressed(glfw.KEY_A) {
+       return "a"
+    }
+    if is_key_pressed(glfw.KEY_D) {
+       return "d"
+    }
+    return get_input()
 }
 
 Tile :: enum
@@ -510,6 +513,8 @@ move_player :: proc(p : ^Player)
     if bounds_check(bounds, g_level.grid) {
         p.pos = bounds
     }
+    move_player_to_tile(g_player, g_level.grid_scale, p.pos)
+
     if weap_check(p.pos, &g_level.grid) {
         pick_up_weapon(p, g_level.weapons)
     }
@@ -795,6 +800,16 @@ set_player_on_tile :: proc(floor : Entity, player : Entity, lvl : Level, x, y : 
 
     dy := floor_top - player_bottom
     pt.local.pos.y += dy
+}
+
+// Move pLayer to block
+move_player_to_tile :: proc(player : Entity, scale : vec2f, pos : vec2)
+{
+    pt := get_component(player, Cmp_Transform)
+    if pt == nil do return
+
+    pt.local.pos.x = f32(pos.x) * scale.x
+    pt.local.pos.z = f32(pos.y) * scale.y
 }
 
 // Finds the lowest part of an entity in a scene hierarchy
