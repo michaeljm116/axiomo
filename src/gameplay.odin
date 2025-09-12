@@ -88,13 +88,16 @@ gameplay_init :: proc() {
     find_camera_entity()
     find_light_entity()
     find_player_entity()
-    face_180(g_player)
+    face_right(g_player)
     //setup_physics()
 
     init_level1()
     find_floor_entities()
     set_grid_scale(g_floor, &g_level)
-    set_player_on_tile(g_floor, g_player, g_level, g_level.player.pos.x, g_level.player.pos.y)
+    set_entity_on_tile(g_floor, g_player, g_level, g_level.player.pos.x, g_level.player.pos.y)
+    for bee in g_level.bees{
+        set_entity_on_tile(g_floor, bee.ent, g_level, bee.pos.x, bee.pos.y)
+    }
 }
 
 // Find the camera entity in the scene
@@ -124,6 +127,7 @@ gameplay_update :: proc(delta_time: f32) {
         find_player_entity()
     }
 
+    if (g_level.player.health > 0) && (len(g_level.bees) > 0) do run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
     // Clear just pressed/released states
     for i in 0..<len(g_input.keys_just_pressed) {
         g_input.keys_just_pressed[i] = false
@@ -137,7 +141,6 @@ gameplay_update :: proc(delta_time: f32) {
     //update_player_movement(delta_time)
     // update_movables(delta_time)
     // update_physics(delta_time)
-    if (g_level.player.health > 0) && (len(g_level.bees) > 0) do run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
 }
 
 find_player_entity :: proc() {
@@ -277,7 +280,9 @@ get_camera_right :: proc(transform: ^Cmp_Transform) -> vec3 {
     return vec3{rotation_matrix[0][0], rotation_matrix[1][0], rotation_matrix[2][0]}
 }
 
-// Input helper functions
+//----------------------------------------------------------------------------\\
+// /Input
+//----------------------------------------------------------------------------\\
 is_key_pressed :: proc(key: i32) -> bool {
     if key < 0 || key > glfw.KEY_LAST {
         return false

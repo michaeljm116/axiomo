@@ -96,7 +96,7 @@ main :: proc() {
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, context.allocator)
 
-	g_player = load_prefab("Bee")
+	g_player = load_prefab("Froku")
 	transform_sys_process_e()
 	gameplay_init()
 		defer gameplay_destroy()

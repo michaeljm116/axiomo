@@ -81,8 +81,8 @@ init_level1 :: proc(alloc : mem.Allocator = context.allocator)
     // Initialize Player and Bee
     player = {'🧔', vec2{0,2}, 1, db[.Hand], {}}
     bees = make([dynamic]Bee, 2)
-    bees[0] = Bee{name = '🐝', pos = vec2{6,2}, health = 2, type = .Aggressive, flags = {}}
-    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, health = 2, type = .Normal, flags = {}}
+    bees[0] = Bee{name = '🐝', pos = vec2{6,2}, health = 2, type = .Aggressive, flags = {}, ent = load_prefab("Bee")}
+    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, health = 2, type = .Normal, flags = {}, ent = load_prefab("Bee")}
     player.abilities = make([dynamic]Ability, 2)
     player.abilities[0] = Ability{type = .Dodge, use_on = &bees[0], level = 1, uses = 1}
     player.abilities[1] = Ability{type = .Focused, use_on = &bees[1], level = 1, uses = 1}
@@ -120,16 +120,16 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
 
 get_input :: proc() -> (string, bool)
 {
-    if is_key_pressed(glfw.KEY_W) {
+    if is_key_just_pressed(glfw.KEY_W) {
        return "w", true
     }
-    if is_key_pressed(glfw.KEY_S) {
+    else if is_key_just_pressed(glfw.KEY_S) {
        return "s", true
     }
-    if is_key_pressed(glfw.KEY_A) {
+    else if is_key_just_pressed(glfw.KEY_A) {
        return "a", true
     }
-    if is_key_pressed(glfw.KEY_D) {
+    else if is_key_just_pressed(glfw.KEY_D) {
        return "d", true
     }
     return "", false
@@ -186,6 +186,7 @@ Bee :: struct {
     health : i8,
     type : BeeType,
     flags : BeeFlags,
+    ent : Entity
 }
 
 BeeAction :: enum
@@ -336,6 +337,7 @@ perform_bee_action :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
             // If player is near, attack! else do nuffin
             bee_action_attack(bee, player)
     }
+    move_entity_to_tile(bee.ent, g_level.grid_scale, bee.pos)
 }
 
 bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int){
@@ -496,7 +498,7 @@ dice_rolls :: proc() -> i8 {
 //----------------------------------------------------------------------------\\
 move_player :: proc(p : ^Player, key : string)
 {
-    display_level(g_level)
+    // display_level(g_level)
     dir : vec2
     switch (key)
     {
@@ -770,10 +772,10 @@ set_grid_scale :: proc(floor : Entity, lvl : ^Level)
 
 // Sets a player on a tile in the level so that they are...
 // Flush with the floor and in center of that tile
-set_player_on_tile :: proc(floor : Entity, player : Entity, lvl : Level, x, y : i16)
+set_entity_on_tile :: proc(floor : Entity, entity : Entity, lvl : Level, x, y : i16)
 {
     ft := get_component(floor, Cmp_Transform)
-    pt := get_component(player, Cmp_Transform)
+    pt := get_component(entity, Cmp_Transform)
     if ft == nil || pt == nil do return
 
     // Determine tile center in world space.
@@ -788,17 +790,17 @@ set_player_on_tile :: proc(floor : Entity, player : Entity, lvl : Level, x, y : 
     tile_center_x := left_x + full_cell_x * (f32(x) + 0.5)
     tile_center_z := bottom_z + full_cell_z * (f32(y) + 0.5)
 
-    // Set player's horizontal position to tile center (preserve w component)
+    // Set entity's horizontal position to tile center (preserve w component)
     pt.local.pos.x = tile_center_x
     pt.local.pos.z = tile_center_z
 
-    // Now align vertically so the player's bottom is flush with the floor top.
+    // Now align vertically so the entity's bottom is flush with the floor top.
     floor_top := get_top_of_entity(floor)
-    player_bottom := get_bottom_of_entity(player)
+    entity_bottom := get_bottom_of_entity(entity)
 
-    if player_bottom == -999999.0 { return }
+    if entity_bottom == -999999.0 { return }
 
-    dy := floor_top - player_bottom
+    dy := floor_top - entity_bottom
     pt.local.pos.y += dy
 }
 
