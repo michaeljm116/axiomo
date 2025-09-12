@@ -810,8 +810,36 @@ move_entity_to_tile :: proc(entity : Entity, scale : vec2f, pos : vec2)
     pt := get_component(entity, Cmp_Transform)
     if pt == nil do return
 
-    pt.local.pos.x = f32(pos.x) * scale.x
-    pt.local.pos.z = f32(pos.y) * scale.y
+    // If we have a floor entity, position relative to the floor so the entity is centered
+    // in the tile (and vertically flush with the floor). Otherwise fall back to the
+    // simple grid-scale placement.
+    ft := get_component(g_floor, Cmp_Transform)
+    if ft != nil {
+        full_cell_x := 2.0 * scale.x
+        full_cell_z := 2.0 * scale.y
+
+        left_x := ft.global.pos.x - ft.global.sca.x
+        bottom_z := ft.global.pos.z - ft.global.sca.z
+
+        tile_center_x := left_x + full_cell_x * (f32(pos.x) + 0.5)
+        tile_center_z := bottom_z + full_cell_z * (f32(pos.y) + 0.5)
+
+        pt.local.pos.x = tile_center_x
+        pt.local.pos.z = tile_center_z
+
+        // Align vertically so the entity's bottom is flush with the floor top.
+        floor_top := get_top_of_entity(g_floor)
+        entity_bottom := get_bottom_of_entity(entity)
+
+        if entity_bottom != -999999.0 {
+            dy := floor_top - entity_bottom
+            pt.local.pos.y += dy
+        }
+    } else {
+        // Fallback: previous behavior (scale-only)
+        pt.local.pos.x = f32(pos.x) * scale.x
+        pt.local.pos.z = f32(pos.y) * scale.y
+    }
 }
 
 // Finds the lowest part of an entity in a scene hierarchy
