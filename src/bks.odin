@@ -52,7 +52,6 @@ bks_main :: proc() {
     bees := make([dynamic]Bee, 2, context.temp_allocator)
     g_state = .PlayerTurn
     init_level1()
-    for (g_level.player.health > 0) && (len(g_level.bees) > 0) do run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
     bufio.scanner_destroy(&s)
 }
 

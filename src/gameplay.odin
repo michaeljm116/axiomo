@@ -137,6 +137,7 @@ gameplay_update :: proc(delta_time: f32) {
     //update_player_movement(delta_time)
     // update_movables(delta_time)
     // update_physics(delta_time)
+    if (g_level.player.health > 0) && (len(g_level.bees) > 0) do run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
 }
 
 find_player_entity :: proc() {
