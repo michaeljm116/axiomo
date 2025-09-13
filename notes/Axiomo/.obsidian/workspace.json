@@ -13,30 +13,60 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Art Inspo.md",
+                "file": "BeeKillingsInn/Merge Bee with Axiomo.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Art Inspo"
+              "title": "Merge Bee with Axiomo"
             }
           },
           {
-            "id": "43c16ffabe968f15",
+            "id": "a7a501a477819a0e",
+            "type": "leaf",
+            "state": {
+              "type": "kanban",
+              "state": {
+                "file": "Untitled Kanban.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false
+                  ]
+                }
+              },
+              "icon": "lucide-trello",
+              "title": "Untitled Kanban"
+            }
+          },
+          {
+            "id": "b47c04f3ca1234e3",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Engine Improvements.md",
+                "file": "BeeKillingsInn/Bee Ideas.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Engine Improvements"
+              "title": "Bee Ideas"
+            }
+          },
+          {
+            "id": "0c3942e6d5d47f78",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
             }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -186,36 +216,36 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "43c16ffabe968f15",
+  "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
-    "BeeKillingsInn/Art Inspo.md",
-    "BeeKillingsInn/Engine Improvements.md",
-    "BeeKillingsInn/Bee Ideas.md",
-    "BeeKillingsInn/Story.md",
+    "770f7a56-9ba7-4eee-90a9-19b97ce2ea2d.webp",
+    "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md",
+    "sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",
+    "sanctuary-high-view-2-768.YJKVAsU3_CIe1o.webp",
+    "patio-2-768.BAhOe6xB_Bgvky.webp",
+    "kitchen-768.B5948oyV_InHOb.webp",
+    "front-church-768.0JL6Ic0e_6y8to.webp",
     "b47bb5a7-921c-4a68-9e4a-57996eb1f415.webp",
     "a1e7b767-f179-43a5-91fc-1be6903d1771.webp",
-    "770f7a56-9ba7-4eee-90a9-19b97ce2ea2d.webp",
-    "Pasted image 20250912151449.jpg",
-    "kitchen-768.B5948oyV_InHOb.webp",
-    "Game Jam - 20 games challenge - JJ.md",
-    "front-church-768.0JL6Ic0e_6y8to.webp",
-    "BeeKillingsInn/Merge Bee with Axiomo.md",
     "Pasted image 20250912152018.jpg",
     "Pasted image 20250912152008.jpg",
     "Pasted image 20250912151959.jpg",
-    "Pasted image 20250912151600.jpg",
+    "BeeKillingsInn/Story.md",
+    "BeeKillingsInn/Engine Improvements.md",
+    "BeeKillingsInn/Art Inspo.md",
     "Untitled Kanban.md",
-    "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
-    "BeeKillingsInn/Rules Engine.md",
-    "Excalidraw/Drawing 2025-09-12 12.43.00.excalidraw.md",
+    "BeeKillingsInn/Merge Bee with Axiomo.md",
     "Excalidraw",
+    "BeeKillingsInn/Rules Engine.md",
     "BeeKillingsInn/Code.md",
+    "BeeKillingsInn/Bee Ideas.md",
     "BeeKillingsInn/bg.md",
     "BeeKillingsInn/KillerBee prototype.md",
     "BeeKillingsInn/Grok.md",
     "BeeKillingsInn/Epics.md",
     "Untitled.md",
+    "Game Jam - 20 games challenge - JJ.md",
     "Untitled.base",
     "Untitled 1.md",
     "BeeKillingsInn"

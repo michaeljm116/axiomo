@@ -910,3 +910,59 @@ get_top_of_entity :: proc(e : Entity) -> f32
     if max_y == -999999.0 do return -999999.0
     return max_y
 }
+
+//----------------------------------------------------------------------------\\
+// /UI
+//----------------------------------------------------------------------------\\
+GameUI :: struct
+{
+    title : Entity,
+    start : Entity,
+    end : Entity,
+    paused : Entity,
+    win : Entity,
+    lose : Entity,
+}
+g_gameui : GameUI
+
+init_GameUI :: proc( ui : ^GameUI)
+{
+    ui.title = add_entity()
+    ui.start = add_entity()
+    ui.end = add_entity()
+    ui.paused = add_entity()
+    ui.win = add_entity()
+    ui.lose = add_entity()
+
+    // title_comp := Cmp_Gui{
+    //     min = vec2f{0.333, 0.73}, extents = vec2f{0.415, 0.11},
+    //     align_min = vec2f{1., 0.43}, align_ext = vec2f{.5, 0.08},
+    //     layer = 0, ref = 2, alpha = 1.0, update = true
+    // }
+    title_comp := Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 1.0, false}
+    lose_comp := Cmp_Gui{
+        min = vec2f{0.3, 0.645}, extents = vec2f{.5, .15},
+        align_min = vec2f{1, .288}, align_ext = vec2f{.56, .125},
+        layer = 0, ref = 2, alpha = 1.0, update = false
+    }
+
+    add_component(ui.title, title_comp)
+    add_component(ui.lose, lose_comp)
+    add_component(ui.title, Cmp_Render{type = {.GUI}})
+    add_component(ui.lose, Cmp_Render{type = {.GUI}})
+
+    title_node := Cmp_Node{name = "Title", engine_flags = {.GUI}}
+    //artemis::Entity* GameSceneSystem::spawnGUI(std::string name, GUIComponent* gui)
+    //{
+    	// artemis::Entity* gui_ent = &world->getEntityManager()->create();
+    	// gui_ent->addComponent(gui);
+    	// gui_ent->addComponent(new RenderComponent(RenderType::RENDER_GUI));
+    	// gui_ent->addComponent(new NodeComponent(gui_ent, name, COMPONENT_GUI));
+    	// SCENE.AddEntityToScene(gui_ent);
+    	// gui_ent->refresh();
+
+    	// return gui_ent;
+ //    }
+ tc := get_component(ui.title, Cmp_Gui)
+ // update_gui(tc)
+}

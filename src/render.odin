@@ -2365,11 +2365,11 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
 
 texture_paths := [6]string{
     "assets/textures/numbers.png",
-    "assets/textures/pause.png",
+    "assets/textures/BeeKillingsInnUI.png",
     "assets/textures/ARROW.png",
     "assets/textures/debugr.png",
     "assets/textures/circuit.jpg",
-    "assets/textures/title.png",
+    "assets/textures/pause.png",
 }
 
 init_staging_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int )

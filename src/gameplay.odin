@@ -153,8 +153,6 @@ gameplay_update :: proc(delta_time: f32) {
     // update_physics(delta_time)
 }
 
-create
-
 find_player_entity :: proc() {
     player_archetypes := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
 

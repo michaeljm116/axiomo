@@ -93,7 +93,9 @@ main :: proc() {
 	sc.load_prefab_directory("assets/prefabs", &g_prefabs, arena_alloc)
 
 	//Begin renderer and scene loading
-	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 1, false})
+	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 0, false})
+	init_GameUI(&g_gameui)
+
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, context.allocator)
 
