@@ -57,14 +57,12 @@
             "id": "8e0ccbaf8526abe8",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "excalidraw",
               "state": {
-                "file": "BeeKillingsInn/Code.md",
-                "mode": "source",
-                "source": false
+                "file": "Excalidraw/PlayersTUrn.excalidraw.md"
               },
-              "icon": "lucide-file",
-              "title": "Code"
+              "icon": "excalidraw-icon",
+              "title": "PlayersTUrn.excalidraw"
             }
           },
           {
@@ -78,19 +76,9 @@
               "icon": "excalidraw-icon",
               "title": "PlayersTUrn.excalidraw"
             }
-          },
-          {
-            "id": "0c3942e6d5d47f78",
-            "type": "leaf",
-            "state": {
-              "type": "empty",
-              "state": {},
-              "icon": "lucide-file",
-              "title": "New tab"
-            }
           }
         ],
-        "currentTab": 4
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -240,7 +228,7 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "0680ceee63245716",
+  "active": "8e0ccbaf8526abe8",
   "lastOpenFiles": [
     "BeeKillingsInn/Code.md",
     "Excalidraw/PlayersTUrn.excalidraw.md",

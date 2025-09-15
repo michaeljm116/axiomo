@@ -42,7 +42,6 @@
 	* If bee is alert, attack player
 		* if bee is next to player, attack
 
-
 # Where you're at now:
 * you have:
 	* a grid
@@ -131,7 +130,6 @@
 	* ChooseAttackBasedOnAbove
 	* ApplyEffectToBee(Bee)
 
-
 ### Abilities
 * What is the architecture behind abilities?
 	* If player or bee attack | Then check for specific ability
@@ -147,4 +145,4 @@
 		* problem is... you dont have a way for the player to select bee yet
 		* So there should be some kind of menu
 		* [[PlayersTUrn.excalidraw]]
-		* 
+	* 

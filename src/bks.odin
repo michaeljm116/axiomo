@@ -120,15 +120,20 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
 // if move then go to movement state and check for wasd movement
 // else you're in... select enemy state oops
 // after that, if player action = attack, wait for space, else focus or dodge
-player_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player : ^Player, bees : ^[dynamic]Bee)
+player_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, bee_selection : ^int, bee_is_near : ^bool)
 {
     switch state^
     {
         case .SelectAction:
             if is_key_just_pressed(glfw.KEY_1) do state^ = .Movement
-            if is_key_just_pressed(glfw.KEY_2) do state^ = .SelectEnemy
+            if is_key_just_pressed(glfw.KEY_2){
+                state^ = .SelectEnemy
+                bee_selection^ = 0
+                bee_is_near^ = false
+            }
             break
         case .Movement:
+            handle_back_button(state)
             input, moved := get_input()
             if moved{
                 move_player(player, input)
@@ -136,7 +141,63 @@ player_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player : 
                 game_state^ = .BeesTurn
             }
         case .SelectEnemy:
-            
+            handle_back_button(state)
+            if is_key_just_pressed(glfw.KEY_SPACE) || is_key_just_pressed(glfw.KEY_ENTER){
+                bee_is_near^ = bee_near(player^, bees[bee_selection^])
+                state^ = .Action
+            }
+            else do enemy_selection(bee_selection, bees^)
+        case .Action:
+        //if SPACE && is in range, attack, if F, focus, if D, dodge            handle_back_button(state)
+            if(bee_is_near^ && is_key_just_pressed(glfw.KEY_SPACE)){
+                player_attack(player^, &bees[bee_selection^])
+                state^ = .SelectAction
+                game_state^ = .BeesTurn
+            }
+            else if is_key_just_pressed(glfw.KEY_F){
+                bees[bee_selection^].flags |= {.PlayerFocused}
+                state^ = .SelectAction
+                game_state^ = .BeesTurn
+            }
+            else if is_key_just_pressed(glfw.KEY_D){
+                bees[bee_selection^].flags |= {.PlayerDodge}
+                state^ = .SelectAction
+                game_state^ = .BeesTurn
+            }
+    }
+}
+
+// If B button is pressed, go back to previous menu
+handle_back_button :: proc(state : ^PlayerTurnState){
+    if(!is_key_just_pressed(glfw.KEY_B)) do return
+    #partial switch state^ {
+        case .Movement:
+            state^ = .SelectAction
+            break
+        case .SelectEnemy:
+            state^ = .SelectAction
+            break
+        case .Action:
+            state^ = .SelectEnemy
+            break
+    }
+}
+
+//Select enemy via vector position... rottate based off wasd
+enemy_selection :: proc(selection : ^int, bees : [dynamic]Bee)
+{
+    num_bees := len(bees)
+    assert(num_bees > 0)
+    if(num_bees == 1){selection^ = 0}
+    else {
+        if(is_key_just_pressed(glfw.KEY_W) || is_key_just_pressed(glfw.KEY_D)){
+            selection^ = (selection^ + 1) % num_bees
+
+        }
+        else if(is_key_just_pressed(glfw.KEY_A) || is_key_just_pressed(glfw.KEY_S)){
+            selection^ = selection^ - 1
+            if selection^ < 0 do selection^ = num_bees
+        }
     }
 }
 
@@ -207,7 +268,9 @@ BeeFlag :: enum
 {
     Flying,
     Alert,
-    Dead
+    Dead,
+    PlayerFocused,
+    PlayerDodge
 }
 BeeFlags :: bit_set[BeeFlag; u8]
 Bee :: struct {
@@ -586,7 +649,7 @@ weap_check :: proc(p : vec2, grid : ^Grid) -> bool{
 }
 
 bee_check :: proc(p : Player, bees : [dynamic]Bee) -> (bool, int) {
-    
+
     for bee, i in bees{
         diff_x := math.abs(bee.pos.x - p.pos.x)
         diff_y := math.abs(bee.pos.y - p.pos.y)
@@ -597,6 +660,13 @@ bee_check :: proc(p : Player, bees : [dynamic]Bee) -> (bool, int) {
         }
     }
     return false,0
+}
+
+bee_near :: proc(p : Player, bee : Bee) -> bool{
+    diff_x := math.abs(bee.pos.x - p.pos.x)
+    diff_y := math.abs(bee.pos.y - p.pos.y)
+    total := i8(diff_x + diff_y)
+    return total <= p.weapon.range
 }
 
 GameState :: enum
