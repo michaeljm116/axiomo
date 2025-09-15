@@ -116,6 +116,30 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
     }
 }
 
+// On Players turn, wait for input of 1-3 if any of those then set action to move,attack or ability
+// if move then go to movement state and check for wasd movement
+// else you're in... select enemy state oops
+// after that, if player action = attack, wait for space, else focus or dodge
+player_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player : ^Player, bees : ^[dynamic]Bee)
+{
+    switch state^
+    {
+        case .SelectAction:
+            if is_key_just_pressed(glfw.KEY_1) do state^ = .Movement
+            if is_key_just_pressed(glfw.KEY_2) do state^ = .SelectEnemy
+            break
+        case .Movement:
+            input, moved := get_input()
+            if moved{
+                move_player(player, input)
+                state^ = .SelectAction
+                game_state^ = .BeesTurn
+            }
+        case .SelectEnemy:
+            
+    }
+}
+
 get_input :: proc() -> (string, bool)
 {
     if is_key_just_pressed(glfw.KEY_W) {
@@ -131,6 +155,14 @@ get_input :: proc() -> (string, bool)
        return "d", true
     }
     return "", false
+}
+
+PlayerTurnState :: enum
+{
+   SelectAction,
+   Movement,
+   SelectEnemy,
+   Action,
 }
 
 Tile :: enum
@@ -554,6 +586,7 @@ weap_check :: proc(p : vec2, grid : ^Grid) -> bool{
 }
 
 bee_check :: proc(p : Player, bees : [dynamic]Bee) -> (bool, int) {
+    
     for bee, i in bees{
         diff_x := math.abs(bee.pos.x - p.pos.x)
         diff_y := math.abs(bee.pos.y - p.pos.y)
@@ -574,6 +607,7 @@ GameState :: enum
     End,
     Pause,
 }
+
 
 destroy_level :: proc (scene : ^Level)
 {
@@ -925,44 +959,30 @@ GameUI :: struct
 }
 g_gameui : GameUI
 
+add_gameui :: proc (gui : Cmp_Gui, name : string) -> Entity
+{
+    e  := add_entity()
+    add_component(e, gui)
+    add_component(e, Cmp_Render{type = {.GUI}})
+    add_component(e, Cmp_Node{name = name, engine_flags = {.GUI}})
+    added_entity(e)
+    return e
+}
+
 init_GameUI :: proc( ui : ^GameUI)
 {
-    ui.title = add_entity()
-    ui.start = add_entity()
-    ui.end = add_entity()
-    ui.paused = add_entity()
-    ui.win = add_entity()
-    ui.lose = add_entity()
+    title_comp := Cmp_Gui{
+        min = vec2f{0.333, 0.73}, extents = vec2f{0.415, 0.11},
+        align_min = vec2f{1., 0.43}, align_ext = vec2f{.5, 0.08},
+        layer = 0, ref = 1, alpha = 1.0, update = true
+    }
 
-    // title_comp := Cmp_Gui{
-    //     min = vec2f{0.333, 0.73}, extents = vec2f{0.415, 0.11},
-    //     align_min = vec2f{1., 0.43}, align_ext = vec2f{.5, 0.08},
-    //     layer = 0, ref = 2, alpha = 1.0, update = true
-    // }
-    title_comp := Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, 1, 0, 1.0, false}
     lose_comp := Cmp_Gui{
         min = vec2f{0.3, 0.645}, extents = vec2f{.5, .15},
         align_min = vec2f{1, .288}, align_ext = vec2f{.56, .125},
-        layer = 0, ref = 2, alpha = 1.0, update = false
+        layer = 0, ref = 2, alpha = 0.5, update = false
     }
 
-    add_component(ui.title, title_comp)
-    add_component(ui.lose, lose_comp)
-    add_component(ui.title, Cmp_Render{type = {.GUI}})
-    add_component(ui.lose, Cmp_Render{type = {.GUI}})
-
-    title_node := Cmp_Node{name = "Title", engine_flags = {.GUI}}
-    //artemis::Entity* GameSceneSystem::spawnGUI(std::string name, GUIComponent* gui)
-    //{
-    	// artemis::Entity* gui_ent = &world->getEntityManager()->create();
-    	// gui_ent->addComponent(gui);
-    	// gui_ent->addComponent(new RenderComponent(RenderType::RENDER_GUI));
-    	// gui_ent->addComponent(new NodeComponent(gui_ent, name, COMPONENT_GUI));
-    	// SCENE.AddEntityToScene(gui_ent);
-    	// gui_ent->refresh();
-
-    	// return gui_ent;
- //    }
- tc := get_component(ui.title, Cmp_Gui)
- // update_gui(tc)
+    ui.title = add_gameui(title_comp, "Title")
+    ui.lose = add_gameui(lose_comp, "Lose")
 }

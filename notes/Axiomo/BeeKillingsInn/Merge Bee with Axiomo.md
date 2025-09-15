@@ -46,3 +46,12 @@ So the main question is should everything be wrapped under axiomo ? 
 Okay now lets talk UI
 * each ui elemennt will have its own entity with its own cmp gui you'll also have a texture that and tbh its a megatexture that has many different gui components like start game end game etc that you can then click on and etc etc
 * instead of it being the singleton entity it'll be its own thing
+* ...oh it was like this in flappy as well lol
+
+Okay so lets talk more UI
+* So you dont need a title for now
+* You... actually focus on the game and the movement adn all that then resrtearch hot realoding whiel bored at work then just do the game
+
+
+So game wise... right now its the speed thats off you want there to be something that interpolates every character for each movemetn... maybe... or maybe first perfect the game play actually now that i think about it... you did all this because you wanted dodge to exist so maybe finish implementing the game play features 
+* 

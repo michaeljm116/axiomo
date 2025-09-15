@@ -143,3 +143,8 @@
 		* on bee attack if dodge component then do dodgey 
 		* ugh so simple so easy so beautiful
 		* i think its time to merge with engine
+	* okay so now you have ecs access....
+		* problem is... you dont have a way for the player to select bee yet
+		* So there should be some kind of menu
+		* [[PlayersTUrn.excalidraw]]
+		* 
