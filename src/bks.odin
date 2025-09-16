@@ -89,6 +89,9 @@ init_level1 :: proc(alloc : mem.Allocator = context.allocator)
     init_bee_deck(&g_level.deck, 36)
 }
 
+bee_selection := 0
+bee_is_near := false
+pt_state : PlayerTurnState = .SelectAction
 run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, deck : ^BeeDeck)
 {
     switch state^
@@ -98,11 +101,7 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
             state^ = .PlayerTurn
             break
         case .PlayerTurn:
-            input, moved := get_input()
-            if(moved){
-                move_player(player, input)
-                state^ = .BeesTurn
-            }
+            players_turn(&pt_state, state, player, bees, &bee_selection, &bee_is_near)
             break
         case .BeesTurn:
             for &bee in bees do bee_turn(&bee, deck)
