@@ -145,4 +145,10 @@
 		* problem is... you dont have a way for the player to select bee yet
 		* So there should be some kind of menu
 		* [[PlayersTUrn.excalidraw]]
-	* 
+
+## Game SLowdown
+* So there's 2 ways to slow it down
+	* by making the movements linearly interpolate
+	* In general have slowy things so that state transitions are based on timers as well
+* there might be a tempation to make state transitions be by area triggers
+* pero hin
