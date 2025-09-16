@@ -120,7 +120,7 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
 // if move then go to movement state and check for wasd movement
 // else you're in... select enemy state oops
 // after that, if player action = attack, wait for space, else focus or dodge
-player_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, bee_selection : ^int, bee_is_near : ^bool)
+players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, bee_selection : ^int, bee_is_near : ^bool)
 {
     switch state^
     {
@@ -148,18 +148,24 @@ player_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player : 
             }
             else do enemy_selection(bee_selection, bees^)
         case .Action:
-        //if SPACE && is in range, attack, if F, focus, if D, dodge            handle_back_button(state)
             if(bee_is_near^ && is_key_just_pressed(glfw.KEY_SPACE)){
                 player_attack(player^, &bees[bee_selection^])
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
+                if .Dead in bees[bee_selection^].flags{
+                    fmt.printfln("Bee %v is dead", bees[bee_selection^].name)
+                    //remove the bee for now
+                    ordered_remove(&g_level.bees, bee_selection^)
+                }
             }
             else if is_key_just_pressed(glfw.KEY_F){
+                if .PlayerFocused in bees[bee_selection^].flags do bees[bee_selection^].flags |= {.PlayerHyperFocused}
                 bees[bee_selection^].flags |= {.PlayerFocused}
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
             }
             else if is_key_just_pressed(glfw.KEY_D){
+                if .PlayerDodge in bees[bee_selection^].flags do bees[bee_selection^].flags |= {.PlayerHyperAlert}
                 bees[bee_selection^].flags |= {.PlayerDodge}
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
@@ -270,9 +276,12 @@ BeeFlag :: enum
     Alert,
     Dead,
     PlayerFocused,
-    PlayerDodge
+    PlayerDodge,
+    PlayerHyperFocused,
+    PlayerHyperAlert,
 }
-BeeFlags :: bit_set[BeeFlag; u8]
+
+BeeFlags :: bit_set[BeeFlag; u16]
 Bee :: struct {
     name : rune,
     pos : vec2,
@@ -478,8 +487,18 @@ bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int){
 bee_action_attack :: proc(bee : ^Bee, player : ^Player){
     dist := dist_grid(bee.pos, player.pos)
     if dist <= 1 {
-        player.health -= 1
-        fmt.println("PLAYER DIED")
+        if .PlayerDodge in bee.flags {
+            acc := 7 + 2 * i8(.PlayerHyperAlert in bee.flags)
+            if acc < dice_rolls(){
+                player.health -= 1
+                fmt.println("Player Died")
+            }
+            else do fmt.println("Player Dodged")
+        }
+        else {
+            player.health -= 1
+            fmt.println("PLAYER DIED")
+        }
     }
 }
 
@@ -560,15 +579,17 @@ pick_up_weapon :: proc(player : ^Player, weaps : []Weapon, db := WeaponsDB)
 
 player_attack :: proc(player : Player, bee : ^Bee){
     // Player rolls a dice, if its higher than their weapons accuracy, do weapon.damage to the bee
+    focus_level := i8(.PlayerFocused in bee.flags) + i8(.PlayerHyperFocused in bee.flags)
     bee.flags |= {.Alert}
+    luck := dice_rolls() + focus_level
     if .Flying in bee.flags{
-       if player.weapon.flying.accuracy < dice_rolls() {
+       if player.weapon.flying.accuracy < luck {
            bee.health -= player.weapon.flying.power
            if bee.health <= 0 do bee.flags += {.Dead}
        }
     }
     else {
-       if player.weapon.ground.accuracy < dice_rolls() {
+       if player.weapon.ground.accuracy < luck {
            bee.health -= player.weapon.ground.power
            if bee.health <= 0 do bee.flags += {.Dead}
        }
