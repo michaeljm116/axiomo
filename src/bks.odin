@@ -229,6 +229,7 @@ PlayerTurnState :: enum
    Movement,
    SelectEnemy,
    Action,
+   Animate
 }
 
 Tile :: enum

@@ -152,3 +152,11 @@
 	* In general have slowy things so that state transitions are based on timers as well
 * there might be a tempation to make state transitions be by area triggers
 * pero hin
+* okay so what if each thing ha
+* so there is a bee actiona nd a player action state
+	* each can have a .Animation state too
+	* also give each a flag of the thing to animate
+	* like movement 
+	* so like if a player is just like walk then yeah palyer animation flags and player targets
+	* targets = vec2
+	* [[AnimationStates.excalidraw]]
