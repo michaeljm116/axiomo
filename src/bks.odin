@@ -136,8 +136,8 @@ players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player :
             input, moved := get_input()
             if moved{
                 move_player(player, input)
-                state^ = .SelectAction
-                game_state^ = .BeesTurn
+                state^ = .Animate
+                // game_state^ = .BeesTurn
             }
         case .SelectEnemy:
             handle_back_button(state)
@@ -258,7 +258,8 @@ Character :: struct
     health : i8,
     target : vec2,
     entity : Entity,
-    c_flags : CharacterFlags
+    c_flags : CharacterFlags,
+    anim_timer : f32,
 }
 
 Ability :: struct {
@@ -645,7 +646,10 @@ move_player :: proc(p : ^Player, key : string)
     }
     bounds := p.pos + dir
     if bounds_check(bounds, g_level.grid) {
-        p.pos = bounds
+        p.target = bounds
+        p.anim_timer = 0
+        p.c_flags = {.Walk}
+
     }
 
     move_entity_to_tile(g_player, g_level.grid_scale, p.pos)
@@ -656,7 +660,7 @@ move_player :: proc(p : ^Player, key : string)
 }
 
 animate_player :: proc(p : ^Player, dt : f32)
-{   
+{
 }
 
 bounds_check :: proc(bounds : vec2, grid : Grid) -> bool
