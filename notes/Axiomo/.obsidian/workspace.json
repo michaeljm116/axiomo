@@ -82,6 +82,18 @@
             }
           },
           {
+            "id": "797017051b8d3abc",
+            "type": "leaf",
+            "state": {
+              "type": "excalidraw",
+              "state": {
+                "file": "Excalidraw/AnimationStates.excalidraw.md"
+              },
+              "icon": "excalidraw-icon",
+              "title": "AnimationStates.excalidraw"
+            }
+          },
+          {
             "id": "0680ceee63245716",
             "type": "leaf",
             "state": {
@@ -94,7 +106,7 @@
             }
           }
         ],
-        "currentTab": 4
+        "currentTab": 5
       }
     ],
     "direction": "vertical"
@@ -244,11 +256,11 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "5759dfeaa26690d3",
+  "active": "797017051b8d3abc",
   "lastOpenFiles": [
+    "BeeKillingsInn/Code.md",
     "Excalidraw/AnimationStates.excalidraw.md",
     "Excalidraw/PlayersTUrn.excalidraw.md",
-    "BeeKillingsInn/Code.md",
     "BeeKillingsInn/bg.md",
     "BeeKillingsInn/Art Inspo.md",
     "BeeKillingsInn/Merge Bee with Axiomo.md",

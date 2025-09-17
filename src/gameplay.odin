@@ -96,7 +96,7 @@ gameplay_init :: proc() {
     set_grid_scale(g_floor, &g_level)
     set_entity_on_tile(g_floor, g_player, g_level, g_level.player.pos.x, g_level.player.pos.y)
     for bee in g_level.bees{
-        set_entity_on_tile(g_floor, bee.ent, g_level, bee.pos.x, bee.pos.y)
+        set_entity_on_tile(g_floor, bee.entity, g_level, bee.pos.x, bee.pos.y)
     }
     place_chest_on_grid(vec2{2,0}, &g_level)
     place_chest_on_grid(vec2{4,3}, &g_level)

@@ -77,10 +77,10 @@ init_level1 :: proc(alloc : mem.Allocator = context.allocator)
     for i, w in db do weapons[w] = i
 
     // Initialize Player and Bee
-    player = {'🧔', vec2{0,2}, 1, db[.Hand], {}}
+    player = {name = '🧔', pos = vec2{0,2}, health = 1, weapon = db[.Hand], abilities = {}}
     bees = make([dynamic]Bee, 2)
-    bees[0] = Bee{name = '🐝', pos = vec2{6,2}, health = 2, type = .Aggressive, flags = {}, ent = load_prefab("Bee")}
-    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, health = 2, type = .Normal, flags = {}, ent = load_prefab("Bee")}
+    bees[0] = Bee{name = '🐝', pos = vec2{6,2}, health = 2, type = .Aggressive, flags = {}, entity = load_prefab("Bee")}
+    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
     player.abilities = make([dynamic]Ability, 2)
     player.abilities[0] = Ability{type = .Dodge, use_on = &bees[0], level = 1, uses = 1}
     player.abilities[1] = Ability{type = .Focused, use_on = &bees[1], level = 1, uses = 1}
@@ -169,6 +169,8 @@ players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player :
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
             }
+        case .Animate:
+            break
     }
 }
 
@@ -241,11 +243,22 @@ Tile :: enum
 }
 
 Player :: struct{
+    using base : Character,
+    weapon : Weapon,
+    abilities : [dynamic]Ability,
+}
+
+CharacterFlag :: enum { Walk, Run, Attack, Dodge, Focus,}
+CharacterFlags :: bit_set[CharacterFlag; u16]
+
+Character :: struct
+{
     name : rune,
     pos : vec2,
     health : i8,
-    weapon : Weapon,
-    abilities : [dynamic]Ability,
+    target : vec2,
+    entity : Entity,
+    c_flags : CharacterFlags
 }
 
 Ability :: struct {
@@ -279,16 +292,14 @@ BeeFlag :: enum
     PlayerDodge,
     PlayerHyperFocused,
     PlayerHyperAlert,
+    Animate
 }
 
 BeeFlags :: bit_set[BeeFlag; u16]
 Bee :: struct {
-    name : rune,
-    pos : vec2,
-    health : i8,
+    using base : Character,
     type : BeeType,
     flags : BeeFlags,
-    ent : Entity
 }
 
 BeeAction :: enum
@@ -439,7 +450,7 @@ perform_bee_action :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
             // If player is near, attack! else do nuffin
             bee_action_attack(bee, player)
     }
-    move_entity_to_tile(bee.ent, g_level.grid_scale, bee.pos)
+    move_entity_to_tile(bee.entity, g_level.grid_scale, bee.pos)
 }
 
 bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int){
@@ -636,18 +647,16 @@ move_player :: proc(p : ^Player, key : string)
     if bounds_check(bounds, g_level.grid) {
         p.pos = bounds
     }
+
     move_entity_to_tile(g_player, g_level.grid_scale, p.pos)
 
     if weap_check(p.pos, &g_level.grid) {
         pick_up_weapon(p, g_level.weapons)
     }
-    bee_near, b := bee_check(p^, g_level.bees)
-    if(bee_near) do player_attack(p^, &g_level.bees[b])
-    if .Dead in g_level.bees[b].flags{
-        fmt.printfln("Bee %v is dead", g_level.bees[b].name)
-        //remove the bee for now
-        ordered_remove(&g_level.bees, b)
-    }
+}
+
+animate_player :: proc(p : ^Player, dt : f32)
+{   
 }
 
 bounds_check :: proc(bounds : vec2, grid : Grid) -> bool
@@ -938,38 +947,40 @@ set_entity_on_tile :: proc(floor : Entity, entity : Entity, lvl : Level, x, y : 
 move_entity_to_tile :: proc(entity : Entity, scale : vec2f, pos : vec2)
 {
     pt := get_component(entity, Cmp_Transform)
-    if pt == nil do return
-
-    // If we have a floor entity, position relative to the floor so the entity is centered
-    // in the tile (and vertically flush with the floor). Otherwise fall back to the
-    // simple grid-scale placement.
     ft := get_component(g_floor, Cmp_Transform)
-    if ft != nil {
-        full_cell_x := 2.0 * scale.x
-        full_cell_z := 2.0 * scale.y
+    if pt == nil || ft == nil do return
 
-        left_x := ft.global.pos.x - ft.global.sca.x
-        bottom_z := ft.global.pos.z - ft.global.sca.z
+    full_cell_x := 2.0 * scale.x
+    full_cell_z := 2.0 * scale.y
 
-        tile_center_x := left_x + full_cell_x * (f32(pos.x) + 0.5)
-        tile_center_z := bottom_z + full_cell_z * (f32(pos.y) + 0.5)
+    left_x := ft.global.pos.x - ft.global.sca.x
+    bottom_z := ft.global.pos.z - ft.global.sca.z
 
-        pt.local.pos.x = tile_center_x
-        pt.local.pos.z = tile_center_z
+    tile_center_x := left_x + full_cell_x * (f32(pos.x) + 0.5)
+    tile_center_z := bottom_z + full_cell_z * (f32(pos.y) + 0.5)
 
-        // Align vertically so the entity's bottom is flush with the floor top.
-        floor_top := get_top_of_entity(g_floor)
-        entity_bottom := get_bottom_of_entity(entity)
+    pt.local.pos.x = tile_center_x
+    pt.local.pos.z = tile_center_z
+}
 
-        if entity_bottom != -999999.0 {
-            dy := floor_top - entity_bottom
-            pt.local.pos.y += dy
-        }
-    } else {
-        // Fallback: previous behavior (scale-only)
-        pt.local.pos.x = f32(pos.x) * scale.x
-        pt.local.pos.z = f32(pos.y) * scale.y
-    }
+// Move a character to the block over time
+slerp_character_to_tile :: proc(cha : Character, scale : vec2f, pos : vec2, duration : f32)
+{
+    ct := get_component(cha.entity, Cmp_Transform)
+    ft := get_component(g_floor, Cmp_Transform)
+    if ct == nil || ft == nil do return
+
+    full_cell_x := 2.0 * scale.x
+    full_cell_z := 2.0 * scale.y
+
+    left_x := ct.global.pos.x - ct.global.sca.x
+    bottom_z := ct.global.pos.z - ct.global.sca.z
+
+    tile_center_x := left_x + full_cell_x * (f32(pos.x) + 0.5)
+    tile_center_z := bottom_z + full_cell_z * (f32(pos.y) + 0.5)
+    tile_pos :vec4= {tile_center_x, ct.local.pos.y, tile_center_z, 1.0}
+
+    ct.local.pos = linalg.vector_slerp(ct.local.pos, tile_pos, duration)
 }
 
 // Finds the lowest part of an entity in a scene hierarchy
