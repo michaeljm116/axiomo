@@ -230,7 +230,7 @@ PlayerTurnState :: enum
    Movement,
    SelectEnemy,
    Action,
-   Animate
+   Animate,
 }
 
 Tile :: enum
@@ -298,7 +298,7 @@ BeeFlag :: enum
     PlayerDodge,
     PlayerHyperFocused,
     PlayerHyperAlert,
-    Animate
+    Animate,
 }
 
 BeeFlags :: bit_set[BeeFlag; u16]
@@ -656,7 +656,7 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerTurnState)
         p.c_flags = {.Walk}
         state^ = .Animate
         fmt.println("Animate")
-        set_up_player_anim(p, g_level.grid_scale)
+        set_up_character_anim(p, g_level.grid_scale)
     }
 
     //move_entity_to_tile(g_player, g_level.grid_scale, p.pos)
@@ -984,7 +984,7 @@ move_entity_to_tile :: proc(entity : Entity, scale : vec2f, pos : vec2)
 }
 
 // Similar to move_entity_to_tile but just sets the vectors up
-set_up_player_anim :: proc(cha : ^Character, scale : vec2f)
+set_up_character_anim :: proc(cha : ^Character, scale : vec2f)
 {
     pt := get_component(cha.entity, Cmp_Transform)
     ft := get_component(g_floor, Cmp_Transform)
@@ -1003,6 +1003,7 @@ set_up_player_anim :: proc(cha : ^Character, scale : vec2f)
     cha.anim.end.yw = cha.anim.start.yw
     cha.anim.end.xz = {tile_center_x, tile_center_z}
 }
+
 slerp_character_to_tile :: proc(cha : ^Character, dt : f32)
 {
     if dt < 1 do cha.anim.timer -= dt
