@@ -104,8 +104,11 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
             players_turn(&pt_state, state, player, bees, &bee_selection, &bee_is_near)
             break
         case .BeesTurn:
-            for &bee in bees do bee_turn(&bee, deck)
-            state^ = .PlayerTurn
+            for &bee in bees{
+                if .Animate in bee.flags do animate_bee(&bee, f32(g_frame.physics_time_step))
+                else do bee_turn(&bee, deck)
+            }
+            if anim_check(bees) do state^ = .PlayerTurn
             break
         case .End:
             // destroy_bee_deck(deck)
@@ -169,6 +172,7 @@ players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player :
             }
         case .Animate:
             animate_player(player, f32(g_frame.physics_time_step), state)
+            if state^ == .SelectAction do game_state^ = .BeesTurn
             break
     }
 }
@@ -456,7 +460,11 @@ perform_bee_action :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
             // If player is near, attack! else do nuffin
             bee_action_attack(bee, player)
     }
-    move_entity_to_tile(bee.entity, g_level.grid_scale, bee.pos)
+    bee.anim.timer = 1
+    bee.c_flags = {.Walk}
+    bee.flags += {.Animate}
+    set_up_character_anim(bee, g_level.grid_scale)
+    // move_entity_to_tile(bee.entity, g_level.grid_scale, bee.pos)
 }
 
 bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int){
@@ -466,15 +474,15 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int)
     {
         path := a_star_find_path(bee.pos, player.pos)
         // TODO: possibly insecure and bug prone if there's no valid distance due to walls
-        if len(path) > target_dist do bee.pos = path[target_dist]
-        else {if len(path) == target_dist do bee.pos = path[target_dist - 1]}
+        if len(path) > target_dist do bee.target = path[target_dist]
+        else {if len(path) == target_dist do bee.target = path[target_dist - 1]}
     }
     else // Less than or equal to target distance, alert!
     {
         bee.flags |= {.Alert}
         if dist == target_dist {
             path := a_star_find_path(bee.pos, player.pos)
-            if len(path) > 1 do bee.pos = path[1]
+            if len(path) > 1 do bee.target = path[1]
         }
     }
 }
@@ -482,7 +490,7 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int)
 bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int){
     assert(target_dist > 0)
     target_path := find_best_target_away(bee, player, target_dist, true)
-    if len(target_path) > 0 do bee.pos = target_path[len(target_path) - 1]
+    if len(target_path) > 0 do bee.target = target_path[len(target_path) - 1]
     else{
        best := bee.pos
        bestd := dist_grid(bee.pos, player.pos)
@@ -497,7 +505,7 @@ bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int){
                 bestd = nd
             }
         }
-        bee.pos = best
+        bee.target = best
     }
 }
 
@@ -677,6 +685,26 @@ animate_player :: proc(p : ^Player, dt : f32, state : ^PlayerTurnState)
         p.anim.timer = 0
         state^ = .SelectAction
     }
+}
+
+animate_bee :: proc(bee : ^Bee, dt : f32)
+{
+    if bee.anim.timer > 0 && .Walk in bee.c_flags {
+        slerp_character_to_tile(bee, dt)
+    }
+    else {
+        move_entity_to_tile(bee.entity, g_level.grid_scale, bee.target)
+        bee.pos = bee.target
+        bee.anim.timer = 0
+        bee.flags -= {.Animate}
+    }
+}
+
+anim_check :: proc(bees : ^[dynamic]Bee) -> bool {
+    for bee in bees{
+        if .Animate in bee.flags do return false
+    }
+    return true
 }
 
 bounds_check :: proc(bounds : vec2, grid : Grid) -> bool
