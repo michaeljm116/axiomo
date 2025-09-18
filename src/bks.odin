@@ -168,7 +168,7 @@ players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player :
                 game_state^ = .BeesTurn
             }
         case .Animate:
-            animate_player(player, g_frame.delta_time, state)
+            animate_player(player, f32(g_frame.physics_time_step), state)
             break
     }
 }
@@ -258,7 +258,13 @@ Character :: struct
     target : vec2,
     entity : Entity,
     c_flags : CharacterFlags,
-    anim_timer : f32,
+    anim : CharacterAnimation,
+}
+CharacterAnimation :: struct
+{
+    timer : f32,
+    start : vec4,
+    end : vec4
 }
 
 Ability :: struct {
@@ -646,10 +652,11 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerTurnState)
     bounds := p.pos + dir
     if bounds_check(bounds, g_level.grid) {
         p.target = bounds
-        p.anim_timer = 1
+        p.anim.timer = 1
         p.c_flags = {.Walk}
         state^ = .Animate
         fmt.println("Animate")
+        set_up_player_anim(p, g_level.grid_scale)
     }
 
     //move_entity_to_tile(g_player, g_level.grid_scale, p.pos)
@@ -661,14 +668,13 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerTurnState)
 
 animate_player :: proc(p : ^Player, dt : f32, state : ^PlayerTurnState)
 {
-    if dt < 1 do p.anim_timer -= dt
-    if p.anim_timer > 0 && .Walk in p.c_flags {
-        slerp_character_to_tile(p^, g_level.grid_scale, p.target, p.anim_timer)
+    if p.anim.timer > 0 && .Walk in p.c_flags {
+        slerp_character_to_tile(p, dt)
     }
     else {
         move_entity_to_tile(p.entity, g_level.grid_scale, p.target)
         p.pos = p.target
-        p.anim_timer = 0
+        p.anim.timer = 0
         state^ = .SelectAction
     }
 }
@@ -977,23 +983,35 @@ move_entity_to_tile :: proc(entity : Entity, scale : vec2f, pos : vec2)
     pt.local.pos.z = tile_center_z
 }
 
-// Move a character to the block over time
-slerp_character_to_tile :: proc(cha : Character, scale : vec2f, pos : vec2, duration : f32)
+// Similar to move_entity_to_tile but just sets the vectors up
+set_up_player_anim :: proc(cha : ^Character, scale : vec2f)
 {
-    ct := get_component(cha.entity, Cmp_Transform)
+    pt := get_component(cha.entity, Cmp_Transform)
     ft := get_component(g_floor, Cmp_Transform)
-    if ct == nil || ft == nil do return
+    if pt == nil || ft == nil do return
 
     full_cell_x := 2.0 * scale.x
     full_cell_z := 2.0 * scale.y
 
-    left_x := ct.global.pos.x - ct.global.sca.x
-    bottom_z := ct.global.pos.z - ct.global.sca.z
+    left_x := ft.global.pos.x - ft.global.sca.x
+    bottom_z := ft.global.pos.z - ft.global.sca.z
 
-    tile_center_x := left_x + full_cell_x * (f32(pos.x) + 0.5)
-    tile_center_z := bottom_z + full_cell_z * (f32(pos.y) + 0.5)
-    tile_pos :vec4= {tile_center_x, ct.local.pos.y, tile_center_z, 0.0}
-    ct.local.pos += linalg.smoothstep(ct.local.pos, tile_pos, g_frame.delta_time)// cha.anim_timer)
+    tile_center_x := left_x + full_cell_x * (f32(cha.target.x) + 0.5)
+    tile_center_z := bottom_z + full_cell_z * (f32(cha.target.y) + 0.5)
+
+    cha.anim.start = pt.local.pos
+    cha.anim.end.yw = cha.anim.start.yw
+    cha.anim.end.xz = {tile_center_x, tile_center_z}
+}
+slerp_character_to_tile :: proc(cha : ^Character, dt : f32)
+{
+    if dt < 1 do cha.anim.timer -= dt
+    ct := get_component(cha.entity, Cmp_Transform)
+    if ct == nil do return
+    t := f64(1.0 - cha.anim.timer)
+    eased_t := math.smoothstep(0.0,1.0,t)
+    ct.local.pos = linalg.lerp(cha.anim.start, cha.anim.end, f32(eased_t))
+    fmt.println("Start: ", cha.anim.start, " End: ", cha.anim.end, " Time: ", cha.anim.timer)
     fmt.println(ct.local.pos)
 }
 
