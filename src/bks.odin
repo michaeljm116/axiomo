@@ -993,7 +993,7 @@ slerp_character_to_tile :: proc(cha : Character, scale : vec2f, pos : vec2, dura
     tile_center_x := left_x + full_cell_x * (f32(pos.x) + 0.5)
     tile_center_z := bottom_z + full_cell_z * (f32(pos.y) + 0.5)
     tile_pos :vec4= {tile_center_x, ct.local.pos.y, tile_center_z, 0.0}
-    ct.local.pos = linalg.lerp(ct.local.pos, tile_pos, g_frame.delta_time)
+    ct.local.pos += linalg.smoothstep(ct.local.pos, tile_pos, g_frame.delta_time)// cha.anim_timer)
     fmt.println(ct.local.pos)
 }
 
