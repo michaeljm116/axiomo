@@ -100,6 +100,7 @@ gameplay_init :: proc() {
     }
     place_chest_on_grid(vec2{2,0}, &g_level)
     place_chest_on_grid(vec2{4,3}, &g_level)
+    g_level.player.entity = g_player
 }
 
 gameplay_post_init :: proc()

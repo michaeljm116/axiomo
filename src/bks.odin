@@ -135,9 +135,7 @@ players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player :
             handle_back_button(state)
             input, moved := get_input()
             if moved{
-                move_player(player, input)
-                state^ = .Animate
-                // game_state^ = .BeesTurn
+                move_player(player, input, state)
             }
         case .SelectEnemy:
             handle_back_button(state)
@@ -170,6 +168,7 @@ players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player :
                 game_state^ = .BeesTurn
             }
         case .Animate:
+            animate_player(player, g_frame.delta_time, state)
             break
     }
 }
@@ -629,7 +628,7 @@ place_chest_on_grid :: proc(pos : vec2, lvl : ^Level)
 // Death occurs when health = 0
 // Bee's only attack when alerted
 //----------------------------------------------------------------------------\\
-move_player :: proc(p : ^Player, key : string)
+move_player :: proc(p : ^Player, key : string, state : ^PlayerTurnState)
 {
     // display_level(g_level)
     dir : vec2
@@ -647,20 +646,31 @@ move_player :: proc(p : ^Player, key : string)
     bounds := p.pos + dir
     if bounds_check(bounds, g_level.grid) {
         p.target = bounds
-        p.anim_timer = 0
+        p.anim_timer = 1
         p.c_flags = {.Walk}
-
+        state^ = .Animate
+        fmt.println("Animate")
     }
 
-    move_entity_to_tile(g_player, g_level.grid_scale, p.pos)
+    //move_entity_to_tile(g_player, g_level.grid_scale, p.pos)
 
     if weap_check(p.pos, &g_level.grid) {
         pick_up_weapon(p, g_level.weapons)
     }
 }
 
-animate_player :: proc(p : ^Player, dt : f32)
+animate_player :: proc(p : ^Player, dt : f32, state : ^PlayerTurnState)
 {
+    if dt < 1 do p.anim_timer -= dt
+    if p.anim_timer > 0 && .Walk in p.c_flags {
+        slerp_character_to_tile(p^, g_level.grid_scale, p.target, p.anim_timer)
+    }
+    else {
+        move_entity_to_tile(p.entity, g_level.grid_scale, p.target)
+        p.pos = p.target
+        p.anim_timer = 0
+        state^ = .SelectAction
+    }
 }
 
 bounds_check :: proc(bounds : vec2, grid : Grid) -> bool
@@ -982,9 +992,9 @@ slerp_character_to_tile :: proc(cha : Character, scale : vec2f, pos : vec2, dura
 
     tile_center_x := left_x + full_cell_x * (f32(pos.x) + 0.5)
     tile_center_z := bottom_z + full_cell_z * (f32(pos.y) + 0.5)
-    tile_pos :vec4= {tile_center_x, ct.local.pos.y, tile_center_z, 1.0}
-
-    ct.local.pos = linalg.vector_slerp(ct.local.pos, tile_pos, duration)
+    tile_pos :vec4= {tile_center_x, ct.local.pos.y, tile_center_z, 0.0}
+    ct.local.pos = linalg.lerp(ct.local.pos, tile_pos, g_frame.delta_time)
+    fmt.println(ct.local.pos)
 }
 
 // Finds the lowest part of an entity in a scene hierarchy
