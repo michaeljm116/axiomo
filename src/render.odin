@@ -2366,8 +2366,8 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
 texture_paths := [6]string{
     "assets/textures/numbers.png",
     "assets/textures/BeeKillingsInnUI.png",
-    "assets/textures/ARROW.png",
-    "assets/textures/debugr.png",
+    "assets/textures/wood-mid.png",
+    "assets/textures/wood-dark.png",
     "assets/textures/circuit.jpg",
     "assets/textures/pause.png",
 }
