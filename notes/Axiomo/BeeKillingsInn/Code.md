@@ -160,3 +160,34 @@
 	* so like if a player is just like walk then yeah palyer animation flags and player targets
 	* targets = vec2
 	* [[AnimationStates.excalidraw]]
+
+### Art
+* So question is how to make development not be slow for art assets
+* right now you hardcode every texture into the thing
+* materials draw from the index of where that hardcoded value is
+	* ultimately, the material should just find the texture name and if there's a keyvalue pair then match it up accordingly 
+	* its done once at startup so speed isn't that much of a concern
+	* oh another issue is there's texture name and theirs filename i guess it doesnt' matter ulitmately
+	* okay so question is how to do this in both c++ and odin
+		* odin, have a map of... hmmm
+			* or enum array?
+			* no must be map for dynamism
+			* so that way the texture can be ummm
+	* So what you basically want is an ordered key-value pair
+		* key = texturename
+		* value =
+		* ...
+		* nvm just keys and where they sit in the thing
+		* also keep the dyanmicness in mind
+		* dyanmic arrays assume expansion
+		* but since you dont expand texture nums then...
+		* at start up look at the # of textures in a directory
+		* reserve
+		* and plop
+		* set a vector
+		* but it can't be a vector it has to be a std set
+		* ordered set?
+		* you dont care about the order just a ref to it in the gpu
+		* so first do std set then shift to std vector for each in the set
+		* well first... can you access sets sequentually?
+		* 

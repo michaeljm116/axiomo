@@ -18,6 +18,7 @@ import res "resource"
 import "external/embree"
 import "core:math/bits"
 import stbi"vendor:stb/image"
+import path2"extensions/filepath2"
 //----------------------------------------------------------------------------\\
 // /RENDERBASE /rb
 //----------------------------------------------------------------------------\\
@@ -1372,7 +1373,7 @@ MAX_OBJS :: 4096
 MAX_LIGHTS :: 32
 MAX_GUIS :: 96
 MAX_NODES :: 2048
-MAX_BINDLESS_TEXTURES :: 6
+MAX_BINDLESS_TEXTURES :u32= 0
 MAX_TEXTURES :: 5
 // Update flags for tracking what needs to be updated
 UpdateFlag :: enum {
@@ -2254,8 +2255,8 @@ start_up_raytracer :: proc(alloc: mem.Allocator)
 {
    init_vulkan()
    set_camera()
-   map_materials_to_gpu(alloc)
    map_models_to_gpu(alloc)
+   map_materials_to_gpu(alloc)
 }
 
 set_camera :: proc()
@@ -2277,7 +2278,7 @@ map_materials_to_gpu :: proc(alloc : mem.Allocator)
 			roughness = m.roughness,
 			transparency = m.transparency,
 			refractive_index = m.refractive_index,
-			texture_id = m.texture_id
+			texture_id = g_texture_indexes[m.texture]
 		}
         rt.materials[i] = gpu_mat
 	}
@@ -2340,16 +2341,37 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     // }
     // Change bindless initialization to append only successful textures
 
-    rt.bindless_textures = make([dynamic]Texture, 0, len(texture_paths), alloc)
+    // file.get_dir_files("assets/textures")
 
-    for p in texture_paths {
-        t := Texture{path = p}
-        if texture_create(&t) {
+    //Dynamically load textyures
+    g_texture_indexes[""] = -1
+    index :i32= 0
+    files := path2.get_dir_files("assets/textures")
+    for f,i in files{
+        file_ext := path2.get_file_stem(f.fullpath, alloc)
+        if file_ext != ".png" && file_ext != ".jpg" && file_ext != ".jpeg" do continue
+        filename := f.name
+        t := Texture{path = f.fullpath}
+        if texture_create(&t){
             append(&rt.bindless_textures, t)
-        } else {
-            log.errorf("Failed to create texture for path: %s", p)
+            g_texture_indexes[filename] = index
+            index += 1
         }
     }
+    os.file_info_slice_delete(files)
+
+    // rt.bindless_textures = make([dynamic]Texture, 0, len(texture_paths), alloc)
+
+    // for p in texture_paths {
+    //     t := Texture{path = p}
+    //     if texture_create(&t) {
+    //         append(&rt.bindless_textures, t)
+    //     } else {
+    //         log.errorf("Failed to create texture for path: %s", p)
+    //     }
+    // }
+
+    MAX_BINDLESS_TEXTURES = u32(len(rt.bindless_textures))
 
     // Similarly for gui_textures if needed, but since it's fixed array, perhaps initialize with a default texture or handle differently
     // For now, assume gui_textures are critical, so check in loop
@@ -2362,6 +2384,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
         }
     }
 }
+
 
 texture_paths := [6]string{
     "assets/textures/numbers.png",
@@ -2626,7 +2649,7 @@ update_material :: proc(id: i32) {
     rt.materials[id].roughness = m.roughness
     rt.materials[id].transparency = m.transparency
     rt.materials[id].refractive_index = m.refractive_index
-    rt.materials[id].texture_id = m.texture_id
+    rt.materials[id].texture_id = g_texture_indexes[m.texture]
     gpu.vbuffer_update(&rt.compute.storage_buffers.materials, &rb.vma_allocator, rt.materials[:])
 }
 
