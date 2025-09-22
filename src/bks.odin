@@ -270,6 +270,7 @@ CharacterAnimation :: struct
     timer : f32,
     start : vec4,      // position start
     end : vec4,        // position end
+    rot_timer : f32,
     start_rot : quat,  // rotation start (quaternion)
     end_rot : quat,    // rotation end (quaternion)
 }
@@ -464,6 +465,7 @@ perform_bee_action :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
             bee_action_attack(bee, player)
     }
     bee.anim.timer = 1
+    bee.anim.rot_timer = .5
     bee.c_flags = {.Walk}
     bee.flags += {.Animate}
     set_up_character_anim(bee, g_level.grid_scale)
@@ -664,6 +666,7 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerTurnState)
     if bounds_check(bounds, g_level.grid) {
         p.target = bounds
         p.anim.timer = 1
+        p.anim.rot_timer = .5
         p.c_flags = {.Walk}
         state^ = .Animate
         set_up_character_anim(p, g_level.grid_scale)
@@ -1064,13 +1067,13 @@ slerp_character_to_tile :: proc(cha : ^Character, dt : f32)
 
 slerp_character_angle :: proc(cha : ^Character, dt : f32)
 {
-    if cha.anim.timer <= 0 do return
-    cha.anim.timer -= dt
+    if cha.anim.rot_timer <= 0 do return
+    cha.anim.rot_timer -= dt
 
     ct := get_component(cha.entity, Cmp_Transform)
     if ct == nil do return
 
-    t := f64(1.0 - cha.anim.timer)
+    t := f64(1.0 - cha.anim.rot_timer)
     eased_t := math.smoothstep(0.0, 1.0, t)
 
     // Interpolate rotation (assumes vec4 quaternions; adjust if using quat128)
