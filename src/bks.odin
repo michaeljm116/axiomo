@@ -264,11 +264,14 @@ Character :: struct
     c_flags : CharacterFlags,
     anim : CharacterAnimation,
 }
+
 CharacterAnimation :: struct
 {
     timer : f32,
-    start : vec4,
-    end : vec4
+    start : vec4,      // position start
+    end : vec4,        // position end
+    start_rot : quat,  // rotation start (quaternion)
+    end_rot : quat,    // rotation end (quaternion)
 }
 
 Ability :: struct {
@@ -663,7 +666,6 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerTurnState)
         p.anim.timer = 1
         p.c_flags = {.Walk}
         state^ = .Animate
-        fmt.println("Animate")
         set_up_character_anim(p, g_level.grid_scale)
     }
 
@@ -678,6 +680,7 @@ animate_player :: proc(p : ^Player, dt : f32, state : ^PlayerTurnState)
 {
     if p.anim.timer > 0 && .Walk in p.c_flags {
         slerp_character_to_tile(p, dt)
+        slerp_character_angle(p,dt)
     }
     else {
         move_entity_to_tile(p.entity, g_level.grid_scale, p.target)
@@ -691,6 +694,7 @@ animate_bee :: proc(bee : ^Bee, dt : f32)
 {
     if bee.anim.timer > 0 && .Walk in bee.c_flags {
         slerp_character_to_tile(bee, dt)
+        slerp_character_angle(bee,dt)
     }
     else {
         move_entity_to_tile(bee.entity, g_level.grid_scale, bee.target)
@@ -1030,6 +1034,22 @@ set_up_character_anim :: proc(cha : ^Character, scale : vec2f)
     cha.anim.start = pt.local.pos
     cha.anim.end.yw = cha.anim.start.yw
     cha.anim.end.xz = {tile_center_x, tile_center_z}
+
+    // Compute target rotation to face the movement direction
+    ct := get_component(cha.entity, Cmp_Transform)
+    if ct == nil do return
+
+    cha.anim.start_rot = ct.local.rot
+
+    dir_xz := vec3{cha.anim.end.x - cha.anim.start.x, 0, cha.anim.end.z - cha.anim.start.z}
+    dir_len := linalg.length(dir_xz)
+    if dir_len > 0 {
+        fwd := -linalg.normalize(dir_xz)
+        up := vec3{0, 1, 0}
+        cha.anim.end_rot = linalg.quaternion_from_forward_and_up(fwd, up) // Assumes quat as vec4
+    } else {
+        cha.anim.end_rot = cha.anim.start_rot // No movement; no rotation change
+    }
 }
 
 slerp_character_to_tile :: proc(cha : ^Character, dt : f32)
@@ -1040,8 +1060,21 @@ slerp_character_to_tile :: proc(cha : ^Character, dt : f32)
     t := f64(1.0 - cha.anim.timer)
     eased_t := math.smoothstep(0.0,1.0,t)
     ct.local.pos = linalg.lerp(cha.anim.start, cha.anim.end, f32(eased_t))
-    fmt.println("Start: ", cha.anim.start, " End: ", cha.anim.end, " Time: ", cha.anim.timer)
-    fmt.println(ct.local.pos)
+}
+
+slerp_character_angle :: proc(cha : ^Character, dt : f32)
+{
+    if cha.anim.timer <= 0 do return
+    cha.anim.timer -= dt
+
+    ct := get_component(cha.entity, Cmp_Transform)
+    if ct == nil do return
+
+    t := f64(1.0 - cha.anim.timer)
+    eased_t := math.smoothstep(0.0, 1.0, t)
+
+    // Interpolate rotation (assumes vec4 quaternions; adjust if using quat128)
+    ct.local.rot = linalg.quaternion_slerp(cha.anim.start_rot, cha.anim.end_rot, f32(eased_t))
 }
 
 // Finds the lowest part of an entity in a scene hierarchy
