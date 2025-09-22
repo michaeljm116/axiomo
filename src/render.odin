@@ -245,7 +245,6 @@ init_vulkan :: proc()
 		device_create_info.ppEnabledExtensionNames = raw_data(DEVICE_EXTENSIONS)
 
 		//TODO : ENABLE VALIDATION LAYERS
-
 		must(vk.CreateDevice(rb.physical_device, &device_create_info, nil, &rb.device))
 
 		vk.GetDeviceQueue(rb.device, indices.graphics.?, 0, &rb.graphics_queue)
@@ -1513,7 +1512,7 @@ prepare_storage_buffers :: proc() {
    gui_cmp := get_component(g_world_ent, Cmp_Gui)
    gpu_gui := gpu.Gui{min = gui_cmp.min, extents = gui_cmp.extents,
        align_min = gui_cmp.align_min, align_ext = gui_cmp.align_ext,
-       layer = gui_cmp.layer, id = gui_cmp.id, alpha = gui_cmp.alpha
+       layer = gui_cmp.layer, id = g_texture_indexes[gui_cmp.id], alpha = gui_cmp.alpha
    }
    append(&rt.guis, gpu_gui)
    gui_cmp.ref = i32(len(rt.guis))
@@ -2329,19 +2328,6 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     init_staging_buf(&rt.compute.storage_buffers.faces,faces, len(faces))
     init_staging_buf(&rt.compute.storage_buffers.blas, blas, len(blas))
     init_staging_buf(&rt.compute.storage_buffers.shapes, shapes, len(shapes))
-    // for &t, i in rt.gui_textures{
-    //     t = Texture{path = texture_paths[i]}
-    //     texture_create(&t)
-    // }
-    // rt.bindless_textures = make([dynamic]Texture, len(texture_paths), alloc)[:]
-    // for p, i in texture_paths{
-    //     t := Texture{path = p}
-    //     texture_create(&t)
-    //     rt.bindless_textures[i] = t
-    // }
-    // Change bindless initialization to append only successful textures
-
-    // file.get_dir_files("assets/textures")
 
     //Dynamically load textyures
     g_texture_indexes[""] = -1
@@ -2359,29 +2345,13 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
         }
     }
     os.file_info_slice_delete(files)
-
-    // rt.bindless_textures = make([dynamic]Texture, 0, len(texture_paths), alloc)
-
-    // for p in texture_paths {
-    //     t := Texture{path = p}
-    //     if texture_create(&t) {
-    //         append(&rt.bindless_textures, t)
-    //     } else {
-    //         log.errorf("Failed to create texture for path: %s", p)
-    //     }
-    // }
-
     MAX_BINDLESS_TEXTURES = u32(len(rt.bindless_textures))
 
     // Similarly for gui_textures if needed, but since it's fixed array, perhaps initialize with a default texture or handle differently
     // For now, assume gui_textures are critical, so check in loop
-
     for &t, i in rt.gui_textures {
         t = Texture{path = texture_paths[i]}
-        if !texture_create(&t) {
-            log.errorf("Failed to create GUI texture for path: %s", texture_paths[i])
-            // Optionally, set to a default texture or panic
-        }
+        if !texture_create(&t) do log.errorf("Failed to create GUI texture for path: %s", texture_paths[i])
     }
 }
 
@@ -2389,8 +2359,8 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
 texture_paths := [6]string{
     "assets/textures/numbers.png",
     "assets/textures/BeeKillingsInnUI.png",
-    "assets/textures/wood-mid.png",
-    "assets/textures/wood-dark.png",
+    "assets/textures/BeeKillingsInnUI.png",
+    "assets/textures/BeeKillingsInnUI.png",
     "assets/textures/circuit.jpg",
     "assets/textures/pause.png",
 }
@@ -2660,7 +2630,7 @@ update_gui :: proc(gc: ^Cmp_Gui) {
     g.align_min = gc.align_min
     g.align_ext = gc.align_ext
     g.layer = gc.layer
-    g.id = gc.id
+    g.id = g_texture_indexes[gc.id]
     g.alpha = gc.alpha
     rt.update_flags |= {.GUI}
 }
@@ -2905,7 +2875,7 @@ added_entity :: proc(e: Entity) {
             align_min = gc.align_min,
             align_ext = gc.align_ext,
             layer = gc.layer,
-            id = gc.id,
+            id = g_texture_indexes[gc.id],
             alpha = gc.alpha,
         }
         gc.ref = i32(len(rt.guis))

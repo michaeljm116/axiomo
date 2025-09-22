@@ -1171,15 +1171,15 @@ add_gameui :: proc (gui : Cmp_Gui, name : string) -> Entity
 init_GameUI :: proc( ui : ^GameUI)
 {
     title_comp := Cmp_Gui{
-        min = vec2f{0.333, 0.73}, extents = vec2f{0.415, 0.11},
-        align_min = vec2f{1., 0.43}, align_ext = vec2f{.5, 0.08},
-        layer = 0, ref = 1, alpha = 1.0, update = true
+        min = vec2f{0, 0.5}, extents = vec2f{1, 0.2},
+        align_min = vec2f{1.0, 1.0}, align_ext = vec2f{1, 1},
+        id = "BeeKillinsInnUI.png",layer = 0, ref = 0, alpha = 1.0, update = true
     }
 
     lose_comp := Cmp_Gui{
         min = vec2f{0.3, 0.645}, extents = vec2f{.5, .15},
         align_min = vec2f{1, .288}, align_ext = vec2f{.56, .125},
-        layer = 0, ref = 2, alpha = 0.5, update = false
+        id = "BeeKillinsInnUI.png", layer = 0, ref = 0, alpha = 0.5, update = false
     }
 
     ui.title = add_gameui(title_comp, "Title")

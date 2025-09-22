@@ -186,7 +186,7 @@ Cmp_Gui :: struct {
     align_min: vec2f,
     align_ext: vec2f,
     layer: i32,
-    id: i32,
+    id: string,
     ref: i32,
     alpha: f32,
     update: bool,
@@ -684,7 +684,7 @@ gui_component_full :: proc(
     align_min: vec2f,
     align_ext: vec2f,
     layer: i32,
-    id: i32,
+    id: string,
     alpha: f32
 ) -> Cmp_Gui {
     return Cmp_Gui{
@@ -708,7 +708,7 @@ gui_number_component_default :: proc() -> Cmp_GuiNumber {
 
 gui_number_component_simple :: proc(min: vec2f, extents: vec2f, number: i32) -> Cmp_GuiNumber {
     return Cmp_GuiNumber{
-        gui = gui_component_full(min, extents, {0.0, 0.0}, {0.1, 1.0}, 0, 0, 0.0),
+        gui = gui_component_full(min, extents, {0.0, 0.0}, {0.1, 1.0}, 0, "numbers.png", 0.0),
         number = number,
         shader_references = make([dynamic]i32),
     }
@@ -716,7 +716,7 @@ gui_number_component_simple :: proc(min: vec2f, extents: vec2f, number: i32) -> 
 
 gui_number_component_with_alpha :: proc(min: vec2f, extents: vec2f, number: i32, alpha: f32) -> Cmp_GuiNumber {
     return Cmp_GuiNumber{
-        gui = gui_component_full(min, extents, {0.0, 0.0}, {0.1, 1.0}, 0, 0, alpha),
+        gui = gui_component_full(min, extents, {0.0, 0.0}, {0.1, 1.0}, 0, "numbers.png", alpha),
         number = number,
         shader_references = make([dynamic]i32),
     }

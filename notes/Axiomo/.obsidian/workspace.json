@@ -87,12 +87,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Code.md",
+                "file": "BeeKillingsInn/Story.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Code"
+              "title": "Story"
             }
           },
           {
@@ -260,7 +260,9 @@
   },
   "active": "797017051b8d3abc",
   "lastOpenFiles": [
+    "BeeKillingsInn/Bee Ideas.md",
     "BeeKillingsInn/Art Inspo.md",
+    "BeeKillingsInn/Code.md",
     "sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",
     "sanctuary-high-view-2-768.YJKVAsU3_CIe1o.webp",
     "Untitled.md",
@@ -276,12 +278,10 @@
     "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
     "Excalidraw/AnimationStates.excalidraw.md",
-    "BeeKillingsInn/Code.md",
     "Excalidraw/PlayersTUrn.excalidraw.md",
     "BeeKillingsInn/bg.md",
     "BeeKillingsInn/Merge Bee with Axiomo.md",
     "BeeKillingsInn/Rules Engine.md",
-    "BeeKillingsInn/Bee Ideas.md",
     "BeeKillingsInn/Story.md",
     "BeeKillingsInn/Engine Improvements.md",
     "Untitled Kanban.md",
