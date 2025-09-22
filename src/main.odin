@@ -85,7 +85,7 @@ main :: proc() {
 
 	// begin loading data
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)
-	res.load_materials("assets/Materials_dyn.xml", &g_materials)
+	res.load_materials("assets/Materials.xml", &g_materials)
 	g_models = make([dynamic]res.Model, 0, arena_alloc)
 	scene := sc.load_new_scene("assets/scenes/BeeKillingsInn.json", arena_alloc)
 	res.load_directory("assets/models/", &g_models)
