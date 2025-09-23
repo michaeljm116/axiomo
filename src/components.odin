@@ -4,6 +4,7 @@ import "core:math/linalg"
 import "external/ecs"
 import "core:hash/xxhash"
 import "core:strings"
+import "core:container/queue"
 import res "resource"
 import sdl "vendor:sdl2"
 import sdl_mixer "vendor:sdl2/mixer"
@@ -121,6 +122,9 @@ Cmp_Root :: struct {
     // Empty component marker for head nodes
 }
 
+//----------------------------------------------------------------------------\\
+// /Render Components
+//----------------------------------------------------------------------------\\
 RenderType :: enum {
     MATERIAL = 0,
     PRIMITIVE = 1,
@@ -249,6 +253,9 @@ Camera :: struct {
     zfar: f32,
 }
 
+//----------------------------------------------------------------------------\\
+// /BVH Components
+//----------------------------------------------------------------------------\\
 BvhBounds :: struct {
     lower: vec3,
     _pad: i32,
@@ -275,6 +282,9 @@ LeafBvhNode :: struct {
 
 BvhNode :: rawptr  // Unified raw pointer for tree traversal
 
+//----------------------------------------------------------------------------\\
+// /Animation Components
+//----------------------------------------------------------------------------\\
 // Animation flags - 4 bytes with bitfields
 AnimFlags :: bit_field u16{
    idPo         : u8   | 8,
@@ -289,13 +299,15 @@ AnimFlags :: bit_field u16{
 }
 
 // Breadth-First Graph Component
+MAX_BONES :: 24
 Cmp_BFGraph :: struct {
-    nodes: [dynamic]Entity,
-    transforms: [dynamic]Sqt,
+    nodes: [MAX_BONES]Entity,
+    transforms: [MAX_BONES]Sqt,
+    len : u32
 }
 
 Cmp_Pose :: struct {
-    pose: [dynamic]res.PoseSqt,
+    pose: [MAX_BONES]res.PoseSqt,
     file_name: string,
     pose_name: string,
 }
@@ -334,6 +346,9 @@ Cmp_Animate :: struct {
     parent_entity: Entity,  // Reference to parent animation entity
 }
 
+//----------------------------------------------------------------------------\\
+// /Audio Components
+//----------------------------------------------------------------------------\\
 // Constants
 ANIM_FLAG_RESET :: 0b11111111111000000000000000000000
 
@@ -355,6 +370,9 @@ Cmp_Audio :: struct {
     channel: i32,  // SDL mixer channel for this audio
 }
 
+//----------------------------------------------------------------------------\\
+// /Physics Components
+//----------------------------------------------------------------------------\\
 ShapeType :: enum{
     Capsule,
     Circle,
@@ -1064,23 +1082,40 @@ bvh_get_bounds :: proc(node: BvhNode) -> BvhBounds {
     return {}
 }
 
-bf_graph_component_create :: proc() -> Cmp_BFGraph {
-    return Cmp_BFGraph{
-        nodes = make([dynamic]Entity),
-        transforms = make([dynamic]Sqt),
-    }
-}
+flatten_entity :: proc(e : Entity)
+{
+    // Init
+    bfg := get_component(e, Cmp_BFGraph)
+    head := get_component(e, Cmp_Node)
 
-bf_graph_component_destroy :: proc(graph: ^Cmp_BFGraph) {
-    delete(graph.nodes)
-    delete(graph.transforms)
+    // Set up queue and initial values
+    q : queue.Queue(Entity)
+    index := 0
+    bfg.nodes[index] = e
+    bfg.transforms[index] = get_component(e, Cmp_Transform).local
+    queue.push(&q, e)
+    curr := queue.front(&q)
+
+    // Place the child into teh Queue, Then all the childs Brothers into the queue
+    for(queue.len(q) > 0){
+        curr := queue.pop_front(&q)
+        n := get_component(curr, Cmp_Node)
+        if(n.child != 0){
+            queue.push(&q,n.child)
+            cn := get_component(n.child, Cmp_Node)
+            bro := cn.brotha
+            for bro != 0{
+                queue.push(&q, bro)
+                bro = get_component(bro, Cmp_Node).brotha
+            }
+        }
+
+    }
+
 }
 
 // Flatten function - converts hierarchy to breadth-first order
 flatten_hierarchy :: proc(graph: ^Cmp_BFGraph, head_entity: Entity) {
-    clear(&graph.nodes)
-    clear(&graph.transforms)
-
     // Use a queue for breadth-first traversal
     queue: [dynamic]Entity
     defer delete(queue)
@@ -1099,15 +1134,15 @@ flatten_hierarchy :: proc(graph: ^Cmp_BFGraph, head_entity: Entity) {
         curr_child := node_comp.child
         for curr_child != Entity(0) {
             append(&queue, curr_child)
-            append(&graph.nodes, curr_child)
+            // append(&graph.nodes, curr_child)
 
             // Get transform component
             transform_comp := get_component(curr_child, Cmp_Transform)
             if transform_comp != nil {
-                append(&graph.transforms, transform_comp.local)
+                // append(&graph.transforms, transform_comp.local)
             } else {
                 // If no transform, use identity
-                append(&graph.transforms, Sqt{})
+                // append(&graph.transforms, Sqt{})
             }
 
             // Move to next sibling
@@ -1151,20 +1186,20 @@ reset_pose :: proc(graph: ^Cmp_BFGraph) {
 
 pose_component_create :: proc(name: string, file: string, pose_data: []res.PoseSqt) -> Cmp_Pose {
     comp := Cmp_Pose{
-        pose = make([dynamic]res.PoseSqt),
+        // pose = make([dynamic]res.PoseSqt),
         file_name = strings.clone(file),
         pose_name = strings.clone(name),
     }
 
     for p in pose_data {
-        append(&comp.pose, p)
+        // append(&comp.pose, p)
     }
 
     return comp
 }
 
 pose_component_destroy :: proc(comp: ^Cmp_Pose) {
-    delete(comp.pose)
+    // delete(comp.pose)
     delete(comp.file_name)
     delete(comp.pose_name)
 }
