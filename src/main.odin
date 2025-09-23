@@ -99,6 +99,7 @@ main :: proc() {
 
 	start_up_raytracer(arena_alloc)
 	load_scene(scene, context.allocator)
+	added_entity(g_world_ent)
 
 	g_player = load_prefab("Froku")
 	transform_sys_process_e()

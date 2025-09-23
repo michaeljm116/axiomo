@@ -1373,7 +1373,7 @@ MAX_LIGHTS :: 32
 MAX_GUIS :: 96
 MAX_NODES :: 2048
 MAX_BINDLESS_TEXTURES :u32= 0
-MAX_TEXTURES :: 5
+MAX_TEXTURES :: 1
 // Update flags for tracking what needs to be updated
 UpdateFlag :: enum {
     OBJECT,
@@ -2356,13 +2356,8 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
 }
 
 
-texture_paths := [6]string{
+texture_paths := [1]string{
     "assets/textures/numbers.png",
-    "assets/textures/BeeKillingsInnUI.png",
-    "assets/textures/BeeKillingsInnUI.png",
-    "assets/textures/BeeKillingsInnUI.png",
-    "assets/textures/circuit.jpg",
-    "assets/textures/pause.png",
 }
 
 init_staging_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int )

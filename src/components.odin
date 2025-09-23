@@ -186,8 +186,8 @@ Cmp_Gui :: struct {
     align_min: vec2f,
     align_ext: vec2f,
     layer: i32,
-    id: string,
-    ref: i32,
+    id: string, //Texture
+    ref: i32, // Gpu reference
     alpha: f32,
     update: bool,
 }

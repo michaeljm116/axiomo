@@ -1170,18 +1170,21 @@ add_gameui :: proc (gui : Cmp_Gui, name : string) -> Entity
 
 init_GameUI :: proc( ui : ^GameUI)
 {
-    title_comp := Cmp_Gui{
-        min = vec2f{0, 0.5}, extents = vec2f{1, 0.2},
-        align_min = vec2f{1.0, 1.0}, align_ext = vec2f{1, 1},
-        id = "BeeKillinsInnUI.png",layer = 0, ref = 0, alpha = 1.0, update = true
-    }
+    // title_comp := Cmp_Gui{
+    //     min = vec2f{0.0, 0.0}, extents = vec2f{1.0, 1.0},
+    //     align_min = vec2f{1.0, 0.5}, align_ext = vec2f{1.0, 1.0},
+    //     id = "BeeKillingsInnUI.png",layer = 0, alpha = 1.0, update = true
+    // }
 
-    lose_comp := Cmp_Gui{
+    start_comp := Cmp_Gui{
         min = vec2f{0.3, 0.645}, extents = vec2f{.5, .15},
         align_min = vec2f{1, .288}, align_ext = vec2f{.56, .125},
-        id = "BeeKillinsInnUI.png", layer = 0, ref = 0, alpha = 0.5, update = false
+        id = "BeeKillingsInnUI.png", layer = 0, alpha = 0.5, update = false
     }
 
-    ui.title = add_gameui(title_comp, "Title")
-    ui.lose = add_gameui(lose_comp, "Lose")
+    // ui.title = add_gameui(title_comp, "Title")
+    ui.start = add_gameui(start_comp, "Lose")
+
+    // update_gui(&title_comp)
+    update_gui(&start_comp)
 }
