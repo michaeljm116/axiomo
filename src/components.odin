@@ -285,6 +285,7 @@ BvhNode :: rawptr  // Unified raw pointer for tree traversal
 //----------------------------------------------------------------------------\\
 // /Animation Components
 //----------------------------------------------------------------------------\\
+
 // Animation flags - 4 bytes with bitfields
 AnimFlags :: bit_field u16{
    idPo         : u8   | 8,
@@ -332,8 +333,8 @@ Cmp_Animation :: struct {
     prefab_name: u32,
     trans_timer: f32,
     trans_time: f32,
-    trans: i32,
-    trans_end: i32,
+    trans: u32,
+    trans_end: u32,
     state: AnimationState,
 }
 
@@ -1084,21 +1085,22 @@ bvh_get_bounds :: proc(node: BvhNode) -> BvhBounds {
 
 flatten_entity :: proc(e : Entity)
 {
-    // Init
-    bfg := get_component(e, Cmp_BFGraph)
-    head := get_component(e, Cmp_Node)
-
-    // Set up queue and initial values
+    // Init & Set up queue and initial values
+    bfg : Cmp_BFGraph
     q : queue.Queue(Entity)
     index := 0
-    bfg.nodes[index] = e
-    bfg.transforms[index] = get_component(e, Cmp_Transform).local
     queue.push(&q, e)
-    curr := queue.front(&q)
 
     // Place the child into teh Queue, Then all the childs Brothers into the queue
     for(queue.len(q) > 0){
+        //First load whats in teh queue into the graphs
+        assert(index < MAX_BONES)
         curr := queue.pop_front(&q)
+        bfg.nodes[index] = curr
+        bfg.transforms[index] = get_component(curr, Cmp_Transform).local
+        index += 1
+
+        // Then put in their children and nephews
         n := get_component(curr, Cmp_Node)
         if(n.child != 0){
             queue.push(&q,n.child)
@@ -1109,51 +1111,8 @@ flatten_entity :: proc(e : Entity)
                 bro = get_component(bro, Cmp_Node).brotha
             }
         }
-
     }
-
-}
-
-// Flatten function - converts hierarchy to breadth-first order
-flatten_hierarchy :: proc(graph: ^Cmp_BFGraph, head_entity: Entity) {
-    // Use a queue for breadth-first traversal
-    queue: [dynamic]Entity
-    defer delete(queue)
-
-    append(&queue, head_entity)
-
-    for len(queue) > 0 {
-        current := queue[0]
-        ordered_remove(&queue, 0)
-
-        // Get node component to find children
-        node_comp := get_component(current, Cmp_Node)
-        if node_comp == nil do continue
-
-        // Add children to queue and graph
-        curr_child := node_comp.child
-        for curr_child != Entity(0) {
-            append(&queue, curr_child)
-            // append(&graph.nodes, curr_child)
-
-            // Get transform component
-            transform_comp := get_component(curr_child, Cmp_Transform)
-            if transform_comp != nil {
-                // append(&graph.transforms, transform_comp.local)
-            } else {
-                // If no transform, use identity
-                // append(&graph.transforms, Sqt{})
-            }
-
-            // Move to next sibling
-            child_node := get_component(curr_child, Cmp_Node)
-            if child_node != nil {
-                curr_child = child_node.brotha
-            } else {
-                break
-            }
-        }
-    }
+    add_component(e, bfg)
 }
 
 // Set pose from animation data

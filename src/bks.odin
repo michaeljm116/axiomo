@@ -1018,68 +1018,6 @@ move_entity_to_tile :: proc(entity : Entity, scale : vec2f, pos : vec2)
     pt.local.pos.z = tile_center_z
 }
 
-// Similar to move_entity_to_tile but just sets the vectors up
-set_up_character_anim :: proc(cha : ^Character, scale : vec2f)
-{
-    pt := get_component(cha.entity, Cmp_Transform)
-    ft := get_component(g_floor, Cmp_Transform)
-    if pt == nil || ft == nil do return
-
-    full_cell_x := 2.0 * scale.x
-    full_cell_z := 2.0 * scale.y
-
-    left_x := ft.global.pos.x - ft.global.sca.x
-    bottom_z := ft.global.pos.z - ft.global.sca.z
-
-    tile_center_x := left_x + full_cell_x * (f32(cha.target.x) + 0.5)
-    tile_center_z := bottom_z + full_cell_z * (f32(cha.target.y) + 0.5)
-
-    cha.anim.start = pt.local.pos
-    cha.anim.end.yw = cha.anim.start.yw
-    cha.anim.end.xz = {tile_center_x, tile_center_z}
-
-    // Compute target rotation to face the movement direction
-    ct := get_component(cha.entity, Cmp_Transform)
-    if ct == nil do return
-
-    cha.anim.start_rot = ct.local.rot
-
-    dir_xz := vec3{cha.anim.end.x - cha.anim.start.x, 0, cha.anim.end.z - cha.anim.start.z}
-    dir_len := linalg.length(dir_xz)
-    if dir_len > 0 {
-        fwd := -linalg.normalize(dir_xz)
-        up := vec3{0, 1, 0}
-        cha.anim.end_rot = linalg.quaternion_from_forward_and_up(fwd, up) // Assumes quat as vec4
-    } else {
-        cha.anim.end_rot = cha.anim.start_rot // No movement; no rotation change
-    }
-}
-
-slerp_character_to_tile :: proc(cha : ^Character, dt : f32)
-{
-    if dt < 1 do cha.anim.timer -= dt
-    ct := get_component(cha.entity, Cmp_Transform)
-    if ct == nil do return
-    t := f64(1.0 - cha.anim.timer)
-    eased_t := math.smoothstep(0.0,1.0,t)
-    ct.local.pos = linalg.lerp(cha.anim.start, cha.anim.end, f32(eased_t))
-}
-
-slerp_character_angle :: proc(cha : ^Character, dt : f32)
-{
-    if cha.anim.rot_timer <= 0 do return
-    cha.anim.rot_timer -= dt
-
-    ct := get_component(cha.entity, Cmp_Transform)
-    if ct == nil do return
-
-    t := f64(1.0 - cha.anim.rot_timer)
-    eased_t := math.smoothstep(0.0, 1.0, t)
-
-    // Interpolate rotation (assumes vec4 quaternions; adjust if using quat128)
-    ct.local.rot = linalg.quaternion_slerp(cha.anim.start_rot, cha.anim.end_rot, f32(eased_t))
-}
-
 // Finds the lowest part of an entity in a scene hierarchy
 // cycles through the entire entity's transform to find
 // .. the lowest extent of the lowest part
@@ -1187,4 +1125,80 @@ init_GameUI :: proc( ui : ^GameUI)
 
     // update_gui(&title_comp)
     update_gui(&start_comp)
+}
+
+
+//----------------------------------------------------------------------------\\
+// /Animation
+//----------------------------------------------------------------------------\\
+
+add_animation :: proc(ent : Entity)
+{
+   flatten_entity(ent)
+   ac := animation_component_with_names(2,"Froku", "idleStart", "idleEnd", AnimFlags{ idPo = 0, loop = true, force_start = true, force_end = true})
+   add_component(ent, ac)
+   // animation_added(ent)
+}
+
+
+// Similar to move_entity_to_tile but just sets the vectors up
+set_up_character_anim :: proc(cha : ^Character, scale : vec2f)
+{
+    pt := get_component(cha.entity, Cmp_Transform)
+    ft := get_component(g_floor, Cmp_Transform)
+    if pt == nil || ft == nil do return
+
+    full_cell_x := 2.0 * scale.x
+    full_cell_z := 2.0 * scale.y
+
+    left_x := ft.global.pos.x - ft.global.sca.x
+    bottom_z := ft.global.pos.z - ft.global.sca.z
+
+    tile_center_x := left_x + full_cell_x * (f32(cha.target.x) + 0.5)
+    tile_center_z := bottom_z + full_cell_z * (f32(cha.target.y) + 0.5)
+
+    cha.anim.start = pt.local.pos
+    cha.anim.end.yw = cha.anim.start.yw
+    cha.anim.end.xz = {tile_center_x, tile_center_z}
+
+    // Compute target rotation to face the movement direction
+    ct := get_component(cha.entity, Cmp_Transform)
+    if ct == nil do return
+
+    cha.anim.start_rot = ct.local.rot
+
+    dir_xz := vec3{cha.anim.end.x - cha.anim.start.x, 0, cha.anim.end.z - cha.anim.start.z}
+    dir_len := linalg.length(dir_xz)
+    if dir_len > 0 {
+        fwd := -linalg.normalize(dir_xz)
+        up := vec3{0, 1, 0}
+        cha.anim.end_rot = linalg.quaternion_from_forward_and_up(fwd, up) // Assumes quat as vec4
+    } else {
+        cha.anim.end_rot = cha.anim.start_rot // No movement; no rotation change
+    }
+}
+
+slerp_character_to_tile :: proc(cha : ^Character, dt : f32)
+{
+    if dt < 1 do cha.anim.timer -= dt
+    ct := get_component(cha.entity, Cmp_Transform)
+    if ct == nil do return
+    t := f64(1.0 - cha.anim.timer)
+    eased_t := math.smoothstep(0.0,1.0,t)
+    ct.local.pos = linalg.lerp(cha.anim.start, cha.anim.end, f32(eased_t))
+}
+
+slerp_character_angle :: proc(cha : ^Character, dt : f32)
+{
+    if cha.anim.rot_timer <= 0 do return
+    cha.anim.rot_timer -= dt
+
+    ct := get_component(cha.entity, Cmp_Transform)
+    if ct == nil do return
+
+    t := f64(1.0 - cha.anim.rot_timer)
+    eased_t := math.smoothstep(0.0, 1.0, t)
+
+    // Interpolate rotation (assumes vec4 quaternions; adjust if using quat128)
+    ct.local.rot = linalg.quaternion_slerp(cha.anim.start_rot, cha.anim.end_rot, f32(eased_t))
 }

@@ -362,8 +362,6 @@ load_materials :: proc(file : string, materials : ^[dynamic]Material)
         for i in 1..<len(temp_mat.name) {
             temp_mat.unique_id *= i32(temp_mat.name[i]) + i32(temp_mat.name[i - 1])
         }
-
-
         append(materials, temp_mat)
     }
 }
@@ -371,6 +369,17 @@ load_materials :: proc(file : string, materials : ^[dynamic]Material)
 //----------------------------------------------------------------------------\\
 // /Load Animations /la
 //----------------------------------------------------------------------------\\
+load_anim_directory :: proc(directory : string, poses : ^map[string]PoseList, alloc : mem.Allocator)
+{
+    files := path2.get_dir_files(directory)
+    for f in files{
+        name := path2.get_file_name(f, alloc)
+        poses[name] = load_pose(f.fullpath, name, alloc)
+        // map_insert(poses, name, load_pose(f.fullpath, name, alloc))
+    }
+    os.file_info_slice_delete(files)
+}
+
 load_pose :: proc(file_name, prefab_name : string, allocator: mem.Allocator) -> PoseList {
     pl: PoseList
     pl.name = strings.clone(prefab_name, allocator)
@@ -392,12 +401,12 @@ load_pose :: proc(file_name, prefab_name : string, allocator: mem.Allocator) -> 
             }
             return pl
         }
-       nth_pose += 1
+        nth_pose += 1
 
         temp_pose: Pose
-        temp_pose.name = xml2.get_str_attr(doc, pose_id, "Name")
+        temp_pose.name = strings.clone(xml2.get_str_attr(doc, pose_id, "Name"), allocator)
         // Initialize dynamic array for PoseSqts
-        temp_pose.pose = make([dynamic]PoseSqt, allocator)
+        temp_pose.pose = make([dynamic]PoseSqt, 0, allocator)
 
         // Iterate through "Tran" elements for the current pose
         tran_id : xml.Element_ID

@@ -36,3 +36,20 @@ get_file_stem :: proc (file_path : string, alloc : mem.Allocator) -> string
     sub , ok := strings.substring(file_path, index, len(file_path))
     return sub
 }
+
+get_file_name :: proc (f : os.File_Info, alloc : mem.Allocator) -> string
+{
+    context.allocator = alloc
+    i := len(f.name)
+    index := 0
+    for j in 0..<i
+    {
+        if f.name[j] == '.'
+        {
+            index = j
+            break
+        }
+    }
+    sub, ok := strings.substring(f.name, 0, index)
+    return sub
+}
