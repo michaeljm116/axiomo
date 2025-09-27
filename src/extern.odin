@@ -135,3 +135,11 @@ get_material_index :: proc(id: i32) -> i32 {
 	}
 	return 1
 }
+
+map_sqt :: proc(sqt : resource.Sqt) -> Sqt{
+    return Sqt{
+        pos = sqt.pos,
+        rot = sqt.rot,
+        sca = sqt.sca
+    }
+}

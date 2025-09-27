@@ -16,7 +16,7 @@ import "core:strconv"
 import "../extensions/xml2"
 import path "core:path/filepath"
 import path2 "../extensions/filepath2"
-
+import xxh2 "../extensions/xxhash2"
 //----------------------------------------------------------------------------\\
 // /STRUCTS
 //----------------------------------------------------------------------------\\
@@ -90,9 +90,9 @@ Pose :: struct{
    pose : [dynamic]PoseSqt, // Changed from tuple[int, Sqt]
 }
 
-PoseList :: struct{
+Animation :: struct{
     name : string,
-    poses : [dynamic]Pose,
+    poses : map[u32]Pose,
     hash_val : i32
 }
 
@@ -369,21 +369,21 @@ load_materials :: proc(file : string, materials : ^[dynamic]Material)
 //----------------------------------------------------------------------------\\
 // /Load Animations /la
 //----------------------------------------------------------------------------\\
-load_anim_directory :: proc(directory : string, poses : ^map[string]PoseList, alloc : mem.Allocator)
+load_anim_directory :: proc(directory : string, poses : ^map[u32]Animation, alloc : mem.Allocator)
 {
     files := path2.get_dir_files(directory)
     for f in files{
         name := path2.get_file_name(f, alloc)
-        poses[name] = load_pose(f.fullpath, name, alloc)
+        poses[xxh2.str_to_u32(name)] = load_pose(f.fullpath, name, alloc)
         // map_insert(poses, name, load_pose(f.fullpath, name, alloc))
     }
     os.file_info_slice_delete(files)
 }
 
-load_pose :: proc(file_name, prefab_name : string, allocator: mem.Allocator) -> PoseList {
-    pl: PoseList
+load_pose :: proc(file_name, prefab_name : string, allocator: mem.Allocator) -> Animation {
+    pl: Animation
     pl.name = strings.clone(prefab_name, allocator)
-    pl.poses = make([dynamic]Pose, 0, allocator)
+    pl.poses = make(map[u32]Pose, 0, allocator)
 
     doc, err := xml.load_from_file(file_name)
     if xml2.log_if_err(err) do return pl
@@ -463,16 +463,17 @@ load_pose :: proc(file_name, prefab_name : string, allocator: mem.Allocator) -> 
             pose_transform_entry.sqt_data = current_sqt_data
             append(&temp_pose.pose, pose_transform_entry) // Changed here
         }
-        append(&pl.poses, temp_pose)
+        // append(&pl.poses, temp_pose)
+        pl.poses[xxh2.str_to_u32(temp_pose.name)] = temp_pose
     }
     return pl
 }
 
-destroy_pose_list :: proc(pl: ^PoseList) {
-    for &pose in pl.poses {
-        delete(pose.name)
-        delete(pose.pose)
-    }
+destroy_animation :: proc(pl: ^Animation) {
+    // for &pose in pl.poses {
+    //     delete(pose.name)
+    //     delete(pose.pose)
+    // }
     delete(pl.poses)
     delete(pl.name)
 }

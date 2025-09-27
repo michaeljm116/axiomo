@@ -29,7 +29,7 @@ g_bvh: ^Sys_Bvh
 g_enemies: map[string]Entity
 g_player: Entity
 g_texture_indexes : map[string]i32
-g_poses : map[string]res.PoseList
+g_animations : map[u32]res.Animation
 
 g_frame := FrameRate {
 	prev_time         = glfw.GetTime(),
@@ -91,8 +91,8 @@ main :: proc() {
 	scene := sc.load_new_scene("assets/scenes/BeeKillingsInn.json", arena_alloc)
 	res.load_directory("assets/models/", &g_models)
 	// poses := res.load_pose("assets/animations/Froku.anim", "Froku", arena_alloc)
-	g_poses = make(map[string]res.PoseList, 0, arena_alloc)
-	res.load_anim_directory("assets/animations/", &g_poses, arena_alloc)
+	g_animations = make(map[u32]res.Animation, 0, arena_alloc)
+	res.load_anim_directory("assets/animations/", &g_animations, arena_alloc)
 
 	g_prefabs = make(map[string]sc.Node, 0, arena_alloc)
 	sc.load_prefab_directory("assets/prefabs", &g_prefabs, arena_alloc)

@@ -2,13 +2,14 @@ package main
 import "core:fmt"
 import "core:math/linalg"
 import "external/ecs"
-import "core:hash/xxhash"
+// import "core:hash/xxhash"
 import "core:strings"
 import "core:container/queue"
 import res "resource"
 import sdl "vendor:sdl2"
 import sdl_mixer "vendor:sdl2/mixer"
 import b2 "vendor:box2d"
+import xxh2"extensions/xxhash2"
 //components
 // ✅bvh
 // ✅light
@@ -1190,9 +1191,9 @@ animation_component_with_names :: proc(
         num_poses = num_poses,
         flags = flags,
         time = 0.25,
-        start = xxhash.XXH32(transmute([]byte)start_name),
-        end = xxhash.XXH32(transmute([]byte)end_name),
-        prefab_name = xxhash.XXH32(transmute([]byte)prefab),
+        start = xxh2.str_to_u32(start_name),
+        end = xxh2.str_to_u32(end_name),
+        prefab_name = xxh2.str_to_u32(prefab),
         trans_timer = 0.0,
         trans_time = 0.1,
         trans = 0,
@@ -1225,8 +1226,8 @@ animation_component_no_start :: proc(
         flags = flags,
         time = 0.25,
         start = 0,
-        end = xxhash.XXH32(transmute([]byte)end_name),
-        prefab_name = xxhash.XXH32(transmute([]byte)prefab),
+        end = xxh2.str_to_u32(end_name),
+        prefab_name = xxh2.str_to_u32(prefab),
         trans_timer = 0.0,
         trans_time = 0.1,
         trans = 0,

@@ -1178,6 +1178,48 @@ animate_sys_process :: proc(delta_time: f32) {
 //----------------------------------------------------------------------------\\
 // /Animation System
 //----------------------------------------------------------------------------\\
+sys_anim_add :: proc(e : Entity)
+{
+    ac := get_component(e, Cmp_Animation)
+    bf := get_component(e, Cmp_BFGraph)
+    // node := get_component(e, Cmp_Node)
+    assert(ac != nil && bf != nil, "Animation, BFGraph, and Node components are required")
+    animation := g_animations[ac.prefab_name]
+    end_pose := animation.poses[ac.end]
+
+    // If there's only 1 pose, then it'll only be the end pose
+    // The start will just be where you're currently at
+    if(ac.num_poses == 1){
+        for p in end_pose.pose {
+            a := Cmp_Animate{
+                flags = ac.flags,
+                time = ac.time,
+                end = map_sqt(p.sqt_data),
+                parent_entity = e,
+            }
+            curr_node := bf.nodes[p.id]
+            a.start = get_component(curr_node, Cmp_Transform).local
+            add_component(curr_node, a)
+        }
+    }
+    else
+    {
+       comps := make(map[i32]^Cmp_Animate, 0, context.temp_allocator)
+       start_pose := animation.poses[ac.start]
+       // All starts just instanly go inside the map
+       for p in start_pose.pose{
+           a := Cmp_Animate{
+               flags = ac.flags,
+               time = ac.time,
+               start = map_sqt(p.sqt_data),
+               parent_entity = e
+           }
+           a.flags.start_set = true
+       }
+    }
+
+}
+
 // Animation state machine processing
 // animation_sys_process :: proc(delta_time: f32) {
 //     archetypes := query(ecs.has(Cmp_Animation), ecs.has(Cmp_BFGraph))

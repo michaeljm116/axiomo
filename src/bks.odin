@@ -1137,7 +1137,7 @@ add_animation :: proc(ent : Entity)
    flatten_entity(ent)
    ac := animation_component_with_names(2,"Froku", "idleStart", "idleEnd", AnimFlags{ idPo = 0, loop = true, force_start = true, force_end = true})
    add_component(ent, ac)
-   // animation_added(ent)
+   //animation_added(ent)
 }
 
 
