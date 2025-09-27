@@ -1140,40 +1140,8 @@ create_debug_cube_with_col :: proc(pos: b2.Vec2, extents: b2.Vec2, mat_unique_id
     return e
 }
 
-//----------------------------------------------------------------------------\\
-// /Animate System
-//----------------------------------------------------------------------------\\
-animate_sys_process :: proc(delta_time: f32) {
-    archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Animate))
-    for archetype in archetypes {
-        trans_comps := get_table(archetype, Cmp_Transform)
-        anim_comps := get_table(archetype, Cmp_Animate)
-        for entity, i in archetype.entities {
-            ac := &anim_comps[i]
-            tc := &trans_comps[i]
 
-            ac.curr_time += delta_time
-            dt := math.clamp(ac.curr_time / ac.time, 0.0, 1.0)
 
-            if !(ac.flags.pos_flag) do tc.local.pos = linalg.mix(tc.local.pos, ac.end.pos, dt)
-            if !(ac.flags.sca_flag) do tc.local.sca = linalg.mix(tc.local.sca, ac.end.sca, dt)
-            if !(ac.flags.rot_flag) do tc.local.rot = linalg.quaternion_slerp_f32(tc.local.rot, ac.end.rot, dt)
-
-            if ac.curr_time >= ac.time {
-                ac.curr_time = 0.0
-                if ac.flags.force_end {
-                    tc.local = ac.end
-                    ac.flags.force_end = false
-                }
-                if ac.flags.loop {
-                    temp := ac.start
-                    ac.start = ac.end
-                    ac.end = temp
-                } else do remove_component(entity, Cmp_Animate)
-            }
-        }
-    }
-}
 
 //----------------------------------------------------------------------------\\
 // /Animation System
@@ -1197,7 +1165,7 @@ sys_anim_add :: proc(e : Entity){
                 parent_entity = e,}
             curr_node := bfg.nodes[pose.id]
             a.start = get_component(curr_node, Cmp_Transform).local
-            add_component(curr_node, a)
+            add_animate_component(curr_node, a)
         }
     }
     else{
@@ -1243,7 +1211,7 @@ sys_anim_add :: proc(e : Entity){
            if !a.flags.start_set do a.start = bfg_sqt
            if !a.flags.end_set do a.end = bfg_sqt
 
-           add_component(bfg_ent, ac)
+           add_animate_component(bfg_ent, a)
        }
     }
 }
@@ -1390,8 +1358,32 @@ sys_anim_transition :: proc(entity: Entity)
     //Turn off transition;
     ac.trans_timer = 0.0001
 }
+//Onadd you can choose to reset the animation to the start
+//Or just interpolate from where you're already at
+add_animate_component :: proc(ent: Entity, comp: Cmp_Animate)
+{
+    add_component(ent, comp)
 
-remove_animate_components :: proc(entity : Entity)
+    ac := get_component(ent, Cmp_Animate)
+    tc := get_component(ent, Cmp_Transform)
+    if ac == nil || tc == nil do return
+
+    //This forces the animation to go to the start position
+    if ac.flags.force_start do tc.local = ac.start
+}
+
+remove_animate_component :: proc(e : Entity)
+{
+    ac := get_component(e, Cmp_Animate)
+    assert(ac != nil)
+    if ac.flags.force_end == true{
+        tc := get_component(e, Cmp_Transform)
+        tc.local = ac.end
+    }
+    remove_component(e, Cmp_Animate)
+}
+
+sys_anim_remove_component :: proc(entity : Entity)
 {
     ac := get_component(entity, Cmp_Animation)
     bfg := get_component(entity, Cmp_BFGraph)
@@ -1404,7 +1396,7 @@ remove_animate_components :: proc(entity : Entity)
     removed := make(map[i32]bool, 0, context.temp_allocator)
     for pose in end_pose.pose {
         bfg_ent := bfg.nodes[pose.id]
-        remove_component(bfg_ent, Cmp_Animate)
+        remove_animate_component(bfg_ent)
         removed[pose.id] = true
     }
 
@@ -1413,149 +1405,8 @@ remove_animate_components :: proc(entity : Entity)
         start_pose := animation.poses[ac.start]
         for pose in start_pose.pose {
             _, ok := removed[pose.id]
-            if ok do remove_component(bfg.nodes[pose.id], Cmp_Animate)
+            if ok do remove_animate_component(bfg.nodes[pose.id])
         }
     }
     remove_component(entity, Cmp_Animation)
 }
-
-
-// Animation state machine processing
-// animation_sys_process :: proc(delta_time: f32) {
-//     archetypes := query(ecs.has(Cmp_Animation), ecs.has(Cmp_BFGraph))
-//     for archetype in archetypes {
-//         anim_comps := get_table(archetype, Cmp_Animation)
-//         bfg_comps := get_table(archetype, Cmp_BFGraph)
-//         for entity, i in archetype.entities {
-//             ac := &anim_comps[i]
-//             bfg := &bfg_comps[i]
-
-//             switch ac.state {
-//             case .DEFAULT:
-//                 // Idle state, no action
-//             case .TRANSITION:
-//                 animation_transition(entity, ac, bfg)
-//                 ac.state = .TRANSITION_TO_START
-//             case .TRANSITION_TO_START:
-//                 ac.trans_timer += delta_time
-//                 if ac.trans_timer > ac.trans_time do ac.state = .START
-//             case .START:
-//                 ac.start = ac.trans
-//                 ac.end = ac.trans_end
-//                 ac.trans_timer = 0.0
-//                 ac.state = .TRANSITION_TO_END
-//                 animation_added(entity, ac, bfg)
-//             case .TRANSITION_TO_END:
-//                 ac.trans_timer += delta_time
-//                 if ac.trans_timer > ac.time do ac.state = .END
-//             case .END:
-//                 ac.state = .DEFAULT
-//             }
-//         }
-//     }
-// }
-
-// // Helper to add Animate components based on poses
-// animation_added :: proc(entity: Entity) {
-//     ac := get_component(entity, Cmp_Animation)
-//     bfg := get_component(entity, Cmp_BFGraph)
-//     node := get_component(entity, Cmp_Node)
-//     assert(bfg != nil && ac != nil && node != nil)
-
-//     end_pose: Cmp_Pose // = res.get_pose(ac.prefab_hash, ac.end_hash)
-//     // Similarly for start_pose if num_poses > 1
-
-//     if ac.num_poses == 1 {
-//         for p in end_pose.pose {
-//             anim_comp := animate_component_create(ac.time, ac.flags, Sqt{}, p.second, entity)
-//             anim_comp.start = get_component(bfg.nodes[p.first], Cmp_Transform).local // Or from previous
-//             add_component(bfg.nodes[p.first], anim_comp)
-//         }
-//     } else {
-//         start_pose: Cmp_Pose // = res.get_pose(ac.prefab_hash, ac.start_hash)
-//         // Combine start and end poses, handle duplicates
-//         // Similar to C++ logic: use a map to merge
-//         pose_map: map[i32]struct { start: Sqt, end: Sqt, flags: AnimFlags }
-//         defer delete(pose_map)
-
-//         for p in start_pose.pose {
-//             pose_map[p.first] = {p.second, Sqt{}, {.START_SET}}
-//         }
-//         for p in end_pose.pose {
-//             if existing, ok := &pose_map[p.first]; ok {
-//                 existing.end = p.second
-//                 existing.flags.end_set = true
-//             } else {
-//                 pose_map[p.first] = {Sqt{}, p.second, {.END_SET}}
-//             }
-//         }
-
-//         for idx, val in pose_map {
-//             anim_comp := animate_component_create(ac.time, val.flags + ac.flags, val.start, val.end, entity)
-//             tc := get_component(bfg.nodes[idx], Cmp_Transform)
-//             if !val.flags.start_set do anim_comp.start = tc.local
-//             if !val.flags.end_set do anim_comp.end = tc.local
-//             add_component(bfg.nodes[idx], anim_comp)
-//         }
-//     }
-//     ac.trans_timer = 0.001
-// }
-
-// // Helper for transition state
-// animation_transition :: proc(entity: Entity, ac: ^Cmp_Animation, bfg: ^Cmp_BFGraph) {
-//     if ac.trans == 0 do return
-
-//     // Stub: Get poses
-//     start_pose: Cmp_Pose // = res.get_pose(ac.prefab_hash, ac.start_hash)
-//     end_pose: Cmp_Pose // = res.get_pose(ac.prefab_hash, ac.end_hash)
-//     trans_pose: Cmp_Pose // = res.get_pose(ac.prefab_hash, ac.trans_hash)
-
-//     // Collect previous poses
-//     prev_set: map[i32]bool
-//     defer delete(prev_set)
-//     for p in start_pose.pose do prev_set[p.first] = true
-//     for p in end_pose.pose do prev_set[p.first] = true
-
-//     // Combined map
-//     combined: map[i32]struct { start: Sqt, end: Sqt, flags: AnimFlags }
-//     defer delete(combined)
-
-//     for idx in prev_set {
-//         tc := get_component(bfg.nodes[idx], Cmp_Transform)
-//         combined[idx] = { tc.local, bfg.transforms[idx], AnimFlags{} }
-//     }
-
-//     for p in trans_pose.pose {
-//         if _, ok := &combined[p.first]; ok {
-//             combined[p.first].end = p.second
-//         } else {
-//             combined[p.first] = { bfg.transforms[p.first], p.second, {.FORCE_END} }
-//         }
-//     }
-
-//     // Dispatch
-//     for idx, val in combined {
-//         anim_comp := animate_component_create(ac.time, val.flags + ac.flags, val.start, val.end, entity)
-//         add_component(bfg.nodes[idx], anim_comp)
-//     }
-
-//     ac.trans_timer = 0.0001
-// }
-
-// //----------------------------------------------------------------------------\\
-// // /Pose System (Stub - Requires XML handling, e.g., via external lib)
-// //----------------------------------------------------------------------------\\
-// pose_sys_process :: proc() {
-//     // Implement saving to .anim file if needed
-//     // For now, stubbed as Odin doesn't have built-in XML
-//     // Use an external XML library or handle differently
-//     archetypes := query(ecs.has(Cmp_Pose))
-//     for archetype in archetypes {
-//         pose_comps := get_table(archetype, Cmp_Pose)
-//         for entity, i in archetype.entities {
-//             pc := &pose_comps[i]
-//             // Save to XML logic here
-//             // After saving, remove_component(entity, Cmp_Pose)
-//         }
-//     }
-// }
