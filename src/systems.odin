@@ -1178,47 +1178,247 @@ animate_sys_process :: proc(delta_time: f32) {
 //----------------------------------------------------------------------------\\
 // /Animation System
 //----------------------------------------------------------------------------\\
-sys_anim_add :: proc(e : Entity)
-{
+sys_anim_add :: proc(e : Entity){
     ac := get_component(e, Cmp_Animation)
-    bf := get_component(e, Cmp_BFGraph)
+    bfg := get_component(e, Cmp_BFGraph)
     // node := get_component(e, Cmp_Node)
-    assert(ac != nil && bf != nil, "Animation, BFGraph, and Node components are required")
+    assert(ac != nil && bfg != nil, "Animation, BFGraph, and Node components are required")
     animation := g_animations[ac.prefab_name]
     end_pose := animation.poses[ac.end]
 
     // If there's only 1 pose, then it'll only be the end pose
     // The start will just be where you're currently at
-    if(ac.num_poses == 1){
-        for p in end_pose.pose {
+    if ac.num_poses <= 1 {
+        for pose in end_pose.pose {
             a := Cmp_Animate{
                 flags = ac.flags,
                 time = ac.time,
-                end = map_sqt(p.sqt_data),
-                parent_entity = e,
-            }
-            curr_node := bf.nodes[p.id]
+                end = map_sqt(pose.sqt_data),
+                parent_entity = e,}
+            curr_node := bfg.nodes[pose.id]
             a.start = get_component(curr_node, Cmp_Transform).local
             add_component(curr_node, a)
         }
     }
-    else
-    {
-       comps := make(map[i32]^Cmp_Animate, 0, context.temp_allocator)
+    else{
+        // This needs to be done a little differently since lets say...
+    	// Start = 1,5,7, End = 2,5,7. You want Children 1,2,5,7 to be called once
+    	// But you also want 1 5 7 to be 1st 5se 7se
+    	// And you also want 2 5 7 to be 2te 5se 7se
+    	// t = original transform, s = start e = end
+       comps := make(map[i32]Cmp_Animate, 0, context.temp_allocator)
        start_pose := animation.poses[ac.start]
        // All starts just instanly go inside the map
-       for p in start_pose.pose{
+       for pose in start_pose.pose{
            a := Cmp_Animate{
                flags = ac.flags,
                time = ac.time,
-               start = map_sqt(p.sqt_data),
-               parent_entity = e
-           }
+               start = map_sqt(pose.sqt_data),
+               parent_entity = e}
            a.flags.start_set = true
+           comps[pose.id] = a
+       }
+       // For the end, first make sure there's no duplicates, then insert
+       for pose in end_pose.pose{
+          a,ok := comps[pose.id]
+          if(ok){
+              a.end = map_sqt(pose.sqt_data)
+              a.flags.end_set = true
+          }
+          else{
+            a = Cmp_Animate{
+                flags = ac.flags,
+                time = ac.time,
+                end = map_sqt(pose.sqt_data),
+                parent_entity = e}
+            a.flags.end_set = true
+            comps[pose.id] = a
+          }
+       }
+       // Now dispatch the components
+       for key, &a in comps{
+           bfg_ent := bfg.nodes[key]
+           bfg_sqt := get_component(e, Cmp_Transform).local
+
+           if !a.flags.start_set do a.start = bfg_sqt
+           if !a.flags.end_set do a.end = bfg_sqt
+
+           add_component(bfg_ent, ac)
        }
     }
-
 }
+// This keeps track of the transitions
+// Default state = you are free to animate
+// End State = a single-frame trigger
+// Transition takes the start and end from previous pose and transitions to the new pose
+// Start performs the animation
+// TransitionToStart/End times the animations
+sys_anim_update :: proc(entity: Entity, delta_time: f32)
+{
+    ac := get_component(entity, Cmp_Animation)
+    //display_animation_state(e, ac->state);
+    //display_animation_names(ac);
+
+    switch ac.state {
+    case .DEFAULT:
+        break
+    case .TRANSITION:
+        if ac.trans != 0 do sys_anim_transition(entity)
+        ac.state = .TRANSITION_TO_START
+    case .TRANSITION_TO_START:
+        ac.trans_timer += delta_time
+        if ac.trans_timer > ac.trans_time do ac.state = .START
+    case .START:
+        ac.start = ac.trans
+        ac.end = ac.trans_end
+        ac.trans_timer = 0.0
+        ac.state = .TRANSITION_TO_END
+        sys_anim_add(entity)
+    case .TRANSITION_TO_END:
+        ac.trans_timer += delta_time
+        if ac.trans_timer > ac.time do ac.state = .END
+    case .END:
+        ac.state = .DEFAULT
+    }
+}
+
+sys_anim_process :: proc(entity: Entity, delta_time: f32)
+{
+    //Get the Components
+    ac := get_component(entity, Cmp_Animate)
+    tc := get_component(entity, Cmp_Transform)
+    if ac == nil do return
+    if tc == nil do return
+
+    //Increment time
+    x := math.clamp(delta_time / ac.time, 0.0, 1.0)
+    ac.curr_time += delta_time
+
+    //Interpolate dat ish
+    if !ac.flags.pos_flag do tc.local.pos = linalg.mix(tc.local.pos, ac.end.pos, x)
+    if !ac.flags.sca_flag do tc.local.sca = linalg.mix(tc.local.sca, ac.end.sca, x)
+    if !ac.flags.rot_flag do tc.local.rot = linalg.quaternion_slerp_f32(tc.local.rot, ac.end.rot, x)
+
+    //End Animation if finished
+    if ac.curr_time >= ac.time {
+        ac.curr_time = 0.0
+        if ac.flags.force_end {
+            tc.local = ac.end
+            ac.flags.force_end = false
+        }
+        if ac.flags.loop {
+            temp := ac.start
+            ac.start = ac.end
+            ac.end = temp
+        } else do remove_component(entity, Cmp_Animate)
+    }
+}
+
+//On Transition,
+// - unused parts go back to normal, and
+// - similar parts transition
+// - New parts go to the new pose
+sys_anim_transition :: proc(entity: Entity)
+{
+    ac := get_component(entity, Cmp_Animation)
+    bfg := get_component(entity, Cmp_BFGraph)
+    assert(ac != nil && bfg != nil, "Animation and BFGraph components are required")
+
+    animation := g_animations[ac.prefab_name]
+    start_pose := animation.poses[ac.start]
+    end_pose   := animation.poses[ac.end]
+    trans_pose := animation.poses[ac.trans]
+
+    //First place every Previous Pose in a hashset
+    prev_pose := make(map[i32]bool, 0, context.temp_allocator)
+    for p in start_pose.pose {
+        prev_pose[p.id] = true
+    }
+    for p in end_pose.pose {
+        prev_pose[p.id] = true
+    }
+
+    //Create a list that combines everything
+    CombinedEntry :: struct {
+        start: Sqt,
+        end:   Sqt,
+        flags: AnimFlags,
+    }
+    combined := make(map[i32]CombinedEntry, 0, context.temp_allocator)
+
+    //Go through the previous pose, Start = It's Transform, End = It's Original Transform
+    for id in prev_pose {
+        trans_comp := get_component(bfg.nodes[id], Cmp_Transform)
+        start_sqt := trans_comp.local
+        end_sqt := bfg.transforms[id]
+        combined[id] = CombinedEntry{
+            start = start_sqt,
+            end = end_sqt,
+            flags = AnimFlags{ idPo = 0, loop = false, force_start = true, force_end = false },
+        }
+    }
+
+    //Go through the transitional pose, End = the transitional pose,
+    //Start = original transform if its not in list, or prevpose start if in the list
+    for p in trans_pose.pose {
+        entry, ok := combined[p.id]
+        if !ok {
+            combined[p.id] = CombinedEntry{
+                start = bfg.transforms[p.id],
+                end = map_sqt(p.sqt_data),
+                flags = AnimFlags{ idPo = 0, loop = false, force_start = true, force_end = true },
+            }
+        } else {
+            entry.end = map_sqt(p.sqt_data)
+            combined[p.id] = entry
+        }
+    }
+
+    //Iterate through the list and dispatch animate components
+    for id, &entry in combined {
+        a := Cmp_Animate{
+            flags = entry.flags,
+            time = ac.time,
+            start = entry.start,
+            end = entry.end,
+            parent_entity = entity,
+        }
+        a.flags.end_set = true
+        add_component(bfg.nodes[id], a)
+    }
+
+    //Turn off transition;
+    ac.trans_timer = 0.0001
+}
+
+remove_animate_components :: proc(entity : Entity)
+{
+    ac := get_component(entity, Cmp_Animation)
+    bfg := get_component(entity, Cmp_BFGraph)
+    assert(ac != nil && bfg != nil, "Animation and BFGraph components are required")
+
+    animation := g_animations[ac.prefab_name]
+    end_pose := animation.poses[ac.end]
+
+    //First remove the endpose
+    removed := make(map[i32]bool, 0, context.temp_allocator)
+    for pose in end_pose.pose {
+        bfg_ent := bfg.nodes[pose.id]
+        remove_component(bfg_ent, Cmp_Animate)
+        removed[pose.id] = true
+    }
+
+    // If there's a start pose, remove animate components for nodes that overlap with end pose
+    if ac.num_poses > 1 {
+        start_pose := animation.poses[ac.start]
+        for pose in start_pose.pose {
+            _, ok := removed[pose.id]
+            if ok do remove_component(bfg.nodes[pose.id], Cmp_Animate)
+        }
+    }
+    remove_component(entity, Cmp_Animation)
+}
+
 
 // Animation state machine processing
 // animation_sys_process :: proc(delta_time: f32) {
