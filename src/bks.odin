@@ -202,7 +202,6 @@ enemy_selection :: proc(selection : ^int, bees : [dynamic]Bee)
     else {
         if(is_key_just_pressed(glfw.KEY_W) || is_key_just_pressed(glfw.KEY_D)){
             selection^ = (selection^ + 1) % num_bees
-
         }
         else if(is_key_just_pressed(glfw.KEY_A) || is_key_just_pressed(glfw.KEY_S)){
             selection^ = selection^ - 1
@@ -1131,12 +1130,13 @@ init_GameUI :: proc( ui : ^GameUI)
 //----------------------------------------------------------------------------\\
 // /Animation
 //----------------------------------------------------------------------------\\
+
 add_animation :: proc(ent : Entity)
 {
    flatten_entity(ent)
    ac := animation_component_with_names(2,"Froku", "idleStart", "idleEnd", AnimFlags{ idPo = 0, loop = true, force_start = true, force_end = true})
    add_component(ent, ac)
-   sys_anim_add(ent)
+   //animation_added(ent)
 }
 
 
