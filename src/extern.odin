@@ -143,3 +143,17 @@ map_sqt :: proc(sqt : resource.Sqt) -> Sqt{
         sca = sqt.sca
     }
 }
+
+map_vec2f :: proc(vec : scene.Vector2) -> vec2f{
+    return vec2f{vec.x, vec.y}
+}
+
+map_gui :: proc(gui : scene.Gui) -> Cmp_Gui{
+    return Cmp_Gui{
+        align_ext = map_vec2f(gui.AlignExt),
+        align_min = map_vec2f(gui.Alignment),
+        extents = map_vec2f(gui.Extent),
+        min = map_vec2f(gui.Position),
+        id = gui.Texture.Name
+    }
+}

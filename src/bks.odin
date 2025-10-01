@@ -1113,17 +1113,25 @@ init_GameUI :: proc( ui : ^GameUI)
     //     id = "BeeKillingsInnUI.png",layer = 0, alpha = 1.0, update = true
     // }
 
-    start_comp := Cmp_Gui{
-        min = vec2f{0.3, 0.645}, extents = vec2f{.5, .15},
-        align_min = vec2f{1, .288}, align_ext = vec2f{.56, .125},
-        id = "BeeKillingsInnUI.png", layer = 0, alpha = 0.5, update = false
-    }
+    // start_comp := Cmp_Gui{
+    //     min = vec2f{0.3, 0.645}, extents = vec2f{.5, .15},
+    //     align_min = vec2f{1, .288}, align_ext = vec2f{.56, .125},
+    //     id = "BeeKillingsInnUI.png", layer = 0, alpha = 0.5, update = false
+    // }
 
     // ui.title = add_gameui(title_comp, "Title")
-    ui.start = add_gameui(start_comp, "Lose")
+    // ui.start = add_gameui(start_comp, "Lose")
 
     // update_gui(&title_comp)
-    update_gui(&start_comp)
+    // update_gui(&start_comp)
+
+   test := map_gui(g_ui_prefabs["debb"].gui)
+   test.alpha = 1.0
+   test.update = true
+   ui.end = add_gameui(test, "Test")
+   update_gui(&test)
+
+   fmt.println("TEST GUI COMP: " ,test)
 }
 
 

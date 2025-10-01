@@ -1,3 +1,11 @@
+# UI Prefabs
+* If you can get your engine to select a texture, and edit and create a ui prefab to save that'd be great
+* then load a list of ui prefabs
+* which you can make into a map
+* and reference except hmmm do you load prefabs already?
+* im guessing there'a  reference prefab and then an actual prefab
+* right now there's  g_prefabs which is a map of scene nodes
+* lets check create texture
 # Deck
 * So quesiton is how do i handle the "deck" which tbh shouldn't real ly even bee a deck AHAH GET IT BEE A DECK? but real talk it shouldn't even be a deck but an editable group of statistics but for nwo its a deck of cards
 * So if its going to be a deck of cards then just think like a human

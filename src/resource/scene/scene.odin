@@ -52,8 +52,15 @@ PrefabData :: struct {
     Name: string `json:"_Name"`,
     Node: [dynamic]Node
 }
+Vector2 :: struct {
+    x: f32 `json:"_x"`,
+    y: f32 `json:"_y"`,
+}
 
-// Vector3 maps to JSON objects with _x, _y, _z fields
+Texture :: struct {
+    Name: string `json:"_name"`
+}
+
 Vector3 :: struct {
     x: f32 `json:"_x"`,
     y: f32 `json:"_y"`,
@@ -123,6 +130,14 @@ Collider :: struct {
     Type: i32 `json:"_Type"`,
 }
 
+Gui :: struct{
+    AlignExt : Vector2,
+    Alignment : Vector2,
+    Extent : Vector2,
+    Position : Vector2,
+    Texture : Texture
+}
+
 // Node struct for each node in the array
 Node :: struct {
     Transform: Transform,
@@ -141,6 +156,7 @@ Node :: struct {
     object: ObjectID `json:"Object"`,
     rigid: Rigid `json:"Rigid"`,
     collider: Collider `json:"Collider"`,
+    gui: Gui `json:"GUI"`,
 }
 //----------------------------------------------------------------------------\\
 // /PROCS

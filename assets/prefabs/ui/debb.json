@@ -1,0 +1,28 @@
+{
+  "GUI": {
+    "AlignExt": {
+      "_x": 1.015625,
+      "_y": 1.015625
+    },
+    "Alignment": {
+      "_x": 0.0,
+      "_y": -0.09375
+    },
+    "Extent": {
+      "_x": 0.20000000298023224,
+      "_y": 0.20000000298023224
+    },
+    "Position": {
+      "_x": 0.0,
+      "_y": -0.09375
+    },
+    "Texture": {
+      "_name": "debugger2.png"
+    }
+  },
+  "_Dynamic": false,
+  "_Name": "debb",
+  "_eFlags": 262145,
+  "_gFlags": 0,
+  "_hasChildren": false
+}

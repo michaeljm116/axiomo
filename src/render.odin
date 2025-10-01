@@ -17,8 +17,8 @@ import "gpu"
 import res "resource"
 import "external/embree"
 import "core:math/bits"
-import stbi"vendor:stb/image"
-import path2"extensions/filepath2"
+import stbi "vendor:stb/image"
+import path2 "extensions/filepath2"
 //----------------------------------------------------------------------------\\
 // /RENDERBASE /rb
 //----------------------------------------------------------------------------\\

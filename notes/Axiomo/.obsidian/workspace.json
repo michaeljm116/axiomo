@@ -11,21 +11,14 @@
             "id": "b47c04f3ca1234e3",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "markdown",
               "state": {
-                "file": "Kanban.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false,
-                    false
-                  ]
-                }
+                "file": "BeeKillingsInn/Code.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-trello",
-              "title": "Kanban"
+              "icon": "lucide-file",
+              "title": "Code"
             }
           }
         ]
@@ -178,10 +171,12 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "18d3cae5fbb5e952",
+  "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
-    "BeeKillingsInn/Next Steps.md",
     "Kanban.md",
+    "BeeKillingsInn/Next Steps.md",
+    "BeeKillingsInn/Rules Engine.md",
+    "BeeKillingsInn/Story.md",
     "BeeKillingsInn/Code.md",
     "Excalidraw/PlayersTUrn.excalidraw.md",
     "Untitled.md",
@@ -190,7 +185,6 @@
     "Untitled Kanban 3.md",
     "Untitled Kanban 2.md",
     "Untitled Kanban 1.md",
-    "Kanban.md",
     "Game Jam - 20 games challenge - JJ.md",
     "Photos/il_1140xN.7170395961_e2r5.jpg",
     "Photos/2d7f1352-8a6d-4a7d-be01-4e55c58837a2.png",
@@ -204,9 +198,7 @@
     "Photos/sanctuary-high-view-2-768.YJKVAsU3_CIe1o.webp",
     "Photos/Pasted image 20250912151959.jpg",
     "Photos/b47bb5a7-921c-4a68-9e4a-57996eb1f415.webp",
-    "BeeKillingsInn/Story.md",
     "BeeKillingsInn/Animation - Again.md",
-    "BeeKillingsInn/Rules Engine.md",
     "BeeKillingsInn/Bee Ideas.md",
     "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
