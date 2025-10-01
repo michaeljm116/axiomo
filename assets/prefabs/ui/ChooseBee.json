@@ -1,12 +1,12 @@
 {
   "GUI": {
     "AlignExt": {
-      "_x": 0.166015625,
-      "_y": 0.888671875
+      "_x": 0.9988802075386047,
+      "_y": 0.09920983016490936
     },
     "Alignment": {
       "_x": 0.0,
-      "_y": 0.0
+      "_y": 0.2967515289783478
     },
     "Extent": {
       "_x": 0.20000000298023224,
@@ -14,14 +14,14 @@
     },
     "Position": {
       "_x": 0.0,
-      "_y": 0.0
+      "_y": 0.2967515289783478
     },
     "Texture": {
-      "_name": "ARROW.png"
+      "_name": "BKS_PlayersTurnUI.png"
     }
   },
   "_Dynamic": false,
-  "_Name": "NewUIPrefabx",
+  "_Name": "ChooseBee",
   "_eFlags": 262145,
   "_gFlags": 0,
   "_hasChildren": false

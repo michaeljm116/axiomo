@@ -1,0 +1,28 @@
+{
+  "GUI": {
+    "AlignExt": {
+      "_x": 0.9798431992530823,
+      "_y": 0.08779631555080414
+    },
+    "Alignment": {
+      "_x": 0.0,
+      "_y": 0.4029850661754608
+    },
+    "Extent": {
+      "_x": 0.20000000298023224,
+      "_y": 0.20000000298023224
+    },
+    "Position": {
+      "_x": 0.0,
+      "_y": 0.4029850661754608
+    },
+    "Texture": {
+      "_name": "BKS_PlayersTurnUI.png"
+    }
+  },
+  "_Dynamic": false,
+  "_Name": "SelectAction",
+  "_eFlags": 262145,
+  "_gFlags": 0,
+  "_hasChildren": false
+}

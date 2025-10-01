@@ -11,14 +11,21 @@
             "id": "b47c04f3ca1234e3",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "kanban",
               "state": {
-                "file": "BeeKillingsInn/Code.md",
-                "mode": "source",
-                "source": false
+                "file": "Kanban.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false,
+                    false
+                  ]
+                }
               },
-              "icon": "lucide-file",
-              "title": "Code"
+              "icon": "lucide-trello",
+              "title": "Kanban"
             }
           }
         ]
@@ -173,12 +180,22 @@
   },
   "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
+    "Excalidraw/PlayersTUrn.excalidraw.md",
     "Kanban.md",
+    "Photos/2d7f1352-8a6d-4a7d-be01-4e55c58837a2.png",
+    "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
+    "Photos/Pasted image 20250912151959.jpg",
+    "Photos/Pasted image 20250912151600.jpg",
+    "Photos/Pasted image 20250912151449.jpg",
+    "Photos/kitchen-768.B5948oyV_InHOb.webp",
+    "Photos/il_1140xN.7170395961_e2r5.jpg",
+    "Photos/front-church-768.0JL6Ic0e_6y8to.webp",
+    "Photos/b47bb5a7-921c-4a68-9e4a-57996eb1f415.webp",
+    "Photos/a1e7b767-f179-43a5-91fc-1be6903d1771.webp",
+    "BeeKillingsInn/Code.md",
     "BeeKillingsInn/Next Steps.md",
     "BeeKillingsInn/Rules Engine.md",
     "BeeKillingsInn/Story.md",
-    "BeeKillingsInn/Code.md",
-    "Excalidraw/PlayersTUrn.excalidraw.md",
     "Untitled.md",
     "Drawing 2025-09-27 16.22.51.excalidraw.md",
     "BeeKillingsInn/Merge Bee with Axiomo.md",
@@ -186,18 +203,8 @@
     "Untitled Kanban 2.md",
     "Untitled Kanban 1.md",
     "Game Jam - 20 games challenge - JJ.md",
-    "Photos/il_1140xN.7170395961_e2r5.jpg",
-    "Photos/2d7f1352-8a6d-4a7d-be01-4e55c58837a2.png",
     "Photos",
-    "Photos/533a3e3f-448d-4c5f-a028-29d6aa9a81bf.png",
     "BeeKillingsInn/Art Inspo.md",
-    "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
-    "Photos/74047dd0-5583-47c7-a553-3f540453633a.png",
-    "Photos/770f7a56-9ba7-4eee-90a9-19b97ce2ea2d.webp",
-    "Photos/Pasted image 20250912152018.jpg",
-    "Photos/sanctuary-high-view-2-768.YJKVAsU3_CIe1o.webp",
-    "Photos/Pasted image 20250912151959.jpg",
-    "Photos/b47bb5a7-921c-4a68-9e4a-57996eb1f415.webp",
     "BeeKillingsInn/Animation - Again.md",
     "BeeKillingsInn/Bee Ideas.md",
     "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md",

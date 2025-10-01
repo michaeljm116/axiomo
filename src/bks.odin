@@ -1084,20 +1084,27 @@ get_top_of_entity :: proc(e : Entity) -> f32
 //----------------------------------------------------------------------------\\
 // /UI
 //----------------------------------------------------------------------------\\
-GameUI :: struct
-{
-    title : Entity,
-    start : Entity,
-    end : Entity,
-    paused : Entity,
-    win : Entity,
-    lose : Entity,
+UILabels :: enum{
+    Title,
+    Start,
+    End,
+    Paused,
+    Win,
+    Lose,
+    Attack,
+    ChooseBee,
+    Dodge,
+    Focus,
+    EnemySelect,
+    Move,
+    WASD,
+    SelectAction,
 }
-g_gameui : GameUI
+gui : map[string]Entity
 
-add_gameui :: proc (gui : Cmp_Gui, name : string) -> Entity
+add_ui :: proc (gui : Cmp_Gui, name : string) -> Entity
 {
-    e  := add_entity()
+    e := add_entity()
     add_component(e, gui)
     add_component(e, Cmp_Render{type = {.GUI}})
     add_component(e, Cmp_Node{name = name, engine_flags = {.GUI}})
@@ -1105,8 +1112,21 @@ add_gameui :: proc (gui : Cmp_Gui, name : string) -> Entity
     return e
 }
 
-init_GameUI :: proc( ui : ^GameUI)
+init_GameUI :: proc(game_ui : ^map[string]Entity)
 {
+    for key,ui in g_ui_prefabs{
+        cmp := map_gui(ui.gui)
+        cmp.alpha = 0.0
+        cmp.update = false
+        e := add_ui(cmp, key)
+        game_ui[key] = e
+        fmt.println("GUI: ", cmp)
+    }
+    ge := game_ui["Attack"]
+    gc := get_component(ge, Cmp_Gui)
+    gc.alpha = 1.0
+    gc.update = true
+    update_gui(gc)
     // title_comp := Cmp_Gui{
     //     min = vec2f{0.0, 0.0}, extents = vec2f{1.0, 1.0},
     //     align_min = vec2f{1.0, 0.5}, align_ext = vec2f{1.0, 1.0},
@@ -1125,13 +1145,13 @@ init_GameUI :: proc( ui : ^GameUI)
     // update_gui(&title_comp)
     // update_gui(&start_comp)
 
-   test := map_gui(g_ui_prefabs["debb"].gui)
-   test.alpha = 1.0
-   test.update = true
-   ui.end = add_gameui(test, "Test")
-   update_gui(&test)
+   // test := map_gui(g_ui_prefabs["debb"].gui)
+   // test.alpha = 1.0
+   // test.update = true
+   // ui.end = add_gameui(test, "Test")
+   // update_gui(&test)
 
-   fmt.println("TEST GUI COMP: " ,test)
+   // fmt.println("TEST GUI COMP: " ,test)
 }
 
 
