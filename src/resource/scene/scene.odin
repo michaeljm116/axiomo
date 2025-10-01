@@ -202,6 +202,7 @@ load_prefab_node :: proc(name: string, alloc := context.allocator) -> (root: Nod
 }
 
 load_prefab_directory :: proc(directory : string, prefabs : ^map[string]Node, alloc := context.allocator){
+    context.allocator = alloc
     files := path2.get_dir_files(directory)
     for f in files{
         stem := path2.get_file_stem(f.name, context.temp_allocator)

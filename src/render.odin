@@ -2336,7 +2336,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     for f,i in files{
         file_ext := path2.get_file_stem(f.fullpath, alloc)
         if file_ext != ".png" && file_ext != ".jpg" && file_ext != ".jpeg" do continue
-        filename := f.name
+        filename := strings.clone(f.name)
         t := Texture{path = f.fullpath}
         if texture_create(&t){
             append(&rt.bindless_textures, t)

@@ -1100,7 +1100,6 @@ UILabels :: enum{
     WASD,
     SelectAction,
 }
-gui : map[string]Entity
 
 add_ui :: proc (gui : Cmp_Gui, name : string) -> Entity
 {
@@ -1112,6 +1111,7 @@ add_ui :: proc (gui : Cmp_Gui, name : string) -> Entity
     return e
 }
 
+gui : map[string]Entity
 init_GameUI :: proc(game_ui : ^map[string]Entity)
 {
     for key,ui in g_ui_prefabs{
@@ -1122,8 +1122,10 @@ init_GameUI :: proc(game_ui : ^map[string]Entity)
         game_ui[key] = e
         fmt.println("GUI: ", cmp)
     }
-    ge := game_ui["Attack"]
+    ge := game_ui["Move"]
     gc := get_component(ge, Cmp_Gui)
+    gc.min = {0,0}
+    gc.extents = {.5, .5}
     gc.alpha = 1.0
     gc.update = true
     update_gui(gc)
