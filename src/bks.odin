@@ -1131,18 +1131,127 @@ init_GameUI :: proc(game_ui : ^map[string]Entity)
     update_gui(gc)
 }
 
-tweak_game_UI :: proc(e : Entity)
-{
+// Updated tweak_game_UI in bks.odin
+tweak_game_UI :: proc(e : Entity) {
     ui := get_component(e, Cmp_Gui)
-    if ui == nil do fmt.println("nope")
-    if is_key_pressed(glfw.KEY_W) do  ui.align_min.y += .01
-    else if is_key_pressed(glfw.KEY_S) do  ui.align_min.y -= .01
-    else if is_key_pressed(glfw.KEY_A) do ui.align_min.x -= .01
-    else if is_key_pressed(glfw.KEY_D) do ui.align_min.x += .01
-    // fmt.println("uI", ui.min.y)
+    if ui == nil {
+        fmt.println("nope")
+        return
+    }
+
+    adjust_speed: f32 = 0.01  // Common adjustment increment
+
+    // Base keys: WASD for movement/adjustment
+    dx: f32 = 0
+    dy: f32 = 0
+    if is_key_pressed(glfw.KEY_D) { dx += adjust_speed }
+    if is_key_pressed(glfw.KEY_A) { dx -= adjust_speed }
+    if is_key_pressed(glfw.KEY_W) { dy += adjust_speed }
+    if is_key_pressed(glfw.KEY_S) { dy -= adjust_speed }
+
+    // No modifier: Adjust align_min
+    if !is_key_pressed(glfw.KEY_LEFT_CONTROL) &&
+       !is_key_pressed(glfw.KEY_LEFT_SHIFT) &&
+       !is_key_pressed(glfw.KEY_LEFT_ALT) {
+        ui.align_min.x += dx
+        ui.align_min.y += dy
+    }
+    else if is_key_pressed(glfw.KEY_LEFT_CONTROL) {
+        ui.min.x += dx
+        ui.min.y += dy
+    }
+    else if is_key_pressed(glfw.KEY_LEFT_SHIFT) {
+        ui.extents.x += dx
+        ui.extents.y += dy
+    }
+    else if is_key_pressed(glfw.KEY_LEFT_ALT) {
+        ui.align_ext.x += dx
+        ui.align_ext.y += dy
+    }
+
+    // Optional: Add more, e.g., for alpha: use +/- keys
+    if is_key_pressed(glfw.KEY_EQUAL) {  // + key
+        ui.alpha = math.clamp(ui.alpha + 0.05, 0.0, 1.0)
+    }
+    if is_key_pressed(glfw.KEY_MINUS) {
+        ui.alpha = math.clamp(ui.alpha - 0.05, 0.0, 1.0)
+    }
+
+    // Apply changes
     update_gui(ui)
 }
+edit_mode: bool = false
+selected_ui_index: int = 0
+ui_keys: [dynamic]string
+// New separate function in gameplay.odin
+handle_ui_edit_mode :: proc() {
+    // Toggle edit mode
+    if is_key_just_pressed(glfw.KEY_F1) {  // Or any special key
+        edit_mode = !edit_mode
+        if edit_mode {
+            fmt.println("Entered UI Edit Mode")
+            // Make all UIs visible on enter
+            for key in ui_keys {
+                ent := gui[key]
+                gc := get_component(ent, Cmp_Gui)
+                if gc != nil {
+                    gc.alpha = 1.0
+                    gc.update = true
+                    update_gui(gc)
+                }
+            }
+        } else {
+            fmt.println("Exited UI Edit Mode")
+            // Restore defaults on exit
+            for key in ui_keys {
+                ent := gui[key]
+                gc := get_component(ent, Cmp_Gui)
+                if gc != nil {
+                    gc.alpha = 0.0  // Or restore original
+                    gc.update = false
+                    update_gui(gc)
+                }
+            }
+        }
+    }
 
+    if !edit_mode {
+        return
+    }
+
+    // Cycle through UIs
+    if is_key_just_pressed(glfw.KEY_TAB) {
+        selected_ui_index = (selected_ui_index + 1) % len(ui_keys)
+        selected_key := ui_keys[selected_ui_index]
+        fmt.printf("Selected UI: %s\n", selected_key)
+    }
+
+    // Tweak the selected UI
+    if len(ui_keys) > 0 {
+        selected_key := ui_keys[selected_ui_index]
+        selected_ent := gui[selected_key]
+        tweak_game_UI(selected_ent)
+
+        // Ensure selected is visible/editable
+        gc := get_component(selected_ent, Cmp_Gui)
+        if gc != nil {
+            gc.alpha = 1.0
+            gc.update = true
+            update_gui(gc)
+        }
+    }
+
+    // Save selected UI to JSON (CTRL+S)
+    if is_key_pressed(glfw.KEY_LEFT_CONTROL) && is_key_just_pressed(glfw.KEY_S) {
+        if len(ui_keys) > 0 {
+            selected_key := ui_keys[selected_ui_index]
+            selected_ent := gui[selected_key]
+            filename := fmt.tprintf("assets/prefabs/ui/%s.json", selected_key)
+            save_ui_prefab(selected_ent, filename)
+            fmt.printf("Saved UI prefab: %s\n", filename)
+        }
+    }
+}
 //----------------------------------------------------------------------------\\
 // /Animation
 //----------------------------------------------------------------------------\\

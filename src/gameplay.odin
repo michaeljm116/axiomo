@@ -130,17 +130,12 @@ find_camera_entity :: proc() {
 
 // Update input state and camera
 gameplay_update :: proc(delta_time: f32) {
-    if g_camera_entity == 0 {
-        find_camera_entity()
-        return
-    }
-    if g_player == 0 {
-        fmt.println("Lost player")
-        find_player_entity()
-    }
+    if g_camera_entity == 0 do find_camera_entity()
+    if g_player == 0 do find_player_entity()
 
-    tweak_game_UI(gui["Move"])
-    if (g_level.player.health > 0) && (len(g_level.bees) > 0) do run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
+    handle_ui_edit_mode()
+    if !edit_mode do if (g_level.player.health > 0) && (len(g_level.bees) > 0) do run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
+
     // Clear just pressed/released states
     for i in 0..<len(g_input.keys_just_pressed) {
         g_input.keys_just_pressed[i] = false
