@@ -6,6 +6,8 @@ import "core:fmt"
 import vma "external/vma"
 import "resource"
 import "resource/scene"
+import "core:os"
+import "core:encoding/json"
 
 // Helper types for vectors/matrices
 vec2f :: [2]f32
@@ -148,12 +150,59 @@ map_vec2f :: proc(vec : scene.Vector2) -> vec2f{
     return vec2f{vec.x, vec.y}
 }
 
-map_gui :: proc(gui : scene.Gui) -> Cmp_Gui{
+map_gui :: proc{map_sc_gui_to_gui_cmp, map_gui_cmp_to_sc_gui}
+map_sc_gui_to_gui_cmp :: proc(gui : scene.Gui) -> Cmp_Gui{
     return Cmp_Gui{
         align_ext = map_vec2f(gui.AlignExt),
         align_min = map_vec2f(gui.Alignment),
         extents = map_vec2f(gui.Extent),
-        min = map_vec2f(gui.Position),
+        min = vec2f{0.0,0.0},
         id = gui.Texture.Name
+    }
+}
+map_gui_cmp_to_sc_gui :: proc(cmp: Cmp_Gui) -> scene.Gui {
+    return scene.Gui{
+        AlignExt = scene.Vector2{x = cmp.align_ext.x, y = cmp.align_ext.y},
+        Alignment = scene.Vector2{x = cmp.align_min.x, y = cmp.align_min.y},
+        Extent = scene.Vector2{x = cmp.extents.x, y = cmp.extents.y},
+        Position = scene.Vector2{x = cmp.min.x, y = cmp.min.y},
+        // Texture = scene.Texture{Name = cmp.id}, // Texture shouldn't change
+    }
+}
+
+save_ui_prefab :: proc(entity: Entity, filename: string) {
+    nc := get_component(entity, Cmp_Node)
+    gc := get_component(entity, Cmp_Gui)
+    if nc == nil || gc == nil {
+        fmt.eprintln("Error: Entity missing Cmp_Node or Cmp_Gui for saving")
+        return
+    }
+
+    // Reconstruct minimal Node (defaults for unused fields)
+    node := scene.Node{
+        Name = nc.name,
+        gui = map_gui(gc^),
+        eFlags = transmute(u32) nc.engine_flags,
+        gFlags = nc.game_flags,
+        Dynamic = nc.is_dynamic,
+        hasChildren = nc.is_parent,
+        // Default Transform (identity, as UI JSONs don't use it)
+        Transform = scene.Transform{
+            Position = scene.Vector3{x=0, y=0, z=0},
+            Rotation = scene.Vector4{i=0, j=0, k=0, w=1},
+            Scale = scene.Vector3{x=1, y=1, z=1},
+        },
+        // Other fields zero/default (e.g., no children, no camera/light, etc.)
+    }
+
+    data, marshal_err := json.marshal(node, allocator = context.temp_allocator)
+    if marshal_err != nil {
+        fmt.eprintf("Error marshalling UI prefab '%s': %v\n", filename, marshal_err)
+        return
+    }
+
+    ok := os.write_entire_file(filename, data)
+    if !ok {
+        fmt.eprintf("Error writing UI prefab file '%s'\n", filename)
     }
 }

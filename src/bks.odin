@@ -1117,10 +1117,10 @@ init_GameUI :: proc(game_ui : ^map[string]Entity)
     for key,ui in g_ui_prefabs{
         cmp := map_gui(ui.gui)
         cmp.alpha = 0.0
-        cmp.update = false
+        cmp.update = true
         e := add_ui(cmp, key)
         game_ui[key] = e
-        fmt.println("GUI: ", cmp)
+        // fmt.println("GUI: ", cmp)
     }
     ge := game_ui["Move"]
     gc := get_component(ge, Cmp_Gui)
@@ -1129,33 +1129,19 @@ init_GameUI :: proc(game_ui : ^map[string]Entity)
     gc.alpha = 1.0
     gc.update = true
     update_gui(gc)
-    // title_comp := Cmp_Gui{
-    //     min = vec2f{0.0, 0.0}, extents = vec2f{1.0, 1.0},
-    //     align_min = vec2f{1.0, 0.5}, align_ext = vec2f{1.0, 1.0},
-    //     id = "BeeKillingsInnUI.png",layer = 0, alpha = 1.0, update = true
-    // }
-
-    // start_comp := Cmp_Gui{
-    //     min = vec2f{0.3, 0.645}, extents = vec2f{.5, .15},
-    //     align_min = vec2f{1, .288}, align_ext = vec2f{.56, .125},
-    //     id = "BeeKillingsInnUI.png", layer = 0, alpha = 0.5, update = false
-    // }
-
-    // ui.title = add_gameui(title_comp, "Title")
-    // ui.start = add_gameui(start_comp, "Lose")
-
-    // update_gui(&title_comp)
-    // update_gui(&start_comp)
-
-   // test := map_gui(g_ui_prefabs["debb"].gui)
-   // test.alpha = 1.0
-   // test.update = true
-   // ui.end = add_gameui(test, "Test")
-   // update_gui(&test)
-
-   // fmt.println("TEST GUI COMP: " ,test)
 }
 
+tweak_game_UI :: proc(e : Entity)
+{
+    ui := get_component(e, Cmp_Gui)
+    if ui == nil do fmt.println("nope")
+    if is_key_pressed(glfw.KEY_W) do  ui.align_min.y += .01
+    else if is_key_pressed(glfw.KEY_S) do  ui.align_min.y -= .01
+    else if is_key_pressed(glfw.KEY_A) do ui.align_min.x -= .01
+    else if is_key_pressed(glfw.KEY_D) do ui.align_min.x += .01
+    // fmt.println("uI", ui.min.y)
+    update_gui(ui)
+}
 
 //----------------------------------------------------------------------------\\
 // /Animation

@@ -99,11 +99,6 @@ main :: proc() {
 	sc.load_prefab_directory("assets/prefabs", &g_prefabs, arena_alloc)
 	sc.load_prefab_directory("assets/prefabs/ui", &g_ui_prefabs, arena_alloc)
 
-
-	for ui in g_ui_prefabs{
-    	fmt.println("UI prefb", ui)
-	}
-
 	//Begin renderer and scene loading
 	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, "title.png", 0, 0, false})
 	// init_GameUI(&g_gameui)
@@ -116,14 +111,13 @@ main :: proc() {
 	transform_sys_process_e()
 	gameplay_init()
 		defer gameplay_destroy()
-
+	for key, val in gui do fmt.println(key)
 	transform_sys_process_e()
 	gameplay_post_init()
 	bvh_system_build(g_bvh, per_frame_alloc)
 
 	//begin renderer
 	initialize_raytracer()
-	for key, t in g_texture_indexes do fmt.println(key, ": Index: ", t)
 
 	glfw.PollEvents()
 	g_frame.prev_time = glfw.GetTime()

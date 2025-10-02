@@ -139,6 +139,7 @@ gameplay_update :: proc(delta_time: f32) {
         find_player_entity()
     }
 
+    tweak_game_UI(gui["Move"])
     if (g_level.player.health > 0) && (len(g_level.bees) > 0) do run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
     // Clear just pressed/released states
     for i in 0..<len(g_input.keys_just_pressed) {
@@ -146,7 +147,7 @@ gameplay_update :: proc(delta_time: f32) {
         g_input.keys_just_released[i] = false
     }
 
-    // Update light orbit (if a light entity was found)
+        // Update light orbit (if a light entity was found)
     // update_light_orbit(delta_time)
 
     //update_camera_movement(delta_time)
