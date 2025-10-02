@@ -156,7 +156,7 @@ map_sc_gui_to_gui_cmp :: proc(gui : scene.Gui) -> Cmp_Gui{
         align_ext = map_vec2f(gui.AlignExt),
         align_min = map_vec2f(gui.Alignment),
         extents = map_vec2f(gui.Extent),
-        min = vec2f{0.0,0.0},
+        min = map_vec2f(gui.Position),
         id = gui.Texture.Name
     }
 }
@@ -195,7 +195,7 @@ save_ui_prefab :: proc(entity: Entity, filename: string) {
         // Other fields zero/default (e.g., no children, no camera/light, etc.)
     }
 
-    data, marshal_err := json.marshal(node, allocator = context.temp_allocator)
+    data, marshal_err := json.marshal(node, json.Marshal_Options{pretty = true}, allocator = context.temp_allocator)
     if marshal_err != nil {
         fmt.eprintf("Error marshalling UI prefab '%s': %v\n", filename, marshal_err)
         return
