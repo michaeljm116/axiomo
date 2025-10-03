@@ -25,16 +25,17 @@ kanban-plugin: board
 - [ ] Bee Animations for Attack, Idle, Fly
 - [ ] Press P To Pause
 - [ ] Theme song
+- [ ] Some way to visualize focus and dodge
 
 
 ## In Progress
 
-- [ ] UI System For Player Turns
 
 
 ## QA
 
 - [ ] Decision on Mouse UI vs Keys
+- [ ] UI System For Player Turns
 
 
 ## Complete

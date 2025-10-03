@@ -11,12 +11,21 @@
             "id": "b47c04f3ca1234e3",
             "type": "leaf",
             "state": {
-              "type": "excalidraw",
+              "type": "kanban",
               "state": {
-                "file": "Excalidraw/PlayersTUrn.excalidraw.md"
+                "file": "Kanban.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false,
+                    false
+                  ]
+                }
               },
-              "icon": "excalidraw-icon",
-              "title": "PlayersTUrn.excalidraw"
+              "icon": "lucide-trello",
+              "title": "Kanban"
             }
           }
         ]
@@ -171,6 +180,7 @@
   },
   "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
+    "Excalidraw/PlayersTUrn.excalidraw.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
     "Excalidraw/AnimationStates.excalidraw.md",
     "Kanban.md",
@@ -184,7 +194,6 @@
     "Photos/Pasted image 20250912151600.jpg",
     "Photos/Pasted image 20250912151959.jpg",
     "Photos/Pasted image 20250912151449.jpg",
-    "Excalidraw/PlayersTUrn.excalidraw.md",
     "BeeKillingsInn/Code.md",
     "BeeKillingsInn/Next Steps.md",
     "BeeKillingsInn/Rules Engine.md",
