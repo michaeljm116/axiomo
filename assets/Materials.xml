@@ -15,8 +15,8 @@
     <Material Name="CarpetRed" DiffuseR="0.25980395" DiffuseG="0" DiffuseB="0" Reflective="0" Roughness="0.35499999" Transparency="0" Refractive="0" Texture="carpet-brown.png"/>
     <Material Name="Floor1" DiffuseR="0.25836217" DiffuseG="0.27450979" DiffuseB="0" Reflective="0.244" Roughness="1" Transparency="0" Refractive="0" Texture="wood-dark.png"/>
     <Material Name="Wall1" DiffuseR="0.15785781" DiffuseG="0.62745094" DiffuseB="0.076893486" Reflective="0.22499999" Roughness="0" Transparency="0" Refractive="0" Texture=""/>
-    <Material Name="Floor2" DiffuseR="0" DiffuseG="0.2" DiffuseB="0.2" Reflective="0" Roughness="0.72600001" Transparency="0" Refractive="0" Texture="wood-mid.png"/>
-    <Material Name="Wall2" DiffuseR="0.054901961" DiffuseG="0" DiffuseB="0.0039215689" Reflective="0.171" Roughness="0" Transparency="0" Refractive="0" Texture="wood-dark.png"/>
+    <Material Name="Floor2" DiffuseR="0" DiffuseG="0.0" DiffuseB="0.0" Reflective="0.2" Roughness="0.72600001" Transparency="0" Refractive="0" Texture="wood-dark.png"/>
+    <Material Name="Wall2" DiffuseR="0.054901961" DiffuseG="0" DiffuseB="0.0039215689" Reflective="0.571" Roughness="0" Transparency="0" Refractive="0" Texture="wood-dark.png"/>
     <Material Name="LighterBlack" DiffuseR="0.05882353" DiffuseG="0.05882353" DiffuseB="0.05882353" Reflective="0.103" Roughness="0" Transparency="0" Refractive="0" Texture=""/>
     <Material Name="ShinyBlocky" DiffuseR="1" DiffuseG="1" DiffuseB="1" Reflective="1" Roughness="1" Transparency="0" Refractive="0" Texture=""/>
     <Material Name="TitleScreen" DiffuseR="1" DiffuseG="1" DiffuseB="1" Reflective="0" Roughness="1" Transparency="0" Refractive="1" Texture="title.png"/>

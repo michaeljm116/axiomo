@@ -127,6 +127,7 @@ players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player :
     switch state^
     {
         case .SelectAction:
+            TogglePlayerTurnUI(state)
             if is_key_just_pressed(glfw.KEY_1) do state^ = .Movement
             if is_key_just_pressed(glfw.KEY_2){
                 state^ = .SelectEnemy
@@ -135,12 +136,14 @@ players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player :
             }
             break
         case .Movement:
+            TogglePlayerTurnUI(state)
             handle_back_button(state)
             input, moved := get_input()
             if moved{
                 move_player(player, input, state)
             }
         case .SelectEnemy:
+            TogglePlayerTurnUI(state)
             handle_back_button(state)
             if is_key_just_pressed(glfw.KEY_SPACE) || is_key_just_pressed(glfw.KEY_ENTER){
                 bee_is_near^ = bee_near(player^, bees[bee_selection^])
@@ -148,6 +151,7 @@ players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player :
             }
             else do enemy_selection(bee_selection, bees^)
         case .Action:
+            TogglePlayerTurnUI(state)
             if(bee_is_near^ && is_key_just_pressed(glfw.KEY_SPACE)){
                 player_attack(player^, &bees[bee_selection^])
                 state^ = .SelectAction
@@ -171,6 +175,7 @@ players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player :
                 game_state^ = .BeesTurn
             }
         case .Animate:
+            TogglePlayerTurnUI(state)
             animate_player(player, f32(g_frame.physics_time_step), state)
             if state^ == .SelectAction do game_state^ = .BeesTurn
             break
@@ -1123,6 +1128,49 @@ init_GameUI :: proc(game_ui : ^map[string]Entity)
         append(&ui_keys, key)
     }
 }
+ToggleUI :: proc(name : string, on : bool)
+{
+    gc := get_component(gui[name], Cmp_Gui)
+    gc.alpha = on ? 1.0 : 0.0
+    gc.update = on
+    update_gui(gc)
+}
+
+TogglePlayerTurnUI :: proc(state : ^PlayerTurnState)
+{
+    switch state^{
+        case .SelectAction:
+            ToggleUI("SelectAction", false)
+            ToggleUI("MoveWASD", false)
+            ToggleUI("Attack", false)
+            ToggleUI("Focus", false)
+            ToggleUI("Dodge", false)
+
+            ToggleUI("Move", true)
+            ToggleUI("EnemySelect", true)
+        case .SelectEnemy:
+            ToggleUI("Move", false)
+            ToggleUI("EnemySelect", false)
+            ToggleUI("ChooseBee", true)
+            ToggleUI("SelectAction", true)
+        case .Movement:
+            ToggleUI("Move", false)
+            ToggleUI("EnemySelect", false)
+            ToggleUI("MoveWASD", true)
+        case .Animate:
+            ToggleUI("MoveWASD", false)
+            ToggleUI("Attack", false)
+            ToggleUI("Focus", false)
+            ToggleUI("Dodge", false)
+        case .Action:
+            ToggleUI("ChooseBee", false)
+            ToggleUI("SelectAction", false)
+            ToggleUI("Attack", true)
+            ToggleUI("Focus", true)
+            ToggleUI("Dodge", true)
+    }
+}
+
 
 
 //----------------------------------------------------------------------------\\

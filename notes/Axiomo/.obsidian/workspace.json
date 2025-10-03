@@ -11,12 +11,12 @@
             "id": "b47c04f3ca1234e3",
             "type": "leaf",
             "state": {
-              "type": "image",
+              "type": "excalidraw",
               "state": {
-                "file": "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg"
+                "file": "Excalidraw/PlayersTUrn.excalidraw.md"
               },
-              "icon": "lucide-image",
-              "title": "4df0d0eb27cc41c59577e0b96fc2c2d4"
+              "icon": "excalidraw-icon",
+              "title": "PlayersTUrn.excalidraw"
             }
           }
         ]
@@ -171,6 +171,10 @@
   },
   "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
+    "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
+    "Excalidraw/AnimationStates.excalidraw.md",
+    "Kanban.md",
+    "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
     "Photos/2d7f1352-8a6d-4a7d-be01-4e55c58837a2.png",
     "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",
     "Photos/sanctuary-high-view-2-768.YJKVAsU3_CIe1o.webp",
@@ -180,9 +184,6 @@
     "Photos/Pasted image 20250912151600.jpg",
     "Photos/Pasted image 20250912151959.jpg",
     "Photos/Pasted image 20250912151449.jpg",
-    "Photos/kitchen-768.B5948oyV_InHOb.webp",
-    "Photos/il_1140xN.7170395961_e2r5.jpg",
-    "Kanban.md",
     "Excalidraw/PlayersTUrn.excalidraw.md",
     "BeeKillingsInn/Code.md",
     "BeeKillingsInn/Next Steps.md",
@@ -200,8 +201,6 @@
     "BeeKillingsInn/Animation - Again.md",
     "BeeKillingsInn/Bee Ideas.md",
     "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md",
-    "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
-    "Excalidraw/AnimationStates.excalidraw.md",
     "BeeKillingsInn/bg.md",
     "BeeKillingsInn/Engine Improvements.md",
     "Excalidraw",
