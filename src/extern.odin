@@ -166,7 +166,7 @@ map_gui_cmp_to_sc_gui :: proc(cmp: Cmp_Gui) -> scene.Gui {
         Alignment = scene.Vector2{x = cmp.align_min.x, y = cmp.align_min.y},
         Extent = scene.Vector2{x = cmp.extents.x, y = cmp.extents.y},
         Position = scene.Vector2{x = cmp.min.x, y = cmp.min.y},
-        // Texture = scene.Texture{Name = cmp.id}, // Texture shouldn't change
+        Texture = scene.Texture{Name = cmp.id},
     }
 }
 
