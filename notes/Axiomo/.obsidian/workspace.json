@@ -18,8 +18,30 @@
               "icon": "excalidraw-icon",
               "title": "PlayersTUrn.excalidraw"
             }
+          },
+          {
+            "id": "61bf7b15a66f7500",
+            "type": "leaf",
+            "state": {
+              "type": "kanban",
+              "state": {
+                "file": "Kanban.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false,
+                    false
+                  ]
+                }
+              },
+              "icon": "lucide-trello",
+              "title": "Kanban"
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -169,8 +191,10 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "b47c04f3ca1234e3",
+  "active": "61bf7b15a66f7500",
   "lastOpenFiles": [
+    "Untitled Kanban.md",
+    "Untitled Kanban 1.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
     "Excalidraw/AnimationStates.excalidraw.md",
     "Kanban.md",
@@ -194,7 +218,6 @@
     "BeeKillingsInn/Merge Bee with Axiomo.md",
     "Untitled Kanban 3.md",
     "Untitled Kanban 2.md",
-    "Untitled Kanban 1.md",
     "Game Jam - 20 games challenge - JJ.md",
     "Photos",
     "BeeKillingsInn/Art Inspo.md",

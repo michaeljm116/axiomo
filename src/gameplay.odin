@@ -91,6 +91,7 @@ gameplay_init :: proc() {
     face_right(g_player)
     //setup_physics()
 
+    ////////////////// actual bks init ////////////////
     init_level1()
     find_floor_entities()
     set_grid_scale(g_floor, &g_level)
@@ -134,7 +135,8 @@ gameplay_update :: proc(delta_time: f32) {
     if g_player == 0 do find_player_entity()
 
     handle_ui_edit_mode()
-    if !edit_mode do if (g_level.player.health > 0) && (len(g_level.bees) > 0) do run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
+    handle_chest_mode()
+    if !edit_mode && !chest_mode do if (g_level.player.health > 0) && (len(g_level.bees) > 0) do run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
 
     // Clear just pressed/released states
     for i in 0..<len(g_input.keys_just_pressed) {
@@ -149,6 +151,36 @@ gameplay_update :: proc(delta_time: f32) {
     //update_player_movement(delta_time)
     // update_movables(delta_time)
     // update_physics(delta_time)
+}
+
+chest_mode := false
+chest_index := 0
+selected_chest : Entity
+handle_chest_mode :: proc()
+{
+    if is_key_just_pressed(glfw.KEY_F2) {  // Or any special key
+        chest_mode = !chest_mode
+        if chest_mode do fmt.println("Entered Chest Edit Mode")
+        else do fmt.println("Exited Chest Edit Mode")
+    }
+    if !chest_mode do return
+
+    if is_key_just_pressed(glfw.KEY_TAB) {
+        chest_index = (chest_index + 1) % len(g_level.chests)
+        selected_chest = g_level.chests[chest_index]
+        fmt.printf("Selected Chest: %d\n", chest_index)
+    }
+    tc := get_component(selected_chest, Cmp_Transform)
+    if tc == nil do return
+    move_speed: f32 = 0.1  // Common adjustment increment
+    if is_key_pressed(glfw.KEY_W) do tc.local.pos.z += move_speed
+    if is_key_pressed(glfw.KEY_S) do tc.local.pos.z -= move_speed
+    if is_key_pressed(glfw.KEY_A) do tc.local.pos.x -= move_speed
+    if is_key_pressed(glfw.KEY_D) do tc.local.pos.x += move_speed
+    if is_key_pressed(glfw.KEY_SPACE) do tc.local.pos.y += move_speed
+    if is_key_pressed(glfw.KEY_LEFT_SHIFT) do tc.local.pos.y -= move_speed
+
+    fmt.println("Chest Position :", tc.local.pos)
 }
 
 find_player_entity :: proc() {
@@ -409,7 +441,6 @@ gameplay_destroy :: proc() {
 //----------------------------------------------------------------------------\\
 // /UI
 //----------------------------------------------------------------------------\\
-
 edit_mode: bool = false
 selected_ui_index: int = 0
 ui_keys: [dynamic]string

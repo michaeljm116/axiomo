@@ -7,7 +7,6 @@ kanban-plugin: board
 ## TODO
 
 - [ ] Selectable UI System
-- [ ] Weapons? Where did they go?
 - [ ] Actually Attack n stuff
 - [ ] UI - Press wasd TO GO ONE SPACE
 - [ ] Allow for Multiple Moves per turn
@@ -30,6 +29,7 @@ kanban-plugin: board
 ## In Progress
 
 - [ ] UI System For Player Turns
+- [ ] Weapons? Where did they go?
 
 
 ## QA
