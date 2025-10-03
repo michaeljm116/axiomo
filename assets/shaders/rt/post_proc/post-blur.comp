@@ -1,0 +1,55 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+#extension GL_ARB_shading_language_420pack : enable
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_nonuniform_qualifier : enable
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(binding = 0, rgba8) uniform readonly image2D sceneImage;
+layout(binding = 1, rgba8) uniform writeonly image2D finalImage;
+#include "../ray_gen/foveated-rg.glsl"  // For check_gui and other includes if needed
+void main()
+{
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 dim = imageSize(sceneImage);
+    if (pos.x >= dim.x || pos.y >= dim.y) return; // Out of bounds check
+    vec2 uv = vec2(pos) / vec2(dim);
+    vec4 txt = check_gui(uv, vec4(0.0));
+    // Compute distance from center
+    vec2 center = vec2(dim) / 2.0;
+    vec2 dpos = abs(vec2(pos) - center);
+    vec2 norm_dist = dpos / center;
+    float dist = length(norm_dist);
+    int stride = 1;
+    if (dist > 0.4) stride = 2;
+    if (dist > 0.7) stride = 4;
+    if (dist > 0.9) stride = 8;
+    float sigma = max(0.0, float(stride) / 2.0 - 0.5);
+    vec4 final_color;
+    if (sigma < 0.1) {
+        // No blur
+        vec4 scene = imageLoad(sceneImage, pos);
+        final_color = vec4(scene.rgb, 1.0) * (1.0 - txt.a) + txt;
+    } else {
+        // Gaussian blur
+        int radius = min(int(3.0 * sigma + 0.5), 7); // Cap radius for performance
+        float two_sigma_sq = 2.0 * sigma * sigma;
+        const float pi = 3.141592653589793;
+        vec3 accum = vec3(0.0);
+        float accum_w = 0.0;
+        for (int dy = -radius; dy <= radius; ++dy) {
+            for (int dx = -radius; dx <= radius; ++dx) {
+                ivec2 offset = ivec2(dx, dy);
+                ivec2 sample_pos = pos + offset;
+                sample_pos = clamp(sample_pos, ivec2(0), dim - 1);
+                vec4 samp = imageLoad(sceneImage, sample_pos);
+                float dist_sq = float(dx * dx + dy * dy);
+                float weight = exp(-dist_sq / two_sigma_sq) / (2.0 * pi * sigma * sigma);
+                accum += samp.rgb * weight;
+                accum_w += weight;
+            }
+        }
+        vec3 blurred = accum / accum_w;
+        final_color = vec4(blurred, 1.0) * (1.0 - txt.a) + txt;
+    }
+    imageStore(finalImage, pos, final_color);
+}
