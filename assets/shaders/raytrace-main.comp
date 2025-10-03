@@ -21,8 +21,8 @@ layout(binding = 0, rgba8) uniform writeonly image2D resultImage;
 
 #include "rt/structs.glsl"
 #include "rt/constants.glsl"
-#include "rt/ray_gen/main-rg.glsl"
-// #include "rt/ray_gen/diff-rg.glsl"
+// #include "rt/ray_gen/main-rg.glsl"
+#include "rt/ray_gen/diff-rg.glsl"
 #include "rt/intersect/main-intersect.glsl"
 #include "rt/hit/basic-chit.glsl"
 
