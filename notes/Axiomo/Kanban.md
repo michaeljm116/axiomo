@@ -6,16 +6,13 @@ kanban-plugin: board
 
 ## TODO
 
-- [ ] Selectable UI System
-- [ ] Actually Attack n stuff
-- [ ] UI - Press wasd TO GO ONE SPACE
-- [ ] Allow for Multiple Moves per turn
+- [ ] Make Characters Not Starts in the walls
+- [ ] Get the level size corrected
+- [ ] Fix the beginning bee jump
 - [ ] Fix Bee Model
 - [ ] Shrink Bee size
-- [ ] Fix the beginning bee jump
+- [ ] Beginning Middle End Loop
 - [ ] Correct The Character Rotations
-- [ ] Get the level size corrected
-- [ ] Make Characters Not Starts in the walls
 - [ ] Some Kind of Bee UI ?
 - [ ] Some Kind of Weapons UI
 - [ ] Some Kind of Abilities UI
@@ -23,19 +20,20 @@ kanban-plugin: board
 - [ ] Character Animations for: Weapon pickup
 - [ ] Bee Animations for Attack, Idle, Fly
 - [ ] Press P To Pause
+- [ ] Allow for Multiple Moves per turn
+- [ ] Selectable UI System
 - [ ] Theme song
-- [ ] Some way to visualize focus and dodge
 
 
 ## In Progress
 
-- [ ] UI System For Player Turns
-- [ ] Weapons? Where did they go?
 
 
 ## QA
 
 - [ ] Decision on Mouse UI vs Keys
+- [ ] Weapons? Where did they go?
+- [ ] UI System For Player Turns
 - [ ] UI System For Player Turns
 
 

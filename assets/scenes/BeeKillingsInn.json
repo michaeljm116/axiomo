@@ -11,13 +11,13 @@
         "Position": {
           "_x": 0.0,
           "_y": -7.190013885498047,
-          "_z": -16.950063705444336
+          "_z": -17.59005355834961
         },
         "Rotation": {
           "_w": 0.838670551776886,
           "_x": -0.5446390509605408,
-          "_y": 7.318780248510848e-09,
-          "_z": -4.752871873847653e-09
+          "_y": -8.429291931122407e-09,
+          "_z": -2.258621067952049e-09
         },
         "Scale": {
           "_x": 1.0,
@@ -38,7 +38,7 @@
         "_r": 255.0
       },
       "ID": {
-        "_id": 51
+        "_id": 3
       },
       "Intensity": {
         "_i": 736.6409912109375
@@ -136,7 +136,7 @@
       },
       "Transform": {
         "Position": {
-          "_x": 24.0,
+          "_x": 26.0,
           "_y": -10.0,
           "_z": 0.0
         },
@@ -180,7 +180,7 @@
       },
       "Transform": {
         "Position": {
-          "_x": -24.0,
+          "_x": -26.0,
           "_y": -10.0,
           "_z": 0.0
         },
@@ -305,7 +305,7 @@
       },
       "Transform": {
         "Position": {
-          "_x": -12.110595703125,
+          "_x": -14.430389404296875,
           "_y": -14.610595703125,
           "_z": 9.129638671875
         },
@@ -322,7 +322,7 @@
         }
       },
       "_Dynamic": true,
-      "_Name": "New Cylinder!",
+      "_Name": "ColumnTopLeft",
       "_eFlags": 2129927,
       "_gFlags": 0,
       "_hasChildren": false
@@ -336,7 +336,7 @@
       },
       "Transform": {
         "Position": {
-          "_x": 12.1490478515625,
+          "_x": 14.34906005859375,
           "_y": -14.610595703125,
           "_z": 9.129638671875
         },
@@ -353,7 +353,7 @@
         }
       },
       "_Dynamic": false,
-      "_Name": "New Cylinder!",
+      "_Name": "ColumnTopRight",
       "_eFlags": 2129927,
       "_gFlags": 0,
       "_hasChildren": false
@@ -429,7 +429,7 @@
       },
       "Transform": {
         "Position": {
-          "_x": -12.110595703125,
+          "_x": -14.449999809265137,
           "_y": -15.720999717712402,
           "_z": 9.129638671875
         },
@@ -446,7 +446,7 @@
         }
       },
       "_Dynamic": false,
-      "_Name": "base",
+      "_Name": "ColumnBaseTopLeft",
       "_eFlags": 2129927,
       "_gFlags": 0,
       "_hasChildren": false
@@ -460,7 +460,7 @@
       },
       "Transform": {
         "Position": {
-          "_x": 12.059440612792969,
+          "_x": 14.259452819824219,
           "_y": -15.720999717712402,
           "_z": 9.129638671875
         },
@@ -477,7 +477,7 @@
         }
       },
       "_Dynamic": false,
-      "_Name": "base",
+      "_Name": "ColumnBaseTopRight",
       "_eFlags": 2129927,
       "_gFlags": 0,
       "_hasChildren": false
@@ -491,7 +491,7 @@
       },
       "Transform": {
         "Position": {
-          "_x": -0.120086669921875,
+          "_x": 0.0,
           "_y": -7.81005859375,
           "_z": 10.519790649414063
         },
@@ -508,7 +508,7 @@
         }
       },
       "_Dynamic": true,
-      "_Name": "New Box!",
+      "_Name": "Mirror",
       "_eFlags": 2129927,
       "_gFlags": 0,
       "_hasChildren": false
@@ -539,7 +539,7 @@
         }
       },
       "_Dynamic": false,
-      "_Name": "New Box!",
+      "_Name": "MirrorBackground",
       "_eFlags": 2129927,
       "_gFlags": 0,
       "_hasChildren": false
@@ -616,7 +616,7 @@
       },
       "Transform": {
         "Position": {
-          "_x": 29.669952392578125,
+          "_x": 31.5,
           "_y": -15.680000305175781,
           "_z": -0.260162353515625
         },
@@ -633,7 +633,7 @@
         }
       },
       "_Dynamic": false,
-      "_Name": "bottomWall",
+      "_Name": "BaseBoardRight",
       "_eFlags": 2334727,
       "_gFlags": 0,
       "_hasChildren": false
@@ -710,7 +710,7 @@
       },
       "Transform": {
         "Position": {
-          "_x": -29.68994140625,
+          "_x": -31.5,
           "_y": -15.680000305175781,
           "_z": 0.030059814453125
         },
@@ -727,7 +727,7 @@
         }
       },
       "_Dynamic": false,
-      "_Name": "bottomWall",
+      "_Name": "BaseBoardLeft",
       "_eFlags": 2334727,
       "_gFlags": 0,
       "_hasChildren": false

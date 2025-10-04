@@ -48,9 +48,30 @@
               "icon": "lucide-trello",
               "title": "Kanban"
             }
+          },
+          {
+            "id": "76c5de357f347cbb",
+            "type": "leaf",
+            "state": {
+              "type": "kanban",
+              "state": {
+                "file": "Kanban.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false,
+                    false
+                  ]
+                }
+              },
+              "icon": "lucide-trello",
+              "title": "Kanban"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -200,13 +221,14 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "61bf7b15a66f7500",
+  "active": "76c5de357f347cbb",
   "lastOpenFiles": [
+    "BeeKillingsInn/Bugs.md",
+    "Kanban.md",
     "Untitled Kanban.md",
     "Untitled Kanban 1.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
     "Excalidraw/AnimationStates.excalidraw.md",
-    "Kanban.md",
     "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
     "Photos/2d7f1352-8a6d-4a7d-be01-4e55c58837a2.png",
     "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",
