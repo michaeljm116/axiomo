@@ -6,7 +6,7 @@ import "core:strings"
 import "core:slice"
 import "core:log"
 import "external/vma"
-
+import "core:c"
 import "core:os"
 import "core:math"
 import "core:math/linalg"
@@ -96,9 +96,22 @@ init_vulkan :: proc()
 
 	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
 	glfw.WindowHint(glfw.RESIZABLE, glfw.TRUE)
+	glfw.WindowHint(glfw.DECORATED, glfw.TRUE)
 
-	rb.window = glfw.CreateWindow(1280, 720, "Bee Killins Inn", nil, nil)
+	//Get monitor and set to full screen
+	monitor_width :c.int= 1280
+	monitor_height :c.int= 720
+	primary_monitor :glfw.MonitorHandle=nil
+	// primary_monitor = glfw.GetPrimaryMonitor()
+	// mode := glfw.GetVideoMode(primary_monitor)
+	// if primary_monitor != nil && mode != nil{
+	//     monitor_height = mode^monitor_height.
+	// 	monitor_width = c.int(f32(monitor_height) * 16.0 / 9.0)
+	// }
 
+	rb.window = glfw.CreateWindow(monitor_width, monitor_height, "Bee Killins Inn", primary_monitor, nil)
+	// glfw.GetVideoMode()
+	glfw.GetPrimaryMonitor()
 	glfw.SetFramebufferSizeCallback(rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
 		rb.framebuffer_resized = true
 	})

@@ -23,11 +23,11 @@ kanban-plugin: board
 - [ ] Integrate editor into your project
 - [ ] Fix Memory Leaks
 - [ ] BEGINNING SCREEN HURRY
+- [ ] Gaussian blurry b
 
 
 ## In Progress
 
-- [ ] Fix the beginning bee jump
 
 
 ## QA
@@ -38,6 +38,7 @@ kanban-plugin: board
 - [ ] UI System For Player Turns
 - [ ] Make Characters Not Starts in the walls
 - [ ] Get the level size corrected
+- [ ] Fix the beginning bee jump
 
 
 ## Complete

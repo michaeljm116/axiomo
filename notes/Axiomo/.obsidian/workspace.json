@@ -53,21 +53,12 @@
             "id": "76c5de357f347cbb",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "excalidraw",
               "state": {
-                "file": "Kanban.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false,
-                    false
-                  ]
-                }
+                "file": "Excalidraw/PlayersTUrn.excalidraw.md"
               },
-              "icon": "lucide-trello",
-              "title": "Kanban"
+              "icon": "excalidraw-icon",
+              "title": "PlayersTUrn.excalidraw"
             }
           }
         ],
@@ -223,12 +214,12 @@
   },
   "active": "76c5de357f347cbb",
   "lastOpenFiles": [
-    "BeeKillingsInn/Bugs.md",
-    "Kanban.md",
-    "Untitled Kanban.md",
-    "Untitled Kanban 1.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
     "Excalidraw/AnimationStates.excalidraw.md",
+    "Kanban.md",
+    "BeeKillingsInn/Bugs.md",
+    "Untitled Kanban.md",
+    "Untitled Kanban 1.md",
     "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
     "Photos/2d7f1352-8a6d-4a7d-be01-4e55c58837a2.png",
     "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",
