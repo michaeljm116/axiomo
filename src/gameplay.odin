@@ -88,7 +88,7 @@ gameplay_init :: proc() {
     find_camera_entity()
     find_light_entity()
     find_player_entity()
-    face_right(g_player)
+    face_left(g_player)
     //setup_physics()
 
     ////////////////// actual bks init ////////////////
@@ -98,7 +98,9 @@ gameplay_init :: proc() {
     set_entity_on_tile(g_floor, g_player, g_level, g_level.player.pos.x, g_level.player.pos.y)
     for bee in g_level.bees{
         set_entity_on_tile(g_floor, bee.entity, g_level, bee.pos.x, bee.pos.y)
+        face_right(bee.entity)
     }
+
     place_chest_on_grid(vec2{2,0}, &g_level)
     place_chest_on_grid(vec2{4,3}, &g_level)
     g_level.player.entity = g_player
