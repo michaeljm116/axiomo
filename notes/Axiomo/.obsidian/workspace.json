@@ -62,7 +62,7 @@
             }
           }
         ],
-        "currentTab": 2
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -212,8 +212,9 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "76c5de357f347cbb",
+  "active": "61bf7b15a66f7500",
   "lastOpenFiles": [
+    "Excalidraw/PlayersTUrn.excalidraw.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
     "Excalidraw/AnimationStates.excalidraw.md",
     "Kanban.md",
@@ -252,7 +253,6 @@
     "BeeKillingsInn/Grok.md",
     "BeeKillingsInn/Epics.md",
     "Untitled.base",
-    "Untitled 1.md",
     "BeeKillingsInn"
   ]
 }

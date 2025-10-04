@@ -6,7 +6,6 @@ kanban-plugin: board
 
 ## TODO
 
-- [ ] Fix Bee Model
 - [ ] Shrink Bee size
 - [ ] Beginning Middle End Loop
 - [ ] Correct The Character Rotations
@@ -28,6 +27,7 @@ kanban-plugin: board
 
 ## In Progress
 
+- [ ] Fix Bee Model
 
 
 ## QA

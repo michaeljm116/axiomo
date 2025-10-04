@@ -108,9 +108,7 @@ init_vulkan :: proc()
 	//     monitor_height = mode^monitor_height.
 	// 	monitor_width = c.int(f32(monitor_height) * 16.0 / 9.0)
 	// }
-
 	rb.window = glfw.CreateWindow(monitor_width, monitor_height, "Bee Killins Inn", primary_monitor, nil)
-	// glfw.GetVideoMode()
 	glfw.GetPrimaryMonitor()
 	glfw.SetFramebufferSizeCallback(rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
 		rb.framebuffer_resized = true
