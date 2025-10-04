@@ -33,6 +33,9 @@ Level :: struct
     chests : [dynamic]Entity,
 }
 
+//----------------------------------------------------------------------------\\
+// /Start UP
+//----------------------------------------------------------------------------\\
 bks_main :: proc() {
     track_alloc: mem.Tracking_Allocator
 	mem.tracking_allocator_init(&track_alloc, context.allocator)
@@ -53,7 +56,6 @@ bks_main :: proc() {
     init_level1()
     bufio.scanner_destroy(&s)
 }
-
 init_level1 :: proc(alloc : mem.Allocator = context.allocator)
 {
     context.allocator = alloc
@@ -79,8 +81,9 @@ init_level1 :: proc(alloc : mem.Allocator = context.allocator)
     // Initialize Player and Bee
     player = {name = '🧔', pos = vec2{0,2}, health = 1, weapon = db[.Hand], abilities = {}}
     bees = make([dynamic]Bee, 2)
-    bees[0] = Bee{name = '🐝', pos = vec2{6,2}, health = 2, type = .Aggressive, flags = {}, entity = load_prefab("Bee")}
-    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
+    bees[0] = Bee{name = '🐝', pos = vec2{6,2}, target = vec2{6,2}, health = 2, type = .Aggressive, flags = {}, entity = load_prefab("Bee")}
+    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
+
     player.abilities = make([dynamic]Ability, 2)
     player.abilities[0] = Ability{type = .Dodge, use_on = &bees[0], level = 1, uses = 1}
     player.abilities[1] = Ability{type = .Focused, use_on = &bees[1], level = 1, uses = 1}
@@ -1176,7 +1179,6 @@ TogglePlayerTurnUI :: proc(state : ^PlayerTurnState)
 //----------------------------------------------------------------------------\\
 // /Animation
 //----------------------------------------------------------------------------\\
-
 add_animation :: proc(ent : Entity)
 {
    flatten_entity(ent)
@@ -1184,7 +1186,6 @@ add_animation :: proc(ent : Entity)
    add_component(ent, ac)
    //animation_added(ent)
 }
-
 
 // Similar to move_entity_to_tile but just sets the vectors up
 set_up_character_anim :: proc(cha : ^Character, scale : vec2f)

@@ -6,9 +6,6 @@ kanban-plugin: board
 
 ## TODO
 
-- [ ] Make Characters Not Starts in the walls
-- [ ] Get the level size corrected
-- [ ] Fix the beginning bee jump
 - [ ] Fix Bee Model
 - [ ] Shrink Bee size
 - [ ] Beginning Middle End Loop
@@ -23,10 +20,14 @@ kanban-plugin: board
 - [ ] Allow for Multiple Moves per turn
 - [ ] Selectable UI System
 - [ ] Theme song
+- [ ] Integrate editor into your project
+- [ ] Fix Memory Leaks
+- [ ] BEGINNING SCREEN HURRY
 
 
 ## In Progress
 
+- [ ] Fix the beginning bee jump
 
 
 ## QA
@@ -35,6 +36,8 @@ kanban-plugin: board
 - [ ] Weapons? Where did they go?
 - [ ] UI System For Player Turns
 - [ ] UI System For Player Turns
+- [ ] Make Characters Not Starts in the walls
+- [ ] Get the level size corrected
 
 
 ## Complete
