@@ -29,6 +29,27 @@ vec3 quad_normal(Primitive prim, Face f, float u, float v) {
 	return normalize(world * vec4(mix(lerp1, lerp2, v), 0.f)).xyz;
 }
 
+vec3 quad_normal2(Primitive prim, Face f, float u, float v) {
+    vec3 n0 = verts[f.v[0]].norm;
+    vec3 n1 = verts[f.v[1]].norm;
+    vec3 n2 = verts[f.v[2]].norm;
+    vec3 n3 = verts[f.v[3]].norm;
+
+    vec3 lerp1 = mix(n0, n1, u);
+    vec3 lerp2 = mix(n3, n2, u);
+    vec3 interpolated_normal = mix(lerp1, lerp2, v);
+
+    mat4 temp2 = mat4(
+        prim.extents.x, 0, 0, 0,
+        0, prim.extents.y, 0, 0,
+        0, 0, prim.extents.z, 0,
+        0, 0, 0, 1
+    );
+    mat4 model = prim.world * temp2;
+    mat3 normalMatrix = transpose(inverse(mat3(model)));
+    return normalize(normalMatrix * interpolated_normal);
+}
+
 void set_normals(inout HitInfo info, in vec3 ray_pos){
     switch (info.prim_type) {
         case TYPE_DISK:
@@ -43,7 +64,7 @@ void set_normals(inout HitInfo info, in vec3 ray_pos){
         }
         case TYPE_MESH:
         {
-            info.normal = quad_normal(primitives[info.prim_id], faces[info.face_id], info.normal.x, info.normal.y);
+            info.normal = quad_normal2(primitives[info.prim_id], faces[info.face_id], info.normal.x, info.normal.y);
             break;
         }
         default:

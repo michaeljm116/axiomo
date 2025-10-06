@@ -43,7 +43,7 @@ void set_normals(inout HitInfo info, in vec3 ray_pos){
         }
         case TYPE_MESH:
         {
-            info.normal = quad_normal(primitives[info.prim_id], faces[info.face_id], info.normal.x, info.normal.y);
+            info.normal = quad_normal2(primitives[info.prim_id], faces[info.face_id], info.normal.x, info.normal.y);
             break;
         }
         default:
