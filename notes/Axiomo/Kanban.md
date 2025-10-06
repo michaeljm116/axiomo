@@ -6,12 +6,13 @@ kanban-plugin: board
 
 ## TODO
 
+- [ ] Fix Bee Model
 - [ ] Shrink Bee size
-- [ ] Beginning Middle End Loop
 - [ ] Correct The Character Rotations
 - [ ] Some Kind of Bee UI ?
 - [ ] Some Kind of Weapons UI
 - [ ] Some Kind of Abilities UI
+- [ ] Fix Rendering issue of smooth normals
 - [ ] Character Animations for: Idle, Move, Attack
 - [ ] Character Animations for: Weapon pickup
 - [ ] Bee Animations for Attack, Idle, Fly
@@ -27,7 +28,7 @@ kanban-plugin: board
 
 ## In Progress
 
-- [ ] Fix Bee Model
+- [ ] Beginning Middle End Loop
 
 
 ## QA
