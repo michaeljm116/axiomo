@@ -1248,3 +1248,80 @@ slerp_character_angle :: proc(cha : ^Character, dt : f32)
     // Interpolate rotation (assumes vec4 quaternions; adjust if using quat128)
     ct.local.rot = linalg.quaternion_slerp(cha.anim.start_rot, cha.anim.end_rot, f32(eased_t))
 }
+
+
+//----------------------------------------------------------------------------\\
+// /Menu
+//----------------------------------------------------------------------------\\
+AppState :: enum
+{
+    TitleScreen,
+    MainMenu,
+    Game,
+    GameOver
+}
+
+MenuAnimation :: struct
+{
+    timer : f32,
+    duration : f32,
+}
+
+// switch_app_state :: proc(new_state: AppState) {
+// 	switch (new_state) {
+// 	case .TitleScreen:
+// 		game_end()
+// 		g_app_state = .TitleScreen
+// 	case .MainMenu:
+// 		game_end()
+// 		g_app_state = .MainMenu
+// 	case .Game:
+// 		game_start()
+// 		g_app_state = .Game
+// 	case .GameOver:
+// 		survival_end()
+// 		g_app_state = .GameOver
+// 	}
+// }
+
+// app_run :: proc(state: AppState) {
+// 	if glfw.WindowShouldClose() do return
+// 	switch (state) {
+// 	case .TitleScreen:
+// 		title_run()
+// 	case .Game:
+// 		game_run()
+// 	case .MainMenu:
+// 		main_menu_run()
+// 	case .GameOver:
+// 		game_over_run()
+// 	}
+// }
+
+g_title : Entity
+g_titleAnim : MenuAnimation
+g_main_menu : Entity
+g_main_menuAnim : MenuAnimation
+title_start :: proc()
+{
+   g_title = gui["Title"]
+   gc := get_component(g_title, Cmp_Gui)
+   gc.alpha = 0.0
+   g_titleAnim = MenuAnimation{timer = 0.0, duration = 1.0}
+   gc.min = 0.0
+   gc.extents = 1.0
+}
+
+title_run :: proc(dt : f32, state : ^AppState)
+{
+    g_titleAnim.timer += dt
+    if g_titleAnim.timer >= g_titleAnim.duration{
+        state^ = .MainMenu
+        title_start()
+        return
+    }
+    gc := get_component(g_title, Cmp_Gui)
+    gc.alpha = math.smoothstep(f32(0.0), 1.0, g_titleAnim.timer / g_titleAnim.duration)
+}
+
+// main_menu

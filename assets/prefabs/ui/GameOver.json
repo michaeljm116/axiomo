@@ -1,0 +1,28 @@
+{
+  "GUI": {
+    "AlignExt": {
+      "_x": 0.521484375,
+      "_y": 0.126953125
+    },
+    "Alignment": {
+      "_x": 0.009765625,
+      "_y": 0.8544921875
+    },
+    "Extent": {
+      "_x": 0.20000000298023224,
+      "_y": 0.20000000298023224
+    },
+    "Position": {
+      "_x": 0.009765625,
+      "_y": 0.8544921875
+    },
+    "Texture": {
+      "_name": "BeeKillingsInnUI.png"
+    }
+  },
+  "_Dynamic": false,
+  "_Name": "GameOver",
+  "_eFlags": 262145,
+  "_gFlags": 0,
+  "_hasChildren": false
+}

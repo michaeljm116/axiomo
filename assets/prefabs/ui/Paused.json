@@ -1,0 +1,28 @@
+{
+  "GUI": {
+    "AlignExt": {
+      "_x": 0.380859375,
+      "_y": 0.1337890625
+    },
+    "Alignment": {
+      "_x": 0.001953125,
+      "_y": 0.513671875
+    },
+    "Extent": {
+      "_x": 0.20000000298023224,
+      "_y": 0.20000000298023224
+    },
+    "Position": {
+      "_x": 0.001953125,
+      "_y": 0.513671875
+    },
+    "Texture": {
+      "_name": "BeeKillingsInnUI.png"
+    }
+  },
+  "_Dynamic": false,
+  "_Name": "Paused",
+  "_eFlags": 262145,
+  "_gFlags": 0,
+  "_hasChildren": false
+}

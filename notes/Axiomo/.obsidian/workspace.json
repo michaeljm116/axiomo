@@ -23,25 +23,15 @@
             "id": "61bf7b15a66f7500",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "image",
               "state": {
-                "file": "Kanban.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false,
-                    false
-                  ]
-                }
+                "file": "Photos/BKS_Title.png"
               },
-              "icon": "lucide-trello",
-              "title": "Kanban"
+              "icon": "lucide-image",
+              "title": "BKS_Title"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -191,16 +181,19 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "61bf7b15a66f7500",
+  "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
+    "Photos/BKS_Title.png",
+    "Kanban.md",
+    "Excalidraw/PlayersTUrn.excalidraw.md",
+    "BeeKillingsInn/Story.md",
+    "Photos/533a3e3f-448d-4c5f-a028-29d6aa9a81bf.png",
+    "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
     "BeeKillingsInn/Bugs.md",
     "Untitled Kanban.md",
     "Untitled Kanban 1.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
     "Excalidraw/AnimationStates.excalidraw.md",
-    "Kanban.md",
-    "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
-    "Photos/2d7f1352-8a6d-4a7d-be01-4e55c58837a2.png",
     "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",
     "Photos/sanctuary-high-view-2-768.YJKVAsU3_CIe1o.webp",
     "Photos/patio-2-768.BAhOe6xB_Bgvky.webp",
@@ -208,12 +201,9 @@
     "Photos/Pasted image 20250912152008.jpg",
     "Photos/Pasted image 20250912151600.jpg",
     "Photos/Pasted image 20250912151959.jpg",
-    "Photos/Pasted image 20250912151449.jpg",
-    "Excalidraw/PlayersTUrn.excalidraw.md",
     "BeeKillingsInn/Code.md",
     "BeeKillingsInn/Next Steps.md",
     "BeeKillingsInn/Rules Engine.md",
-    "BeeKillingsInn/Story.md",
     "Untitled.md",
     "Drawing 2025-09-27 16.22.51.excalidraw.md",
     "BeeKillingsInn/Merge Bee with Axiomo.md",
@@ -230,7 +220,6 @@
     "Excalidraw",
     "BeeKillingsInn/KillerBee prototype.md",
     "BeeKillingsInn/Grok.md",
-    "BeeKillingsInn/Epics.md",
     "Untitled.base",
     "BeeKillingsInn"
   ]

@@ -1,0 +1,28 @@
+{
+  "GUI": {
+    "AlignExt": {
+      "_x": 0.9963942170143127,
+      "_y": 0.995192289352417
+    },
+    "Alignment": {
+      "_x": 0.0,
+      "_y": 0.0
+    },
+    "Extent": {
+      "_x": 0.20000000298023224,
+      "_y": 0.20000000298023224
+    },
+    "Position": {
+      "_x": 0.0,
+      "_y": 0.0
+    },
+    "Texture": {
+      "_name": "BKS_Title.png"
+    }
+  },
+  "_Dynamic": false,
+  "_Name": "Title",
+  "_eFlags": 262145,
+  "_gFlags": 0,
+  "_hasChildren": false
+}

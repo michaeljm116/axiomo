@@ -9,4 +9,4 @@ https://www.visitwestchesterny.com/listing/bedford-post-inn/502/
 
 ![[il_1140xN.7170395961_e2r5.jpg]]
 
-![[2d7f1352-8a6d-4a7d-be01-4e55c58837a2.png]]![[4df0d0eb27cc41c59577e0b96fc2c2d4.jpg]]
+![[BKS_Title.png]]![[4df0d0eb27cc41c59577e0b96fc2c2d4.jpg]]
