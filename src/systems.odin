@@ -1410,3 +1410,167 @@ sys_anim_remove_component :: proc(entity : Entity)
     }
     remove_component(entity, Cmp_Animation)
 }
+//----------------------------------------------------------------------------\\
+// /AI A-Star Pathfinding
+//----------------------------------------------------------------------------\\
+pos_equal :: proc(a : vec2, b : vec2) -> bool {
+    return a[0] == b[0] && a[1] == b[1]
+}
+
+pos_to_index :: proc(p : vec2) -> int {
+    return int(p[0]) + int(p[1]) * GRID_WIDTH
+}
+
+index_to_pos :: proc(i : int) -> vec2 {
+    return vec2{ i16(i % GRID_WIDTH), i16(i / GRID_WIDTH) }
+}
+
+in_bounds :: proc(p : vec2) -> bool {
+    if p[0] < 0 || p[0] >= i16(GRID_WIDTH) || p[1] < 0 || p[1] >= i16(GRID_HEIGHT) {
+        return false
+    }
+    return true
+}
+
+is_walkable :: proc(p : vec2, goal : vec2) -> bool {
+    if pos_equal(p, goal) { return true } // always allow stepping on the goal
+    if !in_bounds(p) { return false }
+    t := g_level.grid[p[0]][p[1]]
+    return t == Tile.Blank || t == Tile.Weapon
+}
+
+abs_i :: proc(x : int) -> int {
+    if x < 0 { return -x }
+    return x
+}
+
+dist_grid :: proc(a : vec2, b : vec2) -> int {
+    dx := abs_i(int(a[0]) - int(b[0]))
+    dy := abs_i(int(a[1]) - int(b[1]))
+    return dx + dy
+}
+
+heuristic :: proc(a : vec2, b : vec2) -> int {
+    //Manhattan distance
+    return dist_grid(a,b)
+}
+
+// Returns path from start to goal as dynamic array of vec2 (start .. goal).
+// If no path found, returned array length == 0
+total_cells :: GRID_WIDTH * GRID_HEIGHT
+a_star_find_path :: proc(start : vec2, goal : vec2) -> [dynamic]vec2 {
+    // Static arrays sized for grid
+    g_score : [total_cells]int
+    f_score : [total_cells]int
+    came_from : [total_cells]vec2
+    in_open : [total_cells]bool
+    closed : [total_cells]bool
+
+    // init
+    for i in 0..<total_cells{
+        g_score[i] = 999999
+        f_score[i] = 999999
+        came_from[i] = vec2{-1, -1}
+        in_open[i] = false
+        closed[i] = false
+    }
+
+    start_idx := pos_to_index(start)
+    goal_idx := pos_to_index(goal)
+
+    g_score[start_idx] = 0
+    f_score[start_idx] = heuristic(start, goal)
+    in_open[start_idx] = true
+
+    dirs := [4]vec2{ vec2{1,0}, vec2{-1,0}, vec2{0,1}, vec2{0,-1} }
+
+    // main loop: while any node is in open set
+    for {
+        // find open node with lowest f_score
+        current_idx := -1
+        current_f := 999999
+        for i in 0..<total_cells {
+            if in_open[i] && f_score[i] < current_f {
+                current_f = f_score[i]
+                current_idx = i
+            }
+        }
+        if current_idx == -1 {
+            // open set empty => no path
+            path := make([dynamic]vec2, context.temp_allocator)
+            return path
+        }
+
+        current_pos := index_to_pos(current_idx)
+
+        if current_idx == goal_idx {
+            // reconstruct path
+            path := make([dynamic]vec2, context.temp_allocator)
+            // backtrack
+            node_idx := current_idx
+            for {
+                append(&path, index_to_pos(node_idx))
+                if node_idx == start_idx { break }
+                parent := came_from[node_idx]
+                // if no parent, fail
+                if parent[0] == -1 && parent[1] == -1 {
+                    // failed reconstruction
+                    path = make([dynamic]vec2, context.temp_allocator)
+                    return path
+                }
+                node_idx = pos_to_index(parent)
+            }
+            // path currently goal..start, reverse to start..goal
+            rev := make([dynamic]vec2, context.temp_allocator)
+            for i := len(path)-1; i >= 0; i -= 1 {
+                append(&rev, path[i])
+            }
+            return rev
+        }
+
+        // move current from open to closed
+        in_open[current_idx] = false
+        closed[current_idx] = true
+
+        // examine neighbors
+        for dir in dirs {
+            neighbor := vec2{ current_pos[0] + dir[0], current_pos[1] + dir[1] }
+            if !in_bounds(neighbor) { continue }
+            if !is_walkable(neighbor, goal) { continue }
+            neighbor_idx := pos_to_index(neighbor)
+            if closed[neighbor_idx] { continue }
+
+            tentative_g := g_score[current_idx] + 1
+
+            if !in_open[neighbor_idx] || tentative_g < g_score[neighbor_idx] {
+                came_from[neighbor_idx] = current_pos
+                g_score[neighbor_idx] = tentative_g
+                f_score[neighbor_idx] = tentative_g + heuristic(neighbor, goal)
+                in_open[neighbor_idx] = true
+            }
+        }
+    }
+}
+
+is_walkable_internal :: proc(p : vec2, goal : vec2, allow_through_walls : bool) -> bool {
+    if pos_equal(p, goal) { return true } // always allow stepping on the goal
+    if !in_bounds(p) { return false }
+    t := g_level.grid[p[0]][p[1]]
+    if t == Tile.Blank || t == Tile.Weapon { return true }
+    if allow_through_walls && t == Tile.Wall { return true }
+    return false
+}
+
+//----------------------------------------------------------------------------\\
+// /UI
+//----------------------------------------------------------------------------\\
+
+add_ui :: proc (gui : Cmp_Gui, name : string) -> Entity
+{
+    e := add_entity()
+    add_component(e, gui)
+    add_component(e, Cmp_Render{type = {.GUI}})
+    add_component(e, Cmp_Node{name = name, engine_flags = {.GUI}})
+    added_entity(e)
+    return e
+}

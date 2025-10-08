@@ -29,6 +29,7 @@ kanban-plugin: board
 ## In Progress
 
 - [ ] Beginning Middle End Loop
+- [ ] Code Refactor/Reduction
 
 
 ## QA

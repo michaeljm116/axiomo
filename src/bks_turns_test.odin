@@ -21,8 +21,8 @@ clear_input :: proc() {
 // Ensure level is initialized in a known state for each test.
 // Uses existing helper from bks.odin
 setup_level :: proc() {
-    // init_level1 will set g_level, player, bees, deck, etc.
-    init_level1()
+    // start_level1 will set g_level, player, bees, deck, etc.
+    start_level1()
     // clear any input noise
     clear_input()
 }
@@ -79,13 +79,13 @@ test_players_turn_enemy_selection_and_focus :: proc(t: ^testing.T) {
     testing.expect(t, bee_sel == 0, "Selecting enemy should reset selection to 0")
     testing.expect(t, bee_near_local == false, "Initial bee_is_near should be false after selecting enemy")
 
-    // Press SPACE to attempt action selection (player not near the bee in init_level1)
+    // Press SPACE to attempt action selection (player not near the bee in start_level1)
     clear_input()
     g_input.keys_just_pressed[glfw.KEY_SPACE] = true
     players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
 
     testing.expect(t, pt == .Action, "Pressing SPACE in SelectEnemy should transition to Action")
-    testing.expect(t, bee_near_local == false, "bee_is_near should reflect actual proximity (init_level1 bees are far)")
+    testing.expect(t, bee_near_local == false, "bee_is_near should reflect actual proximity (start_level1 bees are far)")
 
     // Press 'F' to apply Focus ability/flag to the selected bee
     clear_input()

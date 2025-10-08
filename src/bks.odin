@@ -36,27 +36,7 @@ Level :: struct
 //----------------------------------------------------------------------------\\
 // /Start UP
 //----------------------------------------------------------------------------\\
-bks_main :: proc() {
-    track_alloc: mem.Tracking_Allocator
-	mem.tracking_allocator_init(&track_alloc, context.allocator)
-	context.allocator = mem.tracking_allocator(&track_alloc)
-
-	defer {
-		fmt.eprintf("\n")
-		for _, entry in track_alloc.allocation_map do fmt.eprintf("- %v leaked %v bytes\n", entry.location, entry.size)
-		for entry in track_alloc.bad_free_array do fmt.eprintf("- %v bad free\n", entry.location)
-		mem.tracking_allocator_destroy(&track_alloc)
-		fmt.eprintf("\n")
-		free_all(context.temp_allocator)
-	}
-
-    bufio.scanner_init(&s, os.stream_from_handle(os.stdin))
-    bees := make([dynamic]Bee, 2, context.temp_allocator)
-    g_state = .PlayerTurn
-    init_level1()
-    bufio.scanner_destroy(&s)
-}
-init_level1 :: proc(alloc : mem.Allocator = context.allocator)
+start_level1 :: proc(alloc : mem.Allocator = context.allocator)
 {
     context.allocator = alloc
     using g_level
@@ -89,9 +69,13 @@ init_level1 :: proc(alloc : mem.Allocator = context.allocator)
     player.abilities[1] = Ability{type = .Focused, use_on = &bees[1], level = 1, uses = 1}
 
     //Shuffle bee BeeDeck
-    init_bee_deck(&g_level.deck, 36)
+    deck_init(&g_level.deck, 36)
 }
 
+
+//----------------------------------------------------------------------------\\
+// /Run Game
+//----------------------------------------------------------------------------\\
 bee_selection := 0
 bee_is_near := false
 pt_state : PlayerTurnState = .SelectAction
@@ -104,12 +88,12 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
             state^ = .PlayerTurn
             break
         case .PlayerTurn:
-            players_turn(&pt_state, state, player, bees, &bee_selection, &bee_is_near)
+            run_players_turn(&pt_state, state, player, bees, &bee_selection, &bee_is_near)
             break
         case .BeesTurn:
             for &bee in bees{
                 if .Animate in bee.flags do animate_bee(&bee, f32(g_frame.physics_time_step))
-                else do bee_turn(&bee, deck)
+                else do run_bee_turn(&bee, deck)
             }
             if anim_check(bees) do state^ = .PlayerTurn
             break
@@ -125,7 +109,7 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
 // if move then go to movement state and check for wasd movement
 // else you're in... select enemy state oops
 // after that, if player action = attack, wait for space, else focus or dodge
-players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, bee_selection : ^int, bee_is_near : ^bool)
+run_players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, bee_selection : ^int, bee_is_near : ^bool)
 {
     switch state^
     {
@@ -183,6 +167,26 @@ players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, player :
             if state^ == .SelectAction do game_state^ = .BeesTurn
             break
     }
+}
+
+run_bee_turn :: proc(bee : ^Bee, deck : ^BeeDeck){
+    if .Dead in bee.flags do return
+    cards : [dynamic]BeeAction
+    chosen_card : BeeAction
+
+    switch bee.type {
+    case .Aggressive:
+        cards = deck_draw(deck, 2)
+        chosen_card = deck_choose_card(cards, BeeActionPriority_Aggressive)
+    case .Passive:
+        deck_draw(deck, 2)
+        chosen_card = deck_choose_card(cards, BeeActionPriority_Passive)
+    case .Normal:
+        chosen_card = deck_draw(deck, 1)[0]
+    }
+
+    // fmt.printf("Chosen 🎴: %v\n", chosen_card)
+    bee_action_select(chosen_card, bee, &g_level.player)
 }
 
 // If B button is pressed, go back to previous menu
@@ -372,7 +376,7 @@ BeeDeck :: struct
 //----------------------------------------------------------------------------\\
 // /Deck
 //----------------------------------------------------------------------------\\
-init_bee_deck :: proc(deck : ^BeeDeck, size : int = 36)
+deck_init :: proc(deck : ^BeeDeck, size : int = 36)
 {
     deck.FlyTowards = BeeActionDeckData{type = .FlyTowards, freq =  6}
     deck.FlyAway = BeeActionDeckData{type = .FlyAway, freq =  6}
@@ -391,13 +395,13 @@ init_bee_deck :: proc(deck : ^BeeDeck, size : int = 36)
 
     queue.init(&deck.deck, 36)
     queue.init(&deck.discard, 36)
-    shuffle_deck(&temp_deck)
+    deck_shuffle(&temp_deck)
     for c in temp_deck{
         queue.push_front(&deck.deck, c)
     }
 }
 
-shuffle_deck :: proc(deck : ^[dynamic]BeeAction)
+deck_shuffle :: proc(deck : ^[dynamic]BeeAction)
 {
     for i in 0..<len(deck)
     {
@@ -407,9 +411,9 @@ shuffle_deck :: proc(deck : ^[dynamic]BeeAction)
 }
 
 //Draw a card from the bee deck, if the deck is blank, refresh
-draw_from_bee_deck :: proc(bd : ^BeeDeck, num_cards : int = 1) -> [dynamic]BeeAction
+deck_draw :: proc(bd : ^BeeDeck, num_cards : int = 1) -> [dynamic]BeeAction
 {
-    if(queue.len(bd.deck) <= num_cards) do refresh_bee_deck(bd)
+    if(queue.len(bd.deck) <= num_cards) do deck_refesh(bd)
     cards := make([dynamic]BeeAction, context.temp_allocator)
     reserve(&cards, num_cards)
     for i in 0..<num_cards
@@ -422,15 +426,15 @@ draw_from_bee_deck :: proc(bd : ^BeeDeck, num_cards : int = 1) -> [dynamic]BeeAc
     return cards
 }
 
-refresh_bee_deck :: proc(bd : ^BeeDeck){
+deck_refesh :: proc(bd : ^BeeDeck){
     queue.clear(&bd.deck)
     queue.destroy(&bd.deck)
     queue.clear(&bd.discard)
     queue.destroy(&bd.discard)
-    init_bee_deck(bd, 36)
+    deck_init(bd, 36)
 }
 
-choose_from_mutiple_cards :: proc(cards : [dynamic]BeeAction, priority : [BeeAction]int) -> BeeAction
+deck_choose_card :: proc(cards : [dynamic]BeeAction, priority : [BeeAction]int) -> BeeAction
 {
     max_priority := 10000
     chosen_card := BeeAction.Discard
@@ -447,7 +451,7 @@ choose_from_mutiple_cards :: proc(cards : [dynamic]BeeAction, priority : [BeeAct
 //----------------------------------------------------------------------------\\
 // /BA Bee Actions
 //----------------------------------------------------------------------------\\
-perform_bee_action :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
+bee_action_select :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
 {
     switch action{
         case .Discard: return
@@ -537,26 +541,6 @@ bee_action_attack :: proc(bee : ^Bee, player : ^Player){
             fmt.println("PLAYER DIED")
         }
     }
-}
-
-bee_turn :: proc(bee : ^Bee, deck : ^BeeDeck){
-    if .Dead in bee.flags do return
-    cards : [dynamic]BeeAction
-    chosen_card : BeeAction
-
-    switch bee.type {
-    case .Aggressive:
-        cards = draw_from_bee_deck(deck, 2)
-        chosen_card = choose_from_mutiple_cards(cards, BeeActionPriority_Aggressive)
-    case .Passive:
-        draw_from_bee_deck(deck, 2)
-        chosen_card = choose_from_mutiple_cards(cards, BeeActionPriority_Passive)
-    case .Normal:
-        chosen_card = draw_from_bee_deck(deck, 1)[0]
-    }
-
-    // fmt.printf("Chosen 🎴: %v\n", chosen_card)
-    perform_bee_action(chosen_card, bee, &g_level.player)
 }
 
 //----------------------------------------------------------------------------\\
@@ -782,157 +766,6 @@ destroy_level :: proc (scene : ^Level)
     delete(scene.player.abilities)
 }
 
-//----------------------------------------------------------------------------\\
-// /A-Star Pathfinding
-//----------------------------------------------------------------------------\\
-pos_equal :: proc(a : vec2, b : vec2) -> bool {
-    return a[0] == b[0] && a[1] == b[1]
-}
-
-pos_to_index :: proc(p : vec2) -> int {
-    return int(p[0]) + int(p[1]) * GRID_WIDTH
-}
-
-index_to_pos :: proc(i : int) -> vec2 {
-    return vec2{ i16(i % GRID_WIDTH), i16(i / GRID_WIDTH) }
-}
-
-in_bounds :: proc(p : vec2) -> bool {
-    if p[0] < 0 || p[0] >= i16(GRID_WIDTH) || p[1] < 0 || p[1] >= i16(GRID_HEIGHT) {
-        return false
-    }
-    return true
-}
-
-is_walkable :: proc(p : vec2, goal : vec2) -> bool {
-    if pos_equal(p, goal) { return true } // always allow stepping on the goal
-    if !in_bounds(p) { return false }
-    t := g_level.grid[p[0]][p[1]]
-    return t == Tile.Blank || t == Tile.Weapon
-}
-
-abs_i :: proc(x : int) -> int {
-    if x < 0 { return -x }
-    return x
-}
-
-dist_grid :: proc(a : vec2, b : vec2) -> int {
-    dx := abs_i(int(a[0]) - int(b[0]))
-    dy := abs_i(int(a[1]) - int(b[1]))
-    return dx + dy
-}
-
-heuristic :: proc(a : vec2, b : vec2) -> int {
-    //Manhattan distance
-    return dist_grid(a,b)
-}
-
-// Returns path from start to goal as dynamic array of vec2 (start .. goal).
-// If no path found, returned array length == 0
-total_cells :: GRID_WIDTH * GRID_HEIGHT
-a_star_find_path :: proc(start : vec2, goal : vec2) -> [dynamic]vec2 {
-    // Static arrays sized for grid
-    g_score : [total_cells]int
-    f_score : [total_cells]int
-    came_from : [total_cells]vec2
-    in_open : [total_cells]bool
-    closed : [total_cells]bool
-
-    // init
-    for i in 0..<total_cells{
-        g_score[i] = 999999
-        f_score[i] = 999999
-        came_from[i] = vec2{-1, -1}
-        in_open[i] = false
-        closed[i] = false
-    }
-
-    start_idx := pos_to_index(start)
-    goal_idx := pos_to_index(goal)
-
-    g_score[start_idx] = 0
-    f_score[start_idx] = heuristic(start, goal)
-    in_open[start_idx] = true
-
-    dirs := [4]vec2{ vec2{1,0}, vec2{-1,0}, vec2{0,1}, vec2{0,-1} }
-
-    // main loop: while any node is in open set
-    for {
-        // find open node with lowest f_score
-        current_idx := -1
-        current_f := 999999
-        for i in 0..<total_cells {
-            if in_open[i] && f_score[i] < current_f {
-                current_f = f_score[i]
-                current_idx = i
-            }
-        }
-        if current_idx == -1 {
-            // open set empty => no path
-            path := make([dynamic]vec2, context.temp_allocator)
-            return path
-        }
-
-        current_pos := index_to_pos(current_idx)
-
-        if current_idx == goal_idx {
-            // reconstruct path
-            path := make([dynamic]vec2, context.temp_allocator)
-            // backtrack
-            node_idx := current_idx
-            for {
-                append(&path, index_to_pos(node_idx))
-                if node_idx == start_idx { break }
-                parent := came_from[node_idx]
-                // if no parent, fail
-                if parent[0] == -1 && parent[1] == -1 {
-                    // failed reconstruction
-                    path = make([dynamic]vec2, context.temp_allocator)
-                    return path
-                }
-                node_idx = pos_to_index(parent)
-            }
-            // path currently goal..start, reverse to start..goal
-            rev := make([dynamic]vec2, context.temp_allocator)
-            for i := len(path)-1; i >= 0; i -= 1 {
-                append(&rev, path[i])
-            }
-            return rev
-        }
-
-        // move current from open to closed
-        in_open[current_idx] = false
-        closed[current_idx] = true
-
-        // examine neighbors
-        for dir in dirs {
-            neighbor := vec2{ current_pos[0] + dir[0], current_pos[1] + dir[1] }
-            if !in_bounds(neighbor) { continue }
-            if !is_walkable(neighbor, goal) { continue }
-            neighbor_idx := pos_to_index(neighbor)
-            if closed[neighbor_idx] { continue }
-
-            tentative_g := g_score[current_idx] + 1
-
-            if !in_open[neighbor_idx] || tentative_g < g_score[neighbor_idx] {
-                came_from[neighbor_idx] = current_pos
-                g_score[neighbor_idx] = tentative_g
-                f_score[neighbor_idx] = tentative_g + heuristic(neighbor, goal)
-                in_open[neighbor_idx] = true
-            }
-        }
-    }
-}
-
-is_walkable_internal :: proc(p : vec2, goal : vec2, allow_through_walls : bool) -> bool {
-    if pos_equal(p, goal) { return true } // always allow stepping on the goal
-    if !in_bounds(p) { return false }
-    t := g_level.grid[p[0]][p[1]]
-    if t == Tile.Blank || t == Tile.Weapon { return true }
-    if allow_through_walls && t == Tile.Wall { return true }
-    return false
-}
-
 find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allow_through_walls : bool) -> [dynamic]vec2
 {
     // iterate all possible tiles, pick reachable tile with dist to player >= min_dist and shortest path length from bee
@@ -1092,33 +925,6 @@ get_top_of_entity :: proc(e : Entity) -> f32
 //----------------------------------------------------------------------------\\
 // /UI
 //----------------------------------------------------------------------------\\
-UILabels :: enum{
-    Title,
-    Start,
-    End,
-    Paused,
-    Win,
-    Lose,
-    Attack,
-    ChooseBee,
-    Dodge,
-    Focus,
-    EnemySelect,
-    Move,
-    WASD,
-    SelectAction,
-}
-
-add_ui :: proc (gui : Cmp_Gui, name : string) -> Entity
-{
-    e := add_entity()
-    add_component(e, gui)
-    add_component(e, Cmp_Render{type = {.GUI}})
-    add_component(e, Cmp_Node{name = name, engine_flags = {.GUI}})
-    added_entity(e)
-    return e
-}
-
 gui : map[string]Entity
 init_GameUI :: proc(game_ui : ^map[string]Entity)
 {

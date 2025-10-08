@@ -15,6 +15,14 @@ distance_arena: [2]vmem.Arena
 distance_arena_data: [2][]byte
 distance_arena_alloc: [2]mem.Allocator
 
+ArenaStruct :: struct
+{
+    arena: vmem.Arena,
+    data : []byte,
+    alloc : mem.Allocator
+}
+level_mem : ArenaStruct
+
 set_up_arenas :: proc()
 {
     for i in 0..<2{
@@ -24,6 +32,10 @@ set_up_arenas :: proc()
         assert(arena_err == nil)
         distance_arena_alloc[i] = vmem.arena_allocator(&distance_arena[i])
     }
+    // level_mem.data = make([]byte, mem.Megabyte, context.allocator)
+    err := vmem.arena_init_static(&level_mem.arena, mem.Megabyte)
+    assert(err == nil)
+    level_mem.alloc = vmem.arena_allocator(&level_mem.arena)
 }
 
 destroy_arenas :: proc()
@@ -32,6 +44,7 @@ destroy_arenas :: proc()
         delete(distance_arena_data[i])
         vmem.arena_free_all(&distance_arena[i])
     }
+    vmem.arena_free_all(&level_mem.arena)
 }
 
 // Input state tracking
@@ -92,7 +105,7 @@ gameplay_init :: proc() {
     //setup_physics()
 
     ////////////////// actual bks init ////////////////
-    init_level1()
+    start_level1(level_mem.alloc)
     find_floor_entities()
     set_grid_scale(g_floor, &g_level)
     set_entity_on_tile(g_floor, g_player, g_level, g_level.player.pos.x, g_level.player.pos.y)
@@ -441,7 +454,7 @@ gameplay_destroy :: proc() {
 }
 
 //----------------------------------------------------------------------------\\
-// /UI
+// /UI - Edit Mode
 //----------------------------------------------------------------------------\\
 edit_mode: bool = false
 selected_ui_index: int = 0

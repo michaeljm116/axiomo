@@ -11,12 +11,21 @@
             "id": "b47c04f3ca1234e3",
             "type": "leaf",
             "state": {
-              "type": "excalidraw",
+              "type": "kanban",
               "state": {
-                "file": "Excalidraw/PlayersTUrn.excalidraw.md"
+                "file": "Kanban.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false,
+                    false
+                  ]
+                }
               },
-              "icon": "excalidraw-icon",
-              "title": "PlayersTUrn.excalidraw"
+              "icon": "lucide-trello",
+              "title": "Kanban"
             }
           },
           {
@@ -183,13 +192,26 @@
   },
   "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
-    "Photos/BKS_Title.png",
+    "BeeKillingsInn/Menu system.md",
+    "BeeKillingsInn/Animation - Again.md",
+    "BeeKillingsInn/Bee Ideas.md",
+    "BeeKillingsInn/Art Inspo.md",
+    "BeeKillingsInn/bg.md",
+    "BeeKillingsInn/Bugs.md",
+    "BeeKillingsInn/Code.md",
+    "BeeKillingsInn/Engine Improvements.md",
+    "BeeKillingsInn/Epics.md",
+    "BeeKillingsInn/Grok.md",
+    "BeeKillingsInn/Merge Bee with Axiomo.md",
+    "BeeKillingsInn/KillerBee prototype.md",
+    "BeeKillingsInn/Next Steps.md",
+    "BeeKillingsInn/Rules Engine.md",
+    "BeeKillingsInn/Story.md",
     "Kanban.md",
     "Excalidraw/PlayersTUrn.excalidraw.md",
-    "BeeKillingsInn/Story.md",
+    "Photos/BKS_Title.png",
     "Photos/533a3e3f-448d-4c5f-a028-29d6aa9a81bf.png",
     "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
-    "BeeKillingsInn/Bugs.md",
     "Untitled Kanban.md",
     "Untitled Kanban 1.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
@@ -201,25 +223,13 @@
     "Photos/Pasted image 20250912152008.jpg",
     "Photos/Pasted image 20250912151600.jpg",
     "Photos/Pasted image 20250912151959.jpg",
-    "BeeKillingsInn/Code.md",
-    "BeeKillingsInn/Next Steps.md",
-    "BeeKillingsInn/Rules Engine.md",
     "Untitled.md",
     "Drawing 2025-09-27 16.22.51.excalidraw.md",
-    "BeeKillingsInn/Merge Bee with Axiomo.md",
     "Untitled Kanban 3.md",
     "Untitled Kanban 2.md",
     "Game Jam - 20 games challenge - JJ.md",
     "Photos",
-    "BeeKillingsInn/Art Inspo.md",
-    "BeeKillingsInn/Animation - Again.md",
-    "BeeKillingsInn/Bee Ideas.md",
-    "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md",
-    "BeeKillingsInn/bg.md",
-    "BeeKillingsInn/Engine Improvements.md",
     "Excalidraw",
-    "BeeKillingsInn/KillerBee prototype.md",
-    "BeeKillingsInn/Grok.md",
     "Untitled.base",
     "BeeKillingsInn"
   ]
