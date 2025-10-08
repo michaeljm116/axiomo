@@ -1072,6 +1072,10 @@ MenuAnimation :: struct
     timer : f32,
     duration : f32,
 }
+MenuAnimStatus :: enum{
+    Running,
+    Finished
+}
 
 // switch_app_state :: proc(new_state: AppState) {
 // 	switch (new_state) {
@@ -1108,7 +1112,7 @@ g_title : Entity
 g_titleAnim : MenuAnimation
 g_main_menu : Entity
 g_main_menuAnim : MenuAnimation
-title_start :: proc()
+menu_show_title :: proc()
 {
    g_title = gui["Title"]
    gc := get_component(g_title, Cmp_Gui)
@@ -1117,17 +1121,35 @@ title_start :: proc()
    gc.min = 0.0
    gc.extents = 1.0
 }
-
-title_run :: proc(dt : f32, state : ^AppState)
+menu_show_main :: proc()
 {
-    g_titleAnim.timer += dt
-    if g_titleAnim.timer >= g_titleAnim.duration{
-        state^ = .MainMenu
-        title_start()
-        return
+    g_main_menu = gui["MainMenu"]
+    gc := get_component(g_main_menu, Cmp_Gui)
+    gc.alpha = 0.0
+    g_main_menuAnim = MenuAnimation{timer = 0.0, duration = 1.0}
+    gc.min = 0.0
+    gc.extents = 1.0
+}
+
+menu_run_title :: proc(dt : f32, state : ^AppState)
+{
+    if menu_run_anim(g_title, &g_titleAnim, dt) == .Finished{
+      state^ = .MainMenu
+      return
     }
-    gc := get_component(g_title, Cmp_Gui)
-    gc.alpha = math.smoothstep(f32(0.0), 1.0, g_titleAnim.timer / g_titleAnim.duration)
+}
+
+menu_run_anim :: proc(entity : Entity, anim : ^MenuAnimation, dt : f32) -> MenuAnimStatus
+{
+    if anim.timer >= anim.duration
+    {
+        anim.timer = 0.0
+        return .Finished
+    }
+    anim.timer += dt
+    gc := get_component(entity, Cmp_Gui)
+    gc.alpha = math.smoothstep(f32(0.0), 1.0, anim.timer / anim.duration)
+    return .Running
 }
 
 // main_menu
