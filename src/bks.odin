@@ -11,6 +11,7 @@ import "core:container/queue"
 import "core:mem"
 import "base:intrinsics"
 import "vendor:glfw"
+import "core:hash/xxhash"
 
 vec2 :: [2]i16
 GRID_WIDTH :: 7
@@ -1016,6 +1017,18 @@ ToggleMenuUI :: proc(state : ^AppState)
 //----------------------------------------------------------------------------\\
 // /Animation
 //----------------------------------------------------------------------------\\
+MovementAnimHash :: enum i32 {
+    IdleStart = 728262270,
+    WalkStart = -1164222069,
+    RunStart  = -1467624261,
+    JumpStart = -1767485036,
+
+    IdleEnd   = 1090499610,
+    WalkEnd   = -1142104506,
+    RunEnd    = 219290937,
+    JumpEnd   = -1089428097,
+}
+
 add_animation :: proc(ent : Entity)
 {
    flatten_entity(ent)

@@ -6,7 +6,6 @@ kanban-plugin: board
 
 ## TODO
 
-- [ ] Character Animations for: Idle, Move, Attack
 - [ ] Fix Bee Model
 - [ ] Shrink Bee size
 - [ ] Correct The Character Rotations
@@ -28,6 +27,7 @@ kanban-plugin: board
 ## In Progress
 
 - [ ] Code Refactor/Reduction
+- [ ] Character Animations for: Idle, Move, Attack
 
 
 ## QA

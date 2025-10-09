@@ -32,4 +32,67 @@
 * you add a component, process it and then remove it
 * so the first question is... do you wanna?
 * another option would be that each entity has its own animate component that's either active or inactive
-* 
+
+
+### Character controller:
+```c++
+
+auto set_animation = [](AnimationComponent* ac, float time, int name, int start, int end, AnimFlags flags) {
+	if (ac->state != AnimationState::Default) return;
+
+	ac->trans = start;
+	ac->transEnd = end;
+	ac->trans_timer = 0;// 0.0001f;
+	ac->trans_time = time * 0.25f;
+	ac->time = time * 0.5f;
+	ac->prefabName = name;
+	ac->flags = flags;
+
+	ac->state = AnimationState::Transition;
+};
+```
+
+```c++
+auto animate_walk = [](AnimationComponent* ac, Cmp_Movement* m, Cmp_Character* c) {
+	m->currTime = 0;
+	m->inTrans = true;
+	set_animation(ac, m->anims.walkTime, c->prefabName, m->anims.walkStart, m->anims.walkEnd, AnimFlags(0, 1, 1, 0));
+};
+
+auto animate_idle = [](AnimationComponent* ac, Cmp_Movement* m, Cmp_Character* c) {
+	m->currTime = 0;
+	m->inTrans = true;
+	set_animation(ac, m->anims.idleTime, c->prefabName, m->anims.idleStart, m->anims.idleEnd, AnimFlags(0, 1, 1, 0));
+};
+```
+
+```c++
+	//Add Animations
+	BFGraphComponent* bfg = new BFGraphComponent();
+	flatten(bfg, nc);
+	froku->addComponent(bfg);
+	//froku->addComponent(new AnimationComponent(1, "Froku", "idleStart", AnimFlags(0, 1, 1, 0)));
+	froku->addComponent(new AnimationComponent(2, "Froku", "idleStart", "idleEnd", AnimFlags(0, 1, 1, 1)));
+	froku->addComponent(new Cmp_Attack());
+	froku->addComponent(new HeadNodeComponent());
+```
+
+``` c++
+struct MovementAnimations {
+	//These are the xxhash values 
+	const int idleStart = 728262270;
+	const int walkStart = -1164222069;
+	const int runStart = -1467624261;
+	const int jumpStart = -1767485036;
+
+	const int idleEnd = 1090499610;
+	const int walkEnd = -1142104506;
+	const int runEnd = 219290937;
+	const int jumpEnd = -1089428097;
+
+	float idleTime = 1.5f;
+	float walkTime = 0.25f;
+	float runTime = 0.4f;
+	float jumpTime = 0.25f;
+}; //48 bytes
+```

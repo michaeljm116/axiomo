@@ -1140,12 +1140,24 @@ create_debug_cube_with_col :: proc(pos: b2.Vec2, extents: b2.Vec2, mat_unique_id
     return e
 }
 
-
-
-
 //----------------------------------------------------------------------------\\
 // /Animation System
 //----------------------------------------------------------------------------\\
+sys_anim_process_ecs :: proc(dt : f32)
+{
+    archetypes := query(ecs.has(Cmp_Animation), ecs.has(Cmp_BFGraph))
+    for archetype in archetypes {
+        for entity in archetype.entities do sys_anim_update(entity, dt)
+    }
+
+   animate_archetypes := query(ecs.has(Cmp_Animate), ecs.has(Cmp_Transform))
+   for anim in animate_archetypes {
+       anims := get_table(anim, Cmp_Animate)
+       trans := get_table(anim, Cmp_Transform)
+       for entity, i in anim.entities do sys_anim_process(entity, &anims[i], &trans[i], dt)
+   }
+}
+
 sys_anim_add :: proc(e : Entity){
     ac := get_component(e, Cmp_Animation)
     bfg := get_component(e, Cmp_BFGraph)
@@ -1250,17 +1262,17 @@ sys_anim_update :: proc(entity: Entity, delta_time: f32)
     }
 }
 
-sys_anim_process :: proc(entity: Entity, delta_time: f32)
+sys_anim_process :: proc(entity: Entity, ac : ^Cmp_Animate, tc : ^Cmp_Transform, dt : f32)
 {
     //Get the Components
-    ac := get_component(entity, Cmp_Animate)
-    tc := get_component(entity, Cmp_Transform)
-    if ac == nil do return
-    if tc == nil do return
+    // ac := get_component(entity, Cmp_Animate)
+    // tc := get_component(entity, Cmp_Transform)
+    // if ac == nil do return
+    // if tc == nil do return
 
     //Increment time
-    x := math.clamp(delta_time / ac.time, 0.0, 1.0)
-    ac.curr_time += delta_time
+    x := math.clamp(dt / ac.time, 0.0, 1.0)
+    ac.curr_time += dt
 
     //Interpolate dat ish
     if !ac.flags.pos_flag do tc.local.pos = linalg.mix(tc.local.pos, ac.end.pos, x)

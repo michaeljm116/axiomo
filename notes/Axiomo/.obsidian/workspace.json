@@ -23,21 +23,14 @@
             "id": "f88536f4a261db38",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "markdown",
               "state": {
-                "file": "Kanban.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false,
-                    false
-                  ]
-                }
+                "file": "BeeKillingsInn/Animation - Again.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-trello",
-              "title": "Kanban"
+              "icon": "lucide-file",
+              "title": "Animation - Again"
             }
           },
           {
@@ -207,6 +200,7 @@
   },
   "active": "f88536f4a261db38",
   "lastOpenFiles": [
+    "Kanban.md",
     "Excalidraw/Drawing 2025-10-08 18.07.41.excalidraw.md",
     "Excalidraw/PlayersTUrn.excalidraw.md",
     "BeeKillingsInn/Menu system.md",
@@ -214,7 +208,6 @@
     "Photos/BKS_Title.png",
     "Excalidraw/Untitled.md",
     "Excalidraw/AnimationStates.excalidraw.md",
-    "Kanban.md",
     "BeeKillingsInn/Animation - Again.md",
     "BeeKillingsInn/Bee Ideas.md",
     "BeeKillingsInn/Art Inspo.md",
