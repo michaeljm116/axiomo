@@ -72,6 +72,17 @@ start_level1 :: proc(alloc : mem.Allocator = context.allocator)
     deck_init(&g_level.deck, 36)
 }
 
+destroy_level1 :: proc()
+{
+    for b in g_level.bees
+    {
+       remove_entity(b.entity)
+    }
+    for c in g_level.chests
+    {
+        remove_entity(c)
+    }
+}
 
 //----------------------------------------------------------------------------\\
 // /Run Game
@@ -627,6 +638,7 @@ dice_rolls :: proc() -> i8 {
 place_chest_on_grid :: proc(pos : vec2, lvl : ^Level)
 {
     chest := load_prefab("Chest")
+    context.allocator = level_mem.alloc
     append(&lvl.chests, chest)
     set_entity_on_tile(g_floor, chest, lvl^, pos.x, pos.y)
 }
@@ -752,18 +764,6 @@ GameState :: enum
     BeesTurn,
     End,
     Pause,
-}
-
-
-destroy_level :: proc (scene : ^Level)
-{
-    queue.destroy(&scene.deck.deck)
-    queue.destroy(&scene.deck.discard)
-    delete(scene.bees)
-    delete(scene.weapons)
-    delete(scene.grid_data)
-    delete(scene.grid)
-    delete(scene.player.abilities)
 }
 
 find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allow_through_walls : bool) -> [dynamic]vec2
@@ -926,13 +926,16 @@ get_top_of_entity :: proc(e : Entity) -> f32
 // /UI
 //----------------------------------------------------------------------------\\
 gui : map[string]Entity
-init_GameUI :: proc(game_ui : ^map[string]Entity)
+init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator)
 {
+    gui = make(map[string]Entity, alloc)
     for key,ui in g_ui_prefabs{
         cmp := map_gui(ui.gui)
         cmp.alpha = 0.0
         cmp.update = true
         e := add_ui(cmp, key)
+
+        context.allocator = alloc
         game_ui[key] = e
         append(&ui_keys, key)
     }
@@ -1105,7 +1108,7 @@ MenuAnimStatus :: enum{
 
 app_start :: proc()
 {
-    init_GameUI(&gui)
+    init_GameUI(&gui, game_mem.alloc)
     // start_game()
     ToggleUI("Title", true)
 }
@@ -1145,10 +1148,12 @@ app_run :: proc(dt: f32, state: ^AppState) {
 		run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
 		if (g_level.player.health <= 0){
 			state^ = .GameOver
+            destroy_arenas()
 			ToggleMenuUI(state)
 		}
 	    else if (len(g_level.bees) <= 0){
     		state^ = .GameOver
+            destroy_arenas()
             ToggleMenuUI(state)
 		}
         else if (is_key_just_pressed(glfw.KEY_P)){

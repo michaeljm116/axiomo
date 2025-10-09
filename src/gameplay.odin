@@ -22,6 +22,7 @@ ArenaStruct :: struct
     alloc : mem.Allocator
 }
 level_mem : ArenaStruct
+game_mem : ArenaStruct
 
 set_up_arenas :: proc()
 {
@@ -36,6 +37,11 @@ set_up_arenas :: proc()
     err := vmem.arena_init_static(&level_mem.arena, mem.Megabyte)
     assert(err == nil)
     level_mem.alloc = vmem.arena_allocator(&level_mem.arena)
+
+    // game_mem.data = make([]byte, mem.Megabyte, context.allocator)
+    err = vmem.arena_init_static(&game_mem.arena, mem.Megabyte)
+    assert(err == nil)
+    game_mem.alloc = vmem.arena_allocator(&game_mem.arena)
 }
 
 destroy_arenas :: proc()
@@ -45,6 +51,7 @@ destroy_arenas :: proc()
         vmem.arena_free_all(&distance_arena[i])
     }
     vmem.arena_free_all(&level_mem.arena)
+    vmem.arena_free_all(&game_mem.arena)
 }
 
 // Input state tracking
@@ -439,7 +446,6 @@ gameplay_destroy :: proc() {
     glfw.SetInputMode(rb.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
 
     destroy_arenas()
-	destroy_level(&g_level)
 }
 
 //----------------------------------------------------------------------------\\

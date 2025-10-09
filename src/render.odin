@@ -2347,7 +2347,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     for f,i in files{
         file_ext := path2.get_file_stem(f.fullpath, alloc)
         if file_ext != ".png" && file_ext != ".jpg" && file_ext != ".jpeg" do continue
-        filename := strings.clone(f.name)
+        filename := strings.clone(f.name, context.temp_allocator)
         t := Texture{path = f.fullpath}
         if texture_create(&t){
             append(&rt.bindless_textures, t)
@@ -2988,6 +2988,7 @@ cleanup :: proc() {
 
     // Final cleanup of instance-level resources
     destroy_vulkan()
+    delete(g_texture_indexes)
 }
 
 destroy_compute :: proc() {

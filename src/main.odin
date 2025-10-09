@@ -110,7 +110,7 @@ main :: proc() {
 	g_player = load_prefab("Froku")
 	transform_sys_process_e()
 	gameplay_init()
-		defer gameplay_destroy()
+	defer gameplay_destroy()
 	for key, val in gui do fmt.println(key)
 	transform_sys_process_e()
 	// gameplay_post_init()
