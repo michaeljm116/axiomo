@@ -12,6 +12,7 @@ import "core:mem"
 import "base:intrinsics"
 import "vendor:glfw"
 import "core:hash/xxhash"
+import xxh2"extensions/xxhash2"
 
 vec2 :: [2]i16
 GRID_WIDTH :: 7
@@ -289,6 +290,7 @@ Character :: struct
     entity : Entity,
     c_flags : CharacterFlags,
     anim : CharacterAnimation,
+    move_anim : MovementTimes
 }
 
 CharacterAnimation :: struct
@@ -1027,6 +1029,33 @@ MovementAnimHash :: enum i32 {
     WalkEnd   = -1142104506,
     RunEnd    = 219290937,
     JumpEnd   = -1089428097,
+}
+MovementTimes :: struct{
+    idle_time : f32,
+	walk_time : f32,
+	run_time : f32,
+	jump_time : f32,
+}
+
+set_animation :: proc(ac : ^Cmp_Animation, time : f32, name : string, start : string, end : string, flags : AnimFlags){
+    if ac.state != .DEFAULT do return
+    ac.trans = xxh2.str_to_u32(start)
+    ac.trans_end = xxh2.str_to_u32(end)
+    ac.trans_timer = 0
+    ac.trans_time = time * 0.25
+    ac.time = time * 0.5
+    ac.prefab_name = xxh2.str_to_u32(name)
+    ac.flags = flags
+    ac.state = .TRANSITION
+}
+animate_walk :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
+    set_animation(ac, m.walk_time, prefab_name, "walkStart", "walkEnd", AnimFlags{loop = true, force_start = true, force_end = false});
+}
+animate_idle :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
+    set_animation(ac, m.idle_time, prefab_name, "idleStart", "idleEnd", AnimFlags{loop = true, force_start = true, force_end = false});
+}
+animate_run :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
+    set_animation(ac, m.run_time, prefab_name, "runStart", "runEnd", AnimFlags{loop = true, force_start = true, force_end = false});
 }
 
 add_animation :: proc(ent : Entity)

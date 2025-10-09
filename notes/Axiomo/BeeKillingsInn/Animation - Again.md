@@ -96,3 +96,9 @@ struct MovementAnimations {
 	float jumpTime = 0.25f;
 }; //48 bytes
 ```
+
+
+Question, are you NOT adding an animation each time? and just switching things based off transitions?
+in Which case your next step would be...
+* On player turn, transitino from idle to walk
+* on stop, strantiion back from walk to idle*
