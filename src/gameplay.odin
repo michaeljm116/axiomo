@@ -51,7 +51,6 @@ destroy_arenas :: proc()
         vmem.arena_free_all(&distance_arena[i])
     }
     vmem.arena_free_all(&level_mem.arena)
-    vmem.arena_free_all(&game_mem.arena)
 }
 
 // Input state tracking
@@ -446,6 +445,7 @@ gameplay_destroy :: proc() {
     glfw.SetInputMode(rb.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
 
     destroy_arenas()
+    vmem.arena_free_all(&game_mem.arena)
 }
 
 //----------------------------------------------------------------------------\\
