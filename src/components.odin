@@ -568,6 +568,43 @@ remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
     child_node.brotha = Entity(0)
 }
 
+// Delete a parent node and all its descendant children.
+// This will call remove_entity for every entity in the subtree.
+delete_parent_node :: proc(parent_entity: Entity) {
+    parent_node := get_component(parent_entity, Cmp_Node)
+    if parent_node == nil {
+        return
+    }
+
+    // Recursively delete all children. Capture next sibling before recursion
+    // because recursion will call remove_entity and invalidate components.
+    child := parent_node.child
+    for child != Entity(0) {
+        child_node := get_component(child, Cmp_Node)
+        if child_node == nil {
+            break
+        }
+        next := child_node.brotha
+
+        // Recursively delete child's subtree (this will remove the child entity)
+        delete_parent_node(child)
+
+        // continue with next sibling
+        child = next
+    }
+
+    // If this node has a parent, unlink this node from that parent first.
+    // Do this before calling remove_entity so the parent can be updated safely.
+    if parent_node.parent != Entity(0) {
+        remove_child(parent_node.parent, parent_entity)
+    }
+
+    // Finally remove this entity (will remove all components for it).
+    // After this call the Cmp_Node for parent_entity is invalid.
+    remove_entity(parent_entity)
+}
+
+
 get_parent :: proc(entity: Entity) -> Entity {
     node := get_component(entity, Cmp_Node)
     if node == nil {

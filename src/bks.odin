@@ -76,13 +76,13 @@ destroy_level1 :: proc()
 {
     for b in g_level.bees
     {
-        remove_component(b.entity, Cmp_Primitive)
-        remove_entity(b.entity)
+        delete_parent_node(b.entity)
+        //remove_entity(b.entity)
     }
     for c in g_level.chests
     {
-        remove_component(c, Cmp_Primitive)
-        remove_entity(c)
+        delete_parent_node(c)
+        //remove_entity(c)
     }
     destroy_arenas()
 }
