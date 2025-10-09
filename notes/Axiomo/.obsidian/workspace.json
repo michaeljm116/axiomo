@@ -11,36 +11,42 @@
             "id": "b47c04f3ca1234e3",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "excalidraw",
               "state": {
-                "file": "Kanban.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false,
-                    false
-                  ]
-                }
+                "file": "Excalidraw/PlayersTUrn.excalidraw.md"
               },
-              "icon": "lucide-trello",
-              "title": "Kanban"
+              "icon": "excalidraw-icon",
+              "title": "PlayersTUrn.excalidraw"
+            }
+          },
+          {
+            "id": "f88536f4a261db38",
+            "type": "leaf",
+            "state": {
+              "type": "excalidraw",
+              "state": {
+                "file": "Excalidraw/Drawing 2025-10-08 18.07.41.excalidraw.md"
+              },
+              "icon": "excalidraw-icon",
+              "title": "Drawing 2025-10-08 18.07.41.excalidraw"
             }
           },
           {
             "id": "61bf7b15a66f7500",
             "type": "leaf",
             "state": {
-              "type": "image",
+              "type": "markdown",
               "state": {
-                "file": "Photos/BKS_Title.png"
+                "file": "BeeKillingsInn/Menu system.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-image",
-              "title": "BKS_Title"
+              "icon": "lucide-file",
+              "title": "Menu system"
             }
           }
-        ]
+        ],
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -190,8 +196,15 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "b47c04f3ca1234e3",
+  "active": "61bf7b15a66f7500",
   "lastOpenFiles": [
+    "BeeKillingsInn/Story.md",
+    "Photos/BKS_Title.png",
+    "Excalidraw/Drawing 2025-10-08 18.07.41.excalidraw.md",
+    "Excalidraw/PlayersTUrn.excalidraw.md",
+    "Excalidraw/Untitled.md",
+    "Excalidraw/AnimationStates.excalidraw.md",
+    "Kanban.md",
     "BeeKillingsInn/Menu system.md",
     "BeeKillingsInn/Animation - Again.md",
     "BeeKillingsInn/Bee Ideas.md",
@@ -206,16 +219,11 @@
     "BeeKillingsInn/KillerBee prototype.md",
     "BeeKillingsInn/Next Steps.md",
     "BeeKillingsInn/Rules Engine.md",
-    "BeeKillingsInn/Story.md",
-    "Kanban.md",
-    "Excalidraw/PlayersTUrn.excalidraw.md",
-    "Photos/BKS_Title.png",
     "Photos/533a3e3f-448d-4c5f-a028-29d6aa9a81bf.png",
     "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
     "Untitled Kanban.md",
     "Untitled Kanban 1.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
-    "Excalidraw/AnimationStates.excalidraw.md",
     "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",
     "Photos/sanctuary-high-view-2-768.YJKVAsU3_CIe1o.webp",
     "Photos/patio-2-768.BAhOe6xB_Bgvky.webp",
@@ -225,9 +233,6 @@
     "Photos/Pasted image 20250912151959.jpg",
     "Untitled.md",
     "Drawing 2025-09-27 16.22.51.excalidraw.md",
-    "Untitled Kanban 3.md",
-    "Untitled Kanban 2.md",
-    "Game Jam - 20 games challenge - JJ.md",
     "Photos",
     "Excalidraw",
     "Untitled.base",

@@ -105,19 +105,7 @@ gameplay_init :: proc() {
     //setup_physics()
 
     ////////////////// actual bks init ////////////////
-    start_level1(level_mem.alloc)
-    find_floor_entities()
-    set_grid_scale(g_floor, &g_level)
-    set_entity_on_tile(g_floor, g_player, g_level, g_level.player.pos.x, g_level.player.pos.y)
-    for bee in g_level.bees{
-        set_entity_on_tile(g_floor, bee.entity, g_level, bee.pos.x, bee.pos.y)
-        face_right(bee.entity)
-    }
-
-    place_chest_on_grid(vec2{2,0}, &g_level)
-    place_chest_on_grid(vec2{4,3}, &g_level)
-    g_level.player.entity = g_player
-    init_GameUI(&gui)
+    app_start()
 }
 
 gameplay_post_init :: proc()
@@ -151,8 +139,9 @@ gameplay_update :: proc(delta_time: f32) {
 
     handle_ui_edit_mode()
     handle_chest_mode()
-    if !edit_mode && !chest_mode do if (g_level.player.health > 0) && (len(g_level.bees) > 0) do run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
-
+    if !edit_mode && !chest_mode{
+       app_run(delta_time, &g_app_state)
+    }
     // Clear just pressed/released states
     for i in 0..<len(g_input.keys_just_pressed) {
         g_input.keys_just_pressed[i] = false

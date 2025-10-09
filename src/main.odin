@@ -113,7 +113,7 @@ main :: proc() {
 		defer gameplay_destroy()
 	for key, val in gui do fmt.println(key)
 	transform_sys_process_e()
-	gameplay_post_init()
+	// gameplay_post_init()
 	bvh_system_build(g_bvh, per_frame_alloc)
 
 	//begin renderer

@@ -980,7 +980,32 @@ TogglePlayerTurnUI :: proc(state : ^PlayerTurnState)
     }
 }
 
-
+ToggleMenuUI :: proc(state : ^AppState)
+{
+    switch state^
+    {
+    case .TitleScreen:
+        ToggleUI("Title", true)
+    case .MainMenu:
+        ToggleUI("Title", false)
+        ToggleUI("Background", true)
+        ToggleUI("BeeKillinsInn", true)
+        ToggleUI("StartGame", true)
+        ToggleUI("EndGame", true)
+        ToggleUI ("GameOver", false)
+        ToggleUI("Paused", false)
+    case .Game:
+        ToggleUI("Background", false)
+        ToggleUI("BeeKillinsInn", false)
+        ToggleUI("StartGame", false)
+        ToggleUI("EndGame", false)
+        ToggleUI("Paused", false)
+    case .Pause:
+        ToggleUI("Paused", true)
+    case .GameOver:
+        ToggleUI ("GameOver", true)
+    }
+}
 
 //----------------------------------------------------------------------------\\
 // /Animation
@@ -1064,6 +1089,7 @@ AppState :: enum
     TitleScreen,
     MainMenu,
     Game,
+    Pause,
     GameOver
 }
 
@@ -1077,36 +1103,71 @@ MenuAnimStatus :: enum{
     Finished
 }
 
-// switch_app_state :: proc(new_state: AppState) {
-// 	switch (new_state) {
-// 	case .TitleScreen:
-// 		game_end()
-// 		g_app_state = .TitleScreen
-// 	case .MainMenu:
-// 		game_end()
-// 		g_app_state = .MainMenu
-// 	case .Game:
-// 		game_start()
-// 		g_app_state = .Game
-// 	case .GameOver:
-// 		survival_end()
-// 		g_app_state = .GameOver
-// 	}
-// }
+app_start :: proc()
+{
+    init_GameUI(&gui)
+    // start_game()
+    ToggleUI("Title", true)
+}
 
-// app_run :: proc(state: AppState) {
-// 	if glfw.WindowShouldClose() do return
-// 	switch (state) {
-// 	case .TitleScreen:
-// 		title_run()
-// 	case .Game:
-// 		game_run()
-// 	case .MainMenu:
-// 		main_menu_run()
-// 	case .GameOver:
-// 		game_over_run()
-// 	}
-// }
+start_game :: proc()
+{
+    start_level1(level_mem.alloc)
+    find_floor_entities()
+    set_grid_scale(g_floor, &g_level)
+    set_entity_on_tile(g_floor, g_player, g_level, g_level.player.pos.x, g_level.player.pos.y)
+    for bee in g_level.bees{
+        set_entity_on_tile(g_floor, bee.entity, g_level, bee.pos.x, bee.pos.y)
+        face_right(bee.entity)
+    }
+
+    place_chest_on_grid(vec2{2,0}, &g_level)
+    place_chest_on_grid(vec2{4,3}, &g_level)
+    g_level.player.entity = g_player
+}
+
+g_app_state := AppState.TitleScreen
+app_run :: proc(dt: f32, state: ^AppState) {
+	// if glfw.WindowShouldClose() do return
+	switch state^ {
+	case .TitleScreen:
+    	if is_key_just_pressed(glfw.KEY_ENTER){
+            state^ = .MainMenu
+            ToggleMenuUI(state)
+        }
+	case .MainMenu:
+    	if is_key_just_pressed(glfw.KEY_ENTER){
+            state^ = .Game
+            ToggleMenuUI(state)
+            start_game()
+        }
+	case .Game:
+		run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
+		if (g_level.player.health <= 0){
+			state^ = .GameOver
+			ToggleMenuUI(state)
+		}
+	    else if (len(g_level.bees) <= 0){
+    		state^ = .GameOver
+            ToggleMenuUI(state)
+		}
+        else if (is_key_just_pressed(glfw.KEY_P)){
+            state^ = .Pause
+            ToggleMenuUI(state)
+        }
+	case .Pause:
+        if is_key_just_pressed(glfw.KEY_ENTER){
+            state^ = .Game
+            ToggleMenuUI(state)
+        }
+	case .GameOver:
+    	if is_key_just_pressed(glfw.KEY_ENTER){
+            state^ = .MainMenu
+            ToggleMenuUI(state)
+        }
+	}
+}
+
 
 g_title : Entity
 g_titleAnim : MenuAnimation
@@ -1130,26 +1191,60 @@ menu_show_main :: proc()
     gc.min = 0.0
     gc.extents = 1.0
 }
+ToggleMenuItem :: proc(entity : Entity, on : bool)
+{
+    c := get_component(entity, Cmp_Gui)
+    c.alpha = on ? 1.0 : 0.0
+    c.update = on ? true : false
+}
 
 menu_run_title :: proc(dt : f32, state : ^AppState)
 {
-    if menu_run_anim(g_title, &g_titleAnim, dt) == .Finished{
-      state^ = .MainMenu
-      return
+    if is_key_just_pressed(glfw.KEY_ENTER){
+        state^ = .MainMenu
     }
 }
 
-menu_run_anim :: proc(entity : Entity, anim : ^MenuAnimation, dt : f32) -> MenuAnimStatus
+game_started := false
+// menu_run_main :: proc(dt : f32, state : ^AppState)
+// {
+//     if is_key_just_pressed(glfw.KEY_ENTER) do state^ = .Game
+//     // Wait for player to press enter, if so then start the anim and go to GameState
+//     if game_started{
+//         if menu_run_anim(g_main_menu, &g_main_menuAnim, dt) == .Finished{
+//             start_game()
+//             state^ = .Game
+//             return
+//         }
+//     }
+// }
+
+menu_run_anim_fade_in :: proc(entity : Entity, anim : ^MenuAnimation, dt : f32) -> MenuAnimStatus
 {
+    gc := get_component(entity, Cmp_Gui)
     if anim.timer >= anim.duration
     {
         anim.timer = 0.0
+        gc.alpha = 1.0
         return .Finished
+
     }
     anim.timer += dt
-    gc := get_component(entity, Cmp_Gui)
     gc.alpha = math.smoothstep(f32(0.0), 1.0, anim.timer / anim.duration)
     return .Running
 }
 
-// main_menu
+menu_run_anim_fade_out :: proc(entity : Entity, anim : ^MenuAnimation, dt : f32) -> MenuAnimStatus
+{
+    gc := get_component(entity, Cmp_Gui)
+    if anim.timer >= anim.duration
+    {
+        anim.timer = 0.0
+        gc.alpha = 0.0
+        return .Finished
+
+    }
+    anim.timer += dt
+    gc.alpha = math.smoothstep(f32(1.0), 0.0, anim.timer / anim.duration)
+    return .Running
+}
