@@ -23,12 +23,21 @@
             "id": "f88536f4a261db38",
             "type": "leaf",
             "state": {
-              "type": "excalidraw",
+              "type": "kanban",
               "state": {
-                "file": "Excalidraw/Drawing 2025-10-08 18.07.41.excalidraw.md"
+                "file": "Kanban.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false,
+                    false
+                  ]
+                }
               },
-              "icon": "excalidraw-icon",
-              "title": "Drawing 2025-10-08 18.07.41.excalidraw"
+              "icon": "lucide-trello",
+              "title": "Kanban"
             }
           },
           {
@@ -46,7 +55,7 @@
             }
           }
         ],
-        "currentTab": 2
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -196,16 +205,16 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "61bf7b15a66f7500",
+  "active": "f88536f4a261db38",
   "lastOpenFiles": [
-    "BeeKillingsInn/Story.md",
-    "Photos/BKS_Title.png",
     "Excalidraw/Drawing 2025-10-08 18.07.41.excalidraw.md",
     "Excalidraw/PlayersTUrn.excalidraw.md",
+    "BeeKillingsInn/Menu system.md",
+    "BeeKillingsInn/Story.md",
+    "Photos/BKS_Title.png",
     "Excalidraw/Untitled.md",
     "Excalidraw/AnimationStates.excalidraw.md",
     "Kanban.md",
-    "BeeKillingsInn/Menu system.md",
     "BeeKillingsInn/Animation - Again.md",
     "BeeKillingsInn/Bee Ideas.md",
     "BeeKillingsInn/Art Inspo.md",

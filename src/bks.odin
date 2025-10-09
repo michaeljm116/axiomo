@@ -76,12 +76,15 @@ destroy_level1 :: proc()
 {
     for b in g_level.bees
     {
-       remove_entity(b.entity)
+        remove_component(b.entity, Cmp_Primitive)
+        remove_entity(b.entity)
     }
     for c in g_level.chests
     {
+        remove_component(c, Cmp_Primitive)
         remove_entity(c)
     }
+    destroy_arenas()
 }
 
 //----------------------------------------------------------------------------\\
@@ -1148,12 +1151,12 @@ app_run :: proc(dt: f32, state: ^AppState) {
 		run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
 		if (g_level.player.health <= 0){
 			state^ = .GameOver
-            destroy_arenas()
+            destroy_level1()
 			ToggleMenuUI(state)
 		}
 	    else if (len(g_level.bees) <= 0){
     		state^ = .GameOver
-            destroy_arenas()
+            destroy_level1()
             ToggleMenuUI(state)
 		}
         else if (is_key_just_pressed(glfw.KEY_P)){

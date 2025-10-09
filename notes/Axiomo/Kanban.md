@@ -6,6 +6,7 @@ kanban-plugin: board
 
 ## TODO
 
+- [ ] Character Animations for: Idle, Move, Attack
 - [ ] Fix Bee Model
 - [ ] Shrink Bee size
 - [ ] Correct The Character Rotations
@@ -13,7 +14,6 @@ kanban-plugin: board
 - [ ] Some Kind of Weapons UI
 - [ ] Some Kind of Abilities UI
 - [ ] Fix Rendering issue of smooth normals
-- [ ] Character Animations for: Idle, Move, Attack
 - [ ] Character Animations for: Weapon pickup
 - [ ] Bee Animations for Attack, Idle, Fly
 - [ ] Press P To Pause
@@ -21,14 +21,12 @@ kanban-plugin: board
 - [ ] Selectable UI System
 - [ ] Theme song
 - [ ] Integrate editor into your project
-- [ ] Fix Memory Leaks
 - [ ] BEGINNING SCREEN HURRY
 - [ ] Gaussian blurry b
 
 
 ## In Progress
 
-- [ ] Beginning Middle End Loop
 - [ ] Code Refactor/Reduction
 
 
@@ -41,11 +39,13 @@ kanban-plugin: board
 - [ ] Make Characters Not Starts in the walls
 - [ ] Get the level size corrected
 - [ ] Fix the beginning bee jump
+- [ ] Beginning Middle End Loop
 
 
 ## Complete
 
 **Complete**
+- [x] Fix Memory Leaks
 
 
 
