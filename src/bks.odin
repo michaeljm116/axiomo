@@ -679,6 +679,8 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerTurnState)
         p.c_flags = {.Walk}
         state^ = .Animate
         set_up_character_anim(p, g_level.grid_scale)
+        ac := get_component(p.entity, Cmp_Animation)
+        animate_walk(ac, "Froku", p.move_anim)
     }
 
     //move_entity_to_tile(g_player, g_level.grid_scale, p.pos)
@@ -699,6 +701,8 @@ animate_player :: proc(p : ^Player, dt : f32, state : ^PlayerTurnState)
         p.pos = p.target
         p.anim.timer = 0
         state^ = .SelectAction
+        ac := get_component(p.entity, Cmp_Animation)
+        animate_idle(ac, "Froku", p.move_anim)
     }
 }
 
@@ -1058,12 +1062,25 @@ animate_run :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes
     set_animation(ac, m.run_time, prefab_name, "runStart", "runEnd", AnimFlags{loop = true, force_start = true, force_end = false});
 }
 
-add_animation :: proc(ent : Entity)
+add_animation :: proc(c : ^Character, prefab : string)
 {
-   flatten_entity(ent)
-   ac := animation_component_with_names(2,"Froku", "idleStart", "idleEnd", AnimFlags{ idPo = 0, loop = true, force_start = true, force_end = true})
-   add_component(ent, ac)
-   //animation_added(ent)
+    c.move_anim = MovementTimes{
+        idle_time = 1.5,
+        walk_time = 0.25,
+        run_time = 0.4,
+        jump_time = 0.25
+    }
+    flatten_entity(c.entity)
+    display_flattened_entity(c.entity)
+    ac := animation_component_with_names(2,prefab, "idleStart", "idleEnd", AnimFlags{ idPo = 0, loop = true, force_start = true, force_end = true})
+    add_component(c.entity, ac)
+    sys_anim_add(c.entity)
+    animate_idle(&ac, prefab, c.move_anim)
+}
+
+add_animations :: proc()
+{
+    add_animation(&g_level.player.base, "Froku")
 }
 
 // Similar to move_entity_to_tile but just sets the vectors up
@@ -1172,6 +1189,7 @@ start_game :: proc()
     place_chest_on_grid(vec2{2,0}, &g_level)
     place_chest_on_grid(vec2{4,3}, &g_level)
     g_level.player.entity = g_player
+    add_animations()
 }
 
 g_app_state := AppState.TitleScreen

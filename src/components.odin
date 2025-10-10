@@ -1124,10 +1124,11 @@ bvh_get_bounds :: proc(node: BvhNode) -> BvhBounds {
 flatten_entity :: proc(e : Entity)
 {
     // Init & Set up queue and initial values
+    first_node := get_component(e, Cmp_Node)
     bfg : Cmp_BFGraph
     q : queue.Queue(Entity)
     index := 0
-    queue.push(&q, e)
+    queue.push(&q, first_node.child)
 
     // Place the child into teh Queue, Then all the childs Brothers into the queue
     for(queue.len(q) > 0){
@@ -1151,6 +1152,16 @@ flatten_entity :: proc(e : Entity)
         }
     }
     add_component(e, bfg)
+}
+
+display_flattened_entity :: proc(e : Entity){
+    bfg := get_component(e, Cmp_BFGraph)
+    if(bfg == nil) do return
+    for e,i in bfg.nodes{
+        nc := get_component(e, Cmp_Node)
+        tc := get_component(e, Cmp_Transform)
+        if(nc != nil) do fmt.println(i, ": ", nc.name, " - ", tc.local.pos, " - ", tc.local.rot)
+    }
 }
 
 // Set pose from animation data
