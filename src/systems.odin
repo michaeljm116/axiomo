@@ -1164,6 +1164,17 @@ sys_anim_add :: proc(e : Entity){
     // node := get_component(e, Cmp_Node)
     assert(ac != nil && bfg != nil, "Animation, BFGraph, and Node components are required")
     animation := g_animations[ac.prefab_name]
+    for key, val in g_animations
+    {
+        fmt.println("Animation in g_animations: ", val.name, " with ", len(val.poses), " poses")
+        for k, p in val.poses
+        {
+            fmt.println("  Pose ID: ", k, " with ", p.name, " data: ")
+            for pp in p.pose{
+                fmt.println("    Pose Data ID: ", pp.id, " SQT: ", pp.sqt_data)
+            }
+        }
+    }
     end_pose := animation.poses[ac.end]
 
     // If there's only 1 pose, then it'll only be the end pose
@@ -1269,9 +1280,9 @@ sys_anim_process :: proc(entity: Entity, ac : ^Cmp_Animate, tc : ^Cmp_Transform,
     ac.curr_time += dt
 
     //Interpolate dat ish
-    if !ac.flags.pos_flag do tc.local.pos = linalg.mix(tc.local.pos, ac.end.pos, x)
-    if !ac.flags.sca_flag do tc.local.sca = linalg.mix(tc.local.sca, ac.end.sca, x)
-    if !ac.flags.rot_flag do tc.local.rot = linalg.quaternion_slerp_f32(tc.local.rot, ac.end.rot, x)
+    // if !ac.flags.pos_flag do tc.local.pos = linalg.mix(tc.local.pos, ac.end.pos, x)
+    // if !ac.flags.sca_flag do tc.local.sca = linalg.mix(tc.local.sca, ac.end.sca, x)
+    // if !ac.flags.rot_flag do tc.local.rot = linalg.quaternion_slerp_f32(tc.local.rot, ac.end.rot, x)
 
     //End Animation if finished
     if ac.curr_time >= ac.time {
