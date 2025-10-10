@@ -1129,7 +1129,7 @@ flatten_entity :: proc(e : Entity)
     q : queue.Queue(Entity)
     index := 0
     queue.push(&q, first_node.child)
-
+    len :u32= 0
     // Place the child into teh Queue, Then all the childs Brothers into the queue
     for(queue.len(q) > 0){
         //First load whats in teh queue into the graphs
@@ -1143,14 +1143,18 @@ flatten_entity :: proc(e : Entity)
         n := get_component(curr, Cmp_Node)
         if(n.child != 0){
             queue.push(&q,n.child)
+            len += 1
             cn := get_component(n.child, Cmp_Node)
             bro := cn.brotha
             for bro != 0{
+                context.allocator = context.temp_allocator
                 queue.push(&q, bro)
+                len += 1
                 bro = get_component(bro, Cmp_Node).brotha
             }
         }
     }
+    bfg.len = len
     add_component(e, bfg)
 }
 

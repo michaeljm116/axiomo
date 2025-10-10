@@ -998,47 +998,47 @@ create_barrel :: proc(pos : b2.Vec2)
     //add_component(barrel, movable)
 }
 
-update_movables :: proc(delta_time: f32)
-{
-    //First just the visible g_floor
-    for i in 0..<2{
-        fc := get_component(g_floor, Cmp_Transform)
-        fc.local.pos.x -= 1.0 * delta_time
+// update_movables :: proc(delta_time: f32)
+// {
+//     //First just the visible g_floor
+//     for i in 0..<2{
+//         fc := get_component(g_floor, Cmp_Transform)
+//         fc.local.pos.x -= 1.0 * delta_time
 
-        //refresh world if done
-        if fc.local.pos.x <= -100.0 {
-            fmt.println("Floor  ", i, "  | Trans: ", fc.local.pos.xy)
-            for e in g_objects[curr_phase] do remove_entity(e)
-            vmem.arena_free_all(&distance_arena[curr_phase])
-            curr_phase = (curr_phase + 1) % 2
+//         //refresh world if done
+//         if fc.local.pos.x <= -100.0 {
+//             fmt.println("Floor  ", i, "  | Trans: ", fc.local.pos.xy)
+//             for e in g_objects[curr_phase] do remove_entity(e)
+//             vmem.arena_free_all(&distance_arena[curr_phase])
+//             curr_phase = (curr_phase + 1) % 2
 
-            col := get_component(g_floor, Cmp_Collision2D)
-            fc.local.pos.x += 200.0
-            trans := b2.Body_GetTransform(col.bodyid)
-            trans.p.x = fc.local.pos.x
-            b2.Body_SetTransform(col.bodyid, trans.p, trans.q)
-        }
-    }
-    movables := query(has(Cmp_Collision2D))
-    for movable in movables{
-        cols := get_table(movable, Cmp_Collision2D)
-        for e, i in movable.entities{
-            if .Movable in cols[i].flags{
-                nc := get_component(e, Cmp_Node)
-                tc := get_component(e, Cmp_Transform)
-                // fmt.println("movable, ", nc.name)
-                // b2.Body_SetLinearVelocity(cols[i].bodyid, {delta_time * -1.0, 0})
-                // b2.Body_ApplyLinearImpulse(cols[i].bodyid, {-2.0,0}, {0.5,0.5}, true)
-                vel := b2.Body_GetLinearVelocity(cols[i].bodyid)
-                vel.x = -4
-                b2.Body_SetLinearVelocity(cols[i].bodyid, vel)
-                // b2.Body_ApplyForceToCenter(cols[i].bodyid, {0,1000.0}, true)
-                //fmt.printfln("Entity")
-                // fmt.println("Entity: ",nc.name, " | Position : ", b2.Body_GetPosition(cols[i].bodyid), " | Trans: ", tc.local.pos.xy)
-            }
-        }
-    }
-}
+//             col := get_component(g_floor, Cmp_Collision2D)
+//             fc.local.pos.x += 200.0
+//             trans := b2.Body_GetTransform(col.bodyid)
+//             trans.p.x = fc.local.pos.x
+//             b2.Body_SetTransform(col.bodyid, trans.p, trans.q)
+//         }
+//     }
+//     movables := query(has(Cmp_Collision2D))
+//     for movable in movables{
+//         cols := get_table(movable, Cmp_Collision2D)
+//         for e, i in movable.entities{
+//             if .Movable in cols[i].flags{
+//                 nc := get_component(e, Cmp_Node)
+//                 tc := get_component(e, Cmp_Transform)
+//                 // fmt.println("movable, ", nc.name)
+//                 // b2.Body_SetLinearVelocity(cols[i].bodyid, {delta_time * -1.0, 0})
+//                 // b2.Body_ApplyLinearImpulse(cols[i].bodyid, {-2.0,0}, {0.5,0.5}, true)
+//                 vel := b2.Body_GetLinearVelocity(cols[i].bodyid)
+//                 vel.x = -4
+//                 b2.Body_SetLinearVelocity(cols[i].bodyid, vel)
+//                 // b2.Body_ApplyForceToCenter(cols[i].bodyid, {0,1000.0}, true)
+//                 //fmt.printfln("Entity")
+//                 // fmt.println("Entity: ",nc.name, " | Position : ", b2.Body_GetPosition(cols[i].bodyid), " | Trans: ", tc.local.pos.xy)
+//             }
+//         }
+//     }
+// }
 
 update_physics :: proc(delta_time: f32)
 {

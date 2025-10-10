@@ -11,9 +11,6 @@ import "vendor:glfw"
 import b2"vendor:box2d"
 
 curr_phase : u8 = 0
-distance_arena: [2]vmem.Arena
-distance_arena_data: [2][]byte
-distance_arena_alloc: [2]mem.Allocator
 
 ArenaStruct :: struct
 {
@@ -26,14 +23,7 @@ game_mem : ArenaStruct
 
 set_up_arenas :: proc()
 {
-    for i in 0..<2{
-        //distance_arena_data[i] = make([]byte, mem.Megabyte, context.allocator)
-        //mem.arena_init(&distance_arena[i], distance_arena_data[i])
-        arena_err := vmem.arena_init_growing(&distance_arena[i], mem.Megabyte,)
-        assert(arena_err == nil)
-        distance_arena_alloc[i] = vmem.arena_allocator(&distance_arena[i])
-    }
-    // level_mem.data = make([]byte, mem.Megabyte, context.allocator)
+   // level_mem.data = make([]byte, mem.Megabyte, context.allocator)
     err := vmem.arena_init_static(&level_mem.arena, mem.Megabyte)
     assert(err == nil)
     level_mem.alloc = vmem.arena_allocator(&level_mem.arena)
@@ -46,11 +36,7 @@ set_up_arenas :: proc()
 
 destroy_arenas :: proc()
 {
-    for i in 0..<2{
-        delete(distance_arena_data[i])
-        vmem.arena_free_all(&distance_arena[i])
-    }
-    vmem.arena_free_all(&level_mem.arena)
+   vmem.arena_free_all(&level_mem.arena)
 }
 
 // Input state tracking
@@ -145,7 +131,8 @@ gameplay_update :: proc(delta_time: f32) {
 
     handle_ui_edit_mode()
     handle_chest_mode()
-    if !edit_mode && !chest_mode{
+    handle_player_edit_mode()
+    if !edit_mode && !chest_mode && !player_edit_mode{
        app_run(delta_time, &g_app_state)
     }
     // Clear just pressed/released states
@@ -161,36 +148,6 @@ gameplay_update :: proc(delta_time: f32) {
     //update_player_movement(delta_time)
     // update_movables(delta_time)
     // update_physics(delta_time)
-}
-
-chest_mode := false
-chest_index := 0
-selected_chest : Entity
-handle_chest_mode :: proc()
-{
-    if is_key_just_pressed(glfw.KEY_F2) {  // Or any special key
-        chest_mode = !chest_mode
-        if chest_mode do fmt.println("Entered Chest Edit Mode")
-        else do fmt.println("Exited Chest Edit Mode")
-    }
-    if !chest_mode do return
-
-    if is_key_just_pressed(glfw.KEY_TAB) {
-        chest_index = (chest_index + 1) % len(g_level.chests)
-        selected_chest = g_level.chests[chest_index]
-        fmt.printf("Selected Chest: %d\n", chest_index)
-    }
-    tc := get_component(selected_chest, Cmp_Transform)
-    if tc == nil do return
-    move_speed: f32 = 0.1  // Common adjustment increment
-    if is_key_pressed(glfw.KEY_W) do tc.local.pos.z += move_speed
-    if is_key_pressed(glfw.KEY_S) do tc.local.pos.z -= move_speed
-    if is_key_pressed(glfw.KEY_A) do tc.local.pos.x -= move_speed
-    if is_key_pressed(glfw.KEY_D) do tc.local.pos.x += move_speed
-    if is_key_pressed(glfw.KEY_SPACE) do tc.local.pos.y += move_speed
-    if is_key_pressed(glfw.KEY_LEFT_SHIFT) do tc.local.pos.y -= move_speed
-
-    fmt.println("Chest Position :", tc.local.pos)
 }
 
 find_player_entity :: proc() {
@@ -446,137 +403,4 @@ gameplay_destroy :: proc() {
 
     destroy_arenas()
     vmem.arena_free_all(&game_mem.arena)
-}
-
-//----------------------------------------------------------------------------\\
-// /UI - Edit Mode
-//----------------------------------------------------------------------------\\
-edit_mode: bool = false
-selected_ui_index: int = 0
-ui_keys: [dynamic]string
-// New separate function in gameplay.odin
-// F1 - Enter/Exit Edit Mode
-// Tab - Select Ui Index
-// CTRL + S - Save
-// Z = Adjust Position
-// Shift = Adjist Extents
-// Alt = Adjust Algign extents
-// None = Adjust align min
-// +/- = Adjust alpha
-handle_ui_edit_mode :: proc() {
-    // Toggle edit mode
-    if is_key_just_pressed(glfw.KEY_F1) {  // Or any special key
-        edit_mode = !edit_mode
-        if edit_mode {
-            fmt.println("Entered UI Edit Mode")
-            // Make all UIs visible on enter
-            for key in ui_keys {
-                ent := gui[key]
-                gc := get_component(ent, Cmp_Gui)
-                if gc != nil {
-                    gc.alpha = 1.0
-                    gc.update = true
-                    update_gui(gc)
-                }
-            }
-        } else {
-            fmt.println("Exited UI Edit Mode")
-            // Restore defaults on exit
-            for key in ui_keys {
-                ent := gui[key]
-                gc := get_component(ent, Cmp_Gui)
-                if gc != nil {
-                    gc.alpha = 0.0  // Or restore original
-                    gc.update = false
-                    update_gui(gc)
-                }
-            }
-        }
-    }
-
-    if !edit_mode {
-        return
-    }
-
-    // Cycle through UIs
-    if is_key_just_pressed(glfw.KEY_TAB) {
-        selected_ui_index = (selected_ui_index + 1) % len(ui_keys)
-        selected_key := ui_keys[selected_ui_index]
-        fmt.printf("Selected UI: %s\n", selected_key)
-    }
-
-    // Tweak the selected UI
-    if len(ui_keys) > 0 {
-        selected_key := ui_keys[selected_ui_index]
-        selected_ent := gui[selected_key]
-        tweak_game_UI(selected_ent)
-
-        // Ensure selected is visible/editable
-        gc := get_component(selected_ent, Cmp_Gui)
-        if gc != nil {
-            gc.alpha = 1.0
-            gc.update = true
-            update_gui(gc)
-        }
-    }
-
-    // Save selected UI to JSON (CTRL+S)
-    if is_key_pressed(glfw.KEY_LEFT_CONTROL) && is_key_just_pressed(glfw.KEY_INSERT) {
-        if len(ui_keys) > 0 {
-            selected_key := ui_keys[selected_ui_index]
-            selected_ent := gui[selected_key]
-            filename := fmt.tprintf("assets/prefabs/ui/%s.json", selected_key)
-            save_ui_prefab(selected_ent, filename)
-            fmt.printf("Saved UI prefab: %s\n", filename)
-        }
-    }
-}
-
-tweak_game_UI :: proc(e : Entity) {
-    ui := get_component(e, Cmp_Gui)
-    if ui == nil {
-        fmt.println("nope")
-        return
-    }
-
-    adjust_speed: f32 = 0.01  // Common adjustment increment
-
-    // Base keys: WASD for movement/adjustment
-    dx: f32 = 0
-    dy: f32 = 0
-    if is_key_pressed(glfw.KEY_D) { dx += adjust_speed }
-    if is_key_pressed(glfw.KEY_A) { dx -= adjust_speed }
-    if is_key_pressed(glfw.KEY_W) { dy += adjust_speed }
-    if is_key_pressed(glfw.KEY_S) { dy -= adjust_speed }
-
-    // No modifier: Adjust align_min
-    if !is_key_pressed(glfw.KEY_LEFT_CONTROL) &&
-       !is_key_pressed(glfw.KEY_LEFT_SHIFT) &&
-       !is_key_pressed(glfw.KEY_LEFT_ALT) {
-        ui.min.x += dx
-        ui.min.y += dy
-    }
-    else if is_key_pressed(glfw.KEY_LEFT_CONTROL) {
-        ui.align_min.x += dx
-        ui.align_min.y += dy
-    }
-    else if is_key_pressed(glfw.KEY_LEFT_SHIFT) {
-        ui.extents.x += dx
-        ui.extents.y += dy
-    }
-    else if is_key_pressed(glfw.KEY_LEFT_ALT) {
-        ui.align_ext.x += dx
-        ui.align_ext.y += dy
-    }
-
-    // Optional: Add more, e.g., for alpha: use +/- keys
-    if is_key_pressed(glfw.KEY_EQUAL) {  // + key
-        ui.alpha = math.clamp(ui.alpha + 0.05, 0.0, 1.0)
-    }
-    if is_key_pressed(glfw.KEY_MINUS) {
-        ui.alpha = math.clamp(ui.alpha - 0.05, 0.0, 1.0)
-    }
-
-    // Apply changes
-    update_gui(ui)
 }
