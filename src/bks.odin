@@ -679,8 +679,8 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerTurnState)
         p.c_flags = {.Walk}
         state^ = .Animate
         set_up_character_anim(p, g_level.grid_scale)
-        // ac := get_component(p.entity, Cmp_Animation)
-        // animate_walk(ac, "Froku", p.move_anim)
+        ac := get_component(p.entity, Cmp_Animation)
+        animate_walk(ac, "Froku", p.move_anim)
     }
 
     //move_entity_to_tile(g_player, g_level.grid_scale, p.pos)
@@ -701,8 +701,8 @@ animate_player :: proc(p : ^Player, dt : f32, state : ^PlayerTurnState)
         p.pos = p.target
         p.anim.timer = 0
         state^ = .SelectAction
-        // ac := get_component(p.entity, Cmp_Animation)
-        // animate_idle(ac, "Froku", p.move_anim)
+        ac := get_component(p.entity, Cmp_Animation)
+        animate_idle(ac, "Froku", p.move_anim)
     }
 }
 
@@ -1074,8 +1074,8 @@ add_animation :: proc(c : ^Character, prefab : string)
     display_flattened_entity(c.entity)
     ac := animation_component_with_names(2,prefab, "idleStart", "idleEnd", AnimFlags{ idPo = 0, loop = true, force_start = true, force_end = true})
     add_component(c.entity, ac)
-    // sys_anim_add(c.entity)
-    // animate_idle(&ac, prefab, c.move_anim)
+    sys_anim_add(c.entity)
+    animate_idle(&ac, prefab, c.move_anim)
 }
 
 add_animations :: proc()

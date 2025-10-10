@@ -1264,12 +1264,6 @@ sys_anim_update :: proc(entity: Entity, delta_time: f32)
 
 sys_anim_process :: proc(entity: Entity, ac : ^Cmp_Animate, tc : ^Cmp_Transform, dt : f32)
 {
-    //Get the Components
-    // ac := get_component(entity, Cmp_Animate)
-    // tc := get_component(entity, Cmp_Transform)
-    // if ac == nil do return
-    // if tc == nil do return
-
     //Increment time
     x := math.clamp(dt / ac.time, 0.0, 1.0)
     ac.curr_time += dt
