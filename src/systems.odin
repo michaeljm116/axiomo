@@ -143,23 +143,12 @@ sqt_transform_e :: proc(entity: Entity) {
     // Combine with parent if exists
     if has_parent {
         pt := get_component(parent_ent, Cmp_Transform)^
-        // tc.global.sca = pt.global.sca * tc.local.sca
-        // tc.global.rot = pt.global.rot * tc.local.rot
-        // tc.trm = pt.world * local
-        // local = local * scale_m
-        // tc.world = pt.world * local
-        // tc.global.pos = tc.trm[3].xyzw
         tc.global.sca = tc.local.sca * pt.global.sca
         tc.global.rot = tc.local.rot * pt.global.rot
         tc.trm = pt.world * local
         local = local * scale_m
         tc.world = pt.world * local
         tc.global.pos = tc.trm[3].xyzw
-        if nc.name == "legLeft"{
-            fmt.println("leg pos: (", tc.world[3].x, ",", tc.world[3].y, ",", tc.world[3].z,
-                ") rot: ", tc.global.rot.x, ",", tc.global.rot.y, ",", tc.global.rot.z, ",", tc.global.rot.w,
-                ") scale: ", tc.global.sca.x, ",", tc.global.sca.y, ",", tc.global.sca.z)
-        }
     } else {
         tc.global.sca = tc.local.sca
         tc.global.rot = tc.local.rot
@@ -1235,7 +1224,7 @@ sys_anim_add :: proc(e : Entity){
        // Now dispatch the components
        for key, &a in comps{
            bfg_ent := bfg.nodes[key]
-           bfg_sqt := get_component(e, Cmp_Transform).local
+           bfg_sqt := get_component(bfg_ent, Cmp_Transform).local
 
            if !a.flags.start_set do a.start = bfg_sqt
            if !a.flags.end_set do a.end = bfg_sqt
@@ -1393,6 +1382,7 @@ add_animate_component :: proc(ent: Entity, comp: Cmp_Animate)
 
     //This forces the animation to go to the start position
     if ac.flags.force_start do tc.local = ac.start
+    check_if_finished(tc.local, ac)
 }
 
 remove_animate_component :: proc(e : Entity)
@@ -1433,6 +1423,31 @@ sys_anim_remove_component :: proc(entity : Entity)
     }
     remove_component(entity, Cmp_Animation)
 }
+
+check_if_finished :: proc(curr: Sqt, ac: ^Cmp_Animate) -> bool {
+    ep: f32 = 0.01
+
+    p_x := math.abs(curr.pos.x - ac.end.pos.x) < ep
+    p_y := math.abs(curr.pos.y - ac.end.pos.y) < ep
+    p_z := math.abs(curr.pos.z - ac.end.pos.z) < ep
+
+    r_x := math.abs(curr.rot.x - ac.end.rot.x) < ep
+    r_y := math.abs(curr.rot.y - ac.end.rot.y) < ep
+    r_z := math.abs(curr.rot.z - ac.end.rot.z) < ep
+
+    s_x := math.abs(curr.sca.x - ac.end.sca.x) < ep
+    s_y := math.abs(curr.sca.y - ac.end.sca.y) < ep
+    s_z := math.abs(curr.sca.z - ac.end.sca.z) < ep
+
+    ac.flags.pos_flag = p_x && p_y && p_z
+    ac.flags.rot_flag = r_x && r_y && r_z
+    ac.flags.sca_flag = s_x && s_y && s_z
+
+    anim_finished := u8(ac.flags.pos_flag) | (u8(ac.flags.rot_flag) << 1) | (u8(ac.flags.sca_flag) << 2)
+
+    return anim_finished == 7
+}
+
 //----------------------------------------------------------------------------\\
 // /AI A-Star Pathfinding
 //----------------------------------------------------------------------------\\

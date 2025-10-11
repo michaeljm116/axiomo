@@ -102,3 +102,4 @@ Question, are you NOT adding an animation each time? and just switching things b
 in Which case your next step would be...
 * On player turn, transitino from idle to walk
 * on stop, strantiion back from walk to idle*
+![[Pasted image 20251011062648.png]]![[{0DA3E792-94E9-46F5-B6DE-8EDBEA4E55CD}.png]]
