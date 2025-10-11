@@ -22,12 +22,12 @@ kanban-plugin: board
 - [ ] Integrate editor into your project
 - [ ] BEGINNING SCREEN HURRY
 - [ ] Gaussian blurry b
+- [ ] Fix animations please
 
 
 ## In Progress
 
 - [ ] Code Refactor/Reduction
-- [ ] Character Animations for: Idle, Move, Attack
 
 
 ## QA
@@ -40,6 +40,7 @@ kanban-plugin: board
 - [ ] Get the level size corrected
 - [ ] Fix the beginning bee jump
 - [ ] Beginning Middle End Loop
+- [ ] Character Animations for: Idle, Move, Attack
 
 
 ## Complete

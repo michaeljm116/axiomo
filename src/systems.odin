@@ -1160,16 +1160,6 @@ sys_anim_add :: proc(e : Entity){
     // node := get_component(e, Cmp_Node)
     assert(ac != nil && bfg != nil, "Animation, BFGraph, and Node components are required")
     animation := g_animations[ac.prefab_name]
-
-    fmt.println("Animation in g_animations: ", animation.name, " with ", len(animation.poses), " poses")
-    for k, p in animation.poses
-    {
-        fmt.println("  Pose ID: ", k, " with ", p.name, " data: ")
-        for pp in p.pose{
-            fmt.println("    Pose Data ID: ", pp.id, " SQT: ", pp.sqt_data)
-        }
-    }
-
     end_pose := animation.poses[ac.end]
 
     // If there's only 1 pose, then it'll only be the end pose

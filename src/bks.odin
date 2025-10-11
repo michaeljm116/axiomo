@@ -290,7 +290,8 @@ Character :: struct
     entity : Entity,
     c_flags : CharacterFlags,
     anim : CharacterAnimation,
-    move_anim : MovementTimes
+    move_anim : MovementTimes,
+    attack_anim : AttackTimes,
 }
 
 CharacterAnimation :: struct
@@ -616,6 +617,10 @@ pick_up_weapon :: proc(player : ^Player, weaps : []Weapon, db := WeaponsDB)
 }
 
 player_attack :: proc(player : Player, bee : ^Bee){
+    //begin Animation
+    ac := get_component(player.entity, Cmp_Animation)
+    animate_attack(ac, "Froku", player.attack_anim)
+
     // Player rolls a dice, if its higher than their weapons accuracy, do weapon.damage to the bee
     focus_level := i8(.PlayerFocused in bee.flags) + i8(.PlayerHyperFocused in bee.flags)
     bee.flags |= {.Alert}
@@ -1042,6 +1047,11 @@ MovementTimes :: struct{
 	jump_time : f32,
 }
 
+AttackTimes :: struct
+{
+    stab_time : f32,
+}
+
 set_animation :: proc(ac : ^Cmp_Animation, time : f32, name : string, start : string, end : string, flags : AnimFlags){
     if ac.state != .DEFAULT do return
     ac.trans = xxh2.str_to_u32(start)
@@ -1063,6 +1073,9 @@ animate_idle :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTime
 animate_run :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
     set_animation(ac, m.run_time, prefab_name, "runStart", "runEnd", AnimFlags{loop = true, force_start = true, force_end = false});
 }
+animate_attack :: proc(ac : ^Cmp_Animation, prefab_name : string, a : AttackTimes ){
+    set_animation(ac, a.stab_time, prefab_name, "stabStart", "stabEnd", AnimFlags{loop = true, force_start = true, force_end = false});
+}
 
 add_animation :: proc(c : ^Character, prefab : string)
 {
@@ -1072,6 +1085,10 @@ add_animation :: proc(c : ^Character, prefab : string)
         run_time = 0.4,
         jump_time = 0.25
     }
+    c.attack_anim = AttackTimes{
+        stab_time =  0.125
+    }
+
     flatten_entity(c.entity)
     display_flattened_entity(c.entity)
     ac := animation_component_with_names(2,prefab, "idleStart", "idleEnd", AnimFlags{ idPo = 0, loop = true, force_start = true, force_end = true})

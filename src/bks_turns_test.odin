@@ -32,10 +32,10 @@ setup_level :: proc() {
 // ---------------------------
 
 @(test)
-test_players_turn_movement_flow :: proc(t: ^testing.T) {
+test_run_players_turn_movement_flow :: proc(t: ^testing.T) {
     setup_level()
 
-    // Use local state variables (players_turn expects pointers)
+    // Use local state variables (run_players_turn expects pointers)
     pt := PlayerTurnState.SelectAction
     gs := GameState.PlayerTurn
     bee_sel := 0
@@ -44,7 +44,7 @@ test_players_turn_movement_flow :: proc(t: ^testing.T) {
     // Press '1' to enter Movement state
     clear_input()
     g_input.keys_just_pressed[glfw.KEY_1] = true
-    players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
+    run_players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
     testing.expect(t, pt == .Movement, "Pressing KEY_1 from SelectAction should transition to Movement")
 
     // Now simulate a movement input (D) to move player to the right
@@ -52,7 +52,7 @@ test_players_turn_movement_flow :: proc(t: ^testing.T) {
     g_input.keys_just_pressed[glfw.KEY_D] = true
 
     prev_pos := g_level.player.pos
-    players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
+    run_players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
 
     // After a successful move, player turn state should return to SelectAction and game state -> BeesTurn
     moved_right := g_level.player.pos.x == prev_pos.x + 1
@@ -62,7 +62,7 @@ test_players_turn_movement_flow :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_players_turn_enemy_selection_and_focus :: proc(t: ^testing.T) {
+test_run_players_turn_enemy_selection_and_focus :: proc(t: ^testing.T) {
     setup_level()
 
     pt := PlayerTurnState.SelectAction
@@ -73,7 +73,7 @@ test_players_turn_enemy_selection_and_focus :: proc(t: ^testing.T) {
     // Press '2' to enter SelectEnemy
     clear_input()
     g_input.keys_just_pressed[glfw.KEY_2] = true
-    players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
+    run_players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
 
     testing.expect(t, pt == .SelectEnemy, "Pressing KEY_2 should transition to SelectEnemy")
     testing.expect(t, bee_sel == 0, "Selecting enemy should reset selection to 0")
@@ -82,7 +82,7 @@ test_players_turn_enemy_selection_and_focus :: proc(t: ^testing.T) {
     // Press SPACE to attempt action selection (player not near the bee in start_level1)
     clear_input()
     g_input.keys_just_pressed[glfw.KEY_SPACE] = true
-    players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
+    run_players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
 
     testing.expect(t, pt == .Action, "Pressing SPACE in SelectEnemy should transition to Action")
     testing.expect(t, bee_near_local == false, "bee_is_near should reflect actual proximity (start_level1 bees are far)")
@@ -90,7 +90,7 @@ test_players_turn_enemy_selection_and_focus :: proc(t: ^testing.T) {
     // Press 'F' to apply Focus ability/flag to the selected bee
     clear_input()
     g_input.keys_just_pressed[glfw.KEY_F] = true
-    players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
+    run_players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
 
     // After focusing: selected bee should have PlayerFocused flag, state returns to SelectAction and game state -> BeesTurn
     testing.expect(t, pt == .SelectAction, "After applying Focus, state should return to SelectAction")
@@ -142,7 +142,7 @@ test_perform_bee_sting_reduces_player_health :: proc(t: ^testing.T) {
     b.flags ~= {}      // clear flags
 
     prev_hp := g_level.player.health
-    perform_bee_action(.Sting, b, &g_level.player)
+    bee_action_select(.Sting, b, &g_level.player)
 
     testing.expect(t, g_level.player.health == prev_hp - 1, "Sting action should reduce player health by 1 when player not dodging")
 }
@@ -172,7 +172,7 @@ test_bee_turn_draws_from_deck_and_performs_action :: proc(t: ^testing.T) {
     b.flags ~= {}
 
     prev_hp := g_level.player.health
-    bee_turn(b, &bd)
+    run_bee_turn(b, &bd)
 
     testing.expect(t, g_level.player.health < prev_hp, "bee_turn with Sting drawn should reduce player health")
 }
