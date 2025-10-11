@@ -1034,6 +1034,7 @@ MovementAnimHash :: enum i32 {
     RunEnd    = 219290937,
     JumpEnd   = -1089428097,
 }
+
 MovementTimes :: struct{
     idle_time : f32,
 	walk_time : f32,
@@ -1052,6 +1053,7 @@ set_animation :: proc(ac : ^Cmp_Animation, time : f32, name : string, start : st
     ac.flags = flags
     ac.state = .TRANSITION
 }
+
 animate_walk :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
     set_animation(ac, m.walk_time, prefab_name, "walkStart", "walkEnd", AnimFlags{loop = true, force_start = true, force_end = false});
 }

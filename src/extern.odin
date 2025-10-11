@@ -121,6 +121,18 @@ end_ecs :: proc() {
 	ecs.delete_world(g_world)
 }
 
+has_component :: proc {
+	has_component_type,
+	has_component_instance,
+}
+
+has_component_type :: proc(entity: Entity, $T: typeid) -> bool {
+    return ecs.has_component_type(g_world, entity, T)
+}
+
+has_component_instance :: proc(entity: Entity, component: $T) -> bool {
+    return ecs.has_component_instance(g_world, entity, component)
+}
 
 //----------------------------------------------------------------------------\\
 // /Internal helpers

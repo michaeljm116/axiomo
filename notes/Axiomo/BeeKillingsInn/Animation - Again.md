@@ -102,4 +102,16 @@ Question, are you NOT adding an animation each time? and just switching things b
 in Which case your next step would be...
 * On player turn, transitino from idle to walk
 * on stop, strantiion back from walk to idle*
-![[Pasted image 20251011062648.png]]![[{0DA3E792-94E9-46F5-B6DE-8EDBEA4E55CD}.png]]
+![[Pasted image 20251011062648.png]]
+
+okay so it seems like the problem now is...
+* when i tranition out to a regular looped animation
+* its not doing the loop animation
+* things to explore:
+	1. ~~really slow anim time?~~
+	2. loop anim not getting activated?
+	3. start != walkstart
+	4. end != walkend
+	5. ~~its possibly an ecs problemm.. adding a new animate component doesnt like... delete or modify the previous one~~
+		1. mitigated possibly
+	

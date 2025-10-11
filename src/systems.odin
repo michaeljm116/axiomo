@@ -1293,7 +1293,11 @@ sys_anim_process :: proc(entity: Entity, ac : ^Cmp_Animate, tc : ^Cmp_Transform,
         } else do remove_component(entity, Cmp_Animate)
     }
 }
-
+CombinedEntry :: struct {
+    start: Sqt,
+    end:   Sqt,
+    flags: AnimFlags,
+}
 //On Transition,
 // - unused parts go back to normal, and
 // - similar parts transition
@@ -1311,19 +1315,10 @@ sys_anim_transition :: proc(entity: Entity)
 
     //First place every Previous Pose in a hashset
     prev_pose := make(map[i32]bool, 0, context.temp_allocator)
-    for p in start_pose.pose {
-        prev_pose[p.id] = true
-    }
-    for p in end_pose.pose {
-        prev_pose[p.id] = true
-    }
+    for p in start_pose.pose do prev_pose[p.id] = true
+    for p in end_pose.pose do prev_pose[p.id] = true
 
     //Create a list that combines everything
-    CombinedEntry :: struct {
-        start: Sqt,
-        end:   Sqt,
-        flags: AnimFlags,
-    }
     combined := make(map[i32]CombinedEntry, 0, context.temp_allocator)
 
     //Go through the previous pose, Start = It's Transform, End = It's Original Transform
@@ -1364,7 +1359,7 @@ sys_anim_transition :: proc(entity: Entity)
             parent_entity = entity,
         }
         a.flags.end_set = true
-        add_component(bfg.nodes[id], a)
+        add_animate_component(bfg.nodes[id], a)
     }
 
     //Turn off transition;
@@ -1374,15 +1369,27 @@ sys_anim_transition :: proc(entity: Entity)
 //Or just interpolate from where you're already at
 add_animate_component :: proc(ent: Entity, comp: Cmp_Animate)
 {
-    add_component(ent, comp)
+    if(has_component(ent, Cmp_Animate)){
+        ac := get_component(ent, Cmp_Animate)
+        ac^ = comp
+        tc := get_component(ent, Cmp_Transform)
+        if ac == nil || tc == nil do return
 
-    ac := get_component(ent, Cmp_Animate)
-    tc := get_component(ent, Cmp_Transform)
-    if ac == nil || tc == nil do return
+        //This forces the animation to go to the start position
+        if ac.flags.force_start do tc.local = ac.start
+        check_if_finished(tc.local, ac)
+    }
+    else {
+        add_component(ent, comp)
 
-    //This forces the animation to go to the start position
-    if ac.flags.force_start do tc.local = ac.start
-    check_if_finished(tc.local, ac)
+        ac := get_component(ent, Cmp_Animate)
+        tc := get_component(ent, Cmp_Transform)
+        if ac == nil || tc == nil do return
+
+        //This forces the animation to go to the start position
+        if ac.flags.force_start do tc.local = ac.start
+        check_if_finished(tc.local, ac)
+    }
 }
 
 remove_animate_component :: proc(e : Entity)
