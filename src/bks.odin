@@ -1075,7 +1075,7 @@ add_animation :: proc(c : ^Character, prefab : string)
     ac := animation_component_with_names(2,prefab, "idleStart", "idleEnd", AnimFlags{ idPo = 0, loop = true, force_start = true, force_end = true})
     add_component(c.entity, ac)
     sys_anim_add(c.entity)
-    animate_idle(&ac, prefab, c.move_anim)
+    // animate_idle(&ac, prefab, c.move_anim)
 }
 
 add_animations :: proc()

@@ -36,7 +36,8 @@ transform_sys_process :: proc() {
     }
 }
 
-transform_sys_process_e :: proc() {
+
+sys_trans_process_ecs :: proc() {
     archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_Root))
     for archetype in archetypes {
         for entity in archetype.entities do sqt_transform_e(entity)
@@ -142,12 +143,23 @@ sqt_transform_e :: proc(entity: Entity) {
     // Combine with parent if exists
     if has_parent {
         pt := get_component(parent_ent, Cmp_Transform)^
-        tc.global.sca = pt.global.sca * tc.local.sca
-        tc.global.rot = pt.global.rot * tc.local.rot
+        // tc.global.sca = pt.global.sca * tc.local.sca
+        // tc.global.rot = pt.global.rot * tc.local.rot
+        // tc.trm = pt.world * local
+        // local = local * scale_m
+        // tc.world = pt.world * local
+        // tc.global.pos = tc.trm[3].xyzw
+        tc.global.sca = tc.local.sca * pt.global.sca
+        tc.global.rot = tc.local.rot * pt.global.rot
         tc.trm = pt.world * local
         local = local * scale_m
         tc.world = pt.world * local
         tc.global.pos = tc.trm[3].xyzw
+        if nc.name == "legLeft"{
+            fmt.println("leg pos: (", tc.world[3].x, ",", tc.world[3].y, ",", tc.world[3].z,
+                ") rot: ", tc.global.rot.x, ",", tc.global.rot.y, ",", tc.global.rot.z, ",", tc.global.rot.w,
+                ") scale: ", tc.global.sca.x, ",", tc.global.sca.y, ",", tc.global.sca.z)
+        }
     } else {
         tc.global.sca = tc.local.sca
         tc.global.rot = tc.local.rot
@@ -162,12 +174,7 @@ sqt_transform_e :: proc(entity: Entity) {
         obj_comp := get_component(nc.entity, Cmp_Primitive)
         if obj_comp != nil {
             obj_comp.extents = tc.global.sca.xyz
-            rot_mat := linalg.Matrix3f32{
-                tc.world[0].x, tc.world[0].y, tc.world[0].z,
-                tc.world[1].x, tc.world[1].y, tc.world[1].z,
-                tc.world[2].x, tc.world[2].y, tc.world[2].z
-            }
-            obj_comp.aabb_extents = rotate_aabb(rot_mat)
+            obj_comp.aabb_extents = rotate_aabb(linalg.matrix3_from_matrix4_f32(tc.world))
             obj_comp.world = obj_comp.id < 0 ? tc.trm : tc.world
         }
     } else if .CAMERA in nc.engine_flags {
@@ -423,7 +430,7 @@ create_leaf :: proc "c" (
 }
 
 // Build the BVH tree
-bvh_system_build :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
+sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
     //context.allocator = alloc
     if !rebuild do return
     g_num_nodes = 0
@@ -1164,17 +1171,16 @@ sys_anim_add :: proc(e : Entity){
     // node := get_component(e, Cmp_Node)
     assert(ac != nil && bfg != nil, "Animation, BFGraph, and Node components are required")
     animation := g_animations[ac.prefab_name]
-    for key, val in g_animations
+
+    fmt.println("Animation in g_animations: ", animation.name, " with ", len(animation.poses), " poses")
+    for k, p in animation.poses
     {
-        fmt.println("Animation in g_animations: ", val.name, " with ", len(val.poses), " poses")
-        for k, p in val.poses
-        {
-            fmt.println("  Pose ID: ", k, " with ", p.name, " data: ")
-            for pp in p.pose{
-                fmt.println("    Pose Data ID: ", pp.id, " SQT: ", pp.sqt_data)
-            }
+        fmt.println("  Pose ID: ", k, " with ", p.name, " data: ")
+        for pp in p.pose{
+            fmt.println("    Pose Data ID: ", pp.id, " SQT: ", pp.sqt_data)
         }
     }
+
     end_pose := animation.poses[ac.end]
 
     // If there's only 1 pose, then it'll only be the end pose
@@ -1280,9 +1286,9 @@ sys_anim_process :: proc(entity: Entity, ac : ^Cmp_Animate, tc : ^Cmp_Transform,
     ac.curr_time += dt
 
     //Interpolate dat ish
-    // if !ac.flags.pos_flag do tc.local.pos = linalg.mix(tc.local.pos, ac.end.pos, x)
-    // if !ac.flags.sca_flag do tc.local.sca = linalg.mix(tc.local.sca, ac.end.sca, x)
-    // if !ac.flags.rot_flag do tc.local.rot = linalg.quaternion_slerp_f32(tc.local.rot, ac.end.rot, x)
+    if !ac.flags.pos_flag do tc.local.pos = linalg.mix(tc.local.pos, ac.end.pos, x)
+    if !ac.flags.sca_flag do tc.local.sca = linalg.mix(tc.local.sca, ac.end.sca, x)
+    if !ac.flags.rot_flag do tc.local.rot = linalg.quaternion_slerp_f32(tc.local.rot, ac.end.rot, x)
 
     //End Animation if finished
     if ac.curr_time >= ac.time {

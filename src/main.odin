@@ -108,13 +108,13 @@ main :: proc() {
 	added_entity(g_world_ent)
 
 	g_player = load_prefab("Froku")
-	transform_sys_process_e()
+	sys_trans_process_ecs()
 	gameplay_init()
 	defer gameplay_destroy()
 	for key, val in gui do fmt.println(key)
-	transform_sys_process_e()
+	sys_trans_process_ecs()
 	// gameplay_post_init()
-	bvh_system_build(g_bvh, per_frame_alloc)
+	sys_bvh_process_ecs(g_bvh, per_frame_alloc)
 
 	//begin renderer
 	initialize_raytracer()
@@ -137,8 +137,8 @@ main :: proc() {
 		for g_frame.physics_acc_time >= f32(g_frame.physics_time_step) {
 			gameplay_update(f32(g_frame.physics_time_step))
 			sys_anim_process_ecs(f32(g_frame.physics_time_step))
-			transform_sys_process_e()
-			bvh_system_build(g_bvh, per_frame_alloc)
+			sys_trans_process_ecs()
+			sys_bvh_process_ecs(g_bvh, per_frame_alloc)
 			mem.arena_free_all(&per_frame_arena)
 			g_frame.physics_acc_time -= f32(g_frame.physics_time_step)
 		}
