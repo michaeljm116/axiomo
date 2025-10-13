@@ -6,6 +6,11 @@ kanban-plugin: board
 
 ## TODO
 
+- [ ] Down arrow for bee selection
+- [ ] F for Focus Over bee
+- [ ] D for Dodge over Bee
+- [ ] ! For Alert
+- [ ] Dice visualized
 - [ ] Fix Bee Model
 - [ ] Shrink Bee size
 - [ ] Correct The Character Rotations

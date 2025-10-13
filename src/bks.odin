@@ -72,6 +72,9 @@ start_level1 :: proc(alloc : mem.Allocator = context.allocator)
 
     //Shuffle bee BeeDeck
     deck_init(&g_level.deck, 36)
+
+    //Set up visuals over bee
+    for b in bees do add_component(b.entity, Cmp_Visual{})
 }
 
 destroy_level1 :: proc()
@@ -236,6 +239,14 @@ enemy_selection :: proc(selection : ^int, bees : [dynamic]Bee)
             if selection^ < 0 do selection^ = num_bees
         }
     }
+    // Reset Visuals for others
+    for b in bees{
+        vc := get_component(b.entity, Cmp_Visual)
+        if vc != nil do hide_visuals(vc, {.Select})
+    }
+    // Display visual
+    vc := get_component(bees[selection^].entity, Cmp_Visual)
+    if vc != nil do vc.flags += {.Select}
 }
 
 get_input :: proc() -> (string, bool)
@@ -1334,4 +1345,128 @@ menu_run_anim_fade_out :: proc(entity : Entity, anim : ^MenuAnimation, dt : f32)
     anim.timer += dt
     gc.alpha = math.smoothstep(f32(1.0), 0.0, anim.timer / anim.duration)
     return .Running
+}
+
+
+//----------------------------------------------------------------------------\\
+// /Visulaization
+//----------------------------------------------------------------------------\\
+Cmp_Visual :: struct
+{
+    alert : Entity,
+    focus : Entity,
+    dodge : Entity,
+    select : Entity,
+    flags : VisualFlags,
+    bob_timer : f32,
+    spin_angle : f32, // Added for spinning animations
+}
+VisualFlag :: enum{ Alert,Focus,Dodge,Select }
+VisualFlags :: bit_set[VisualFlag;u8]
+
+sys_visual_process_ecs :: proc(dt : f32)
+{
+    archetypes := query(has(Cmp_Visual), has(Cmp_Transform))
+    for archetype in archetypes {
+        visual := get_table(archetype, Cmp_Visual)
+        transf := get_table(archetype, Cmp_Transform)
+        for entity, i in archetype.entities do sys_visual_update(&visual[i], transf[i], dt)
+    }
+}
+
+spin_entity :: proc(entity: Entity, dt: f32, speed: f32 = 180.0) {
+    at := get_component(entity, Cmp_Transform)
+    if at != nil {
+        delta_angle := speed * f32(glfw.GetTime())
+        delta_quat := linalg.quaternion_from_euler_angle_y(f32(math.to_radians(delta_angle)))
+        at.local.rot = linalg.quaternion_mul_quaternion(at.local.rot, delta_quat)
+    }
+}
+
+bob_entity :: proc(entity: Entity, timer: ^f32, dt: f32, amplitude: f32 = 0.5, period: f32 = 1.0) {
+    timer^ += dt
+    at := get_component(entity, Cmp_Transform)
+    if at != nil {
+        bob_speed := 2.0 * math.PI / period
+        at.local.pos.y += amplitude * math.sin(timer^ * bob_speed)
+    }
+}
+
+sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
+{
+    if .Alert in vc.flags {
+        if vc.alert == 0 {
+            vc.alert = load_prefab("IconExclamation")
+        }
+
+        at := get_component(vc.alert, Cmp_Transform)
+        if at != nil {
+            set_a_above_b(at, tc, 2.0) // Base height above the model; adjust as needed
+            bob_entity(vc.alert, &vc.bob_timer, dt)
+            spin_entity(vc.alert, dt)
+        }
+    }
+
+    if .Focus in vc.flags {
+        if vc.focus == 0 {
+            vc.focus = load_prefab("IconFocus") // Assuming a prefab name; adjust as needed
+        }
+
+        at := get_component(vc.focus, Cmp_Transform)
+        if at != nil {
+            set_a_above_b(at, tc, 2.0) // Base height above the model; adjust as needed
+            bob_entity(vc.focus, &vc.bob_timer, dt)
+            spin_entity(vc.focus, dt)
+        }
+    }
+
+    if .Dodge in vc.flags {
+        if vc.dodge == 0 {
+            vc.dodge = load_prefab("IconDodge") // Assuming a prefab name; adjust as needed
+        }
+
+        at := get_component(vc.dodge, Cmp_Transform)
+        if at != nil {
+            set_a_above_b(at, tc, 2.0) // Base height above the model; adjust as needed
+            bob_entity(vc.dodge, &vc.bob_timer, dt)
+            spin_entity(vc.dodge, dt)
+        }
+    }
+
+    if .Select in vc.flags {
+        if vc.select == 0 {
+            vc.select = load_prefab("IconArrow") // Assuming a prefab name; adjust as needed
+        }
+
+        at := get_component(vc.select, Cmp_Transform)
+        if at != nil {
+            set_a_above_b(at, tc, 2.0) // Base height above the model; adjust as needed
+            bob_entity(vc.select, &vc.bob_timer, dt)
+            spin_entity(vc.select, dt)
+        }
+    }
+}
+
+
+set_a_above_b :: proc(a : ^Cmp_Transform, b : Cmp_Transform, h : f32)
+{
+    a.local = b.local
+    a.local.pos.y += h
+}
+
+hide_entity :: proc(entity : Entity)
+{
+    tc := get_component(entity, Cmp_Transform)
+    tc.local.sca = 0
+}
+
+hide_visuals :: proc(visuals : ^Cmp_Visual, flags : VisualFlags)
+{
+    if .Alert in flags && visuals.alert != 0 do hide_entity(visuals.alert)
+    if .Focus in flags && visuals.focus != 0 do hide_entity(visuals.focus)
+    if .Dodge in flags && visuals.dodge != 0 do hide_entity(visuals.dodge)
+    if .Select in flags && visuals.select != 0 do hide_entity(visuals.select)
+
+    // Remove the specified flags from the visual component
+    visuals.flags -= flags
 }

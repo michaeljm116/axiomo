@@ -1,0 +1,58 @@
+{
+  "Node": [
+    {
+      "Material": {
+        "_ID": 563290200
+      },
+      "Object": {
+        "_ID": 1780447068
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": -6.623666308769316e-07
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 0.4764131009578705,
+          "_y": 1.0,
+          "_z": 0.20747484266757965
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "",
+      "_eFlags": 33863,
+      "_gFlags": 0,
+      "_hasChildren": false
+    }
+  ],
+  "Transform": {
+    "Position": {
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Rotation": {
+      "_w": 1.0,
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Scale": {
+      "_x": 1.0,
+      "_y": 1.0,
+      "_z": 1.0
+    }
+  },
+  "_Dynamic": true,
+  "_Name": "IconFocus",
+  "_eFlags": 1059,
+  "_gFlags": 0,
+  "_hasChildren": true
+}

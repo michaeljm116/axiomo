@@ -1,0 +1,58 @@
+{
+  "Node": [
+    {
+      "Material": {
+        "_ID": 150738392
+      },
+      "Object": {
+        "_ID": 62454175
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": 5.8126396140778525e-08,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 0.24317294359207153,
+          "_y": 1.0,
+          "_z": 0.1735444813966751
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "defaultobject",
+      "_eFlags": 33863,
+      "_gFlags": 0,
+      "_hasChildren": false
+    }
+  ],
+  "Transform": {
+    "Position": {
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Rotation": {
+      "_w": 1.0,
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Scale": {
+      "_x": 1.0,
+      "_y": 1.0,
+      "_z": 1.0
+    }
+  },
+  "_Dynamic": true,
+  "_Name": "IconAlert",
+  "_eFlags": 1059,
+  "_gFlags": 0,
+  "_hasChildren": true
+}

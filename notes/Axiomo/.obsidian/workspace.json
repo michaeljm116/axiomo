@@ -23,21 +23,14 @@
             "id": "f88536f4a261db38",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "markdown",
               "state": {
-                "file": "Kanban.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false,
-                    false
-                  ]
-                }
+                "file": "BeeKillingsInn/Visualizations!.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-trello",
-              "title": "Kanban"
+              "icon": "lucide-file",
+              "title": "Visualizations!"
             }
           },
           {
@@ -207,8 +200,9 @@
   },
   "active": "f88536f4a261db38",
   "lastOpenFiles": [
-    "BeeKillingsInn/Animation - Again.md",
     "Kanban.md",
+    "BeeKillingsInn/Visualizations!.md",
+    "BeeKillingsInn/Animation - Again.md",
     "{0DA3E792-94E9-46F5-B6DE-8EDBEA4E55CD}.png",
     "Pasted image 20251011062648.png",
     "Excalidraw/Drawing 2025-10-08 18.07.41.excalidraw.md",
