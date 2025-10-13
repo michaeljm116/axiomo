@@ -77,18 +77,24 @@ start_level1 :: proc(alloc : mem.Allocator = context.allocator)
     for b in bees do add_component(b.entity, Cmp_Visual{})
 }
 
-destroy_level1 :: proc()
-{
-    for b in g_level.bees
-    {
+destroy_visuals :: proc(visuals : ^Cmp_Visual) {
+    if visuals.alert != 0 do delete_parent_node(visuals.alert)
+    if visuals.focus != 0 do delete_parent_node(visuals.focus)
+    if visuals.dodge != 0 do delete_parent_node(visuals.dodge)
+    if visuals.select != 0 do delete_parent_node(visuals.select)
+    visuals.select = 0
+    visuals.dodge = 0
+    visuals.focus = 0
+    visuals.alert = 0
+    visuals.flags = {}
+}
+
+destroy_level1 :: proc() {
+    for b in g_level.bees {
+        if vc := get_component(b.entity, Cmp_Visual); vc != nil do destroy_visuals(vc)
         delete_parent_node(b.entity)
-        //remove_entity(b.entity)
     }
-    for c in g_level.chests
-    {
-        delete_parent_node(c)
-        //remove_entity(c)
-    }
+    for c in g_level.chests do delete_parent_node(c)
     destroy_arenas()
 }
 
@@ -154,6 +160,10 @@ run_players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, play
             if is_key_just_pressed(glfw.KEY_SPACE) || is_key_just_pressed(glfw.KEY_ENTER){
                 bee_is_near^ = bee_near(player^, bees[bee_selection^])
                 state^ = .Action
+                for b in bees{
+                    vc := get_component(b.entity, Cmp_Visual)
+                    if vc != nil do hide_visuals(vc, {.Select})
+                }
             }
             else do enemy_selection(bee_selection, bees^)
         case .Action:
@@ -173,12 +183,18 @@ run_players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, play
                 bees[bee_selection^].flags |= {.PlayerFocused}
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
+
+                //display visual
+                vc := get_component(bees[bee_selection^].entity, Cmp_Visual)
+                vc.flags += {.Focus}
             }
             else if is_key_just_pressed(glfw.KEY_D){
                 if .PlayerDodge in bees[bee_selection^].flags do bees[bee_selection^].flags |= {.PlayerHyperAlert}
                 bees[bee_selection^].flags |= {.PlayerDodge}
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
+                vc := get_component(bees[bee_selection^].entity, Cmp_Visual)
+                vc.flags += {.Dodge}
             }
         case .Animate:
             TogglePlayerTurnUI(state)
@@ -635,6 +651,11 @@ player_attack :: proc(player : Player, bee : ^Bee){
     // Player rolls a dice, if its higher than their weapons accuracy, do weapon.damage to the bee
     focus_level := i8(.PlayerFocused in bee.flags) + i8(.PlayerHyperFocused in bee.flags)
     bee.flags |= {.Alert}
+
+    //add alert vidual
+    vc := get_component(bee.entity, Cmp_Visual)
+    vc.flags += {.Alert}
+
     luck := dice_rolls() + focus_level
     if .Flying in bee.flags{
        if player.weapon.flying.accuracy < luck {
@@ -1396,7 +1417,7 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
 {
     if .Alert in vc.flags {
         if vc.alert == 0 {
-            vc.alert = load_prefab("IconExclamation")
+            vc.alert = load_prefab("IconAlert")
         }
 
         at := get_component(vc.alert, Cmp_Transform)
