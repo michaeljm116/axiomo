@@ -251,7 +251,7 @@ enemy_selection :: proc(selection : ^int, bees : [dynamic]Bee)
             selection^ = (selection^ + 1) % num_bees
         }
         else if(is_key_just_pressed(glfw.KEY_A) || is_key_just_pressed(glfw.KEY_S)){
-            selection^ = selection^ - 1
+            selection^ = math.abs(selection^ - 1) % num_bees
             if selection^ < 0 do selection^ = num_bees
         }
     }
@@ -1422,7 +1422,7 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
 
         at := get_component(vc.alert, Cmp_Transform)
         if at != nil {
-            set_a_above_b(at, tc, 2.0) // Base height above the model; adjust as needed
+            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
             bob_entity(vc.alert, &vc.bob_timer, dt)
             spin_entity(vc.alert, dt)
         }
@@ -1435,7 +1435,7 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
 
         at := get_component(vc.focus, Cmp_Transform)
         if at != nil {
-            set_a_above_b(at, tc, 2.0) // Base height above the model; adjust as needed
+            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
             bob_entity(vc.focus, &vc.bob_timer, dt)
             spin_entity(vc.focus, dt)
         }
@@ -1448,7 +1448,7 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
 
         at := get_component(vc.dodge, Cmp_Transform)
         if at != nil {
-            set_a_above_b(at, tc, 2.0) // Base height above the model; adjust as needed
+            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
             bob_entity(vc.dodge, &vc.bob_timer, dt)
             spin_entity(vc.dodge, dt)
         }
@@ -1461,7 +1461,7 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
 
         at := get_component(vc.select, Cmp_Transform)
         if at != nil {
-            set_a_above_b(at, tc, 2.0) // Base height above the model; adjust as needed
+            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
             bob_entity(vc.select, &vc.bob_timer, dt)
             spin_entity(vc.select, dt)
         }
