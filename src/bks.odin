@@ -251,7 +251,7 @@ enemy_selection :: proc(selection : ^int, bees : [dynamic]Bee)
             selection^ = (selection^ + 1) % num_bees
         }
         else if(is_key_just_pressed(glfw.KEY_A) || is_key_just_pressed(glfw.KEY_S)){
-            selection^ = selection^ - 1
+            selection^ = math.abs(selection^ - 1) % num_bees
             if selection^ < 0 do selection^ = num_bees
         }
     }
@@ -1422,6 +1422,11 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
     if .Alert in vc.flags {
         if vc.alert == 0 do vc.alert = load_prefab("IconAlert")
         at := get_component(vc.alert, Cmp_Transform)
+        if at != nil {
+            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
+            bob_entity(vc.alert, &vc.bob_timer, dt)
+            spin_entity(vc.alert, dt)
+        }
         if at != nil do at.local.sca =  1
     } else if vc.alert != 0 {
         hide_entity(vc.alert)
@@ -1430,6 +1435,11 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
     if .Focus in vc.flags {
         if vc.focus == 0 do vc.focus = load_prefab("IconFocus")
         at := get_component(vc.focus, Cmp_Transform)
+        if at != nil {
+            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
+            bob_entity(vc.focus, &vc.bob_timer, dt)
+            spin_entity(vc.focus, dt)
+        }
         if at != nil do at.local.sca = 1
     } else if vc.focus != 0 {
         hide_entity(vc.focus)
@@ -1438,12 +1448,26 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
     if .Dodge in vc.flags {
         if vc.dodge == 0 do vc.dodge = load_prefab("IconDodge")
         at := get_component(vc.dodge, Cmp_Transform)
+        if at != nil {
+            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
+            bob_entity(vc.dodge, &vc.bob_timer, dt)
+            spin_entity(vc.dodge, dt)
+        }
         if at != nil do at.local.sca = 1
     } else if vc.dodge != 0 {
         hide_entity(vc.dodge)
     }
 
     if .Select in vc.flags {
+        if vc.select == 0 {
+            vc.select = load_prefab("IconArrow") // Assuming a prefab name; adjust as needed
+        }
+
+        at := get_component(vc.select, Cmp_Transform)
+        if at != nil {
+            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
+            bob_entity(vc.select, &vc.bob_timer, dt)
+            spin_entity(vc.select, dt)
         if vc.select == 0 do vc.select = load_prefab("IconArrow")
         at := get_component(vc.select, Cmp_Transform)
         if at != nil do at.local.sca = 1
