@@ -6,10 +6,6 @@ kanban-plugin: board
 
 ## TODO
 
-- [ ] Down arrow for bee selection
-- [ ] F for Focus Over bee
-- [ ] D for Dodge over Bee
-- [ ] ! For Alert
 - [ ] Dice visualized
 - [ ] Fix Bee Model
 - [ ] Shrink Bee size
@@ -41,6 +37,10 @@ kanban-plugin: board
 - [ ] Weapons? Where did they go?
 - [ ] UI System For Player Turns
 - [ ] UI System For Player Turns
+- [ ] D for Dodge over Bee
+- [ ] ! For Alert
+- [ ] Down arrow for bee selection
+- [ ] F for Focus Over bee
 - [ ] Make Characters Not Starts in the walls
 - [ ] Get the level size corrected
 - [ ] Fix the beginning bee jump

@@ -1417,67 +1417,42 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
 {
     // Define a fixed order for visuals to ensure consistent positioning
     visual_order : []VisualFlag = { .Alert, .Focus, .Dodge, .Select }
-
+    
     // First, handle creation and visibility (show/hide based on flags)
     if .Alert in vc.flags {
         if vc.alert == 0 do vc.alert = load_prefab("IconAlert")
         at := get_component(vc.alert, Cmp_Transform)
-        if at != nil {
-            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
-            bob_entity(vc.alert, &vc.bob_timer, dt)
-            spin_entity(vc.alert, dt)
-        }
-        if at != nil do at.local.sca =  1
+        if at != nil do at.local.sca = 1 // Assume original scale is 1; adjust if needed
     } else if vc.alert != 0 {
         hide_entity(vc.alert)
     }
-
+    
     if .Focus in vc.flags {
         if vc.focus == 0 do vc.focus = load_prefab("IconFocus")
         at := get_component(vc.focus, Cmp_Transform)
-        if at != nil {
-            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
-            bob_entity(vc.focus, &vc.bob_timer, dt)
-            spin_entity(vc.focus, dt)
-        }
         if at != nil do at.local.sca = 1
     } else if vc.focus != 0 {
         hide_entity(vc.focus)
     }
-
+    
     if .Dodge in vc.flags {
         if vc.dodge == 0 do vc.dodge = load_prefab("IconDodge")
         at := get_component(vc.dodge, Cmp_Transform)
-        if at != nil {
-            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
-            bob_entity(vc.dodge, &vc.bob_timer, dt)
-            spin_entity(vc.dodge, dt)
-        }
         if at != nil do at.local.sca = 1
     } else if vc.dodge != 0 {
         hide_entity(vc.dodge)
     }
-
+    
     if .Select in vc.flags {
-        if vc.select == 0 {
-            vc.select = load_prefab("IconArrow") // Assuming a prefab name; adjust as needed
-        }
-
-        at := get_component(vc.select, Cmp_Transform)
-        if at != nil {
-            set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
-            bob_entity(vc.select, &vc.bob_timer, dt)
-            spin_entity(vc.select, dt)
         if vc.select == 0 do vc.select = load_prefab("IconArrow")
         at := get_component(vc.select, Cmp_Transform)
         if at != nil do at.local.sca = 1
     } else if vc.select != 0 {
         hide_entity(vc.select)
     }
-
+    
     // Collect active visuals in order
-    visual_list: [dynamic]Entity
-    // reserve(&visual_list, 4, context.temp_allocator)
+    visual_list := make([dynamic]Entity, 4, context.temp_allocator)
     for f in visual_order {
         if f not_in vc.flags do continue
         ent: Entity
@@ -1489,17 +1464,17 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
         }
         if ent != 0 do append(&visual_list, ent)
     }
-
+    
     // Position active visuals side by side if multiple
     count := len(visual_list)
     if count > 0 {
         spacing: f32 = 1.0 // Adjust spacing between icons as needed
-        start_offset := -(f32(count - 1) / 2.0) * spacing
-
+        start_offset := -(f32(count - 1) / 2.5) * spacing
+        
         for ent, i in visual_list {
             at := get_component(ent, Cmp_Transform)
             if at != nil {
-                set_a_above_b(at, tc, 2.0) // Base height above the model; adjust as needed
+                set_a_above_b(at, tc, 2.5) // Base height above the model; adjust as needed
                 at.local.pos.x += start_offset + f32(i) * spacing // Offset horizontally
                 bob_entity(ent, &vc.bob_timer, dt)
                 spin_entity(ent, dt)
