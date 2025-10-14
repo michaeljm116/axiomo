@@ -1,0 +1,3 @@
+* It seems like when you delete an entity... it just... keeps some kind of entity tracker at that entity pos and it does not set that entity back to 0... 
+	* but that also makes sense because you need to like... do stuff
+	* 

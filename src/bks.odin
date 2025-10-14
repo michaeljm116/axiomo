@@ -64,7 +64,7 @@ start_level1 :: proc(alloc : mem.Allocator = context.allocator)
     player = {name = '🧔', pos = vec2{0,2}, health = 1, weapon = db[.Hand], abilities = {}}
     bees = make([dynamic]Bee, 2)
     bees[0] = Bee{name = '🐝', pos = vec2{6,2}, target = vec2{6,2}, health = 2, type = .Aggressive, flags = {}, entity = load_prefab("AggressiveBee")}
-    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("AggressiveBee")}
+    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
 
     player.abilities = make([dynamic]Ability, 2)
     player.abilities[0] = Ability{type = .Dodge, use_on = &bees[0], level = 1, uses = 1}
@@ -78,20 +78,16 @@ start_level1 :: proc(alloc : mem.Allocator = context.allocator)
 }
 
 destroy_visuals :: proc(visuals : ^Cmp_Visual) {
-    if visuals.alert != 0 do delete_parent_node(visuals.alert)
-    if visuals.focus != 0 do delete_parent_node(visuals.focus)
-    if visuals.dodge != 0 do delete_parent_node(visuals.dodge)
-    if visuals.select != 0 do delete_parent_node(visuals.select)
-    visuals.select = 0
-    visuals.dodge = 0
-    visuals.focus = 0
-    visuals.alert = 0
-    visuals.flags = {}
+    if entity_exists(visuals.alert) do delete_parent_node(visuals.alert)
+    if entity_exists(visuals.focus) do delete_parent_node(visuals.focus)
+    if entity_exists(visuals.dodge) do delete_parent_node(visuals.dodge)
+    if entity_exists(visuals.select) do delete_parent_node(visuals.select)
 }
 
 destroy_level1 :: proc() {
     for b in g_level.bees {
-        if vc := get_component(b.entity, Cmp_Visual); vc != nil do destroy_visuals(vc)
+        vc := get_component(b.entity, Cmp_Visual)
+        if vc != nil do destroy_visuals(vc)
         delete_parent_node(b.entity)
     }
     for c in g_level.chests do delete_parent_node(c)
@@ -1417,40 +1413,40 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
 {
     // Define a fixed order for visuals to ensure consistent positioning
     visual_order : []VisualFlag = { .Alert, .Focus, .Dodge, .Select }
-    
+
     // First, handle creation and visibility (show/hide based on flags)
     if .Alert in vc.flags {
-        if vc.alert == 0 do vc.alert = load_prefab("IconAlert")
+        if !entity_exists(vc.alert) do vc.alert = load_prefab("IconAlert")
         at := get_component(vc.alert, Cmp_Transform)
         if at != nil do at.local.sca = 1 // Assume original scale is 1; adjust if needed
-    } else if vc.alert != 0 {
+    } else if entity_exists(vc.alert) {
         hide_entity(vc.alert)
     }
-    
+
     if .Focus in vc.flags {
-        if vc.focus == 0 do vc.focus = load_prefab("IconFocus")
+        if !entity_exists(vc.focus) do vc.focus = load_prefab("IconFocus")
         at := get_component(vc.focus, Cmp_Transform)
         if at != nil do at.local.sca = 1
-    } else if vc.focus != 0 {
+    } else if entity_exists(vc.focus) {
         hide_entity(vc.focus)
     }
-    
+
     if .Dodge in vc.flags {
-        if vc.dodge == 0 do vc.dodge = load_prefab("IconDodge")
+        if !entity_exists(vc.dodge) do vc.dodge = load_prefab("IconDodge")
         at := get_component(vc.dodge, Cmp_Transform)
         if at != nil do at.local.sca = 1
-    } else if vc.dodge != 0 {
+    } else if entity_exists(vc.dodge) {
         hide_entity(vc.dodge)
     }
-    
+
     if .Select in vc.flags {
-        if vc.select == 0 do vc.select = load_prefab("IconArrow")
+        if !entity_exists(vc.select) do vc.select = load_prefab("IconArrow")
         at := get_component(vc.select, Cmp_Transform)
         if at != nil do at.local.sca = 1
-    } else if vc.select != 0 {
+    } else if entity_exists(vc.select) {
         hide_entity(vc.select)
     }
-    
+
     // Collect active visuals in order
     visual_list := make([dynamic]Entity, 4, context.temp_allocator)
     for f in visual_order {
@@ -1464,13 +1460,13 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
         }
         if ent != 0 do append(&visual_list, ent)
     }
-    
+
     // Position active visuals side by side if multiple
     count := len(visual_list)
     if count > 0 {
         spacing: f32 = 1.0 // Adjust spacing between icons as needed
         start_offset := -(f32(count - 1) / 2.5) * spacing
-        
+
         for ent, i in visual_list {
             at := get_component(ent, Cmp_Transform)
             if at != nil {

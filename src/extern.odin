@@ -57,6 +57,10 @@ remove_component :: proc(entity: ecs.EntityID, $T: typeid){
     ecs.remove_component(g_world, entity, typeid)
 }
 
+entity_exists :: proc(entity: ecs.EntityID) -> bool {
+    return ecs.entity_exists(g_world, entity)
+}
+
 // Query system
 query :: proc(terms: ..ecs.Term) -> []^ecs.Archetype {
     // prev_alloc := context.allocator

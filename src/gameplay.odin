@@ -126,13 +126,14 @@ find_camera_entity :: proc() {
 
 // Update input state and camera
 gameplay_update :: proc(delta_time: f32) {
-    if g_camera_entity == 0 do find_camera_entity()
-    if g_player == 0 do find_player_entity()
+    if !entity_exists(g_camera_entity) do find_camera_entity()
+    if !entity_exists(g_player) do find_player_entity()
 
     handle_ui_edit_mode()
     handle_chest_mode()
     handle_player_edit_mode()
-    if !edit_mode && !chest_mode && !player_edit_mode{
+    handle_destroy_mode()
+    if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode{
        app_run(delta_time, &g_app_state)
     }
     // Clear just pressed/released states
@@ -194,7 +195,7 @@ find_light_entity :: proc() {
 // Update the cached light entity so it orbits around a center point.
 // If a player exists, orbit around the player's world position; otherwise use world origin.
 update_light_orbit :: proc(delta_time: f32) {
-    if g_light_entity == 0 {
+    if !entity_exists(g_light_entity) {
         return
     }
 

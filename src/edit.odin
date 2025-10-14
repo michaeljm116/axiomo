@@ -244,3 +244,48 @@ handle_player_edit_mode :: proc() {
         tc.euler_rotation,
         tc.local.sca.xyz)
 }
+
+destroy_mode := false
+selected_destroy : Entity
+grid_pos_x :i16= 3
+grid_pos_y :i16= 3
+handle_destroy_mode :: proc()
+{
+    if is_key_just_pressed(glfw.KEY_F4) {  // Or any special key
+        destroy_mode = !destroy_mode
+        if destroy_mode do fmt.println("Entered Destroy Edit Mode")
+        else do fmt.println("Exited Destroy Edit Mode")
+    }
+    if !destroy_mode do return
+
+    if is_key_just_pressed(glfw.KEY_SPACE) {
+        selected_destroy = load_prefab("Froku")
+        set_entity_on_tile(g_floor, selected_destroy, g_level, grid_pos_x, grid_pos_y)
+        fmt.printf("Placed %s at (%d, %d)\n", selected_destroy, grid_pos_x, grid_pos_y)
+    }
+
+    if is_key_just_pressed(glfw.KEY_ENTER)
+    {
+        delete_parent_node(selected_destroy)
+        // child := get_component(selected_destroy,Cmp_Node).child
+        // child_node := get_component(child,Cmp_Node)
+        // child = child_node.child
+        // bpc := get_component(child, Cmp_Primitive)
+        // if bpc != nil do fmt.println("Primitive Component: ", bpc, "has not been deleted")
+        // remove_entity(selected_destroy)
+        // fmt.printf("Destroyed %s at (%d, %d)\n", selected_destroy, grid_pos_x, grid_pos_y)
+        // pc := get_component(child, Cmp_Primitive)
+        // if pc != nil do fmt.println("Primitive Component: ", pc, "has not been deleted")
+        // else do fmt.println("Primitive Component: ", bpc, "has been deleted")
+        // selected_destroy = 0
+        // remove_entity(child)
+        // pc = get_component(child, Cmp_Primitive)
+        // if pc != nil do fmt.println("Primitive Component: ", pc, "has not been deleted")
+        // else do fmt.println("CONTGRATS ITS GONE")
+    }
+
+    if is_key_just_pressed(glfw.KEY_A) do grid_pos_x -= 1
+    if is_key_just_pressed(glfw.KEY_D) do grid_pos_x += 1
+    if is_key_just_pressed(glfw.KEY_W) do grid_pos_y += 1
+    if is_key_just_pressed(glfw.KEY_S) do grid_pos_y -= 1
+}
