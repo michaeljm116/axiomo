@@ -509,7 +509,7 @@ add_child :: proc(parent_entity, child_entity: Entity) {
 
     parent_node.is_parent = true
     child_node.parent = parent_entity
-    if (parent_node.child == 0){
+    if (!entity_exists(parent_node.child)){
         parent_node.child = child_entity
     }
     else{
@@ -531,14 +531,12 @@ get_last_sibling :: proc(node : ^Cmp_Node) -> ^Cmp_Node{
 
 remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
     parent_node := get_component(parent_entity, Cmp_Node)
-    if parent_node == nil {
-        return
-    }
+    if parent_node == nil do return
+
 
     child_node := get_component(child_entity, Cmp_Node)
-    if child_node == nil {
-        return
-    }
+    if child_node == nil do return
+
 
     // Check if this is the first child
     if parent_node.child == child_entity {
@@ -547,7 +545,7 @@ remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
     } else {
         // Find the previous sibling
         curr := parent_node.child
-        for curr != Entity(0) {
+        for entity_exists(curr) {
             curr_node := get_component(curr, Cmp_Node)
             if curr_node.brotha == child_entity {
                 // Remove from linked list by updating previous sibling's brotha
@@ -559,7 +557,7 @@ remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
     }
 
     // Update parent flag if no more children
-    if parent_node.child == Entity(0) {
+    if parent_node.child == Entity(0) || !entity_exists(parent_node.child) {
         parent_node.is_parent = false
     }
 
@@ -572,18 +570,15 @@ remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
 // This will call remove_entity for every entity in the subtree.
 delete_parent_node :: proc(parent_entity: Entity) {
     parent_node := get_component(parent_entity, Cmp_Node)
-    if parent_node == nil {
-        return
-    }
+    if parent_node == nil do return
 
     // Recursively delete all children. Capture next sibling before recursion
     // because recursion will call remove_entity and invalidate components.
     child := parent_node.child
-    for child != Entity(0) {
+    for entity_exists(child) {
         child_node := get_component(child, Cmp_Node)
-        if child_node == nil {
-            break
-        }
+        if child_node == nil do break
+
         next := child_node.brotha
 
         // Recursively delete child's subtree (this will remove the child entity)
@@ -595,13 +590,8 @@ delete_parent_node :: proc(parent_entity: Entity) {
 
     // If this node has a parent, unlink this node from that parent first.
     // Do this before calling remove_entity so the parent can be updated safely.
-    if parent_node.parent != Entity(0) {
-        remove_child(parent_node.parent, parent_entity)
-    }
-
-    // Finally remove this entity (will remove all components for it).
-    // After this call the Cmp_Node for parent_entity is invalid.
-    remove_entity(parent_entity)
+    if entity_exists(parent_node.parent) do remove_child(parent_node.parent, parent_entity)
+    if entity_exists(parent_entity) do remove_entity(parent_entity)
 }
 
 
