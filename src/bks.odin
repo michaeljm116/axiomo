@@ -1525,6 +1525,7 @@ Dice :: struct {
     entity : Entity,
 }
 one_sixth := 1.0/6.0
+
 dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
     for &d in dice{
         d.time.curr += dt
