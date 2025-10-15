@@ -19,8 +19,9 @@ GRID_WIDTH :: 7
 GRID_HEIGHT :: 5
 s : bufio.Scanner
 g_state : GameState = .Start
-
+g_current_bee: int = 0
 g_level :Level
+g_dice :  [2]Dice
 
 Grid :: [][]Tile
 Level :: struct
@@ -75,6 +76,16 @@ start_level1 :: proc(alloc : mem.Allocator = context.allocator)
 
     //Set up visuals over bee
     for b in bees do add_component(b.entity, Cmp_Visual{})
+    for &dice in g_dice{
+        dice = Dice{num = 1, entity = gui["Dice"]}
+        dice.time.max = 1.0
+        dice.interval.max = 0.16
+    }
+    for &d in g_dice {
+        gc := get_component(d.entity, Cmp_Gui)
+        if gc != nil { gc.alpha = 0.0 }
+        update_gui(gc)
+    }
 }
 
 destroy_visuals :: proc(visuals : ^Cmp_Visual) {
@@ -112,11 +123,17 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
             run_players_turn(&pt_state, state, player, bees, &bee_selection, &bee_is_near)
             break
         case .BeesTurn:
-            for &bee in bees{
-                if .Animate in bee.flags do animate_bee(&bee, f32(g_frame.physics_time_step))
-                else do run_bee_turn(&bee, deck)
+            if g_current_bee >= len(bees) {
+                g_current_bee = 0
+                state^ = .PlayerTurn
+                return
             }
-            if anim_check(bees) do state^ = .PlayerTurn
+            bee := &bees[g_current_bee]
+            update_bee(bee, deck, player, f32(g_frame.physics_time_step))  // New proc (defined below)
+            // Advance only if bee is fully done (idle and not animating)
+            if bee.state == .Idle && .Animate not_in bee.flags {
+                g_current_bee += 1
+            }
             break
         case .End:
             // destroy_bee_deck(deck)
@@ -165,9 +182,11 @@ run_players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, play
         case .Action:
             TogglePlayerTurnUI(state)
             if(bee_is_near^ && is_key_just_pressed(glfw.KEY_SPACE)){
-                player_attack(player^, &bees[bee_selection^])
-                state^ = .SelectAction
-                game_state^ = .BeesTurn
+                // player_attack(player^, &bees[bee_selection^])
+                // state^ = .SelectAction
+                // game_state^ = .BeesTurn
+                start_dice_roll()
+                state^ = .DiceRoll
                 if .Dead in bees[bee_selection^].flags{
                     fmt.printfln("Bee %v is dead", bees[bee_selection^].name)
                     //remove the bee for now
@@ -192,6 +211,28 @@ run_players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, play
                 vc := get_component(bees[bee_selection^].entity, Cmp_Visual)
                 vc.flags += {.Dodge}
             }
+        case .DiceRoll:
+                TogglePlayerTurnUI(state)  // Optional: Hide UI or show "Rolling..."
+                dice_roll_vis(&g_dice, f32(g_frame.physics_time_step))
+                all_done := true
+                for d in g_dice {
+                    if d.time.curr <= d.time.max { all_done = false; break }
+                }
+                if all_done {
+                    // Dice settled - compute result and apply (replace with your attack logic)
+                    num1, num2 := g_dice[0].num, g_dice[1].num
+                    damage := num1 + num2  // Example: Sum for damage (adjust to your formula)
+                    bee := &bees[bee_selection^]
+                    bee.health -= damage
+                    if bee.health <= 0 {
+                        bee.flags += {.Dead}
+                        fmt.printfln("Bee %v is dead", bee.name)
+                        ordered_remove(&g_level.bees, bee_selection^)
+                    }
+                    hide_dice()  // Clean up
+                    state^ = .SelectAction
+                    game_state^ = .BeesTurn
+                }
         case .Animate:
             TogglePlayerTurnUI(state)
             animate_player(player, f32(g_frame.physics_time_step), state)
@@ -218,6 +259,38 @@ run_bee_turn :: proc(bee : ^Bee, deck : ^BeeDeck){
 
     // fmt.printf("Chosen 🎴: %v\n", chosen_card)
     bee_action_select(chosen_card, bee, &g_level.player)
+}
+
+update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
+    if .Animate in bee.flags {
+        animate_bee(bee, dt)  // Existing movement animation
+    }
+
+    switch bee.state {
+    case .Idle:
+        run_bee_turn(bee, deck)  // Selects action, sets state/flags in bee_action_select
+
+    case .Moving:
+        // If movement needs extra logic beyond animate_bee, add here
+        // animate_bee already handles done -> remove .Animate, so set .Idle when no .Animate
+        if .Animate not_in bee.flags {
+            bee.state = .Idle
+        }
+
+    case .Attacking:
+        dice_roll_vis(&g_dice, dt)
+        all_done := true
+        for d in g_dice {
+            if d.time.curr <= d.time.max { all_done = false; break }
+        }
+        if all_done {
+            dmg := g_dice.x.num + g_dice.y.num
+            bee_action_attack(bee, player, dmg)
+            hide_dice()
+            bee.state = .Idle
+            bee.flags -= {.Animate}
+        }
+    }
 }
 
 // If B button is pressed, go back to previous menu
@@ -285,6 +358,7 @@ PlayerTurnState :: enum
    SelectEnemy,
    Action,
    Animate,
+   DiceRoll,
 }
 
 Tile :: enum
@@ -366,6 +440,7 @@ Bee :: struct {
     using base : Character,
     type : BeeType,
     flags : BeeFlags,
+    state: BeeState,
 }
 
 BeeAction :: enum
@@ -376,6 +451,12 @@ BeeAction :: enum
     CrawlTowards,
     CrawlAway,
     Sting,
+}
+
+BeeState :: enum{
+    Idle,
+    Moving,
+    Attacking,
 }
 
 BeeActionPriority_Aggressive :: [BeeAction]int{
@@ -500,28 +581,38 @@ bee_action_select :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
             // Fly's 2 blocks towards player, if path overlaps player, alert!
             bee.flags |= {.Flying}
             bee_action_move_towards(bee, player, 2)
+            bee_set_move_anim(bee)
         case .FlyAway:
             // Fly 2 blocks away from player, try to avoid walls
             bee.flags |= {.Flying}
             bee_action_move_away(bee, player, 2)
+            bee_set_move_anim(bee)
         case .CrawlTowards:
             // crawl towards player, if path overlaps player, alert!
             bee.flags ~= {.Flying}
             bee_action_move_towards(bee, player, 1)
+            bee_set_move_anim(bee)
         case .CrawlAway:
             // crawl away from player, if path overlaps player, alert!
             bee.flags ~= {.Flying}
             bee_action_move_away(bee, player, 1)
+            bee_set_move_anim(bee)
         case .Sting:
             // If player is near, attack! else do nuffin
-            bee_action_attack(bee, player)
+            bee.state = .Attacking
+            bee.flags += {.Animate}
+            // bee_action_attack(bee, player)
     }
+    // move_entity_to_tile(bee.entity, g_level.grid_scale, bee.pos)
+}
+
+bee_set_move_anim :: proc(bee: ^Bee){
     bee.anim.timer = 1
     bee.anim.rot_timer = .5
     bee.c_flags = {.Walk}
     bee.flags += {.Animate}
+    bee.state = .Moving
     set_up_character_anim(bee, g_level.grid_scale)
-    // move_entity_to_tile(bee.entity, g_level.grid_scale, bee.pos)
 }
 
 bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int){
@@ -566,12 +657,12 @@ bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int){
     }
 }
 
-bee_action_attack :: proc(bee : ^Bee, player : ^Player){
+bee_action_attack :: proc(bee : ^Bee, player : ^Player, dmg : i8){
     dist := dist_grid(bee.pos, player.pos)
     if dist <= 1 {
         if .PlayerDodge in bee.flags {
             acc := 7 + 2 * i8(.PlayerHyperAlert in bee.flags)
-            if acc < dice_rolls(){
+            if acc < dmg{
                 player.health -= 1
                 fmt.println("Player Died")
             }
@@ -672,6 +763,28 @@ dice_rolls :: proc() -> i8 {
    d2 := rand.int31() % 6 + 1
    fmt.printf("Dice rolls: %d + %d = %d\n", d1, d2, d1 + d2)
    return i8(d1 + d2)
+}
+
+start_dice_roll :: proc() {
+    for &d in g_dice {
+        d.time.curr = 0
+        d.interval.curr = 0
+        d.num = i8(rand.int31() % 6 + 1)  // Initial random
+        gc := get_component(d.entity, Cmp_Gui)
+        if gc != nil {
+            gc.alpha = 1.0  // Show dice
+            gc.align_min = f32(one_sixth * f64(d.num - 1))  // Set initial face
+            update_gui(gc)
+        }
+    }
+}
+
+hide_dice :: proc() {
+    for d in g_dice {
+        gc := get_component(d.entity, Cmp_Gui)
+        if gc != nil { gc.alpha = 0.0 }
+        update_gui(gc)
+    }
 }
 
 place_chest_on_grid :: proc(pos : vec2, lvl : ^Level)
@@ -993,7 +1106,7 @@ ToggleUI :: proc(name : string, on : bool)
 
 TogglePlayerTurnUI :: proc(state : ^PlayerTurnState)
 {
-    switch state^{
+    #partial switch state^{
         case .SelectAction:
             ToggleUI("SelectAction", false)
             ToggleUI("MoveWASD", false)
@@ -1501,7 +1614,6 @@ hide_visuals :: proc(visuals : ^Cmp_Visual, flags : VisualFlags)
     // Remove the specified flags from the visual component
     visuals.flags -= flags
 }
-
 // curr_max_union
 cmu :: struct #raw_union{
     using _: struct{
@@ -1518,6 +1630,7 @@ CurrMax :: struct #raw_union {
         max: f32,
     },
 }
+
 Dice :: struct {
     num : i8,
     time : cmu,
