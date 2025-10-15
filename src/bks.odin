@@ -1501,3 +1501,54 @@ hide_visuals :: proc(visuals : ^Cmp_Visual, flags : VisualFlags)
     // Remove the specified flags from the visual component
     visuals.flags -= flags
 }
+
+// curr_max_union
+cmu :: struct #raw_union{
+    using _: struct{
+        curr:f32,
+        max:f32,
+    },
+    _: [2]f32,
+}
+
+CurrMax :: struct #raw_union {
+    using _: [2]f32,
+    using _: struct {
+        curr: f32,
+        max: f32,
+    },
+}
+Dice :: struct {
+    num : i8,
+    time : cmu,
+    interval : cmu,
+    entity : Entity,
+}
+one_sixth := 1.0/6.0
+dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
+    for &d in dice{
+        d.time.curr += dt
+        d.interval.curr += dt
+
+        if(d.time.curr > d.time.max)
+        {
+            // Exit out change state etc...
+            d.time.curr = 0
+            return
+        }
+
+        if(d.interval.curr > d.interval.max)
+        {
+            //reset interval... switch dice num
+            d.interval.curr = 0
+            prev_num := d.num
+            d.num = i8(rand.int31() % 6 + 1)
+            if d.num == prev_num do d.num = (d.num + 1 % 6) + 1
+
+            //set dice face
+            icon := get_component(d.entity, Cmp_Gui)
+            icon.align_min = f32(one_sixth * f64(d.num - 1))
+            update_gui(icon)
+        }
+    }
+}
