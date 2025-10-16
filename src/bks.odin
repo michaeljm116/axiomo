@@ -22,6 +22,7 @@ g_state : GameState = .Start
 g_current_bee: int = 0
 g_level :Level
 g_dice :  [2]Dice
+g_saftey_bee : Bee
 
 Grid :: [][]Tile
 Level :: struct
@@ -35,7 +36,13 @@ Level :: struct
     grid_scale : vec2f,
     grid_weapons : [dynamic]WeaponGrid,
 }
-
+prestart :: proc()
+{
+    g_saftey_bee = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
+    tc := get_component(g_saftey_bee.entity, Cmp_Transform)
+    tc.global.pos.y = 100000000000000.0
+    add_component(g_saftey_bee.entity, Cmp_Visual{})
+}
 //----------------------------------------------------------------------------\\
 // /Start UP
 //----------------------------------------------------------------------------\\
@@ -102,7 +109,7 @@ destroy_level1 :: proc() {
     for b in g_level.bees {
         vc := get_component(b.entity, Cmp_Visual)
         if vc != nil do destroy_visuals(vc)
-        delete_parent_node(b.entity)
+        if(entity_exists(b.entity)) do delete_parent_node(b.entity)
     }
     for gw in g_level.grid_weapons do delete_parent_node(gw.chest)
     destroy_arenas()
@@ -1354,6 +1361,7 @@ MenuAnimStatus :: enum{
 
 app_start :: proc()
 {
+    prestart()
     init_GameUI(&gui, game_mem.alloc)
     // start_game()
     ToggleUI("Title", true)

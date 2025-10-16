@@ -27,42 +27,42 @@ World :: ecs.World
 // /ECS
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
-create_world :: proc() -> ^World {
+create_world :: #force_inline proc() -> ^World {
      return ecs.create_world()// track_alloc.backing)
 }
-delete_world :: proc(){
+delete_world :: #force_inline proc(){
 	//context.allocator = track_alloc.backing
 	ecs.delete_world(g_world)
 }
 // Entity management
-add_entity :: proc() -> ecs.EntityID {
+add_entity :: #force_inline proc() -> ecs.EntityID {
 	return ecs.add_entity(g_world)
 }
 
-remove_entity :: proc(entity: ecs.EntityID){
+remove_entity :: #force_inline proc(entity: ecs.EntityID){
     ecs.remove_entity(g_world, entity)
 }
 // Component management
-add_component :: proc(entity: ecs.EntityID, component: $T) {
+add_component :: #force_inline proc(entity: ecs.EntityID, component: $T) {
     // prev_alloc := context.allocator
     // defer context.allocator = prev_alloc
     // context.allocator = track_alloc.backing
 	ecs.add_component(g_world, entity, component)
 }
 
-remove_component :: proc(entity: ecs.EntityID, $T: typeid){
+remove_component :: #force_inline proc(entity: ecs.EntityID, $T: typeid){
     // prev_alloc := context.allocator
     // defer context.allocator = prev_alloc
     // context.allocator = track_alloc.backing
     ecs.remove_component(g_world, entity, typeid)
 }
 
-entity_exists :: proc(entity: ecs.EntityID) -> bool {
+entity_exists :: #force_inline proc(entity: ecs.EntityID) -> bool {
     return ecs.entity_exists(g_world, entity)
 }
 
 // Query system
-query :: proc(terms: ..ecs.Term) -> []^ecs.Archetype {
+query :: #force_inline proc(terms: ..ecs.Term) -> []^ecs.Archetype {
     // prev_alloc := context.allocator
     // defer context.allocator = prev_alloc
     // context.allocator = track_alloc.backing
@@ -76,11 +76,11 @@ get_table :: proc {
 	get_table_pair,
 }
 
-get_table_same :: proc(archetype: ^ecs.Archetype, $Component: typeid) -> []Component {
+get_table_same :: #force_inline proc(archetype: ^ecs.Archetype, $Component: typeid) -> []Component {
 	return ecs.get_table_same(g_world, archetype, Component)
 }
 
-get_table_cast :: proc(
+get_table_cast :: #force_inline proc(
 	archetype: ^ecs.Archetype,
 	$Component: typeid,
 	$CastTo: typeid,
@@ -88,7 +88,7 @@ get_table_cast :: proc(
 	return ecs.get_table_cast(g_world, archetype, Component, CastTo)
 }
 
-get_table_pair :: proc(archetype: ^ecs.Archetype, pair: ecs.PairType($R, $T)) -> []R {
+get_table_pair :: #force_inline proc(archetype: ^ecs.Archetype, pair: ecs.PairType($R, $T)) -> []R {
 	return ecs.get_table_pair(g_world, archetype, pair)
 }
 
@@ -98,13 +98,13 @@ get_component :: proc {
 	get_component_pair,
 }
 
-get_component_same :: proc(entity: Entity, $Component: typeid) -> ^Component {
+get_component_same :: #force_inline proc(entity: Entity, $Component: typeid) -> ^Component {
 	return ecs.get_component_same(g_world, entity, Component)
 }
-get_component_cast :: proc(entity: Entity, $Component: typeid, $CastTo: typeid) -> ^CastTo {
+get_component_cast :: #force_inline proc(entity: Entity, $Component: typeid, $CastTo: typeid) -> ^CastTo {
 	return ecs.get_component_cast(g_world, entity, Component, CastTo)
 }
-get_component_pair :: proc(entity: Entity, pair: ecs.PairType($R, $T)) -> ^R {
+get_component_pair :: #force_inline proc(entity: Entity, pair: ecs.PairType($R, $T)) -> ^R {
 	return ecs.get_component_pair(g_world, entity, pair)
 }
 
@@ -113,15 +113,15 @@ has :: proc {
 	has_pair,
 }
 
-has_typeid :: proc(component: typeid) -> ecs.Term {
+has_typeid :: #force_inline proc(component: typeid) -> ecs.Term {
 	return ecs.has(component)
 }
 
-has_pair :: proc(p: $P/ecs.PairType) -> ecs.Term {
+has_pair :: #force_inline proc(p: $P/ecs.PairType) -> ecs.Term {
 	return ecs.has(p)
 }
 
-end_ecs :: proc() {
+end_ecs :: #force_inline proc() {
 	ecs.delete_world(g_world)
 }
 
@@ -130,11 +130,11 @@ has_component :: proc {
 	has_component_instance,
 }
 
-has_component_type :: proc(entity: Entity, $T: typeid) -> bool {
+has_component_type :: #force_inline proc(entity: Entity, $T: typeid) -> bool {
     return ecs.has_component_type(g_world, entity, T)
 }
 
-has_component_instance :: proc(entity: Entity, component: $T) -> bool {
+has_component_instance :: #force_inline proc(entity: Entity, component: $T) -> bool {
     return ecs.has_component_instance(g_world, entity, component)
 }
 
@@ -142,10 +142,10 @@ has_component_instance :: proc(entity: Entity, component: $T) -> bool {
 // /Internal helpers
 //----------------------------------------------------------------------------\\
 
-get_material :: proc(i: i32) -> ^resource.Material {
+get_material :: #force_inline proc(i: i32) -> ^resource.Material {
 	return &g_materials[i]
 }
-get_material_index :: proc(id: i32) -> i32 {
+get_material_index :: #force_inline proc(id: i32) -> i32 {
 	for m, i in g_materials {
 		if (m.unique_id == id) {
 			return i32(i)
@@ -154,7 +154,7 @@ get_material_index :: proc(id: i32) -> i32 {
 	return 1
 }
 
-map_sqt :: proc(sqt : resource.Sqt) -> Sqt{
+map_sqt :: #force_inline proc(sqt : resource.Sqt) -> Sqt{
     return Sqt{
         pos = sqt.pos,
         rot = sqt.rot,
@@ -162,12 +162,12 @@ map_sqt :: proc(sqt : resource.Sqt) -> Sqt{
     }
 }
 
-map_vec2f :: proc(vec : scene.Vector2) -> vec2f{
+map_vec2f :: #force_inline proc(vec : scene.Vector2) -> vec2f{
     return vec2f{vec.x, vec.y}
 }
 
 map_gui :: proc{map_sc_gui_to_gui_cmp, map_gui_cmp_to_sc_gui}
-map_sc_gui_to_gui_cmp :: proc(gui : scene.Gui) -> Cmp_Gui{
+map_sc_gui_to_gui_cmp :: #force_inline proc(gui : scene.Gui) -> Cmp_Gui{
     return Cmp_Gui{
         align_ext = map_vec2f(gui.AlignExt),
         align_min = map_vec2f(gui.Alignment),
@@ -176,7 +176,7 @@ map_sc_gui_to_gui_cmp :: proc(gui : scene.Gui) -> Cmp_Gui{
         id = gui.Texture.Name
     }
 }
-map_gui_cmp_to_sc_gui :: proc(cmp: Cmp_Gui) -> scene.Gui {
+map_gui_cmp_to_sc_gui :: #force_inline proc(cmp: Cmp_Gui) -> scene.Gui {
     return scene.Gui{
         AlignExt = scene.Vector2{x = cmp.align_ext.x, y = cmp.align_ext.y},
         Alignment = scene.Vector2{x = cmp.align_min.x, y = cmp.align_min.y},
@@ -186,7 +186,7 @@ map_gui_cmp_to_sc_gui :: proc(cmp: Cmp_Gui) -> scene.Gui {
     }
 }
 
-save_ui_prefab :: proc(entity: Entity, filename: string) {
+save_ui_prefab :: #force_inline proc(entity: Entity, filename: string) {
     nc := get_component(entity, Cmp_Node)
     gc := get_component(entity, Cmp_Gui)
     if nc == nil || gc == nil {

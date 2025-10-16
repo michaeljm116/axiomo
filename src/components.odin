@@ -532,11 +532,8 @@ get_last_sibling :: proc(node : ^Cmp_Node) -> ^Cmp_Node{
 remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
     parent_node := get_component(parent_entity, Cmp_Node)
     if parent_node == nil do return
-
-
     child_node := get_component(child_entity, Cmp_Node)
     if child_node == nil do return
-
 
     // Check if this is the first child
     if parent_node.child == child_entity {

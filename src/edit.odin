@@ -259,14 +259,22 @@ handle_destroy_mode :: proc()
     if !destroy_mode do return
 
     if is_key_just_pressed(glfw.KEY_SPACE) {
-        selected_destroy = load_prefab("Froku")
-        set_entity_on_tile(g_floor, selected_destroy, g_level, grid_pos_x, grid_pos_y)
-        fmt.printf("Placed %s at (%d, %d)\n", selected_destroy, grid_pos_x, grid_pos_y)
+        destroy_level1()
+        // for b in g_level.bees {
+        // vc := get_component(b.entity, Cmp_Visual)
+        // if vc != nil do destroy_visuals(vc)
+        // delete_parent_node(b.entity)
+        // }
+        
+        // selected_destroy = load_prefab("Froku")
+        // set_entity_on_tile(g_floor, selected_destroy, g_level, grid_pos_x, grid_pos_y)
+        // fmt.printf("Placed %s at (%d, %d)\n", selected_destroy, grid_pos_x, grid_pos_y)
     }
 
     if is_key_just_pressed(glfw.KEY_ENTER)
     {
-        delete_parent_node(selected_destroy)
+        start_level1(level_mem.alloc)
+        // delete_parent_node(selected_destroy)
         // child := get_component(selected_destroy,Cmp_Node).child
         // child_node := get_component(child,Cmp_Node)
         // child = child_node.child

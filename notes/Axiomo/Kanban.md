@@ -6,12 +6,8 @@ kanban-plugin: board
 
 ## TODO
 
-- [ ] Correct The Character Rotations
 - [ ] Current weapon with stats
-- [ ] Character Animations for: Weapon pickup
 - [ ] Bee Animations for Attack, Idle, Fly
-- [ ] Fix Bee Model
-- [ ] Shrink Bee size
 - [ ] Some Kind of Weapons UI
 - [ ] Some Kind of Abilities UI
 - [ ] Fix Rendering issue of smooth normals
@@ -23,18 +19,23 @@ kanban-plugin: board
 - [ ] Gaussian blurry b
 - [ ] Fix animations please
 - [ ] BUG: back button
+- [ ] Character Animations for: Weapon pickup
+- [ ] Fix Bee Model
+- [ ] Fix Memory: Currently if you delete bee's, because they also have Cmp Visual, you'll be deleting also an archetype on the destorying of level. To mitigate this you added a g_safety_bee which saves you from destroying the archetype until only at the end.
 
 
 ## In Progress
 
 - [ ] Fix memory/ecs/load-destroybugs
-- [ ] Chest Opening animation
+- [ ] Shrink Bee size
 
 
 ## QA
 
 - [ ] Beginning Middle End Loop
 - [ ] Dice visualized
+- [ ] Correct The Character Rotations
+- [ ] Chest Opening animation
 
 
 ## Complete
