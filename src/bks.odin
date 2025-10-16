@@ -523,8 +523,8 @@ deck_init :: proc(deck : ^BeeDeck, size : int = 36)
     for i in 0..<deck.CrawlAway.freq do append(&temp_deck, BeeAction.CrawlAway)
     for i in 0..<deck.Sting.freq do append(&temp_deck, BeeAction.Sting)
 
-    queue.init(&deck.deck, 36)
-    queue.init(&deck.discard, 36)
+    queue.init(&deck.deck, 36, level_mem.alloc)
+    queue.init(&deck.discard, 36, level_mem.alloc)
     deck_shuffle(&temp_deck)
     for c in temp_deck{
         queue.push_front(&deck.deck, c)
