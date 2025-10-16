@@ -113,7 +113,7 @@ delete_world :: proc(world: ^World) {
 	}
 
 	for _, archetype in world.archetypes {
-		delete_archetype(archetype, false)
+		delete_archetype(archetype)
 	}
 	delete(world.component_info)
 	delete(world.info_component)
@@ -675,64 +675,26 @@ get_or_create_archetype :: proc(
 	return archetype
 }
 
-delete_archetype :: proc(archetype: ^Archetype, cleanup_edges := true) {
+delete_archetype :: proc(archetype: ^Archetype) {
 	if archetype == nil {
 		return
 	}
 
-	if cleanup_edges {
-		// Clean add_edges neighbors
-		for _, other_archetype in archetype.add_edges {
-			// Collect keys for add_edges
-			add_keys: [dynamic]ComponentID
-			defer delete(add_keys)
-			for key, a in other_archetype.add_edges {
-				if a.id == archetype.id {
-					append(&add_keys, key)
-				}
-			}
-			for key in add_keys {
-				delete_key(&other_archetype.add_edges, key)
-			}
-
-			// Collect keys for remove_edges
-			remove_keys: [dynamic]ComponentID
-			defer delete(remove_keys)
-			for key, a in other_archetype.remove_edges {
-				if a.id == archetype.id {
-					append(&remove_keys, key)
-				}
-			}
-			for key in remove_keys {
-				delete_key(&other_archetype.remove_edges, key)
-			}
+	for _, other_archetype in archetype.add_edges {
+		for key, a in other_archetype.add_edges {
+			if a.id == archetype.id do delete_key(&other_archetype.add_edges, key)
 		}
+		for key, a in other_archetype.remove_edges {
+			if a.id == archetype.id do delete_key(&other_archetype.remove_edges, key)
+		}
+	}
 
-		// Clean remove_edges neighbors
-		for _, other_archetype in archetype.remove_edges {
-			// Collect keys for add_edges
-			add_keys: [dynamic]ComponentID
-			defer delete(add_keys)
-			for key, a in other_archetype.add_edges {
-				if a.id == archetype.id {
-					append(&add_keys, key)
-				}
-			}
-			for key in add_keys {
-				delete_key(&other_archetype.add_edges, key)
-			}
-
-			// Collect keys for remove_edges
-			remove_keys: [dynamic]ComponentID
-			defer delete(remove_keys)
-			for key, a in other_archetype.remove_edges {
-				if a.id == archetype.id {
-					append(&remove_keys, key)
-				}
-			}
-			for key in remove_keys {
-				delete_key(&other_archetype.remove_edges, key)
-			}
+	for _, other_archetype in archetype.remove_edges {
+		for key, a in other_archetype.add_edges {
+			if a.id == archetype.id do delete_key(&other_archetype.add_edges, key)
+		}
+		for key, a in other_archetype.remove_edges {
+			if a.id == archetype.id do delete_key(&other_archetype.remove_edges, key)
 		}
 	}
 
