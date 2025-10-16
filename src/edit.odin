@@ -259,13 +259,13 @@ handle_destroy_mode :: proc()
     if !destroy_mode do return
 
     if is_key_just_pressed(glfw.KEY_SPACE) {
-        destroy_level1()
+        set_game_over()
         // for b in g_level.bees {
         // vc := get_component(b.entity, Cmp_Visual)
         // if vc != nil do destroy_visuals(vc)
         // delete_parent_node(b.entity)
         // }
-        
+
         // selected_destroy = load_prefab("Froku")
         // set_entity_on_tile(g_floor, selected_destroy, g_level, grid_pos_x, grid_pos_y)
         // fmt.printf("Placed %s at (%d, %d)\n", selected_destroy, grid_pos_x, grid_pos_y)
@@ -273,7 +273,7 @@ handle_destroy_mode :: proc()
 
     if is_key_just_pressed(glfw.KEY_ENTER)
     {
-        start_level1(level_mem.alloc)
+        set_game_start()
         // delete_parent_node(selected_destroy)
         // child := get_component(selected_destroy,Cmp_Node).child
         // child_node := get_component(child,Cmp_Node)
@@ -292,7 +292,7 @@ handle_destroy_mode :: proc()
         // else do fmt.println("CONTGRATS ITS GONE")
     }
 
-    if is_key_just_pressed(glfw.KEY_A) do grid_pos_x -= 1
+    if is_key_just_pressed(glfw.KEY_A) do g_level.player.health = 0
     if is_key_just_pressed(glfw.KEY_D) do grid_pos_x += 1
     if is_key_just_pressed(glfw.KEY_W) do grid_pos_y += 1
     if is_key_just_pressed(glfw.KEY_S) do grid_pos_y -= 1

@@ -135,11 +135,11 @@ main :: proc() {
 		g_frame.delta_time = f32(frame_time)
 		g_frame.physics_acc_time += f32(frame_time)
 		for g_frame.physics_acc_time >= f32(g_frame.physics_time_step) {
-			gameplay_update(f32(g_frame.physics_time_step))
 			sys_visual_process_ecs(f32(g_frame.physics_time_step))
 			sys_anim_process_ecs(f32(g_frame.physics_time_step))
 			sys_trans_process_ecs()
 			sys_bvh_process_ecs(g_bvh, per_frame_alloc)
+			gameplay_update(f32(g_frame.physics_time_step))
 			mem.arena_free_all(&per_frame_arena)
 			g_frame.physics_acc_time -= f32(g_frame.physics_time_step)
 		}

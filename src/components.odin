@@ -1114,6 +1114,7 @@ flatten_entity :: proc(e : Entity)
     first_node := get_component(e, Cmp_Node)
     bfg : Cmp_BFGraph
     q : queue.Queue(Entity)
+    queue.init(&q,20, context.temp_allocator)
     index := 0
     queue.push(&q, first_node.child)
     len :u32= 0
