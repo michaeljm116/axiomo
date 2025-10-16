@@ -272,17 +272,24 @@ update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
         }
 
     case .Attacking:
-        dice_roll_vis(&g_dice, dt)
-        all_done := true
-        for d in g_dice {
-            if d.time.curr >= d.time.max + 2{
-                dmg := g_dice.x.num + g_dice.y.num
-                bee_action_attack(bee, player, dmg)
-                hide_dice()
-                bee.state = .Idle
-                bee.flags -= {.Animate}
-                return
+        if .PlayerDodge in bee.flags || .PlayerHyperAlert in bee.flags{
+            dice_roll_vis(&g_dice, dt)
+            all_done := true
+            for d in g_dice {
+                if d.time.curr >= d.time.max + 2{
+                    dmg := g_dice.x.num + g_dice.y.num
+                    bee_action_attack(bee, player, dmg)
+                    hide_dice()
+                    bee.state = .Idle
+                    bee.flags -= {.Animate}
+                    return
+                }
             }
+        }
+        else {
+            bee_action_attack(bee, player, 20)
+            bee.state = .Idle
+            bee.flags -= {.Animate}
         }
     }
 }
@@ -593,12 +600,15 @@ bee_action_select :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
             bee_set_move_anim(bee)
         case .Sting:
             // If player is near, attack! else do nuffin
-            bee.state = .Attacking
-            bee.flags += {.Animate}
-            start_dice_roll()
+            if bee_near(player^, bee^) && .Alert in bee.flags{
+                bee.state = .Attacking
+                bee.flags += {.Animate}
+                start_dice_roll()
+            }
             // bee_action_attack(bee, player)
     }
     // move_entity_to_tile(bee.entity, g_level.grid_scale, bee.pos)
+    // if bee is hovering player, turn on alert
 }
 
 bee_set_move_anim :: proc(bee: ^Bee){
@@ -623,7 +633,10 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int)
     }
     else // Less than or equal to target distance, alert!
     {
+        vc := get_component(bee.entity, Cmp_Visual)
+        vc.flags |= {.Alert}
         bee.flags |= {.Alert}
+
         if dist == target_dist {
             path := a_star_find_path(bee.pos, player.pos)
             if len(path) > 1 do bee.target = path[1]
@@ -653,12 +666,12 @@ bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int){
     }
 }
 
-bee_action_attack :: proc(bee : ^Bee, player : ^Player, dmg : i8){
+bee_action_attack :: proc(bee : ^Bee, player : ^Player, tot : i8){
     dist := dist_grid(bee.pos, player.pos)
     if dist <= 1 {
         if .PlayerDodge in bee.flags {
             acc := 7 + 2 * i8(.PlayerHyperAlert in bee.flags)
-            if acc < dmg{
+            if acc < tot{
                 player.health -= 1
                 fmt.println("Player Died")
             }
@@ -831,12 +844,12 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerTurnState)
     }
 
     //move_entity_to_tile(g_player, g_level.grid_scale, p.pos)
-    if weap_check(p.pos, &g_level.grid) {
+    if weap_check(p.target, &g_level.grid) {
         pick_up_weapon(p, g_level.weapons)
 
         //check for chest
         for weap in g_level.grid_weapons{
-            if p.pos == weap.pos do animate_chest(weap.chest)
+            if p.target == weap.pos do animate_chest(weap.chest)
         }
     }
 }

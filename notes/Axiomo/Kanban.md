@@ -7,7 +7,6 @@ kanban-plugin: board
 ## TODO
 
 - [ ] Correct The Character Rotations
-- [ ] Chest Opening animation
 - [ ] Current weapon with stats
 - [ ] Character Animations for: Weapon pickup
 - [ ] Bee Animations for Attack, Idle, Fly
@@ -21,7 +20,6 @@ kanban-plugin: board
 - [ ] Selectable UI System
 - [ ] Theme song
 - [ ] Integrate editor into your project
-- [ ] BEGINNING SCREEN HURRY
 - [ ] Gaussian blurry b
 - [ ] Fix animations please
 - [ ] BUG: back button
@@ -30,6 +28,7 @@ kanban-plugin: board
 ## In Progress
 
 - [ ] Fix memory/ecs/load-destroybugs
+- [ ] Chest Opening animation
 
 
 ## QA
@@ -49,6 +48,7 @@ kanban-plugin: board
 - [x] D for Dodge over Bee
 - [x] F for Focus Over bee
 - [x] ! For Alert
+- [x] BEGINNING SCREEN HURRY
 - [x] UI System For Player Turns
 - [x] UI System For Player Turns
 - [x] Weapons? Where did they go?
