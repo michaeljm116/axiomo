@@ -146,34 +146,34 @@ tweak_game_UI :: proc(e : Entity) {
 
 
 chest_mode := false
-chest_index := 0
-selected_chest : Entity
-handle_chest_mode :: proc()
-{
-    if is_key_just_pressed(glfw.KEY_F2) {  // Or any special key
-        chest_mode = !chest_mode
-        if chest_mode do fmt.println("Entered Chest Edit Mode")
-        else do fmt.println("Exited Chest Edit Mode")
-    }
-    if !chest_mode do return
+// chest_index := 0
+// selected_chest : Entity
+// handle_chest_mode :: proc()
+// {
+//     if is_key_just_pressed(glfw.KEY_F2) {  // Or any special key
+//         chest_mode = !chest_mode
+//         if chest_mode do fmt.println("Entered Chest Edit Mode")
+//         else do fmt.println("Exited Chest Edit Mode")
+//     }
+//     if !chest_mode do return
 
-    if is_key_just_pressed(glfw.KEY_TAB) {
-        chest_index = (chest_index + 1) % len(g_level.chests)
-        selected_chest = g_level.chests[chest_index]
-        fmt.printf("Selected Chest: %d\n", chest_index)
-    }
-    tc := get_component(selected_chest, Cmp_Transform)
-    if tc == nil do return
-    move_speed: f32 = 0.1  // Common adjustment increment
-    if is_key_pressed(glfw.KEY_W) do tc.local.pos.z += move_speed
-    if is_key_pressed(glfw.KEY_S) do tc.local.pos.z -= move_speed
-    if is_key_pressed(glfw.KEY_A) do tc.local.pos.x -= move_speed
-    if is_key_pressed(glfw.KEY_D) do tc.local.pos.x += move_speed
-    if is_key_pressed(glfw.KEY_SPACE) do tc.local.pos.y += move_speed
-    if is_key_pressed(glfw.KEY_LEFT_SHIFT) do tc.local.pos.y -= move_speed
+//     if is_key_just_pressed(glfw.KEY_TAB) {
+//         chest_index = (chest_index + 1) % len(g_level.chests)
+//         selected_chest = g_level.chests[chest_index]
+//         fmt.printf("Selected Chest: %d\n", chest_index)
+//     }
+//     tc := get_component(selected_chest, Cmp_Transform)
+//     if tc == nil do return
+//     move_speed: f32 = 0.1  // Common adjustment increment
+//     if is_key_pressed(glfw.KEY_W) do tc.local.pos.z += move_speed
+//     if is_key_pressed(glfw.KEY_S) do tc.local.pos.z -= move_speed
+//     if is_key_pressed(glfw.KEY_A) do tc.local.pos.x -= move_speed
+//     if is_key_pressed(glfw.KEY_D) do tc.local.pos.x += move_speed
+//     if is_key_pressed(glfw.KEY_SPACE) do tc.local.pos.y += move_speed
+//     if is_key_pressed(glfw.KEY_LEFT_SHIFT) do tc.local.pos.y -= move_speed
 
-    fmt.println("Chest Position :", tc.local.pos)
-}
+//     fmt.println("Chest Position :", tc.local.pos)
+// }
 
 player_edit_mode: bool = false
 selected_player_part_index: int = 0

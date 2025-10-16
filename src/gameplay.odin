@@ -102,10 +102,10 @@ gameplay_init :: proc() {
 
 gameplay_post_init :: proc()
 {
-    chest := g_level.chests[0]
-    chest2 := g_level.chests[1]
-    move_entity_to_tile(chest, g_level.grid_scale, vec2{2,0})
-    move_entity_to_tile(chest2, g_level.grid_scale, vec2{4,3})
+    // chest := g_level.chests[0]
+    // chest2 := g_level.chests[1]
+    // move_entity_to_tile(chest, g_level.grid_scale, vec2{2,0})
+    // move_entity_to_tile(chest2, g_level.grid_scale, vec2{4,3})
 }
 
 // Find the camera entity in the scene
@@ -130,7 +130,7 @@ gameplay_update :: proc(delta_time: f32) {
     if !entity_exists(g_player) do find_player_entity()
 
     handle_ui_edit_mode()
-    handle_chest_mode()
+    // handle_chest_mode()
     handle_player_edit_mode()
     handle_destroy_mode()
     if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode{

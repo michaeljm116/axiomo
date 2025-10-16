@@ -1126,6 +1126,7 @@ flatten_entity :: proc(e : Entity)
         assert(index < MAX_BONES)
         curr := queue.pop_front(&q)
         bfg.nodes[index] = curr
+        len += 1
         bfg.transforms[index] = get_component(curr, Cmp_Transform).local
         index += 1
 
@@ -1133,7 +1134,6 @@ flatten_entity :: proc(e : Entity)
         n := get_component(curr, Cmp_Node)
         if(n.child != 0){
             queue.push(&q,n.child)
-            len += 1
             cn := get_component(n.child, Cmp_Node)
             bro := cn.brotha
             for bro != 0{
