@@ -7,7 +7,6 @@ kanban-plugin: board
 ## TODO
 
 - [ ] Correct The Character Rotations
-- [ ] Dice visualized
 - [ ] Chest Opening animation
 - [ ] Current weapon with stats
 - [ ] Character Animations for: Weapon pickup
@@ -36,6 +35,7 @@ kanban-plugin: board
 ## QA
 
 - [ ] Beginning Middle End Loop
+- [ ] Dice visualized
 
 
 ## Complete

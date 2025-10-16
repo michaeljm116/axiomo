@@ -33,7 +33,7 @@ Level :: struct
     grid : Grid,
     grid_data : []Tile,
     grid_scale : vec2f,
-    chests : [dynamic]Entity,
+    grid_weapons : [dynamic]WeaponGrid,
 }
 
 //----------------------------------------------------------------------------\\
@@ -104,7 +104,7 @@ destroy_level1 :: proc() {
         if vc != nil do destroy_visuals(vc)
         delete_parent_node(b.entity)
     }
-    for c in g_level.chests do delete_parent_node(c)
+    for gw in g_level.grid_weapons do delete_parent_node(gw.chest)
     destroy_arenas()
 }
 
@@ -709,6 +709,11 @@ Weapon :: struct
     effect : StatusEffects,
 }
 
+WeaponGrid :: struct{
+   pos : vec2,
+   chest : Entity,
+}
+
 WeaponsDB :: [WeaponType]Weapon{
  .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 1}, ground = Attack{accuracy = 9, power = 2}, range = 2, effect = {.None}},
  .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 1}, ground = Attack{accuracy = 9, power = 2}, range = 2, effect = {.None}},
@@ -787,8 +792,8 @@ place_chest_on_grid :: proc(pos : vec2, lvl : ^Level)
 {
     chest := load_prefab("Chest")
     context.allocator = level_mem.alloc
-    append(&lvl.chests, chest)
     set_entity_on_tile(g_floor, chest, lvl^, pos.x, pos.y)
+    append(&lvl.grid_weapons, WeaponGrid{pos, chest})
 }
 
 //----------------------------------------------------------------------------\\
@@ -826,9 +831,13 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerTurnState)
     }
 
     //move_entity_to_tile(g_player, g_level.grid_scale, p.pos)
-
     if weap_check(p.pos, &g_level.grid) {
         pick_up_weapon(p, g_level.weapons)
+
+        //check for chest
+        for weap in g_level.grid_weapons{
+            if p.pos == weap.pos do animate_chest(weap.chest)
+        }
     }
 }
 
@@ -1213,6 +1222,13 @@ animate_run :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes
 animate_attack :: proc(ac : ^Cmp_Animation, prefab_name : string, a : AttackTimes ){
     set_animation(ac, a.stab_time, prefab_name, "stabStart", "stabEnd", AnimFlags{loop = true, force_start = true, force_end = false});
 }
+animate_chest :: proc(chest : Entity){
+   flatten_entity(chest)
+   display_flattened_entity(chest)
+   ac := animation_component_with_names(1,"Chest","","Open", AnimFlags{idPo = 0, loop = false, force_start = true, force_end = true})
+   add_component(chest, ac)
+   sys_anim_add(chest)
+}
 
 add_animation :: proc(c : ^Character, prefab : string)
 {
@@ -1227,7 +1243,6 @@ add_animation :: proc(c : ^Character, prefab : string)
     }
 
     flatten_entity(c.entity)
-    display_flattened_entity(c.entity)
     ac := animation_component_with_names(2,prefab, "idleStart", "idleEnd", AnimFlags{ idPo = 0, loop = true, force_start = true, force_end = true})
     add_component(c.entity, ac)
     sys_anim_add(c.entity)
