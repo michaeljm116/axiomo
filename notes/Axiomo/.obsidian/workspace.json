@@ -4,51 +4,78 @@
     "type": "split",
     "children": [
       {
-        "id": "88f991ba22053cdf",
-        "type": "tabs",
+        "id": "368990a19a46d539",
+        "type": "split",
         "children": [
           {
-            "id": "b47c04f3ca1234e3",
-            "type": "leaf",
-            "state": {
-              "type": "excalidraw",
-              "state": {
-                "file": "Excalidraw/PlayersTUrn.excalidraw.md"
+            "id": "88f991ba22053cdf",
+            "type": "tabs",
+            "dimension": 27.873563218390807,
+            "children": [
+              {
+                "id": "b47c04f3ca1234e3",
+                "type": "leaf",
+                "state": {
+                  "type": "excalidraw",
+                  "state": {
+                    "file": "Excalidraw/PlayersTUrn.excalidraw.md"
+                  },
+                  "icon": "excalidraw-icon",
+                  "title": "PlayersTUrn.excalidraw"
+                }
               },
-              "icon": "excalidraw-icon",
-              "title": "PlayersTUrn.excalidraw"
-            }
+              {
+                "id": "f88536f4a261db38",
+                "type": "leaf",
+                "state": {
+                  "type": "markdown",
+                  "state": {
+                    "file": "BeeKillingsInn/Refactor.md",
+                    "mode": "source",
+                    "source": false
+                  },
+                  "icon": "lucide-file",
+                  "title": "Refactor"
+                }
+              },
+              {
+                "id": "61bf7b15a66f7500",
+                "type": "leaf",
+                "state": {
+                  "type": "markdown",
+                  "state": {
+                    "file": "BeeKillingsInn/Menu system.md",
+                    "mode": "source",
+                    "source": false
+                  },
+                  "icon": "lucide-file",
+                  "title": "Menu system"
+                }
+              }
+            ],
+            "currentTab": 1
           },
           {
-            "id": "f88536f4a261db38",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "BeeKillingsInn/Visualizations!.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Visualizations!"
-            }
-          },
-          {
-            "id": "61bf7b15a66f7500",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "BeeKillingsInn/Menu system.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Menu system"
-            }
+            "id": "41c94a3c7d777996",
+            "type": "tabs",
+            "dimension": 72.12643678160919,
+            "children": [
+              {
+                "id": "663bab98dd640001",
+                "type": "leaf",
+                "state": {
+                  "type": "excalidraw",
+                  "state": {
+                    "file": "Excalidraw/Refactor.md"
+                  },
+                  "icon": "excalidraw-icon",
+                  "title": "Refactor"
+                }
+              }
+            ]
           }
         ],
-        "currentTab": 1
+        "direction": "horizontal"
       }
     ],
     "direction": "vertical"
@@ -198,8 +225,11 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "f88536f4a261db38",
+  "active": "663bab98dd640001",
   "lastOpenFiles": [
+    "BeeKillingsInn/Refactor.md",
+    "Excalidraw/Refactor.md",
+    "Excalidraw/Untitled.md",
     "BeeKillingsInn/Bugs.md",
     "Kanban.md",
     "BeeKillingsInn/Visualizations!.md",
@@ -213,7 +243,6 @@
     "BeeKillingsInn/Menu system.md",
     "BeeKillingsInn/Story.md",
     "Photos/BKS_Title.png",
-    "Excalidraw/Untitled.md",
     "Excalidraw/AnimationStates.excalidraw.md",
     "BeeKillingsInn/Bee Ideas.md",
     "BeeKillingsInn/Art Inspo.md",
@@ -229,13 +258,11 @@
     "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
     "Untitled Kanban.md",
     "Untitled Kanban 1.md",
-    "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
     "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",
     "Photos/sanctuary-high-view-2-768.YJKVAsU3_CIe1o.webp",
     "Photos/patio-2-768.BAhOe6xB_Bgvky.webp",
     "Photos/Pasted image 20250912152018.jpg",
     "Photos/Pasted image 20250912152008.jpg",
-    "Untitled.md",
     "Photos",
     "Excalidraw",
     "Untitled.base",
