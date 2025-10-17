@@ -260,7 +260,7 @@ update_player_movement :: proc(delta_time: f32)
 face_left :: proc(entity : Entity)
 {
     tc := get_component(entity, Cmp_Transform)
-    tc.local.rot = linalg.quaternion_angle_axis_f32(90, {0,1,0})
+    tc.local.rot = linalg.quaternion_angle_axis_f32(89.5, {0,1,0})
 }
 
 face_180 :: proc(entity : Entity)

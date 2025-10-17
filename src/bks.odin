@@ -1331,7 +1331,6 @@ slerp_character_angle :: proc(cha : ^Character, dt : f32)
 
     t := f64(1.0 - cha.anim.rot_timer)
     eased_t := math.smoothstep(0.0, 1.0, t)
-
     // Interpolate rotation (assumes vec4 quaternions; adjust if using quat128)
     ct.local.rot = linalg.quaternion_slerp(cha.anim.start_rot, cha.anim.end_rot, f32(eased_t))
 }
@@ -1375,7 +1374,7 @@ start_game :: proc()
     set_entity_on_tile(g_floor, g_player, g_level, g_level.player.pos.x, g_level.player.pos.y)
     for bee in g_level.bees{
         set_entity_on_tile(g_floor, bee.entity, g_level, bee.pos.x, bee.pos.y)
-        face_right(bee.entity)
+        // face_left(bee.entity)
     }
 
     place_chest_on_grid(vec2{2,0}, &g_level)
