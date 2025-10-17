@@ -205,6 +205,7 @@ run_players_turn :: proc(state : ^PlayerTurnState, game_state : ^GameState, play
             else if is_key_just_pressed(glfw.KEY_F){
                 if .PlayerFocused in bees[bee_selection^].flags do bees[bee_selection^].flags |= {.PlayerHyperFocused}
                 bees[bee_selection^].flags |= {.PlayerFocused}
+                bees[bee_selection^].added |= {.PlayerFocused}
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
 
@@ -448,6 +449,8 @@ Bee :: struct {
     using base : Character,
     type : BeeType,
     flags : BeeFlags,
+    removed : BeeFlags,
+    added : BeeFlags,
     state: BeeState,
 }
 
@@ -1709,6 +1712,122 @@ dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
             icon.align_min.x = f32(one_sixth * f64(d.num - 1))
             icon.align_min.y = 0.0
             update_gui(icon)
+        }
+    }
+}
+
+
+//----------------------------------------------------------------------------\\
+// /ves VISUAL EVENT SYSTEM
+//----------------------------------------------------------------------------\\
+VES_Screen :: enum
+{
+    None,
+    SelectAction,
+    Movement,
+    SelectEnemy,
+    Action,
+    DiceRoll,
+}
+
+VES_Dice :: enum{
+    Start,
+    Update,
+    End,
+}
+
+VES_Animate :: enum
+{
+    Start,
+    Update,
+    End,
+}
+
+VisualEventData :: struct
+{
+   curr_screen : VES_Screen,
+   prev_screen : VES_Screen,
+   dice_state : VES_Dice,
+   anim_state : VES_Animate
+}
+ves : VisualEventData
+
+// When a screen is turned off or on, update it accordingly
+ves_update_screen :: proc(){
+    if ves.prev_screen != ves.curr_screen{
+        //First turn off all screen
+        switch ves.prev_screen{
+            case .None: break
+            case .SelectAction:
+                ToggleUI("Move", false)
+                ToggleUI("EnemySelect", false)
+            case .SelectEnemy:
+                ToggleUI("ChooseBee", false)
+                ToggleUI("SelectAction", false)
+            case .Movement:
+                ToggleUI("MoveWASD", false)
+            case .Action:
+                ToggleUI("Attack", false)
+                ToggleUI("Focus", false)
+                ToggleUI("Dodge", false)
+            case .DiceRoll:
+                ToggleUI("Dice", false)
+        }
+        //Then turn new screen
+        switch ves.curr_screen{
+            case .None: break
+            case .SelectAction:
+                ToggleUI("Move", true)
+                ToggleUI("EnemySelect", true)
+            case .SelectEnemy:
+                ToggleUI("ChooseBee", true)
+                ToggleUI("SelectAction", true)
+            case .Movement:
+                ToggleUI("MoveWASD", true)
+            case .Action:
+                ToggleUI("Attack", true)
+                ToggleUI("Focus", true)
+                ToggleUI("Dodge", true)
+            case .DiceRoll:
+                ToggleUI("Dice", true)
+        }
+        // Finally, make them equal
+        ves.prev_screen = ves.curr_screen
+    }
+}
+
+ves_update_dice :: proc(){
+    switch ves.dice_state{
+    case .Start:
+        ves.curr_screen = .DiceRoll
+        start_dice_roll()
+        ves.dice_state = .Update
+    case .Update:
+        dice_roll_vis(&g_dice, f32(g_frame.physics_time_step))
+        for d in g_dice {
+            if d.time.curr >= d.time.max + 1 do ves.dice_state = .End
+        }
+    case .End:
+        break;
+    }
+}
+
+ves_update_visuals :: proc(lvl : ^Level)
+{
+    for &b in lvl.bees{
+        if .PlayerFocused in b.added{
+            b.added -= {.PlayerFocused}
+            b.flags += {.PlayerFocused}
+
+            vc := get_component(b.entity, Cmp_Visual)
+            vc.flags += {.Focus}
+        }
+        if .PlayerFocused in b.removed{
+            b.removed -= {.PlayerFocused}
+            b.flags -= {.PlayerFocused}
+
+            vc := get_component(b.entity, Cmp_Visual)
+            vc.flags -= {.Focus}
         }
     }
 }
