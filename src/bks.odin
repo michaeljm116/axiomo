@@ -1737,17 +1737,18 @@ VES_Screen :: enum
     DiceRoll,
 }
 
-VES_Dice :: enum{
+VES_State :: enum{
     Start,
     Update,
-    End,
+    Finished,
 }
 
 VisualEventData :: struct
 {
    curr_screen : VES_Screen,
    prev_screen : VES_Screen,
-   dice_state : VES_Dice,
+   dice_state : VES_State,
+   anim_state : VES_State
 }
 ves : VisualEventData
 
@@ -1814,7 +1815,7 @@ ves_update_dice :: proc(){
         for d in g_dice {
             if d.time.curr >= d.time.max + 1 do ves.dice_state = .End
         }
-    case .End:
+    case .Finished:
         break;
     }
 }
@@ -1823,12 +1824,17 @@ ves_update_animations :: proc(lvl : ^Level, dt : f32)
 {
     for &b in lvl.bees{
         if .Animate in b.added{
+            ves.anim_state = .Start
             set_up_character_anim(&b.base, lvl.grid_scale)
             b.added -= {.Animate}
             b.flags += {.Animate}
         }
-        if .Animate in b.flags do if !ves_animate_bee(&b,dt) do b.removed += {.Animate}
-        if .Animate in b.removed{
+        else if .Animate in b.flags do if !ves_animate_bee(&b,dt){
+            ves.anim_state = .Update
+            b.removed += {.Animate}
+        }
+        else if .Animate in b.removed{
+            ves.anim_state = .Finished
             ves_animate_bee_end(&b)
             b.removed -= {.Animate}
         }
@@ -1837,12 +1843,17 @@ ves_update_animations :: proc(lvl : ^Level, dt : f32)
     // Animate Player
     {
        if .Animate in lvl.player.added{
+           ves.anim_state = .Start
            set_up_character_anim(&lvl.player.base, lvl.grid_scale)
            lvl.player.added -= {.Animate}
            lvl.player.flags += {.Animate}
        }
-       if .Animate in lvl.player.flags do if ves_animate_player(&lvl.player, dt) do lvl.player.removed += {.Animate}
-       if .Animate in lvl.player.removed{
+       else if .Animate in lvl.player.flags do if ves_animate_player(&lvl.player, dt){
+           ves.anim_state = .Update
+           lvl.player.removed += {.Animate}
+       }
+       else if .Animate in lvl.player.removed{
+           ves.anim_state = .Finished
            ves_animate_player_end(&lvl.player)
            lvl.player.removed -= {.Animate}
        }

@@ -83,3 +83,6 @@ added/removed/updated flags?
 and just constantly check if something is animating? maybe even check the game data?
 
 also one thing im realizing is visual event system is both a visual system an an event system... maybe i should have a visual system thats different than visual event and just do that
+
+
+mabye set up a quueue of events?
