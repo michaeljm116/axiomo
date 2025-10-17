@@ -1,22 +1,207 @@
 {
   "Node": [
     {
-      "Material": {
-        "_ID": 0
-      },
       "Node": [
         {
           "Material": {
-            "_ID": -1391188592
+            "_ID": 0
           },
+          "Node": [
+            {
+              "Material": {
+                "_ID": -1391188592
+              },
+              "Object": {
+                "_ID": -1
+              },
+              "Transform": {
+                "Position": {
+                  "_x": -1.0,
+                  "_y": 0.20000000298023224,
+                  "_z": 0.5
+                },
+                "Rotation": {
+                  "_w": 1.0,
+                  "_x": 0.0,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 0.75,
+                  "_y": 0.75,
+                  "_z": 0.75
+                }
+              },
+              "_Dynamic": true,
+              "_Name": "EyeRight",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            },
+            {
+              "Material": {
+                "_ID": -1391188592
+              },
+              "Object": {
+                "_ID": -1
+              },
+              "Transform": {
+                "Position": {
+                  "_x": -1.0,
+                  "_y": 0.20000000298023224,
+                  "_z": -0.5
+                },
+                "Rotation": {
+                  "_w": 1.0,
+                  "_x": 0.0,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 0.75,
+                  "_y": 0.75,
+                  "_z": 0.75
+                }
+              },
+              "_Dynamic": true,
+              "_Name": "EyeLeft",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            },
+            {
+              "Material": {
+                "_ID": 564706208
+              },
+              "Object": {
+                "_ID": -2
+              },
+              "Transform": {
+                "Position": {
+                  "_x": -0.6100000143051147,
+                  "_y": -0.5199999809265137,
+                  "_z": -0.3400000035762787
+                },
+                "Rotation": {
+                  "_w": 0.9238795638084412,
+                  "_x": -0.3826834261417389,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 1.0,
+                  "_y": 0.10000000149011612,
+                  "_z": 0.5
+                }
+              },
+              "_Dynamic": false,
+              "_Name": "Mouth",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            },
+            {
+              "Material": {
+                "_ID": 564706208
+              },
+              "Object": {
+                "_ID": -2
+              },
+              "Transform": {
+                "Position": {
+                  "_x": -0.6100000143051147,
+                  "_y": -0.5,
+                  "_z": 0.30000001192092896
+                },
+                "Rotation": {
+                  "_w": 0.9238795638084412,
+                  "_x": 0.3826834261417389,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 1.0,
+                  "_y": 0.10000000149011612,
+                  "_z": 0.5400000214576721
+                }
+              },
+              "_Dynamic": false,
+              "_Name": "Mouth",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            },
+            {
+              "Material": {
+                "_ID": 564706208
+              },
+              "Object": {
+                "_ID": -2
+              },
+              "Transform": {
+                "Position": {
+                  "_x": -1.0,
+                  "_y": 0.8100000023841858,
+                  "_z": 0.6000000238418579
+                },
+                "Rotation": {
+                  "_w": 0.6705660820007324,
+                  "_x": -0.22436824440956116,
+                  "_y": 0.6705660820007324,
+                  "_z": -0.22436825931072235
+                },
+                "Scale": {
+                  "_x": 1.25,
+                  "_y": 0.10000000149011612,
+                  "_z": 0.75
+                }
+              },
+              "_Dynamic": false,
+              "_Name": "Eyebrow",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            },
+            {
+              "Material": {
+                "_ID": 564706208
+              },
+              "Object": {
+                "_ID": -2
+              },
+              "Transform": {
+                "Position": {
+                  "_x": -1.0,
+                  "_y": 0.8100000023841858,
+                  "_z": -0.6000000238418579
+                },
+                "Rotation": {
+                  "_w": 0.6743797063827515,
+                  "_x": 0.21263107657432556,
+                  "_y": 0.6743797659873962,
+                  "_z": 0.21263109147548676
+                },
+                "Scale": {
+                  "_x": 1.25,
+                  "_y": 0.10000000149011612,
+                  "_z": 0.75
+                }
+              },
+              "_Dynamic": false,
+              "_Name": "Eyebrow2",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            }
+          ],
           "Object": {
-            "_ID": -1
+            "_ID": -2
           },
           "Transform": {
             "Position": {
               "_x": -1.0,
-              "_y": 0.20000000298023224,
-              "_z": 0.5
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
               "_w": 1.0,
@@ -25,29 +210,93 @@
               "_z": 0.0
             },
             "Scale": {
-              "_x": 0.75,
-              "_y": 0.75,
-              "_z": 0.75
+              "_x": 0.4000000059604645,
+              "_y": 1.0,
+              "_z": 1.0
             }
           },
           "_Dynamic": true,
-          "_Name": "EyeRight",
+          "_Name": "Face",
           "_eFlags": 32775,
           "_gFlags": 0,
-          "_hasChildren": false
+          "_hasChildren": true
         },
         {
           "Material": {
-            "_ID": -1391188592
+            "_ID": 564706208
           },
+          "Node": [
+            {
+              "Material": {
+                "_ID": 564706208
+              },
+              "Object": {
+                "_ID": -7
+              },
+              "Transform": {
+                "Position": {
+                  "_x": 0.0,
+                  "_y": -1.5,
+                  "_z": -0.5
+                },
+                "Rotation": {
+                  "_w": -4.371138828673793e-08,
+                  "_x": 1.0,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 1.0,
+                  "_y": 1.0,
+                  "_z": 1.0
+                }
+              },
+              "_Dynamic": true,
+              "_Name": "LegLeft",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            },
+            {
+              "Material": {
+                "_ID": 564706208
+              },
+              "Object": {
+                "_ID": -7
+              },
+              "Transform": {
+                "Position": {
+                  "_x": 0.0,
+                  "_y": -1.5,
+                  "_z": 0.5
+                },
+                "Rotation": {
+                  "_w": -4.371138828673793e-08,
+                  "_x": 1.0,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 1.0,
+                  "_y": 1.0,
+                  "_z": 1.0
+                }
+              },
+              "_Dynamic": false,
+              "_Name": "LegRight",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            }
+          ],
           "Object": {
-            "_ID": -1
+            "_ID": -2
           },
           "Transform": {
             "Position": {
-              "_x": -1.0,
-              "_y": 0.20000000298023224,
-              "_z": -0.5
+              "_x": -0.4000000059604645,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
               "_w": 1.0,
@@ -56,335 +305,147 @@
               "_z": 0.0
             },
             "Scale": {
-              "_x": 0.75,
-              "_y": 0.75,
-              "_z": 0.75
-            }
-          },
-          "_Dynamic": true,
-          "_Name": "EyeLeft",
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_hasChildren": false
-        },
-        {
-          "Material": {
-            "_ID": 564706208
-          },
-          "Object": {
-            "_ID": -2
-          },
-          "Transform": {
-            "Position": {
-              "_x": -0.6100000143051147,
-              "_y": -0.5199999809265137,
-              "_z": -0.3400000035762787
-            },
-            "Rotation": {
-              "_w": 0.9238795638084412,
-              "_x": -0.3826834261417389,
-              "_y": 0.0,
-              "_z": 0.0
-            },
-            "Scale": {
-              "_x": 1.0,
-              "_y": 0.10000000149011612,
-              "_z": 0.5
-            }
-          },
-          "_Dynamic": false,
-          "_Name": "Mouth",
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_hasChildren": false
-        },
-        {
-          "Material": {
-            "_ID": 564706208
-          },
-          "Object": {
-            "_ID": -2
-          },
-          "Transform": {
-            "Position": {
-              "_x": -0.6100000143051147,
-              "_y": -0.5,
-              "_z": 0.30000001192092896
-            },
-            "Rotation": {
-              "_w": 0.9238795638084412,
-              "_x": 0.3826834261417389,
-              "_y": 0.0,
-              "_z": 0.0
-            },
-            "Scale": {
-              "_x": 1.0,
-              "_y": 0.10000000149011612,
-              "_z": 0.5400000214576721
-            }
-          },
-          "_Dynamic": false,
-          "_Name": "Mouth",
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_hasChildren": false
-        },
-        {
-          "Material": {
-            "_ID": 564706208
-          },
-          "Object": {
-            "_ID": -2
-          },
-          "Transform": {
-            "Position": {
-              "_x": -1.0,
-              "_y": 0.8100000023841858,
-              "_z": 0.6000000238418579
-            },
-            "Rotation": {
-              "_w": 0.6705660820007324,
-              "_x": -0.22436824440956116,
-              "_y": 0.6705660820007324,
-              "_z": -0.22436825931072235
-            },
-            "Scale": {
-              "_x": 1.25,
-              "_y": 0.10000000149011612,
-              "_z": 0.75
-            }
-          },
-          "_Dynamic": false,
-          "_Name": "Eyebrow",
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_hasChildren": false
-        },
-        {
-          "Material": {
-            "_ID": 564706208
-          },
-          "Object": {
-            "_ID": -2
-          },
-          "Transform": {
-            "Position": {
-              "_x": -1.0,
-              "_y": 0.8100000023841858,
-              "_z": -0.6000000238418579
-            },
-            "Rotation": {
-              "_w": 0.6743797063827515,
-              "_x": 0.21263107657432556,
-              "_y": 0.6743797659873962,
-              "_z": 0.21263109147548676
-            },
-            "Scale": {
-              "_x": 1.25,
-              "_y": 0.10000000149011612,
-              "_z": 0.75
-            }
-          },
-          "_Dynamic": false,
-          "_Name": "Eyebrow2",
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_hasChildren": false
-        }
-      ],
-      "Object": {
-        "_ID": -2
-      },
-      "Transform": {
-        "Position": {
-          "_x": -1.0,
-          "_y": 0.0,
-          "_z": 0.0
-        },
-        "Rotation": {
-          "_w": 1.0,
-          "_x": 0.0,
-          "_y": 0.0,
-          "_z": 0.0
-        },
-        "Scale": {
-          "_x": 0.4000000059604645,
-          "_y": 1.0,
-          "_z": 1.0
-        }
-      },
-      "_Dynamic": true,
-      "_Name": "Face",
-      "_eFlags": 32775,
-      "_gFlags": 0,
-      "_hasChildren": true
-    },
-    {
-      "Material": {
-        "_ID": 564706208
-      },
-      "Node": [
-        {
-          "Material": {
-            "_ID": 564706208
-          },
-          "Object": {
-            "_ID": -7
-          },
-          "Transform": {
-            "Position": {
-              "_x": 0.0,
-              "_y": -1.5,
-              "_z": -0.5
-            },
-            "Rotation": {
-              "_w": -4.371138828673793e-08,
-              "_x": 1.0,
-              "_y": 0.0,
-              "_z": 0.0
-            },
-            "Scale": {
-              "_x": 1.0,
-              "_y": 1.0,
-              "_z": 1.0
-            }
-          },
-          "_Dynamic": true,
-          "_Name": "LegLeft",
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_hasChildren": false
-        },
-        {
-          "Material": {
-            "_ID": 564706208
-          },
-          "Object": {
-            "_ID": -7
-          },
-          "Transform": {
-            "Position": {
-              "_x": 0.0,
-              "_y": -1.5,
-              "_z": 0.5
-            },
-            "Rotation": {
-              "_w": -4.371138828673793e-08,
-              "_x": 1.0,
-              "_y": 0.0,
-              "_z": 0.0
-            },
-            "Scale": {
-              "_x": 1.0,
+              "_x": 0.20000000298023224,
               "_y": 1.0,
               "_z": 1.0
             }
           },
           "_Dynamic": false,
-          "_Name": "LegRight",
+          "_Name": "Neck",
           "_eFlags": 32775,
           "_gFlags": 0,
-          "_hasChildren": false
-        }
-      ],
-      "Object": {
-        "_ID": -2
-      },
-      "Transform": {
-        "Position": {
-          "_x": -0.4000000059604645,
-          "_y": 0.0,
-          "_z": 0.0
+          "_hasChildren": true
         },
-        "Rotation": {
-          "_w": 1.0,
-          "_x": 0.0,
-          "_y": 0.0,
-          "_z": 0.0
-        },
-        "Scale": {
-          "_x": 0.20000000298023224,
-          "_y": 1.0,
-          "_z": 1.0
-        }
-      },
-      "_Dynamic": false,
-      "_Name": "Neck",
-      "_eFlags": 32775,
-      "_gFlags": 0,
-      "_hasChildren": true
-    },
-    {
-      "Material": {
-        "_ID": 0
-      },
-      "Node": [
         {
           "Material": {
-            "_ID": 564706208
+            "_ID": 0
           },
-          "Object": {
-            "_ID": -7
-          },
-          "Transform": {
-            "Position": {
-              "_x": 0.0,
-              "_y": -1.5,
-              "_z": -0.5
+          "Node": [
+            {
+              "Material": {
+                "_ID": 564706208
+              },
+              "Object": {
+                "_ID": -7
+              },
+              "Transform": {
+                "Position": {
+                  "_x": 0.0,
+                  "_y": -1.5,
+                  "_z": -0.5
+                },
+                "Rotation": {
+                  "_w": -4.371138828673793e-08,
+                  "_x": 1.0,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 1.0,
+                  "_y": 1.0,
+                  "_z": 1.0
+                }
+              },
+              "_Dynamic": true,
+              "_Name": "LegLeft",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
             },
-            "Rotation": {
-              "_w": -4.371138828673793e-08,
-              "_x": 1.0,
-              "_y": 0.0,
-              "_z": 0.0
+            {
+              "Material": {
+                "_ID": 564706208
+              },
+              "Object": {
+                "_ID": -7
+              },
+              "Transform": {
+                "Position": {
+                  "_x": 0.0,
+                  "_y": -1.5,
+                  "_z": 0.5
+                },
+                "Rotation": {
+                  "_w": -4.371138828673793e-08,
+                  "_x": 1.0,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 1.0,
+                  "_y": 1.0,
+                  "_z": 1.0
+                }
+              },
+              "_Dynamic": false,
+              "_Name": "LegRight",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
             },
-            "Scale": {
-              "_x": 1.0,
-              "_y": 1.0,
-              "_z": 1.0
+            {
+              "Material": {
+                "_ID": -951317523
+              },
+              "Object": {
+                "_ID": -2
+              },
+              "Transform": {
+                "Position": {
+                  "_x": 0.0,
+                  "_y": 0.0,
+                  "_z": 1.5
+                },
+                "Rotation": {
+                  "_w": 1.0,
+                  "_x": 0.0,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 15.0,
+                  "_y": 0.10000000149011612,
+                  "_z": 2.0
+                }
+              },
+              "_Dynamic": true,
+              "_Name": "WingRight",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            },
+            {
+              "Material": {
+                "_ID": -951317523
+              },
+              "Object": {
+                "_ID": -2
+              },
+              "Transform": {
+                "Position": {
+                  "_x": 0.0,
+                  "_y": 0.0,
+                  "_z": -1.5
+                },
+                "Rotation": {
+                  "_w": 1.0,
+                  "_x": 0.0,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 15.0,
+                  "_y": 0.10000000149011612,
+                  "_z": 2.0
+                }
+              },
+              "_Dynamic": false,
+              "_Name": "WingLeft",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
             }
-          },
-          "_Dynamic": true,
-          "_Name": "LegLeft",
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_hasChildren": false
-        },
-        {
-          "Material": {
-            "_ID": 564706208
-          },
-          "Object": {
-            "_ID": -7
-          },
-          "Transform": {
-            "Position": {
-              "_x": 0.0,
-              "_y": -1.5,
-              "_z": 0.5
-            },
-            "Rotation": {
-              "_w": -4.371138828673793e-08,
-              "_x": 1.0,
-              "_y": 0.0,
-              "_z": 0.0
-            },
-            "Scale": {
-              "_x": 1.0,
-              "_y": 1.0,
-              "_z": 1.0
-            }
-          },
-          "_Dynamic": false,
-          "_Name": "LegRight",
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_hasChildren": false
-        },
-        {
-          "Material": {
-            "_ID": -951317523
-          },
+          ],
           "Object": {
             "_ID": -2
           },
@@ -392,7 +453,7 @@
             "Position": {
               "_x": 0.0,
               "_y": 0.0,
-              "_z": 1.5
+              "_z": 0.0
             },
             "Rotation": {
               "_w": 1.0,
@@ -401,29 +462,93 @@
               "_z": 0.0
             },
             "Scale": {
-              "_x": 15.0,
-              "_y": 0.10000000149011612,
-              "_z": 2.0
+              "_x": 0.20000000298023224,
+              "_y": 1.0,
+              "_z": 1.0
             }
           },
-          "_Dynamic": true,
-          "_Name": "WingRight",
+          "_Dynamic": false,
+          "_Name": "Body",
           "_eFlags": 32775,
           "_gFlags": 0,
-          "_hasChildren": false
+          "_hasChildren": true
         },
         {
           "Material": {
-            "_ID": -951317523
+            "_ID": 564706208
           },
+          "Node": [
+            {
+              "Material": {
+                "_ID": 564706208
+              },
+              "Object": {
+                "_ID": -7
+              },
+              "Transform": {
+                "Position": {
+                  "_x": 0.0,
+                  "_y": -1.5,
+                  "_z": -0.5
+                },
+                "Rotation": {
+                  "_w": -4.371138828673793e-08,
+                  "_x": 1.0,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 1.0,
+                  "_y": 1.0,
+                  "_z": 1.0
+                }
+              },
+              "_Dynamic": true,
+              "_Name": "LegLeft",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            },
+            {
+              "Material": {
+                "_ID": 564706208
+              },
+              "Object": {
+                "_ID": -7
+              },
+              "Transform": {
+                "Position": {
+                  "_x": 0.0,
+                  "_y": -1.5,
+                  "_z": 0.5
+                },
+                "Rotation": {
+                  "_w": -4.371138828673793e-08,
+                  "_x": 1.0,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Scale": {
+                  "_x": 1.0,
+                  "_y": 1.0,
+                  "_z": 1.0
+                }
+              },
+              "_Dynamic": false,
+              "_Name": "LegRight",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            }
+          ],
           "Object": {
             "_ID": -2
           },
           "Transform": {
             "Position": {
-              "_x": 0.0,
+              "_x": 0.4000000059604645,
               "_y": 0.0,
-              "_z": -1.5
+              "_z": 0.0
             },
             "Rotation": {
               "_w": 1.0,
@@ -432,77 +557,44 @@
               "_z": 0.0
             },
             "Scale": {
-              "_x": 15.0,
-              "_y": 0.10000000149011612,
-              "_z": 2.0
-            }
-          },
-          "_Dynamic": false,
-          "_Name": "WingLeft",
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_hasChildren": false
-        }
-      ],
-      "Object": {
-        "_ID": -2
-      },
-      "Transform": {
-        "Position": {
-          "_x": 0.0,
-          "_y": 0.0,
-          "_z": 0.0
-        },
-        "Rotation": {
-          "_w": 1.0,
-          "_x": 0.0,
-          "_y": 0.0,
-          "_z": 0.0
-        },
-        "Scale": {
-          "_x": 0.20000000298023224,
-          "_y": 1.0,
-          "_z": 1.0
-        }
-      },
-      "_Dynamic": false,
-      "_Name": "Body",
-      "_eFlags": 32775,
-      "_gFlags": 0,
-      "_hasChildren": true
-    },
-    {
-      "Material": {
-        "_ID": 564706208
-      },
-      "Node": [
-        {
-          "Material": {
-            "_ID": 564706208
-          },
-          "Object": {
-            "_ID": -7
-          },
-          "Transform": {
-            "Position": {
-              "_x": 0.0,
-              "_y": -1.5,
-              "_z": -0.5
-            },
-            "Rotation": {
-              "_w": -4.371138828673793e-08,
-              "_x": 1.0,
-              "_y": 0.0,
-              "_z": 0.0
-            },
-            "Scale": {
-              "_x": 1.0,
+              "_x": 0.20000000298023224,
               "_y": 1.0,
               "_z": 1.0
             }
           },
-          "_Dynamic": true,
-          "_Name": "LegLeft",
+          "_Dynamic": false,
+          "_Name": "Hip",
+          "_eFlags": 32775,
+          "_gFlags": 0,
+          "_hasChildren": true
+        },
+        {
+          "Material": {
+            "_ID": 588622944
+          },
+          "Object": {
+            "_ID": -2
+          },
+          "Transform": {
+            "Position": {
+              "_x": 0.800000011920929,
+              "_y": 0.0,
+              "_z": 0.0
+            },
+            "Rotation": {
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
+            },
+            "Scale": {
+              "_x": 0.20000000298023224,
+              "_y": 1.0,
+              "_z": 1.0
+            }
+          },
+          "_Dynamic": false,
+          "_Name": "Butt",
           "_eFlags": 32775,
           "_gFlags": 0,
           "_hasChildren": false
@@ -511,153 +603,88 @@
           "Material": {
             "_ID": 564706208
           },
+          "Node": [
+            {
+              "Material": {
+                "_ID": -951317523
+              },
+              "Object": {
+                "_ID": -7
+              },
+              "Transform": {
+                "Position": {
+                  "_x": 2.0,
+                  "_y": 0.0,
+                  "_z": 0.0
+                },
+                "Rotation": {
+                  "_w": -3.0908619663705394e-08,
+                  "_x": 0.7071067690849304,
+                  "_y": 0.7071067690849304,
+                  "_z": -3.0908619663705394e-08
+                },
+                "Scale": {
+                  "_x": 0.5,
+                  "_y": 2.0,
+                  "_z": 1.0
+                }
+              },
+              "_Dynamic": true,
+              "_Name": "Stinger",
+              "_eFlags": 32775,
+              "_gFlags": 0,
+              "_hasChildren": false
+            }
+          ],
           "Object": {
-            "_ID": -7
+            "_ID": -2
           },
           "Transform": {
             "Position": {
-              "_x": 0.0,
-              "_y": -1.5,
-              "_z": 0.5
+              "_x": 1.2999999523162842,
+              "_y": 0.0,
+              "_z": 0.0
             },
             "Rotation": {
-              "_w": -4.371138828673793e-08,
-              "_x": 1.0,
+              "_w": 1.0,
+              "_x": 0.0,
               "_y": 0.0,
               "_z": 0.0
             },
             "Scale": {
-              "_x": 1.0,
+              "_x": 0.30000001192092896,
               "_y": 1.0,
               "_z": 1.0
             }
           },
           "_Dynamic": false,
-          "_Name": "LegRight",
+          "_Name": "Sting",
           "_eFlags": 32775,
           "_gFlags": 0,
-          "_hasChildren": false
+          "_hasChildren": true
         }
       ],
-      "Object": {
-        "_ID": -2
-      },
       "Transform": {
         "Position": {
-          "_x": 0.4000000059604645,
-          "_y": 0.0,
-          "_z": 0.0
-        },
-        "Rotation": {
-          "_w": 1.0,
           "_x": 0.0,
           "_y": 0.0,
           "_z": 0.0
         },
+        "Rotation": {
+          "_w": -0.7071061730384827,
+          "_x": 0.0,
+          "_y": 0.7071073651313782,
+          "_z": 0.0
+        },
         "Scale": {
-          "_x": 0.20000000298023224,
+          "_x": 1.0,
           "_y": 1.0,
           "_z": 1.0
         }
       },
       "_Dynamic": false,
-      "_Name": "Hip",
-      "_eFlags": 32775,
-      "_gFlags": 0,
-      "_hasChildren": true
-    },
-    {
-      "Material": {
-        "_ID": 588622944
-      },
-      "Object": {
-        "_ID": -2
-      },
-      "Transform": {
-        "Position": {
-          "_x": 0.800000011920929,
-          "_y": 0.0,
-          "_z": 0.0
-        },
-        "Rotation": {
-          "_w": 1.0,
-          "_x": 0.0,
-          "_y": 0.0,
-          "_z": 0.0
-        },
-        "Scale": {
-          "_x": 0.20000000298023224,
-          "_y": 1.0,
-          "_z": 1.0
-        }
-      },
-      "_Dynamic": false,
-      "_Name": "Butt",
-      "_eFlags": 32775,
-      "_gFlags": 0,
-      "_hasChildren": false
-    },
-    {
-      "Material": {
-        "_ID": 564706208
-      },
-      "Node": [
-        {
-          "Material": {
-            "_ID": -951317523
-          },
-          "Object": {
-            "_ID": -7
-          },
-          "Transform": {
-            "Position": {
-              "_x": 2.0,
-              "_y": 0.0,
-              "_z": 0.0
-            },
-            "Rotation": {
-              "_w": -3.0908619663705394e-08,
-              "_x": 0.7071067690849304,
-              "_y": 0.7071067690849304,
-              "_z": -3.0908619663705394e-08
-            },
-            "Scale": {
-              "_x": 0.5,
-              "_y": 2.0,
-              "_z": 1.0
-            }
-          },
-          "_Dynamic": true,
-          "_Name": "Stinger",
-          "_eFlags": 32775,
-          "_gFlags": 0,
-          "_hasChildren": false
-        }
-      ],
-      "Object": {
-        "_ID": -2
-      },
-      "Transform": {
-        "Position": {
-          "_x": 1.2999999523162842,
-          "_y": 0.0,
-          "_z": 0.0
-        },
-        "Rotation": {
-          "_w": 1.0,
-          "_x": 0.0,
-          "_y": 0.0,
-          "_z": 0.0
-        },
-        "Scale": {
-          "_x": 0.30000001192092896,
-          "_y": 1.0,
-          "_z": 1.0
-        }
-      },
-      "_Dynamic": false,
-      "_Name": "Sting",
-      "_eFlags": 32775,
+      "_Name": "Mesh",
+      "_eFlags": 3,
       "_gFlags": 0,
       "_hasChildren": true
     }
@@ -671,7 +698,7 @@
     "Rotation": {
       "_w": 1.0,
       "_x": 0.0,
-      "_y": 7.853981514927e-06,
+      "_y": 0.0,
       "_z": 0.0
     },
     "Scale": {
