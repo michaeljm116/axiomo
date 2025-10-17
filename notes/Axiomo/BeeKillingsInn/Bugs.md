@@ -14,3 +14,32 @@
 * they're going to 0,0 ... meaning its probably some uninitialized value
 * seems to only happen with attack...
 * bee is moving in an attack? why?
+
+
+# More
+
+# Categories
+* ### Visual
+	* #### Dice
+		* dice roll visuals
+		* sometimes theres only 1 dice showing
+		* sometimes theres none
+		* bee dies before dice rol
+		* dice going randomly
+	* #### Dodge
+		* dodge doesn't take away d visual
+		* dodge doesnt go away
+	* #### Other
+		* actually idk how to tell if a bee is attacking
+		* visuals in general should always be centered
+		* visuals still active after death
+		* Exclamation mark starting too soon/not enough
+* ### Game
+	* you killed an enemy and it didn't die....
+	* 2 bees can die at the same time
+	* sometimes can press 2 then move
+	* A bee attacked 2 away?
+* ### Memory
+	* ugh
+* ### Math
+	* Rotation still bad *

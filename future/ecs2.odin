@@ -1192,7 +1192,7 @@ pair :: proc {
 pair_generic :: proc(r: $R, t: $T) -> PairType(R, T) {
     return PairType(R, T){r, t}
 }
-
+    
 pair_typeid_entity :: proc(r: typeid, t: EntityID) -> PairType(typeid, EntityID) {
     return PairType(typeid, EntityID){r, t}
 }

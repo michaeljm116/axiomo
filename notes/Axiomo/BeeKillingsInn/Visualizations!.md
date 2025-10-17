@@ -64,3 +64,18 @@ Dice :: struct {
 dice_rolls :: proc(dt : f32, )
 ```
 
+
+
+Okay so the way this should work is... everything should  happen under an Action-Display Paradigm
+* aka mvc? 
+* with some waits?
+So lets think about the fack that you are running everything at 60fps
+You have an event
+so technically theers like 3 things
+* poll
+* update
+* render
+* update
+but is that last update really needed?
+* so like... maybe
+* not necessarily, *

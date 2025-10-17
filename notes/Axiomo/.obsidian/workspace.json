@@ -23,21 +23,14 @@
             "id": "f88536f4a261db38",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "markdown",
               "state": {
-                "file": "Kanban.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false,
-                    false
-                  ]
-                }
+                "file": "BeeKillingsInn/Visualizations!.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-trello",
-              "title": "Kanban"
+              "icon": "lucide-file",
+              "title": "Visualizations!"
             }
           },
           {
@@ -207,9 +200,10 @@
   },
   "active": "f88536f4a261db38",
   "lastOpenFiles": [
+    "BeeKillingsInn/Bugs.md",
+    "Kanban.md",
     "BeeKillingsInn/Visualizations!.md",
     "BeeKillingsInn/Rules Engine.md",
-    "Kanban.md",
     "BeeKillingsInn/ECS Notes.md",
     "BeeKillingsInn/Animation - Again.md",
     "{0DA3E792-94E9-46F5-B6DE-8EDBEA4E55CD}.png",
@@ -224,7 +218,6 @@
     "BeeKillingsInn/Bee Ideas.md",
     "BeeKillingsInn/Art Inspo.md",
     "BeeKillingsInn/bg.md",
-    "BeeKillingsInn/Bugs.md",
     "BeeKillingsInn/Code.md",
     "BeeKillingsInn/Engine Improvements.md",
     "BeeKillingsInn/Epics.md",
