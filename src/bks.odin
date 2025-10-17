@@ -396,6 +396,9 @@ Character :: struct
     anim : CharacterAnimation,
     move_anim : MovementTimes,
     attack_anim : AttackTimes,
+    flags : GameFlags,
+    removed : GameFlags,
+    added : GameFlags,
 }
 
 CharacterAnimation :: struct
@@ -430,26 +433,10 @@ BeeType :: enum
     Passive,
 }
 
-BeeFlag :: enum
-{
-    Flying,
-    Alert,
-    Dead,
-    PlayerFocused,
-    PlayerDodge,
-    PlayerHyperFocused,
-    PlayerHyperAlert,
-    PlayerSelected,
-    Animate,
-}
-
-BeeFlags :: bit_set[BeeFlag; u16]
 Bee :: struct {
     using base : Character,
     type : BeeType,
-    flags : BeeFlags,
-    removed : BeeFlags,
-    added : BeeFlags,
+
     state: BeeState,
 }
 
@@ -825,6 +812,19 @@ place_chest_on_grid :: proc(pos : vec2, lvl : ^Level)
 // Death occurs when health = 0
 // Bee's only attack when alerted
 //----------------------------------------------------------------------------\\
+GameFlag :: enum
+{
+    Flying,
+    Alert,
+    Dead,
+    PlayerFocused,
+    PlayerDodge,
+    PlayerHyperFocused,
+    PlayerHyperAlert,
+    PlayerSelected,
+    Animate,
+}
+GameFlags :: bit_set[GameFlag; u32]
 move_player :: proc(p : ^Player, key : string, state : ^PlayerTurnState)
 {
     // display_level(g_level)
@@ -891,6 +891,14 @@ animate_bee :: proc(bee : ^Bee, dt : f32)
         bee.anim.timer = 0
         bee.flags -= {.Animate}
     }
+}
+
+animate_bee_end :: proc(bee : ^Bee)
+{
+    move_entity_to_tile(bee.entity, g_level.grid_scale, bee.target)
+    bee.pos = bee.target
+    bee.anim.timer = 0
+    bee.flags -= {.Animate}
 }
 
 anim_check :: proc(bees : ^[dynamic]Bee) -> bool {
@@ -1735,26 +1743,20 @@ VES_Dice :: enum{
     End,
 }
 
-VES_Animate :: enum
-{
-    Start,
-    Update,
-    End,
-}
-
 VisualEventData :: struct
 {
    curr_screen : VES_Screen,
    prev_screen : VES_Screen,
    dice_state : VES_Dice,
-   anim_state : VES_Animate
 }
 ves : VisualEventData
-ves_update_all :: proc()
+
+ves_update_all :: proc(dt : f32)
 {
     ves_update_dice()
     ves_update_screen()
     ves_update_visuals(&g_level)
+    ves_update_animations(&g_level, dt)
 }
 
 // When a screen is turned off or on, update it accordingly
@@ -1814,6 +1816,36 @@ ves_update_dice :: proc(){
         }
     case .End:
         break;
+    }
+}
+
+ves_update_animations :: proc(lvl : ^Level, dt : f32)
+{
+    for &b in lvl.bees{
+        if .Animate in b.added{
+            set_up_character_anim(&b.base, lvl.grid_scale)
+            b.added -= {.Animate}
+            b.flags += {.Animate}
+        }
+        if .Animate in b.flags do if !ves_animate_bee(&b,dt) do b.removed += {.Animate}
+        if .Animate in b.removed{
+            ves_animate_bee_end(&b)
+            b.removed -= {.Animate}
+        }
+    }
+
+    // Animate Player
+    {
+       if .Animate in lvl.player.added{
+           set_up_character_anim(&lvl.player.base, lvl.grid_scale)
+           lvl.player.added -= {.Animate}
+           lvl.player.flags += {.Animate}
+       }
+       if .Animate in lvl.player.flags do if ves_animate_player(&lvl.player, dt) do lvl.player.removed += {.Animate}
+       if .Animate in lvl.player.removed{
+           ves_animate_player_end(&lvl.player)
+           lvl.player.removed -= {.Animate}
+       }
     }
 }
 
@@ -1877,4 +1909,40 @@ ves_update_visuals :: proc(lvl : ^Level)
             vc.flags -= {.Select}
         }
     }
+}
+
+ves_animate_bee :: #force_inline proc(bee : ^Bee, dt : f32) -> bool
+{
+    if bee.anim.timer > 0 && .Walk in bee.c_flags {
+        slerp_character_to_tile(bee, dt)
+        slerp_character_angle(bee,dt)
+        return true
+    }
+    bee.flags -= {.Animate}
+    return false
+}
+
+ves_animate_bee_end :: #force_inline proc(bee : ^Bee)
+{
+    move_entity_to_tile(bee.entity, g_level.grid_scale, bee.target)
+    bee.pos = bee.target
+    bee.anim.timer = 0
+}
+
+ves_animate_player :: #force_inline proc(p : ^Player, dt : f32) -> bool{
+    if p.anim.timer > 0 && .Walk in p.c_flags {
+        slerp_character_to_tile(p, dt)
+        slerp_character_angle(p,dt)
+        return true
+    }
+    p.flags -= {.Animate}
+    return false
+}
+
+ves_animate_player_end :: #force_inline proc(p : ^Player){
+    move_entity_to_tile(p.entity, g_level.grid_scale, p.target)
+    p.pos = p.target
+    p.anim.timer = 0
+    ac := get_component(p.entity, Cmp_Animation)
+    animate_idle(ac, "Froku", p.move_anim)
 }

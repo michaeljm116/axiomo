@@ -77,3 +77,9 @@ oh so you do like ves_start_player_anim
 
 should the ves have full access to the game?
 yeah and then just like constantly check if its in a certain state
+
+should animations work the same way?
+added/removed/updated flags?
+and just constantly check if something is animating? maybe even check the game data?
+
+also one thing im realizing is visual event system is both a visual system an an event system... maybe i should have a visual system thats different than visual event and just do that
