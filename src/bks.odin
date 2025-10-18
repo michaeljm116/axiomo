@@ -163,6 +163,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
             if is_key_just_pressed(glfw.KEY_1){
                 ves.anim_state = .Start
                 state^ = .Movement
+                ves.curr_screen = .Movement
             }
             if is_key_just_pressed(glfw.KEY_2){
                 state^ = .SelectEnemy
@@ -171,13 +172,14 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
             }
             break
         case .Movement:
-            ves.curr_screen = .Movement
             handle_back_button(state)
             input, moved := get_input()
             if moved{
                 move_player(player, input, state)
+                ves.curr_screen = .None
             }
-            if ves.anim_state == .Finished{
+            if ves.anim_state == .Finished {
+                ves.anim_state = .None
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
 
@@ -205,6 +207,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
         case .Action:
             ves.curr_screen = .Action
             if(bee_is_near^ && is_key_just_pressed(glfw.KEY_SPACE)){
+                ves.curr_screen = .None
                 // player_attack(player^, &bees[bee_selection^])
                 // state^ = .SelectAction
                 // game_state^ = .BeesTurn
@@ -223,21 +226,22 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
                 game_state^ = .BeesTurn
 
                 //display visual
-                vc := get_component(bees[bee_selection^].entity, Cmp_Visual)
-                vc.flags += {.Focus}
+                // vc := get_component(bees[bee_selection^].entity, Cmp_Visual)
+                // vc.flags += {.Focus}
             }
             else if is_key_just_pressed(glfw.KEY_D){
                 if .PlayerDodge in bees[bee_selection^].flags do bees[bee_selection^].flags |= {.PlayerHyperAlert}
                 bees[bee_selection^].flags |= {.PlayerDodge}
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
-                vc := get_component(bees[bee_selection^].entity, Cmp_Visual)
-                vc.flags += {.Dodge}
+                // vc := get_component(bees[bee_selection^].entity, Cmp_Visual)
+                // vc.flags += {.Dodge}
             }
         case .DiceRoll:
             ves.curr_screen = .DiceRoll
             if ves.dice_state == .Update do return
             if ves.dice_state == .Finished{
+                ves.curr_screen = .None
                 acc := g_dice[0].num + g_dice[1].num
                 bee := &bees[bee_selection^]
                 player_attack(player^, bee, acc)
@@ -304,9 +308,11 @@ update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
                 // else do bee.state = .Finishing
             }
         }
+        if bee.flags == {} do bee.state = .Finishing
     case .Finishing:
         bee.state = .Deciding
         g_current_bee += 1
+        ves.anim_state = .None
     }
 }
 
@@ -1346,8 +1352,8 @@ app_run :: proc(dt: f32, state: ^AppState) {
             start_game()
         }
 	case .Game:
-    	ves_update_all(dt)
 		run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
+		ves_update_all(dt)
 		if (g_level.player.health <= 0){
 			state^ = .GameOver
             destroy_level1()
@@ -1362,6 +1368,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
             state^ = .Pause
             ToggleMenuUI(state)
         }
+        ves_cleanup(&g_level)
 	case .Pause:
         if is_key_just_pressed(glfw.KEY_ENTER){
             state^ = .Game
@@ -1763,17 +1770,13 @@ ves_update_animations :: proc(lvl : ^Level, dt : f32)
         if .Animate in b.added{
             ves.anim_state = .Start
             ves_animate_bee_start(&b)
-            b.added -= {.Animate}
-            b.flags += {.Animate}
         }
         if .Animate in b.flags do if ves_animate_bee(&b,dt){
             ves.anim_state = .Update
-            b.removed += {.Animate}
         }
         else if .Animate in b.removed{
             ves.anim_state = .Finished
             ves_animate_bee_end(&b)
-            b.removed -= {.Animate}
         }
     }
 
@@ -1781,20 +1784,31 @@ ves_update_animations :: proc(lvl : ^Level, dt : f32)
     {
        if .Animate in lvl.player.added{
            ves.anim_state = .Start
-           lvl.player.added -= {.Animate}
-           lvl.player.flags += {.Animate}
            ves_animate_player_start(&lvl.player)
        }
        if .Animate in lvl.player.flags do if ves_animate_player(&lvl.player, dt){
            ves.anim_state = .Update
-           lvl.player.removed += {.Animate}
        }
-       else if .Animate in lvl.player.removed{
+       else if .Animate in lvl.player.removed {
            ves.anim_state = .Finished
            ves_animate_player_end(&lvl.player)
-           lvl.player.removed -= {.Animate}
        }
     }
+}
+
+ves_cleanup :: proc(lvl : ^Level)
+{
+    for &b in &lvl.bees{
+        b.flags += b.added
+        b.flags -= b.removed
+        b.added = {}
+        b.removed = {}
+    }
+    p := &lvl.player
+    p.flags += p.added
+    p.flags -= p.removed
+    p.added = {}
+    p.removed = {}
 }
 
 ves_update_visuals :: proc(lvl : ^Level)
@@ -1866,7 +1880,7 @@ ves_animate_bee :: #force_inline proc(bee : ^Bee, dt : f32) -> bool
         slerp_character_angle(bee,dt)
         return true
     }
-    bee.flags -= {.Animate}
+    bee.removed += {.Animate}
     return false
 }
 
@@ -1892,7 +1906,7 @@ ves_animate_player :: #force_inline proc(p : ^Player, dt : f32) -> bool{
         slerp_character_angle(p,dt)
         return true
     }
-    p.flags -= {.Animate}
+    p.removed += {.Animate}
     return false
 }
 

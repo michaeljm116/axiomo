@@ -86,3 +86,18 @@ also one thing im realizing is visual event system is both a visual system an an
 
 
 mabye set up a quueue of events?
+
+
+right now you're having difficulty with the visual and event part of the ves
+you're allowing visuals to make decisions about events and vice versa
+and you're not being consistent
+
+first question: should there be a generic added/update/removed system in your event system?
+such all you need to do is tell it to add or remove and you can do the rest?
+
+maybe just have a 3rd system?
+so that way you just add a thing or remove a thing and then check if its not 
+
+adds should automatically set to update
+removeds should automatically remove update
+removed should also auto be removed after its done removing
