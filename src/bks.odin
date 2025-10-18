@@ -244,6 +244,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
             if ves.dice_state == .Update do return
             if ves.dice_state == .Finished{
                 ves.curr_screen = .None
+                fmt.println("Dice Num 1: ", g_dice[0].num, " Dice Num 2: ", g_dice[1].num)
                 acc := g_dice[0].num + g_dice[1].num
                 bee := &bees[bee_selection^]
                 player_attack(player^, bee, acc)
@@ -762,25 +763,27 @@ player_attack :: proc(player : Player, bee : ^Bee, acc : i8){
 
     // Player rolls a dice, if its higher than their weapons accuracy, do weapon.damage to the bee
     focus_level := i8(.PlayerFocused in bee.flags) + i8(.PlayerHyperFocused in bee.flags)
-    bee.flags |= {.Alert}
+    fmt.println("Dice val: ", acc, " Weapon val: ", player.weapon.flying.accuracy , " Focus Val: ", focus_level, " Will Kill: ", acc + focus_level > player.weapon.flying.accuracy)
+    bee.added |= {.Alert}
 
-    //add alert vidual
-    vc := get_component(bee.entity, Cmp_Visual)
-    vc.flags += {.Alert}
-
-    luck := acc + focus_level
-    if .Flying in bee.flags{
-       if player.weapon.flying.accuracy < luck {
-           bee.health -= player.weapon.flying.power
-           if bee.health <= 0 do bee.flags += {.Dead}
-       }
+    if acc + focus_level < player.weapon.flying.accuracy
+    {
+        bee.health -= player.weapon.flying.power
+        if bee.health <= 0 do bee.added += {.Dead}
     }
-    else {
-       if player.weapon.ground.accuracy < luck {
-           bee.health -= player.weapon.ground.power
-           if bee.health <= 0 do bee.flags += {.Dead}
-       }
-    }
+    // luck := acc + focus_level
+    // if .Flying in bee.flags{
+    //    if player.weapon.flying.accuracy < luck {
+    //        bee.health -= player.weapon.flying.power
+    //        if bee.health <= 0 do bee.flags += {.Dead}
+    //    }
+    // }
+    // else {
+    //    if player.weapon.ground.accuracy < luck {
+    //        bee.health -= player.weapon.ground.power
+    //        if bee.health <= 0 do bee.flags += {.Dead}
+    //    }
+    // }
 }
 
 dice_rolls :: proc() -> i8 {
@@ -794,7 +797,7 @@ start_dice_roll :: proc() {
     for &d in g_dice {
         d.time.curr = 0
         d.interval.curr = 0
-        d.num = i8(rand.int31() % 6 + 1)  // Initial random
+        d.num = i8(rand.int31() % 6) + 1  // Initial random
         gc := get_component(d.entity, Cmp_Gui)
         if gc != nil {
             gc.alpha = 1.0  // Show dice
@@ -1669,8 +1672,8 @@ dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
             d.interval.curr = 0
             prev_num := d.num
             d.num = i8(rand.int31() % 6 + 1)
-            if d.num == prev_num do d.num = (d.num + 1 % 6) + 1
-
+            if d.num == prev_num do d.num = ((d.num + 1) % 6) + 1
+            assert(d.num > 0 && d.num <= 6)
             //set dice face
             icon := get_component(d.entity, Cmp_Gui)
             icon.align_min.x = f32(one_sixth * f64(d.num - 1))
