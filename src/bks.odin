@@ -200,6 +200,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
                 bee_is_near^ = bee_near(player^, bees[bee_selection^])
                 state^ = .Action
                 bees[bee_selection^].removed |= {.PlayerSelected}
+                show_weapon(player.weapon)
                 // for b in bees{
                 //     vc := get_component(b.entity, Cmp_Visual)
                 //     if vc != nil do hide_visuals(vc, {.Select})
@@ -208,7 +209,9 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
             else do enemy_selection(bee_selection, bees^)
         case .Action:
             ves.curr_screen = .Action
+            handle_back_button(state)
             if(bee_is_near^ && is_key_just_pressed(glfw.KEY_SPACE)){
+                hide_weapon(player.weapon)
                 ves.curr_screen = .None
                 // player_attack(player^, &bees[bee_selection^])
                 // state^ = .SelectAction
@@ -222,6 +225,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
                 }
             }
             else if is_key_just_pressed(glfw.KEY_F){
+                hide_weapon(player.weapon)
                 if .PlayerFocused in bees[bee_selection^].flags do bees[bee_selection^].flags |= {.PlayerHyperFocused}
                 bees[bee_selection^].added |= {.PlayerFocused}
                 state^ = .SelectAction
@@ -232,6 +236,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
                 // vc.flags += {.Focus}
             }
             else if is_key_just_pressed(glfw.KEY_D){
+                hide_weapon(player.weapon)
                 if .PlayerDodge in bees[bee_selection^].flags do bees[bee_selection^].flags |= {.PlayerHyperAlert}
                 bees[bee_selection^].added |= {.PlayerDodge}
                 state^ = .SelectAction
@@ -321,21 +326,20 @@ update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
 // If B button is pressed, go back to previous menu
 handle_back_button :: proc(state : ^PlayerInputState){
     if(!is_key_just_pressed(glfw.KEY_B)) do return
+    hide_weapon(g_level.player.weapon)
+    g_level.bees[bee_selection].removed |= {.PlayerSelected}
     #partial switch state^ {
         case .Movement:
             state^ = .SelectAction
             ves.curr_screen = .SelectAction
-            g_level.bees[bee_selection].removed |= {.PlayerSelected}
             break
         case .SelectEnemy:
             state^ = .SelectAction
             ves.curr_screen = .SelectAction
-            g_level.bees[bee_selection].removed |= {.PlayerSelected}
             break
         case .Action:
             state^ = .SelectEnemy
             ves.curr_screen = .SelectEnemy
-            g_level.bees[bee_selection].removed |= {.PlayerSelected}
             break
     }
 }
@@ -735,6 +739,7 @@ Weapon :: struct
     ground : Attack,
     range : i8,
     effect : StatusEffects,
+    icon : string
 }
 
 WeaponGrid :: struct{
@@ -743,12 +748,12 @@ WeaponGrid :: struct{
 }
 
 WeaponsDB :: [WeaponType]Weapon{
- .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 1}, ground = Attack{accuracy = 9, power = 2}, range = 2, effect = {.None}},
- .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 1}, ground = Attack{accuracy = 9, power = 2}, range = 2, effect = {.None}},
- .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 2}, ground = Attack{accuracy = 5, power = 2}, range = 3, effect = {.None}},
- .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 1}, ground = Attack{accuracy = 8, power = 2}, range = 2, effect = {.None}},
- .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 2}, ground = Attack{accuracy = 7, power = 2}, range = 2, effect = {.None}},
- .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 2}, ground = Attack{accuracy = 7, power = 2}, range = 2, effect = {.None}},
+ .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 50}, ground = Attack{accuracy = 9, power = 100}, range = 2, effect = {.None}, icon = "IconHand"},
+ .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 50}, ground = Attack{accuracy = 9, power = 100}, range = 2, effect = {.None}, icon = "IconShoe"},
+ .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 100}, ground = Attack{accuracy = 5, power = 100}, range = 3, effect = {.None}, icon = "IconBugspray"},
+ .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 50}, ground = Attack{accuracy = 8, power = 100}, range = 2, effect = {.None}, icon = "IconNewspaper"},
+ .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 100}, ground = Attack{accuracy = 7, power = 100}, range = 2, effect = {.None}, icon = "IconSwatter"},
+ .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 100}, ground = Attack{accuracy = 7, power = 100}, range = 2, effect = {.None}, icon = "IconSwatter"},
 }
 
 pick_up_weapon :: proc(player : ^Player, weaps : []Weapon, db := WeaponsDB)
@@ -757,6 +762,38 @@ pick_up_weapon :: proc(player : ^Player, weaps : []Weapon, db := WeaponsDB)
     idx := int(rand.int31() % i32(len(weaps)))
     wt := weaps[idx].type
     player.weapon = db[wt]
+}
+
+adjust_acc_y :: #force_inline proc(n: i8) -> f32 {
+    return -0.82 + 0.1 * f32(n - 3)
+}
+
+show_weapon :: proc(w : Weapon)
+{
+    ToggleUI(w.icon, true)
+    ToggleUI("WeaponStatsFlying", true)
+    ToggleUI("WeaponStatsAccuracy", true)
+    ToggleUI("WeaponStatsPower", true)
+
+    gc := get_component(gui["WeaponStatsAccuracy"], Cmp_Gui)
+    if gc != nil {
+        gc.align_min.y = adjust_acc_y(w.flying.accuracy)
+        update_gui(gc)
+    }
+    ac := get_component(gui["WeaponStatsPower"], Cmp_Gui)
+    if ac != nil {
+        ac.align_min.y = .4
+        if w.flying.power == 100 do ac.align_min.y = .3
+        update_gui(ac)
+    }
+}
+
+hide_weapon :: proc(w : Weapon)
+{
+    ToggleUI(w.icon, false)
+    ToggleUI("WeaponStatsFlying", false)
+    ToggleUI("WeaponStatsAccuracy", false)
+    ToggleUI("WeaponStatsPower", false)
 }
 
 player_attack :: proc(player : Player, bee : ^Bee, acc : i8){

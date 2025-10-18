@@ -1,88 +1,86 @@
 {
-	"Transform": {
-		"Position": {
-			"_x": 0.00000000,
-			"_y": 0.00000000,
-			"_z": 0.00000000
-		},
-		"Rotation": {
-			"_x": 0.00000000,
-			"_y": 0.00000000,
-			"_z": 0.00000000,
-			"_w": 1.00000000
-		},
-		"Scale": {
-			"_x": 1.00000000,
-			"_y": 1.00000000,
-			"_z": 1.00000000
-		}
-	},
-	"_Name": "WeaponStatsAccuracy",
-	"_hasChildren": false,
-	"Node": [
-
-	],
-	"_eFlags": 262144,
-	"_gFlags": 0,
-	"_Dynamic": false,
-	"AspectRatio": {
-		"_ratio": 0.00000000
-	},
-	"FOV": {
-		"_fov": 0.00000000
-	},
-	"Color": {
-		"_r": 0.00000000,
-		"_g": 0.00000000,
-		"_b": 0.00000000
-	},
-	"Intensity": {
-		"_i": 0.00000000
-	},
-	"ID": {
-		"_id": 0
-	},
-	"Material": {
-		"_ID": 0
-	},
-	"Object": {
-		"_ID": 0
-	},
-	"Rigid": {
-		"_Rigid": false
-	},
-	"Collider": {
-		"Local": {
-			"_x": 0.00000000,
-			"_y": 0.00000000,
-			"_z": 0.00000000
-		},
-		"Extents": {
-			"_x": 0.00000000,
-			"_y": 0.00000000,
-			"_z": 0.00000000
-		},
-		"_Type": 0
-	},
-	"GUI": {
-		"AlignExt": {
-			"_x": 0.05843078,
-			"_y": 0.10019616
-		},
-		"Alignment": {
-			"_x": 0.76999956,
-			"_y": 0.28000000
-		},
-		"Extent": {
-			"_x": 0.02999998,
-			"_y": 0.09000000
-		},
-		"Position": {
-			"_x": 0.92999941,
-			"_y": 0.48999983
-		},
-		"Texture": {
-			"_name": "BKS_WeaponsStats.png"
-		}
-	}
+  "Transform": {
+    "Position": {
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Rotation": {
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0,
+      "_w": 1.0
+    },
+    "Scale": {
+      "_x": 1.0,
+      "_y": 1.0,
+      "_z": 1.0
+    }
+  },
+  "_Name": "WeaponStatsAccuracy",
+  "_hasChildren": false,
+  "Node": [],
+  "_eFlags": 262144,
+  "_gFlags": 0,
+  "_Dynamic": false,
+  "AspectRatio": {
+    "_ratio": 0.0
+  },
+  "FOV": {
+    "_fov": 0.0
+  },
+  "Color": {
+    "_r": 0.0,
+    "_g": 0.0,
+    "_b": 0.0
+  },
+  "Intensity": {
+    "_i": 0.0
+  },
+  "ID": {
+    "_id": 0
+  },
+  "Material": {
+    "_ID": 0
+  },
+  "Object": {
+    "_ID": 0
+  },
+  "Rigid": {
+    "_Rigid": false
+  },
+  "Collider": {
+    "Local": {
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Extents": {
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "_Type": 0
+  },
+  "GUI": {
+    "AlignExt": {
+      "_x": 0.11843077,
+      "_y": 0.10019616
+    },
+    "Alignment": {
+      "_x": 0.75999957,
+      "_y": -0.80999953
+    },
+    "Extent": {
+      "_x": 0.04999998,
+      "_y": 0.09
+    },
+    "Position": {
+      "_x": 0.92999941,
+      "_y": 0.47999984
+    },
+    "Texture": {
+      "_name": "BKS_WeaponsStats.png"
+    }
+  }
 }
