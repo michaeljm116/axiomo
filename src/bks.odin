@@ -140,11 +140,7 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
                 return
             }
             bee := &bees[g_current_bee]
-            run_bee_turn(bee, deck)
             update_bee(bee, deck, player, f32(g_frame.physics_time_step))  // New proc (defined below)
-            if bee.state == .Idle && .Animate not_in bee.flags {
-                g_current_bee += 1
-            }
             break
         case .End:
             // destroy_bee_deck(deck)
@@ -257,8 +253,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
     }
 }
 
-run_bee_turn :: proc(bee : ^Bee, deck : ^BeeDeck){
-    if .Dead in bee.flags do return
+run_bee_decision :: proc(bee : ^Bee, deck : ^BeeDeck) -> BeeAction{
     cards : [dynamic]BeeAction
     chosen_card : BeeAction
 
@@ -272,47 +267,46 @@ run_bee_turn :: proc(bee : ^Bee, deck : ^BeeDeck){
     case .Normal:
         chosen_card = deck_draw(deck, 1)[0]
     }
-
-    // fmt.printf("Chosen 🎴: %v\n", chosen_card)
-    bee_action_select(chosen_card, bee, &g_level.player)
+    fmt.printf("Chosen 🎴: %v\n", chosen_card)
+    return chosen_card
+    // bee_action_perform(chosen_card, bee, &g_level.player)
 }
 
 update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
-    if .Animate in bee.flags {
-        // animate_bee(bee, dt)  // Existing movement animation
-    }
+    if .Dead in bee.flags do return
 
     switch bee.state {
-    case .Idle:
-        run_bee_turn(bee, deck)  // Selects action, sets state/flags in bee_action_select
-
-    case .Moving:
-        // If movement needs extra logic beyond animate_bee, add here
-        // animate_bee already handles done -> remove .Animate, so set .Idle when no .Animate
-        if .Animate not_in bee.flags {
-            bee.state = .Idle
+    case .Deciding:
+        card := run_bee_decision(bee, deck)  // Selects action, sets state/flags in bee_action_selecperform
+        bee_action_perform(card, bee, player)
+        bee.state = .Acting
+    case .Acting:
+        if .Moving in bee.flags{
+            if ves.anim_state != .Finished do return
+            else do bee.state = .Finishing
         }
-
-    case .Attacking:
-        if .PlayerDodge in bee.flags || .PlayerHyperAlert in bee.flags{
-            dice_roll_vis(&g_dice, dt)
-            all_done := true
-            for d in g_dice {
-                if d.time.curr >= d.time.max + 2{
-                    dmg := g_dice.x.num + g_dice.y.num
-                    bee_action_attack(bee, player, dmg)
-                    hide_dice()
-                    bee.state = .Idle
-                    bee.flags -= {.Animate}
-                    return
+        if .Moving in bee.removed{
+            bee.state = .Finishing
+            return
+        }
+        if .Attack in bee.flags{
+            if .PlayerDodge in bee.flags{
+                if ves.dice_state != .Finished do return
+                else {
+                    bee.removed += {.PlayerDodge}
+                    bee_action_attack(bee, player, g_dice.x.num + g_dice.y.num)
                 }
             }
+            else {
+                bee_action_attack(bee, player, 20) // default acc
+                bee.state = .Finishing
+                // if ves.anim_state != .Finished do return
+                // else do bee.state = .Finishing
+            }
         }
-        else {
-            bee_action_attack(bee, player, 20)
-            bee.state = .Idle
-            bee.flags -= {.Animate}
-        }
+    case .Finishing:
+        bee.state = .Deciding
+        g_current_bee += 1
     }
 }
 
@@ -465,9 +459,9 @@ BeeAction :: enum
 }
 
 BeeState :: enum{
-    Idle,
-    Moving,
-    Attacking,
+    Deciding,
+    Acting,
+    Finishing,
 }
 
 BeeActionPriority_Aggressive :: [BeeAction]int{
@@ -584,44 +578,39 @@ deck_choose_card :: proc(cards : [dynamic]BeeAction, priority : [BeeAction]int) 
 //----------------------------------------------------------------------------\\
 // /BA Bee Actions
 //----------------------------------------------------------------------------\\
-bee_action_select :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
+bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
 {
     switch action{
         case .Discard: return
         case .FlyTowards:
             // Fly's 2 blocks towards player, if path overlaps player, alert!
-            bee.flags |= {.Flying}
-            bee.flags += {.Animate}
+            bee.added += {.Flying, .Moving, .Animate}
             bee_action_move_towards(bee, player, 2)
         case .FlyAway:
             // Fly 2 blocks away from player, try to avoid walls
-            bee.flags |= {.Flying}
-            bee.flags += {.Animate}
+            bee.added += {.Flying, .Moving, .Animate}
             bee_action_move_away(bee, player, 2)
         case .CrawlTowards:
             // crawl towards player, if path overlaps player, alert!
-            bee.flags ~= {.Flying}
-            bee.flags += {.Animate}
+            bee.removed += {.Flying}
+            bee.added += {.Animate, .Moving}
             bee_action_move_towards(bee, player, 1)
         case .CrawlAway:
             // crawl away from player, if path overlaps player, alert!
-            bee.flags ~= {.Flying}
-            bee.flags += {.Animate}
+            bee.removed += {.Flying}
+            bee.added += {.Animate, .Moving}
             bee_action_move_away(bee, player, 1)
         case .Sting:
             // If player is near, attack! else do nuffin
             if bee_near(player^, bee^) && .Alert in bee.flags{
-                bee.state = .Attacking
-                bee.flags += {.Animate}
-                start_dice_roll()
+                bee.added += {.Animate, .Attack}
+                // ves.dice_state = .Start
             }
             // bee_action_attack(bee, player)
     }
     // move_entity_to_tile(bee.entity, g_level.grid_scale, bee.pos)
     // if bee is hovering player, turn on alert
 }
-
-
 
 
 bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int){
@@ -822,6 +811,7 @@ place_chest_on_grid :: proc(pos : vec2, lvl : ^Level)
 GameFlag :: enum
 {
     Flying,
+    Moving,
     Alert,
     Dead,
     PlayerFocused,
@@ -830,6 +820,7 @@ GameFlag :: enum
     PlayerHyperAlert,
     PlayerSelected,
     Animate,
+    Attack,
 }
 GameFlags :: bit_set[GameFlag; u32]
 move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
@@ -1726,7 +1717,7 @@ ves_update_screen :: proc(){
                 ToggleUI("Focus", false)
                 ToggleUI("Dodge", false)
             case .DiceRoll:
-                ToggleUI("Dice", false)
+                hide_dice()// ToggleUI("Dice", false)
         }
         //Then turn new screen
         switch ves.curr_screen{
@@ -1744,7 +1735,7 @@ ves_update_screen :: proc(){
                 ToggleUI("Focus", true)
                 ToggleUI("Dodge", true)
             case .DiceRoll:
-                ToggleUI("Dice", true)
+                break// ToggleUI("Dice", true)
         }
         // Finally, make them equal
         ves.prev_screen = ves.curr_screen
@@ -1775,7 +1766,7 @@ ves_update_animations :: proc(lvl : ^Level, dt : f32)
             b.added -= {.Animate}
             b.flags += {.Animate}
         }
-        if .Animate in b.flags do if !ves_animate_bee(&b,dt){
+        if .Animate in b.flags do if ves_animate_bee(&b,dt){
             ves.anim_state = .Update
             b.removed += {.Animate}
         }
@@ -1884,7 +1875,7 @@ ves_animate_bee_start :: proc(bee: ^Bee){
     bee.anim.rot_timer = .5
     bee.c_flags = {.Walk}
     bee.flags += {.Animate}
-    bee.state = .Moving
+    // bee.state = .Moving
     set_up_character_anim(bee)
 }
 
