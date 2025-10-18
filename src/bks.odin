@@ -325,14 +325,17 @@ handle_back_button :: proc(state : ^PlayerInputState){
         case .Movement:
             state^ = .SelectAction
             ves.curr_screen = .SelectAction
+            g_level.bees[bee_selection].removed |= {.PlayerSelected}
             break
         case .SelectEnemy:
             state^ = .SelectAction
             ves.curr_screen = .SelectAction
+            g_level.bees[bee_selection].removed |= {.PlayerSelected}
             break
         case .Action:
             state^ = .SelectEnemy
             ves.curr_screen = .SelectEnemy
+            g_level.bees[bee_selection].removed |= {.PlayerSelected}
             break
     }
 }
@@ -1577,6 +1580,7 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
 
     // Collect active visuals in order
     visual_list := make([dynamic]Entity, 0, context.temp_allocator)
+    reserve(&visual_list, 4)
     for f in visual_order {
         if f not_in vc.flags do continue
         ent: Entity

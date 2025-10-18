@@ -30,12 +30,12 @@
                 "state": {
                   "type": "markdown",
                   "state": {
-                    "file": "BeeKillingsInn/Refactor.md",
+                    "file": "BeeKillingsInn/Bugs.md",
                     "mode": "source",
                     "source": false
                   },
                   "icon": "lucide-file",
-                  "title": "Refactor"
+                  "title": "Bugs"
                 }
               },
               {
@@ -225,7 +225,7 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "663bab98dd640001",
+  "active": "f88536f4a261db38",
   "lastOpenFiles": [
     "BeeKillingsInn/Refactor.md",
     "Excalidraw/Refactor.md",
