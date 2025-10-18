@@ -92,27 +92,22 @@ init_vulkan :: proc()
 {
     glfw.SetErrorCallback(glfw_error_callback)
 
-	if !glfw.Init() {log.panic("glfw: could not be initialized")}
+        if !glfw.Init() {log.panic("glfw: could not be initialized")}
 
-	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
-	glfw.WindowHint(glfw.RESIZABLE, glfw.TRUE)
-	glfw.WindowHint(glfw.DECORATED, glfw.TRUE)
+        glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
+        glfw.WindowHint(glfw.RESIZABLE, glfw.FALSE)
+        glfw.WindowHint(glfw.DECORATED, glfw.TRUE)
 
-	//Get monitor and set to full screen
-	monitor_width :c.int= 1280//1920//
-	monitor_height :c.int= 720//1080//
-	primary_monitor :glfw.MonitorHandle=nil
-	// primary_monitor = glfw.GetPrimaryMonitor()
-	// mode := glfw.GetVideoMode(primary_monitor)
-	// if primary_monitor != nil && mode != nil{
-	//     monitor_height = mode^monitor_height.
-	// 	monitor_width = c.int(f32(monitor_height) * 16.0 / 9.0)
-	// }
-	rb.window = glfw.CreateWindow(monitor_width, monitor_height, "Bee Killins Inn", primary_monitor, nil)
-	glfw.GetPrimaryMonitor()
-	glfw.SetFramebufferSizeCallback(rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
-		rb.framebuffer_resized = true
-	})
+        // Get monitor and set to full screen
+        primary_monitor := glfw.GetPrimaryMonitor()
+        mode := glfw.GetVideoMode(primary_monitor)
+        monitor_width := mode^.width
+        monitor_height := mode^.height
+
+        rb.window = glfw.CreateWindow(monitor_width, monitor_height, "Bee Killins Inn", primary_monitor, nil)
+        glfw.SetFramebufferSizeCallback(rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
+            rb.framebuffer_resized = true
+        })
 
 	//----------------------------------------------------------------------------\\
     // /Create Instance /ci
@@ -1478,7 +1473,7 @@ initialize_raytracer :: proc()
 {
     prepare_storage_buffers()
     create_uniform_buffers()
-    prepare_texture_target(&rt.compute_texture, 1280, 720, .R8G8B8A8_UNORM)
+    prepare_texture_target(&rt.compute_texture, 1920, 1080, .R8G8B8A8_UNORM)
     create_descriptor_set_layout() // multiple
     create_graphics_pipeline() // multiple
     create_descriptor_pool()

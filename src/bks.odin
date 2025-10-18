@@ -163,6 +163,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
     }
     if victory {
         clear(bees)
+        ves.curr_screen = .None
     }
     switch state^
     {
@@ -768,12 +769,12 @@ WeaponGrid :: struct{
 }
 
 WeaponsDB :: [WeaponType]Weapon{
- .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 50}, ground = Attack{accuracy = 9, power = 100}, range = 2, effect = {.None}, icon = "IconHand"},
- .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 50}, ground = Attack{accuracy = 9, power = 100}, range = 2, effect = {.None}, icon = "IconShoe"},
- .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 100}, ground = Attack{accuracy = 5, power = 100}, range = 3, effect = {.None}, icon = "IconBugspray"},
- .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 50}, ground = Attack{accuracy = 8, power = 100}, range = 2, effect = {.None}, icon = "IconNewspaper"},
- .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 100}, ground = Attack{accuracy = 7, power = 100}, range = 2, effect = {.None}, icon = "IconSwatter"},
- .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 100}, ground = Attack{accuracy = 7, power = 100}, range = 2, effect = {.None}, icon = "IconSwatter"},
+ .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 50}, ground = Attack{accuracy = 9, power = 100}, range = 1, effect = {.None}, icon = "IconHand"},
+ .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 50}, ground = Attack{accuracy = 9, power = 100}, range = 1, effect = {.None}, icon = "IconShoe"},
+ .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 50}, ground = Attack{accuracy = 5, power = 100}, range = 2, effect = {.None}, icon = "IconBugspray"},
+ .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 50}, ground = Attack{accuracy = 8, power = 100}, range = 1, effect = {.None}, icon = "IconNewspaper"},
+ .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 100}, ground = Attack{accuracy = 7, power = 100}, range = 1, effect = {.None}, icon = "IconSwatter"},
+ .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 100}, ground = Attack{accuracy = 7, power = 100}, range = 1, effect = {.None}, icon = "IconSwatter"},
 }
 
 pick_up_weapon :: proc(player : ^Player, weaps : []Weapon, db := WeaponsDB)
@@ -1197,19 +1198,17 @@ ToggleMenuUI :: proc(state : ^AppState)
     case .TitleScreen:
         ToggleUI("Title", true)
     case .MainMenu:
-        ToggleUI("Title", false)
+        ToggleUI("Title", true)
+        // ToggleUI("BeeKillinsInn", true)
         ToggleUI("Background", true)
-        ToggleUI("BeeKillinsInn", true)
         ToggleUI("StartGame", true)
-        ToggleUI("EndGame", true)
         ToggleUI ("GameOver", false)
         ToggleUI("Victory", false)
         ToggleUI("Paused", false)
     case .Game:
+        ToggleUI("Title", false)
         ToggleUI("Background", false)
-        ToggleUI("BeeKillinsInn", false)
         ToggleUI("StartGame", false)
-        ToggleUI("EndGame", false)
         ToggleUI("Paused", false)
     case .Pause:
         ToggleUI("Paused", true)
