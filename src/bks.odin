@@ -282,37 +282,36 @@ update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
     switch bee.state {
     case .Deciding:
         card := run_bee_decision(bee, deck)  // Selects action, sets state/flags in bee_action_selecperform
-        bee_action_perform(card, bee, player)
         bee.state = .Acting
+        bee_action_perform(card, bee, player)
     case .Acting:
-        if .Moving in bee.flags{
-            if ves.anim_state != .Finished do return
-            else do bee.state = .Finishing
-        }
-        if .Moving in bee.removed{
+        if .Animate in bee.flags do return
+        if ves.anim_state == .Finished{
+            ves.anim_state = .None
             bee.state = .Finishing
             return
         }
-        if .Attack in bee.flags{
-            if .PlayerDodge in bee.flags{
-                if ves.dice_state != .Finished do return
-                else {
-                    bee.removed += {.PlayerDodge}
-                    bee_action_attack(bee, player, g_dice.x.num + g_dice.y.num)
-                }
+        if .Attack in bee.flags {
+            // if player dodge, first roll dice, if dice is finished then do player attack
+            if .PlayerDodge in bee.flags {
+                bee.removed += {.PlayerDodge}
+                ves.dice_state = .Start
             }
-            else {
-                bee_action_attack(bee, player, 20) // default acc
+            if ves.dice_state == .Finished {
+                bee_action_attack(bee, player, g_dice.x.num + g_dice.y.num)
                 bee.state = .Finishing
-                // if ves.anim_state != .Finished do return
-                // else do bee.state = .Finishing
+            }
+            if ves.dice_state == .None {
+                bee_action_attack(bee, player, 20)
+                bee.state = .Finishing
             }
         }
-        if bee.flags == {} do bee.state = .Finishing
     case .Finishing:
         bee.state = .Deciding
+        bee.removed += {.Animate, .Attack, .Moving}
         g_current_bee += 1
         ves.anim_state = .None
+        ves.dice_state = .None
     }
 }
 
@@ -609,9 +608,10 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
         case .Sting:
             // If player is near, attack! else do nuffin
             if bee_near(player^, bee^) && .Alert in bee.flags{
-                bee.added += {.Animate, .Attack}
+                bee.added += {.Attack}
                 // ves.dice_state = .Start
             }
+            else do bee.state = .Finishing
             // bee_action_attack(bee, player)
     }
     // move_entity_to_tile(bee.entity, g_level.grid_scale, bee.pos)
@@ -667,7 +667,7 @@ bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int){
 bee_action_attack :: proc(bee : ^Bee, player : ^Player, tot : i8){
     dist := dist_grid(bee.pos, player.pos)
     if dist <= 1 {
-        if .PlayerDodge in bee.flags {
+        if tot != 20 {
             acc := 7 + 2 * i8(.PlayerHyperAlert in bee.flags)
             if acc < tot{
                 player.health -= 1
@@ -1760,6 +1760,7 @@ ves_update_dice :: proc(){
             if d.time.curr >= d.time.max + 1 do ves.dice_state = .Finished
         }
     case .Finished:
+        hide_dice()
         break;
     }
 }
