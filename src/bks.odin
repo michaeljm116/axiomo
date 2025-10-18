@@ -167,8 +167,10 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
             }
             if is_key_just_pressed(glfw.KEY_2){
                 state^ = .SelectEnemy
+                ves.curr_screen = .SelectEnemy
                 bee_selection^ = 0
                 bee_is_near^ = false
+                start_bee_selection(bee_selection^, bees)
             }
             break
         case .Movement:
@@ -193,15 +195,15 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
                 }
             }
         case .SelectEnemy:
-            ves.curr_screen = .SelectEnemy
             handle_back_button(state)
             if is_key_just_pressed(glfw.KEY_SPACE) || is_key_just_pressed(glfw.KEY_ENTER){
                 bee_is_near^ = bee_near(player^, bees[bee_selection^])
                 state^ = .Action
-                for b in bees{
-                    vc := get_component(b.entity, Cmp_Visual)
-                    if vc != nil do hide_visuals(vc, {.Select})
-                }
+                bees[bee_selection^].removed |= {.PlayerSelected}
+                // for b in bees{
+                //     vc := get_component(b.entity, Cmp_Visual)
+                //     if vc != nil do hide_visuals(vc, {.Select})
+                // }
             }
             else do enemy_selection(bee_selection, bees^)
         case .Action:
@@ -231,7 +233,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
             }
             else if is_key_just_pressed(glfw.KEY_D){
                 if .PlayerDodge in bees[bee_selection^].flags do bees[bee_selection^].flags |= {.PlayerHyperAlert}
-                bees[bee_selection^].flags |= {.PlayerDodge}
+                bees[bee_selection^].added |= {.PlayerDodge}
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
                 // vc := get_component(bees[bee_selection^].entity, Cmp_Visual)
@@ -321,12 +323,15 @@ handle_back_button :: proc(state : ^PlayerInputState){
     #partial switch state^ {
         case .Movement:
             state^ = .SelectAction
+            ves.curr_screen = .SelectAction
             break
         case .SelectEnemy:
             state^ = .SelectAction
+            ves.curr_screen = .SelectAction
             break
         case .Action:
             state^ = .SelectEnemy
+            ves.curr_screen = .SelectEnemy
             break
     }
 }
@@ -352,6 +357,14 @@ enemy_selection :: proc(selection : ^int, bees : [dynamic]Bee)
     if prev_selection != selection^{
         bees[selection^].added += {.PlayerSelected}
         bees[prev_selection].removed += {.PlayerSelected}
+    }
+}
+start_bee_selection :: proc(selection: int, bees : ^[dynamic]Bee)
+{
+    for &b , i in bees
+    {
+        if selection == i do b.added += {.PlayerSelected}
+        else do b.removed += {.PlayerSelected}
     }
 }
 
