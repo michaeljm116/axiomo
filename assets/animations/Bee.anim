@@ -1,6 +1,6 @@
 <Root>
     <Pose Name="None"/>
-    <Pose Name="IdleStart">
+    <Pose Name="idleStart">
         <Tran CN="9">
             <Pos x="-0.75" y="1" z="1.5"/>
             <Rot x="-0.34202012" y="0" z="0" w="0.93969262"/>
@@ -12,7 +12,7 @@
             <Sca x="0.5" y="0.1" z="1"/>
         </Tran>
     </Pose>
-    <Pose Name="IdleEnd">
+    <Pose Name="idleEnd">
         <Tran CN="9">
             <Pos x="-0.75" y="-0.25" z="1.5"/>
             <Rot x="0.34202012" y="0" z="0" w="0.93969262"/>

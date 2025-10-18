@@ -10,7 +10,7 @@
           {
             "id": "88f991ba22053cdf",
             "type": "tabs",
-            "dimension": 85.63218390804597,
+            "dimension": 29.95689655172414,
             "children": [
               {
                 "id": "b47c04f3ca1234e3",
@@ -58,7 +58,7 @@
           {
             "id": "41c94a3c7d777996",
             "type": "tabs",
-            "dimension": 14.367816091954023,
+            "dimension": 70.04310344827587,
             "children": [
               {
                 "id": "663bab98dd640001",
@@ -225,10 +225,10 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "f88536f4a261db38",
+  "active": "663bab98dd640001",
   "lastOpenFiles": [
-    "Excalidraw/Refactor.md",
     "BeeKillingsInn/Refactor.md",
+    "Excalidraw/Refactor.md",
     "Excalidraw/Untitled.md",
     "BeeKillingsInn/Bugs.md",
     "Kanban.md",
