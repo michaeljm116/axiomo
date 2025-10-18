@@ -72,8 +72,8 @@ start_level1 :: proc(alloc : mem.Allocator = context.allocator)
     // Initialize Player and Bee
     player = {name = '🧔', pos = vec2{0,2}, health = 1, weapon = db[.Hand], abilities = {}}
     bees = make([dynamic]Bee, 2)
-    bees[0] = Bee{name = '🐝', pos = vec2{6,2}, target = vec2{6,2}, health = 2, type = .Aggressive, flags = {}, entity = load_prefab("AggressiveBee")}
-    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
+    bees[0] = Bee{name = '🐝', pos = vec2{6,2}, target = vec2{6,2}, health = 100, type = .Aggressive, flags = {}, entity = load_prefab("AggressiveBee")}
+    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 100, type = .Normal, flags = {}, entity = load_prefab("Bee")}
 
     player.abilities = make([dynamic]Ability, 2)
     player.abilities[0] = Ability{type = .Dodge, use_on = &bees[0], level = 1, uses = 1}
@@ -156,6 +156,14 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
 // after that, if player action = attack, wait for space, else focus or dodge
 run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, bee_selection : ^int, bee_is_near : ^bool)
 {
+    //Check if victory:
+    victory := true
+    for b in bees{
+        if .Dead not_in b.flags do victory = false
+    }
+    if victory {
+        clear(bees)
+    }
     switch state^
     {
         case .SelectAction:
@@ -248,6 +256,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
             ves.curr_screen = .DiceRoll
             if ves.dice_state == .Update do return
             if ves.dice_state == .Finished{
+                ves.dice_state = .None
                 ves.curr_screen = .None
                 fmt.println("Dice Num 1: ", g_dice[0].num, " Dice Num 2: ", g_dice[1].num)
                 acc := g_dice[0].num + g_dice[1].num
@@ -285,8 +294,12 @@ run_bee_decision :: proc(bee : ^Bee, deck : ^BeeDeck) -> BeeAction{
 }
 
 update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
-    if .Dead in bee.flags do return
-
+    if .Dead in bee.flags
+    {
+        set_dead_bee(bee)
+        g_current_bee += 1
+        return
+    }
     switch bee.state {
     case .Deciding:
         card := run_bee_decision(bee, deck)  // Selects action, sets state/flags in bee_action_selecperform
@@ -524,6 +537,13 @@ BeeDeck :: struct
 
     deck : queue.Queue(BeeAction),
     discard : queue.Queue(BeeAction)
+}
+
+set_dead_bee :: proc(bee : ^Bee)
+{
+    bee.removed = {.Alert, .PlayerFocused, .PlayerDodge, .PlayerHyperFocused, .PlayerHyperAlert}
+    tc := get_component(bee.entity, Cmp_Transform)
+    tc.local.rot = linalg.quaternion_angle_axis_f32(179, {0,0,1})
 }
 
 //----------------------------------------------------------------------------\\
@@ -806,7 +826,7 @@ player_attack :: proc(player : Player, bee : ^Bee, acc : i8){
     fmt.println("Dice val: ", acc, " Weapon val: ", player.weapon.flying.accuracy , " Focus Val: ", focus_level, " Will Kill: ", acc + focus_level > player.weapon.flying.accuracy)
     bee.added |= {.Alert}
 
-    if acc + focus_level < player.weapon.flying.accuracy
+    if acc + focus_level > player.weapon.flying.accuracy
     {
         bee.health -= player.weapon.flying.power
         if bee.health <= 0 do bee.added += {.Dead}
@@ -1183,6 +1203,7 @@ ToggleMenuUI :: proc(state : ^AppState)
         ToggleUI("StartGame", true)
         ToggleUI("EndGame", true)
         ToggleUI ("GameOver", false)
+        ToggleUI("Victory", false)
         ToggleUI("Paused", false)
     case .Game:
         ToggleUI("Background", false)
@@ -1194,6 +1215,8 @@ ToggleMenuUI :: proc(state : ^AppState)
         ToggleUI("Paused", true)
     case .GameOver:
         ToggleUI ("GameOver", true)
+    case .Victory:
+        ToggleUI("Victory", true)
     }
 }
 
@@ -1354,7 +1377,8 @@ AppState :: enum
     MainMenu,
     Game,
     Pause,
-    GameOver
+    GameOver,
+    Victory
 }
 
 MenuAnimation :: struct
@@ -1416,7 +1440,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
 			ToggleMenuUI(state)
 		}
 	    else if (len(g_level.bees) <= 0){
-    		state^ = .GameOver
+    		state^ = .Victory
             destroy_level1()
             ToggleMenuUI(state)
 		}
@@ -1435,7 +1459,13 @@ app_run :: proc(dt: f32, state: ^AppState) {
             state^ = .MainMenu
             ToggleMenuUI(state)
         }
+	case .Victory:
+	    if is_key_just_pressed(glfw.KEY_ENTER){
+			state^ = .MainMenu
+			ToggleMenuUI(state)
+		}
 	}
+
 }
 
 set_game_over :: proc(){

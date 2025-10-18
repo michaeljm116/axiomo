@@ -99,8 +99,8 @@ init_vulkan :: proc()
 	glfw.WindowHint(glfw.DECORATED, glfw.TRUE)
 
 	//Get monitor and set to full screen
-	monitor_width :c.int= 1280
-	monitor_height :c.int= 720
+	monitor_width :c.int= 1280//1920//
+	monitor_height :c.int= 720//1080//
 	primary_monitor :glfw.MonitorHandle=nil
 	// primary_monitor = glfw.GetPrimaryMonitor()
 	// mode := glfw.GetVideoMode(primary_monitor)
