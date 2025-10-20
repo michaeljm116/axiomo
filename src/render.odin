@@ -87,7 +87,8 @@ DEVICE_EXTENSIONS := []cstring {
 	vk.KHR_SWAPCHAIN_EXTENSION_NAME,
 	// KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
 }
-
+monitor_width :c.int= 640
+monitor_height :c.int= 480
 init_vulkan :: proc()
 {
     glfw.SetErrorCallback(glfw_error_callback)
@@ -101,10 +102,10 @@ init_vulkan :: proc()
         // Get monitor and set to full screen
         primary_monitor := glfw.GetPrimaryMonitor()
         mode := glfw.GetVideoMode(primary_monitor)
-        monitor_width := mode^.width
-        monitor_height := mode^.height
+        monitor_width = c.int(f32(mode^.width) * .5)
+        monitor_height = c.int(f32(mode^.height) * .5)
 
-        rb.window = glfw.CreateWindow(monitor_width, monitor_height, "Bee Killins Inn", primary_monitor, nil)
+        rb.window = glfw.CreateWindow(monitor_width, monitor_height, "Bee Killins Inn", nil, nil)
         glfw.SetFramebufferSizeCallback(rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
             rb.framebuffer_resized = true
         })
@@ -1473,7 +1474,7 @@ initialize_raytracer :: proc()
 {
     prepare_storage_buffers()
     create_uniform_buffers()
-    prepare_texture_target(&rt.compute_texture, 1920, 1080, .R8G8B8A8_UNORM)
+    prepare_texture_target(&rt.compute_texture, u32(monitor_width), u32(monitor_height), .R8G8B8A8_UNORM)
     create_descriptor_set_layout() // multiple
     create_graphics_pipeline() // multiple
     create_descriptor_pool()
