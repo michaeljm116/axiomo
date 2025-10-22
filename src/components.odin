@@ -132,7 +132,8 @@ RenderType :: enum {
     LIGHT = 2,
     GUI = 3,
     GUINUM = 4,
-    CAMERA = 5
+    CAMERA = 5,
+    TEXT = 6,
 }
 
 RenderTypes :: bit_set[RenderType; u8]
@@ -202,6 +203,14 @@ Cmp_GuiNumber :: struct {
     number: i32,
     highest_active_digit_index: i32,
     shader_references: [dynamic]i32,
+}
+
+Cmp_Text :: struct {
+    text: string,
+    font_scale: f32,
+    color: vec4,
+    min: vec2f,
+    shader_refs: [dynamic]i32,
 }
 
 RenderVertex :: struct {

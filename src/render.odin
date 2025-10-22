@@ -19,6 +19,7 @@ import "external/embree"
 import "core:math/bits"
 import stbi "vendor:stb/image"
 import path2 "extensions/filepath2"
+import sttt "vendor:stb/truetype"
 //----------------------------------------------------------------------------\\
 // /RENDERBASE /rb
 //----------------------------------------------------------------------------\\
@@ -1287,6 +1288,121 @@ texture_update_descriptor :: proc(texture: ^Texture) {
 
 image_index: u32
 
+//----------------------------------------------------------------------------\\
+// /TFONT
+//----------------------------------------------------------------------------\\
+Font :: struct {
+    atlas_texture: Texture,
+    atlas_width, atlas_height: i32,
+    scale: f32,
+    char_data: map[rune]struct {
+        uv_min, uv_ext: vec2f,
+        advance: f32,
+        offset: vec2f,
+    },
+}
+
+// Global or in RenderBase/rt
+g_font: Font
+
+bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
+    // Load TTF (e.g., "assets/fonts/arial.ttf")
+    ttf_data, ok := os.read_entire_file(font_path)
+    if !ok { log.panic("Failed to load font") }
+    defer delete(ttf_data)
+
+    // Init font info
+    info: sttt.fontinfo
+    offset := sttt.GetFontOffsetForIndex(raw_data(ttf_data), 0)
+    sttt.InitFont(&info, raw_data(ttf_data), offset)
+
+    // Bake atlas (ASCII 32-126 for simplicity; extend for Unicode)
+    bitmap_width, bitmap_height :: 512, 512  // Adjust if too small/large
+    bitmap := make([]u8, bitmap_width * bitmap_height)
+    defer delete(bitmap)
+
+    char_range := [2]rune{' ', '~'}  // ASCII printable
+    baked_chars: [95]sttt.bakedchar  // '~' - ' ' + 1 = 95
+    // sttt.BakeFontBitmap(&info, 0, pixel_height, bitmap[:], bitmap_width, bitmap_height, char_range[0], &baked_chars[0], i32(len(baked_chars)))
+    sttt.BakeFontBitmap(
+        raw_data(ttf_data),
+        offset,
+        pixel_height,
+        raw_data(bitmap),
+        bitmap_width,
+        bitmap_height,
+        i32(char_range[0]),
+        i32(len(baked_chars)),
+        raw_data(&baked_chars)
+    )
+
+    // Create Vulkan texture from bitmap (RGBA, assuming 1-channel bitmap -> expand to RGBA)
+    rgba_data := make([]u8, bitmap_width * bitmap_height * 4)
+    defer delete(rgba_data)
+    for i in 0..<bitmap_width*bitmap_height {
+        rgba_data[i*4 + 0] = 255
+        rgba_data[i*4 + 1] = 255
+        rgba_data[i*4 + 2] = 255
+        rgba_data[i*4 + 3] = bitmap[i]  // Alpha from bitmap
+    }
+
+    // Create texture (adapt your texture_create_device)
+    g_font.atlas_texture = Texture{path = font_path}  // Reuse path for logging
+    g_font.atlas_texture.width = u32(bitmap_width)
+    g_font.atlas_texture.height = u32(bitmap_height)
+    // Manual create: staging buffer, copy to image, etc. (copy from texture_create_device)
+    // ... (use create_image, copy_buffer_to_image, etc., with .R8G8B8A8_UNORM)
+    // Set sampler to .LINEAR for smooth scaling
+    // Call texture_update_descriptor(&g_font.atlas_texture)
+
+    // Store per-char UVs and metrics
+    g_font.scale = sttt.ScaleForPixelHeight(&info, pixel_height)
+    g_font.atlas_width, g_font.atlas_height = bitmap_width, bitmap_height
+    for i in 0..<len(baked_chars) {
+        c := baked_chars[i]
+        char := rune(char_range[0] + rune(i))
+        g_font.char_data[char] = {
+            uv_min = {f32(c.x0)/f32(bitmap_width), f32(c.y0)/f32(bitmap_height)},
+            uv_ext = {f32(c.x1-c.x0)/f32(bitmap_width), f32(c.y1-c.y0)/f32(bitmap_height)},
+            advance = c.xadvance,
+            offset = {c.xoff, c.yoff},
+        }
+    }
+}
+
+update_text :: proc(tc: ^Cmp_Text) {
+    // Clear old guis if text changed length
+    for ref in tc.shader_refs {
+        // Optional: remove from rt.guis if dynamic removal needed
+    }
+    clear(&tc.shader_refs)
+
+    pos := tc.min  // Start position
+    for char in tc.text {
+        if char not_in g_font.char_data { continue }  // Skip unsupported chars
+
+        data := g_font.char_data[char]
+        gui := gpu.Gui {
+            min = pos + data.offset * tc.font_scale,
+            extents = data.uv_ext * f32(g_font.atlas_width) * tc.font_scale,  // Size in screen space
+            align_min = data.uv_min,
+            align_ext = data.uv_ext,
+            layer = 0,  // Your layer
+            id = g_texture_indexes["your_font.ttf"],  // Atlas index
+            alpha = 1.0,  // Or tc.alpha
+        }
+        append(&tc.shader_refs, i32(len(rt.guis)))
+        append(&rt.guis, gui)
+
+        pos.x += data.advance * tc.font_scale  // Advance cursor
+    }
+
+    // Update buffer if needed (expand if over MAX_GUIS)
+    if len(rt.guis) > MAX_GUIS { /* panic or resize */ }
+    gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.guis, &rb.vma_allocator, rt.guis[:], u32(len(rt.guis)))
+    update_descriptors()  // If bindings changed
+}
+
 // update_vulkan :: proc()
 // {
 //     if !glfw.WindowShouldClose(rb.window) {
@@ -2263,6 +2379,7 @@ start_up_raytracer :: proc(alloc: mem.Allocator)
    set_camera()
    map_models_to_gpu(alloc)
    map_materials_to_gpu(alloc)
+   bake_font_atlas("assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
 }
 
 set_camera :: proc()
@@ -2910,6 +3027,11 @@ added_entity :: proc(e: Entity) {
         rt.compute.ubo.rotM = transmute(mat4f)trans_comp.world
         rt.compute.ubo.fov = cam.fov
         update_camera(cam)
+    }
+    if .TEXT in t {
+        tc := get_component(e,Cmp_Text)
+        update_text(tc)
+        rt.update_flags |= {.GUI}
     }
 }
 
