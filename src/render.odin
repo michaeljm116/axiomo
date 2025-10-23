@@ -1173,24 +1173,32 @@ texture_destroy :: proc(texture: ^Texture, device: vk.Device, allocator: ^vma.Al
     }
 }
 
-texture_create :: proc(texture: ^Texture) -> bool {
-    return texture_create_device(texture, rb.device, &rb.vma_allocator)
+texture_create :: proc
+{
+    texture_load_create,
+    texture_create_w_pixels,
 }
 
-texture_create_device :: proc(texture: ^Texture, device: vk.Device, allocator: ^vma.Allocator) -> bool {
+texture_load_create :: proc(texture: ^Texture) -> bool {
     tex_width, tex_height, tex_channels: i32
     pixels := stbi.load(strings.clone_to_cstring(texture.path, context.temp_allocator), &tex_width, &tex_height, &tex_channels, 4)
+    defer     stbi.image_free(pixels)
     if pixels == nil {
         log.error("Failed to load texture image!")
         return false
     }
-    defer stbi.image_free(pixels)
-
-    image_size := vk.DeviceSize(tex_width * tex_height * 4)
     texture.width = u32(tex_width)
     texture.height = u32(tex_height)
+    return texture_create_device(texture, pixels, rb.device, &rb.vma_allocator)
+}
 
-    // Create staging buffer
+texture_create_w_pixels :: proc(texture: ^Texture, pixels : [^]byte) -> bool {
+    return texture_create_device(texture, pixels, rb.device, &rb.vma_allocator)
+}
+
+texture_create_device :: proc(texture: ^Texture, pixels : [^]byte, device: vk.Device, allocator: ^vma.Allocator) -> bool {
+    image_size := vk.DeviceSize(texture.width * texture.height * 4)
+        // Create staging buffer
     staging_buffer: vk.Buffer
     staging_allocation: vma.Allocation
     staging_buffer_info := vk.BufferCreateInfo {
@@ -1220,7 +1228,7 @@ texture_create_device :: proc(texture: ^Texture, device: vk.Device, allocator: ^
     image_info := vk.ImageCreateInfo {
         sType = .IMAGE_CREATE_INFO,
         imageType = .D2,
-        extent = {width = u32(tex_width), height = u32(tex_height), depth = 1},
+        extent = {width = u32(texture.width), height = u32(texture.height), depth = 1},
         mipLevels = 1,
         arrayLayers = 1,
         format = .R8G8B8A8_UNORM,
@@ -1243,7 +1251,7 @@ texture_create_device :: proc(texture: ^Texture, device: vk.Device, allocator: ^
     transition_image_layout(texture.image, .R8G8B8A8_UNORM, .UNDEFINED, .TRANSFER_DST_OPTIMAL)
 
     // Copy buffer to image
-    copy_buffer_to_image(staging_buffer, texture.image, u32(tex_width), u32(tex_height))
+    copy_buffer_to_image(staging_buffer, texture.image, u32(texture.width), u32(texture.height))
 
     // Transition to SHADER_READ_ONLY_OPTIMAL
     transition_image_layout(texture.image, .R8G8B8A8_UNORM, .TRANSFER_DST_OPTIMAL, .SHADER_READ_ONLY_OPTIMAL)
@@ -1301,8 +1309,6 @@ Font :: struct {
         offset: vec2f,
     },
 }
-
-// Global or in RenderBase/rt
 g_font: Font
 
 bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
@@ -1318,7 +1324,7 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
 
     // Bake atlas (ASCII 32-126 for simplicity; extend for Unicode)
     bitmap_width, bitmap_height :: 512, 512  // Adjust if too small/large
-    bitmap := make([]u8, bitmap_width * bitmap_height)
+    bitmap := make([]byte, bitmap_width * bitmap_height)
     defer delete(bitmap)
 
     char_range := [2]rune{' ', '~'}  // ASCII printable
@@ -1337,7 +1343,7 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     )
 
     // Create Vulkan texture from bitmap (RGBA, assuming 1-channel bitmap -> expand to RGBA)
-    rgba_data := make([]u8, bitmap_width * bitmap_height * 4)
+    rgba_data := make([]byte, bitmap_width * bitmap_height * 4)
     defer delete(rgba_data)
     for i in 0..<bitmap_width*bitmap_height {
         rgba_data[i*4 + 0] = 255
@@ -1355,8 +1361,7 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     // Set sampler to .LINEAR for smooth scaling
     // Call texture_update_descriptor(&g_font.atlas_texture)
     //
-    texture_create(&g_font.atlas_texture)
-    if texture_create(&g_font.atlas_texture){
+    if(texture_create(&g_font.atlas_texture, raw_data(rgba_data))){
         append(&rt.bindless_textures, g_font.atlas_texture)
         g_texture_indexes["Deutsch.ttf"] = i32(len(g_texture_indexes))
     }
@@ -2476,7 +2481,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
         }
     }
     os.file_info_slice_delete(files)
-    MAX_BINDLESS_TEXTURES = u32(len(rt.bindless_textures))
+    MAX_BINDLESS_TEXTURES = u32(len(rt.bindless_textures)) + 1
 
     // Similarly for gui_textures if needed, but since it's fixed array, perhaps initialize with a default texture or handle differently
     // For now, assume gui_textures are critical, so check in loop
@@ -3184,6 +3189,8 @@ cleanup_vulkan :: proc() {
     for &tex in rt.bindless_textures {
         texture_destroy(&tex, rb.device, &rb.vma_allocator)
     }
+    texture_destroy(&g_font.atlas_texture, rb.device, &rb.vma_allocator)
+    delete(g_font.char_data)
 
     // Destroy all dynamic objects
     delete(rt.primitives)

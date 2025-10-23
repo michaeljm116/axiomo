@@ -111,7 +111,6 @@ main :: proc() {
 	sys_trans_process_ecs()
 	gameplay_init()
 	defer gameplay_destroy()
-	for key, val in gui do fmt.println(key)
 	sys_trans_process_ecs()
 	// gameplay_post_init()
 	sys_bvh_process_ecs(g_bvh, per_frame_alloc)

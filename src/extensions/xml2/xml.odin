@@ -6,7 +6,8 @@ import "core:strconv"
 get_f32_attr :: proc(doc: ^xml.Document, parent_id: xml.Element_ID, key: string) -> f32{
     v, f := xml.find_attribute_val_by_key(doc, parent_id, key)
     if log_if_not_found(f, key) do return 0
-    return f32(strconv.atof(v))
+    val, ok := strconv.parse_f64(v)
+    return f32(val)
 }
 get_str_attr :: proc(doc: ^xml.Document, parent_id: xml.Element_ID, key: string) -> string {
     v, f := xml.find_attribute_val_by_key(doc, parent_id, key)
@@ -16,7 +17,8 @@ get_str_attr :: proc(doc: ^xml.Document, parent_id: xml.Element_ID, key: string)
 get_i32_attr :: proc(doc: ^xml.Document, parent_id: xml.Element_ID, key: string) -> i32 {
     v, f := xml.find_attribute_val_by_key(doc, parent_id, key)
     if log_if_not_found(f, key) do return 0
-    return i32(strconv.atoi(v))
+    val, ok := strconv.parse_int(v)
+    return i32(val)
 }
 
 log_if_err :: proc(e : xml.Error, loc := #caller_location) -> bool{
