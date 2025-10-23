@@ -84,6 +84,7 @@ ComponentFlag :: enum {
     JOINT       = 20,
     ROOT        = 21,
     PREFAB      = 22,
+    TEXT        = 23,
 }
 ComponentFlags :: bit_set[ComponentFlag; u32]
 

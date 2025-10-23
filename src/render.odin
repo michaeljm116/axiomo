@@ -1354,6 +1354,13 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     // ... (use create_image, copy_buffer_to_image, etc., with .R8G8B8A8_UNORM)
     // Set sampler to .LINEAR for smooth scaling
     // Call texture_update_descriptor(&g_font.atlas_texture)
+    //
+    texture_create(&g_font.atlas_texture)
+    if texture_create(&g_font.atlas_texture){
+        append(&rt.bindless_textures, g_font.atlas_texture)
+        g_texture_indexes["Deutsch.ttf"] = i32(len(g_texture_indexes))
+    }
+    texture_update_descriptor(&g_font.atlas_texture)
 
     // Store per-char UVs and metrics
     g_font.scale = sttt.ScaleForPixelHeight(&info, pixel_height)
@@ -1388,7 +1395,7 @@ update_text :: proc(tc: ^Cmp_Text) {
             align_min = data.uv_min,
             align_ext = data.uv_ext,
             layer = 0,  // Your layer
-            id = g_texture_indexes["your_font.ttf"],  // Atlas index
+            id = g_texture_indexes["Deutsch.ttf"],  // Atlas index
             alpha = 1.0,  // Or tc.alpha
         }
         append(&tc.shader_refs, i32(len(rt.guis)))
@@ -2453,7 +2460,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     init_staging_buf(&rt.compute.storage_buffers.blas, blas, len(blas))
     init_staging_buf(&rt.compute.storage_buffers.shapes, shapes, len(shapes))
 
-    //Dynamically load textyures
+    //Dynamically load textures
     g_texture_indexes[""] = -1
     index :i32= 0
     files := path2.get_dir_files("assets/textures")
@@ -3078,8 +3085,10 @@ process_entity :: proc(e: Entity) {
             gnc.update = false
             update_gui_number(gnc)
         }
+    case .TEXT in type:
+            tc := get_component(e, Cmp_Text)
+            update_text(tc)
     }
-    type = {}
 }
 
 end :: proc() {

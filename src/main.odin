@@ -118,7 +118,7 @@ main :: proc() {
 
 	//begin renderer
 	initialize_raytracer()
-
+	create_test_text_entity()
 	glfw.PollEvents()
 	g_frame.prev_time = glfw.GetTime()
 	// gameplay_update(0.015)
@@ -148,6 +148,18 @@ main :: proc() {
 		end_frame(&image_index)
 	}
 	cleanup()
+}
+
+create_test_text_entity :: proc() -> Entity
+{
+    e := add_entity()
+    rc := Cmp_Render{type = {.TEXT, .GUI}}
+    add_component(e, Cmp_Node{name = "HOAL", engine_flags = {.GUI}})
+    tc := Cmp_Text{text = "Hello", min = {0.1, 0.9}, font_scale = 1.0}
+    add_component(e, tc)
+    added_entity(e)
+    update_descriptors()
+    return e
 }
 
 leak_detection :: proc() {

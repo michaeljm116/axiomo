@@ -1599,7 +1599,6 @@ is_walkable_internal :: proc(p : vec2, goal : vec2, allow_through_walls : bool) 
 //----------------------------------------------------------------------------\\
 // /UI
 //----------------------------------------------------------------------------\\
-
 add_ui :: proc (gui : Cmp_Gui, name : string) -> Entity
 {
     e := add_entity()
