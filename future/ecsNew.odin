@@ -109,31 +109,31 @@ create_world :: proc(alloc: runtime.Allocator) -> ^World {
 	world.queries = make([dynamic]^Query, alloc)
 	world.next_entity_id = EntityID(1)
 
-	// Pre-reserve capacities (adjust based on your game)
-	reserve(&world.entity_index, 10000)
-	reserve(&world.component_ids, 100) // e.g., 100 component types
+	// // Pre-reserve capacities (adjust based on your game)
+	// reserve(&world.entity_index, 10000)
+	// reserve(&world.component_ids, 100) // e.g., 100 component types
 
-	// NEW: Preallocate archetype pool (e.g., 128 max archetypes)
-	world.archetype_pool = make([dynamic]^Archetype, 128, alloc)
-	world.free_archetype_indices = make([dynamic]int, 128, alloc)
-	for i in 0..<128 {
-		arch := new(Archetype, alloc)
-		arch.component_ids = make([dynamic]ComponentID, alloc)
-		arch.tag_ids = make([dynamic]ComponentID, alloc)
-		arch.component_types = make(map[ComponentID]^reflect.Type_Info, alloc)
-		arch.entities = make([dynamic]EntityID, alloc)
-		arch.tables = make(map[ComponentID][dynamic]byte, alloc)
-		arch.disabled_set = make(map[ComponentID]bool, alloc)
-		arch.matching_queries = make([dynamic]^Query, alloc)
-		arch.add_edges = make(map[ComponentID]^Archetype, alloc)
+	// // NEW: Preallocate archetype pool (e.g., 128 max archetypes)
+	// world.archetype_pool = make([dynamic]^Archetype, 128, alloc)
+	// world.free_archetype_indices = make([dynamic]int, 128, alloc)
+	// for i in 0..<128 {
+	// 	arch := new(Archetype, alloc)
+	// 	arch.component_ids = make([dynamic]ComponentID, alloc)
+	// 	arch.tag_ids = make([dynamic]ComponentID, alloc)
+	// 	arch.component_types = make(map[ComponentID]^reflect.Type_Info, alloc)
+	// 	arch.entities = make([dynamic]EntityID, alloc)
+	// 	arch.tables = make(map[ComponentID][dynamic]byte, alloc)
+	// 	arch.disabled_set = make(map[ComponentID]bool, alloc)
+	// 	arch.matching_queries = make([dynamic]^Query, alloc)
+	// 	arch.add_edges = make(map[ComponentID]^Archetype, alloc)
 
-		// Pre-reserve per-archetype (e.g., 500 entities per archetype)
-		reserve(&arch.entities, 500)
-		reserve(&arch.component_types, 50)
-		reserve(&arch.tables, 50)
-		append(&world.archetype_pool, arch)
-		append(&world.free_archetype_indices, i)
-	}
+	// 	// Pre-reserve per-archetype (e.g., 500 entities per archetype)
+	// 	reserve(&arch.entities, 500)
+	// 	reserve(&arch.component_types, 50)
+	// 	reserve(&arch.tables, 50)
+	// 	append(&world.archetype_pool, arch)
+	// 	append(&world.free_archetype_indices, i)
+	// }
 
 	return world
 }
@@ -505,9 +505,9 @@ get_or_create_archetype :: proc(world: ^World, component_ids: []ComponentID, tag
 		arch.matching_queries = make([dynamic]^Query, alloc)
 		arch.add_edges = make(map[ComponentID]^Archetype, alloc)
 
-		reserve(&arch.entities, 500)
-		reserve(&arch.component_types, 50)
-		reserve(&arch.tables, 50)
+		// reserve(&arch.entities, 500)
+		// reserve(&arch.component_types, 50)
+		// reserve(&arch.tables, 50)
 		append(&world.archetype_pool, arch)
 		append(&world.free_archetype_indices, new_idx)
 	}
@@ -527,7 +527,7 @@ get_or_create_archetype :: proc(world: ^World, component_ids: []ComponentID, tag
 			archetype.component_types[cid] = info.type_info
 			if info.size > 0 {
 				archetype.tables[cid] = make([dynamic]byte, alloc)
-				reserve(&archetype.tables[cid], 500 * info.size) // Pre-reserve
+				// reserve(&archetype.tables[cid], 500 * info.size) // Pre-reserve
 			}
 		}
 	}

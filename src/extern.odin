@@ -38,7 +38,7 @@ ArenaStruct :: struct
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
 create_world :: #force_inline proc() -> ^World {
-    arena_err := vmem.arena_init_growing(&ecs_mem.arena, mem.Megabyte * 16,) // Start at 16 MiB, grow to 1 GiB max
+    arena_err := vmem.arena_init_growing(&ecs_mem.arena, mem.Megabyte * 64,) // Start at 16 MiB, grow to 1 GiB max
     assert(arena_err == nil)
     ecs_mem.alloc = vmem.arena_allocator(&ecs_mem.arena)
     return ecs.create_world(ecs_mem.alloc)// track_alloc.backing)
@@ -54,7 +54,8 @@ add_entity :: #force_inline proc() -> ecs.EntityID {
 }
 
 remove_entity :: #force_inline proc(entity: ecs.EntityID){
-    // ecs.remove_entity(g_world, entity)
+    ecs.remove_entity(g_world, entity)
+    // add_component()
 }
 // Component management
 add_component :: #force_inline proc(entity: ecs.EntityID, component: $T) {
@@ -68,7 +69,7 @@ remove_component :: #force_inline proc(entity: ecs.EntityID, $T: typeid){
     // prev_alloc := context.allocator
     // defer context.allocator = prev_alloc
     // context.allocator = track_alloc.backing
-    // ecs.remove_component(g_world, entity, typeid)
+    ecs.remove_component(g_world, entity, typeid)
 }
 
 entity_exists :: #force_inline proc(entity: ecs.EntityID) -> bool {
