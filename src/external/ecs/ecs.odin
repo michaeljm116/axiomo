@@ -746,7 +746,7 @@ delete_archetype :: proc(archetype: ^Archetype, cleanup_edges := true) {
 	}
 	delete(archetype.tables)
 	delete(archetype.component_types)
-	delete(archetype.tag_ids)
+	// if len(archetype.tag_ids) > 0 do delete(archetype.tag_ids)
 	delete(archetype.disabled_set)
 	delete(archetype.add_edges)
 	delete(archetype.remove_edges)

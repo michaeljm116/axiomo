@@ -10,6 +10,7 @@ import "core:os"
 import "core:encoding/json"
 import "core:mem"
 import vmem"core:mem/virtual"
+import "base:runtime"
 // Helper types for vectors/matrices
 vec2f :: [2]f32
 vec3f :: [3]f32
@@ -37,11 +38,11 @@ ArenaStruct :: struct
 // /ECS
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
-create_world :: #force_inline proc() -> ^World {
-    arena_err := vmem.arena_init_growing(&ecs_mem.arena, mem.Megabyte * 128,) // Start at 16 MiB, grow to 1 GiB max
-    assert(arena_err == nil)
-    ecs_mem.alloc = vmem.arena_allocator(&ecs_mem.arena)
-    return ecs.create_world(track_alloc.backing)// track_alloc.backing)
+create_world :: #force_inline proc(alloc : runtime.Allocator) -> ^World {
+    // arena_err := vmem.arena_init_growing(&ecs_mem.arena, mem.Megabyte * 128,) // Start at 16 MiB, grow to 1 GiB max
+    // assert(arena_err == nil)
+    // ecs_mem.alloc = vmem.arena_allocator(&ecs_mem.arena)
+    return ecs.create_world(alloc)// track_alloc.backing)
 }
 delete_world :: #force_inline proc(){
 	//context.allocator = track_alloc.backing

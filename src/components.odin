@@ -311,7 +311,7 @@ BvhNode :: rawptr  // Unified raw pointer for tree traversal
 
 // Animation flags - 4 bytes with bitfields
 AnimFlags :: bit_field u16{
-   idPo         : u8   | 8,
+   active       : u8   | 8,
    loop         : bool | 1,
    force_start  : bool | 1,
    force_end    : bool | 1,

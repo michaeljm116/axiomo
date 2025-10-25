@@ -1274,7 +1274,7 @@ animate_attack :: proc(ac : ^Cmp_Animation, prefab_name : string, a : AttackTime
 animate_chest :: proc(chest : Entity){
    flatten_entity(chest)
    display_flattened_entity(chest)
-   ac := animation_component_with_names(1,"Chest","","Open", AnimFlags{idPo = 0, loop = false, force_start = true, force_end = true})
+   ac := animation_component_with_names(1,"Chest","","Open", AnimFlags{active = 1, loop = false, force_start = true, force_end = true})
    add_component(chest, ac)
    sys_anim_add(chest)
 }
@@ -1292,7 +1292,7 @@ add_animation :: proc(c : ^Character, prefab : string)
     }
 
     flatten_entity(c.entity)
-    ac := animation_component_with_names(2,prefab, "idleStart", "idleEnd", AnimFlags{ idPo = 0, loop = true, force_start = true, force_end = true})
+    ac := animation_component_with_names(2,prefab, "idleStart", "idleEnd", AnimFlags{ active = 1, loop = true, force_start = true, force_end = true})
     add_component(c.entity, ac)
     sys_anim_add(c.entity)
     // animate_idle(&ac, prefab, c.move_anim)

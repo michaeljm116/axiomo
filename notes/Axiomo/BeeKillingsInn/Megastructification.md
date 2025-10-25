@@ -16,3 +16,21 @@ Another issue is there's technically 2 megastructs there's like enginestruct and
 also... even tho you may have a small ammount of entities.... you dont because each entity has like 20 other entities
 
 i think you should just figure out hte issue you'r ehaving with the ecs you use now
+
+
+what is the lifetime of your ecs?
+if you plan on doing many adds/removes then its complicated but if its mostly just clearing a level off and on then its diff.
+
+The lifetime is ultimately the entire scene. although unfortunately
+
+### Memory Lifetimes:
+* Data : Entire Program?
+	* Technically its per-scene?
+* BVH Data: per-frame
+* Game Data: per-game
+	* but the complications are that it uses scene-data
+* maybe this is the issue is you have scene data and game-data and they overlap
+* What if, at the start of every scene you create the ecs world?
+	* there is no remove_entity just pure idk
+	* i think first thing is to fix the ecs to no longer remove any components
+		* remove component is ONLY used for animate :)

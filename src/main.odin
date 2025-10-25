@@ -52,7 +52,8 @@ main :: proc() {
     //----------------------------------------------------------------------------\\
     // /MEMORY
     //----------------------------------------------------------------------------\\
-	mem.tracking_allocator_init(&track_alloc, context.allocator)
+    default_alloc := context.allocator
+	mem.tracking_allocator_init(&track_alloc, default_alloc)
 	context.allocator = mem.tracking_allocator(&track_alloc)
 	defer leak_detection()
 
@@ -78,7 +79,7 @@ main :: proc() {
 	//----------------------------------------------------------------------------\\
     // /World Creation
     //----------------------------------------------------------------------------\\
-	g_world = create_world()
+	g_world = create_world(default_alloc)
 	defer delete_world()
 	g_world_ent = add_entity()
 	g_bvh = bvh_system_create(per_frame_alloc)

@@ -1261,6 +1261,7 @@ sys_anim_update :: proc(entity: Entity, delta_time: f32)
 sys_anim_process :: proc(entity: Entity, ac : ^Cmp_Animate, tc : ^Cmp_Transform, dt : f32)
 {
     //Increment time
+    if ac.flags.active == 0 do return
     x := math.clamp(dt / ac.time, 0.0, 1.0)
     ac.curr_time += dt
 
@@ -1283,6 +1284,7 @@ sys_anim_process :: proc(entity: Entity, ac : ^Cmp_Animate, tc : ^Cmp_Transform,
         } else do remove_component(entity, Cmp_Animate)
     }
 }
+
 CombinedEntry :: struct {
     start: Sqt,
     end:   Sqt,
@@ -1319,7 +1321,7 @@ sys_anim_transition :: proc(entity: Entity)
         combined[id] = CombinedEntry{
             start = start_sqt,
             end = end_sqt,
-            flags = AnimFlags{ idPo = 0, loop = false, force_start = true, force_end = false },
+            flags = AnimFlags{ active = 1, loop = false, force_start = true, force_end = false },
         }
     }
 
@@ -1331,7 +1333,7 @@ sys_anim_transition :: proc(entity: Entity)
             combined[p.id] = CombinedEntry{
                 start = bfg.transforms[p.id],
                 end = map_sqt(p.sqt_data),
-                flags = AnimFlags{ idPo = 0, loop = false, force_start = true, force_end = true },
+                flags = AnimFlags{ active = 1, loop = false, force_start = true, force_end = true },
             }
         } else {
             entry.end = map_sqt(p.sqt_data)
@@ -1355,6 +1357,7 @@ sys_anim_transition :: proc(entity: Entity)
     //Turn off transition;
     ac.trans_timer = 0.0001
 }
+
 //Onadd you can choose to reset the animation to the start
 //Or just interpolate from where you're already at
 add_animate_component :: proc(ent: Entity, comp: Cmp_Animate)
@@ -1362,6 +1365,7 @@ add_animate_component :: proc(ent: Entity, comp: Cmp_Animate)
     if(has_component(ent, Cmp_Animate)){
         ac := get_component(ent, Cmp_Animate)
         ac^ = comp
+        ac.flags.active = 1
         tc := get_component(ent, Cmp_Transform)
         if ac == nil || tc == nil do return
 
@@ -1371,21 +1375,21 @@ add_animate_component :: proc(ent: Entity, comp: Cmp_Animate)
     }
     else {
         add_component(ent, comp)
-
         ac := get_component(ent, Cmp_Animate)
         tc := get_component(ent, Cmp_Transform)
         if ac == nil || tc == nil do return
-
         //This forces the animation to go to the start position
         if ac.flags.force_start do tc.local = ac.start
         check_if_finished(tc.local, ac)
+        ac.flags.active = 1
     }
 }
 
-remove_animate_component :: proc(e : Entity)
+deactivate_animate_component :: proc(e : Entity)
 {
     ac := get_component(e, Cmp_Animate)
     assert(ac != nil)
+    ac.flags.active = 0
     if ac.flags.force_end == true{
         tc := get_component(e, Cmp_Transform)
         tc.local = ac.end
@@ -1393,7 +1397,7 @@ remove_animate_component :: proc(e : Entity)
     remove_component(e, Cmp_Animate)
 }
 
-sys_anim_remove_component :: proc(entity : Entity)
+sys_anim_deactivate_component :: proc(entity : Entity)
 {
     ac := get_component(entity, Cmp_Animation)
     bfg := get_component(entity, Cmp_BFGraph)
@@ -1406,7 +1410,7 @@ sys_anim_remove_component :: proc(entity : Entity)
     removed := make(map[i32]bool, 0, context.temp_allocator)
     for pose in end_pose.pose {
         bfg_ent := bfg.nodes[pose.id]
-        remove_animate_component(bfg_ent)
+        deactivate_animate_component(bfg_ent)
         removed[pose.id] = true
     }
 
@@ -1415,10 +1419,11 @@ sys_anim_remove_component :: proc(entity : Entity)
         start_pose := animation.poses[ac.start]
         for pose in start_pose.pose {
             _, ok := removed[pose.id]
-            if ok do remove_animate_component(bfg.nodes[pose.id])
+            if ok do deactivate_animate_component(bfg.nodes[pose.id])
         }
     }
-    remove_component(entity, Cmp_Animation)
+    ac.flags.active = 0
+    // remove_component(entity, Cmp_Animation)
 }
 
 check_if_finished :: proc(curr: Sqt, ac: ^Cmp_Animate) -> bool {
