@@ -117,7 +117,7 @@ main :: proc() {
 
 	//begin renderer
 	initialize_raytracer()
-	create_test_text_entity()
+	text := create_test_text_entity()
 	glfw.PollEvents()
 	g_frame.prev_time = glfw.GetTime()
 	// gameplay_update(0.015)
@@ -141,6 +141,10 @@ main :: proc() {
 			gameplay_update(f32(g_frame.physics_time_step))
 			mem.arena_free_all(&per_frame_arena)
 			g_frame.physics_acc_time -= f32(g_frame.physics_time_step)
+
+			tc := get_component(text, Cmp_Text)
+			gc := get_component(text, Cmp_Node)
+			update_text(tc)
 		}
 		update_buffers()
 		update_descriptors()
@@ -154,9 +158,10 @@ create_test_text_entity :: proc() -> Entity
     e := add_entity()
     rc := Cmp_Render{type = {.TEXT, .GUI}}
     add_component(e, Cmp_Node{name = "HOAL", engine_flags = {.GUI}})
-    tc := Cmp_Text{text = "Hello", min = {0.1, 0.9}, font_scale = 1.0}
+    tc := cmp_text_create(text = "HELLLLLLLLO YOOOO", min = {0.1, 0.9}, font_scale = 4.0)
     add_component(e, tc)
     added_entity(e)
+    update_text(&tc)
     update_descriptors()
     return e
 }

@@ -207,11 +207,23 @@ Cmp_GuiNumber :: struct {
 }
 
 Cmp_Text :: struct {
+    using gui: Cmp_Gui,
     text: string,
     font_scale: f32,
     color: vec4,
-    min: vec2f,
     shader_refs: [dynamic]i32,
+}
+
+// Constructor (add this near your other component constructors)
+cmp_text_create :: proc(text: string, min: vec2f, font_scale: f32 = 1.0, color: vec4 = {1,1,1,1}, alpha: f32 = 1.0) -> Cmp_Text {
+    return Cmp_Text{
+        gui = gui_component_full(min, {0,0}, {0,0}, {0,0}, 0, "Deutsch.ttf", alpha),  // Defaults; adjust as needed
+        text = strings.clone(text),
+        font_scale = font_scale,
+        color = color,
+        shader_refs = make([dynamic]i32),
+        update = true,  // Mark for initial update
+    }
 }
 
 RenderVertex :: struct {

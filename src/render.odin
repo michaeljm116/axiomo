@@ -1299,17 +1299,171 @@ image_index: u32
 //----------------------------------------------------------------------------\\
 // /TFONT
 //----------------------------------------------------------------------------\\
+// Font :: struct {
+//     atlas_texture: Texture,
+//     atlas_width, atlas_height: i32,
+//     scale: f32,
+//     char_data: map[rune]struct {
+//         uv_min, uv_ext: vec2f,
+//         advance: f32,
+//         offset: vec2f,
+//     },
+//     info : sttt.fontinfo,
+
+// }
 Font :: struct {
+    using gui: Cmp_Gui,
     atlas_texture: Texture,
     atlas_width, atlas_height: i32,
     scale: f32,
+    info: sttt.fontinfo,         // Add this
+    baked_chars: [95]sttt.bakedchar,  // Add this (matches your ASCII range)
     char_data: map[rune]struct {
-        uv_min, uv_ext: vec2f,
+        uv_min, uv_ext: vec2,
         advance: f32,
-        offset: vec2f,
+        offset: vec2,
     },
 }
 g_font: Font
+
+// Renders a string to an RGBA bitmap (returns buffer, width, height)
+render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32) {
+    // First pass: Compute total width/height
+    total_width: f32 = 0
+    max_height: f32 = 0
+    baseline: f32 = 0
+    for char in text {
+        advance_width, left_side_bearing: i32
+        x0, y0, x1, y1: i32
+        sttt.GetCodepointHMetrics(&g_font.info, char, &advance_width, &left_side_bearing)
+        sttt.GetCodepointBitmapBox(&g_font.info, char, scale, scale, &x0, &y0, &x1, &y1)
+
+        glyph_width := f32(x1 - x0)
+        glyph_height := f32(y1 - y0)
+        total_width += f32(advance_width) * scale
+        max_height = max(max_height, glyph_height)
+        baseline = max(baseline, -f32(y0))
+    }
+
+    ascent, descent, line_gap: i32
+    sttt.GetFontVMetrics(&g_font.info, &ascent, &descent, &line_gap)
+    baseline = max(baseline, f32(ascent) * scale)
+
+    bitmap_width := i32(math.ceil(total_width)) + 10  // Padding
+    bitmap_height := i32(math.ceil(max_height + baseline)) + 10
+
+    // Allocate RGBA bitmap (4 bytes per pixel)
+    bitmap := make([]u8, bitmap_width * bitmap_height * 4)
+
+    // Second pass: Render each glyph
+    x_pos: f32 = 5  // Left padding
+    for char in text {
+        if char == ' ' {
+            advance_width: i32
+            sttt.GetCodepointHMetrics(&g_font.info, char, &advance_width, nil)
+            x_pos += f32(advance_width) * scale
+            continue
+        }
+
+        // Render glyph to temp alpha buffer
+        glyph_w, glyph_h, glyph_xoff, glyph_yoff: i32
+        glyph_bitmap := sttt.GetCodepointBitmap(&g_font.info, scale, scale, char, &glyph_w, &glyph_h, &glyph_xoff, &glyph_yoff)
+        defer sttt.FreeBitmap(glyph_bitmap, nil)  // STB cleanup
+
+        // Blit alpha to RGBA (white text; adjust color if needed)
+        for gy in 0..<glyph_h {
+            for gx in 0..<glyph_w {
+                alpha := glyph_bitmap[gy * glyph_w + gx]
+                if alpha > 0 {
+                    bx := i32(x_pos) + gx + glyph_xoff
+                    by := i32(baseline) + gy + glyph_yoff
+                    if bx >= 0 && bx < bitmap_width && by >= 0 && by < bitmap_height {
+                        idx := (by * bitmap_width + bx) * 4
+                        bitmap[idx + 0] = 255  // R
+                        bitmap[idx + 1] = 255  // G
+                        bitmap[idx + 2] = 255  // B
+                        bitmap[idx + 3] = alpha  // A
+                    }
+                }
+            }
+        }
+
+        // Advance
+        advance_width: i32
+        sttt.GetCodepointHMetrics(&g_font.info, char, &advance_width, nil)
+        x_pos += f32(advance_width) * scale
+    }
+
+    return bitmap, bitmap_width, bitmap_height
+}
+
+create_texture_from_bitmap :: proc(bitmap: []u8, width, height: i32) -> Texture {
+    tex: Texture
+    tex.width = u32(width)
+    tex.height = u32(height)
+    image_size := vk.DeviceSize(width * height * 4)
+
+    // Staging buffer (copy from bake_font_atlas)
+    staging_buffer: vk.Buffer
+    staging_allocation: vma.Allocation
+    staging_buffer_info := vk.BufferCreateInfo {
+        sType = .BUFFER_CREATE_INFO,
+        size = image_size,
+        usage = {.TRANSFER_SRC},
+        sharingMode = .EXCLUSIVE,
+    }
+    staging_alloc_info := vma.AllocationCreateInfo {
+        flags = {.HOST_ACCESS_SEQUENTIAL_WRITE},
+        usage = .AUTO,
+    }
+    must(vma.CreateBuffer(rb.vma_allocator, &staging_buffer_info, &staging_alloc_info, &staging_buffer, &staging_allocation, nil))
+
+    data: rawptr
+    vma.MapMemory(rb.vma_allocator, staging_allocation, &data)
+    mem.copy(data, raw_data(bitmap), int(image_size))
+    vma.UnmapMemory(rb.vma_allocator, staging_allocation)
+
+    // Image
+    image_info := vk.ImageCreateInfo {
+        sType = .IMAGE_CREATE_INFO,
+        imageType = .D2,
+        extent = {u32(width), u32(height), 1},
+        mipLevels = 1,
+        arrayLayers = 1,
+        format = .R8G8B8A8_UNORM,
+        tiling = .OPTIMAL,
+        initialLayout = .UNDEFINED,
+        usage = {.TRANSFER_DST, .SAMPLED},
+        samples = {._1},
+        sharingMode = .EXCLUSIVE,
+    }
+    alloc_info := vma.AllocationCreateInfo { usage = .AUTO }
+    must(vma.CreateImage(rb.vma_allocator, &image_info, &alloc_info, &tex.image, &tex.image_allocation, nil))
+
+    transition_image_layout(tex.image, .R8G8B8A8_UNORM, .UNDEFINED, .TRANSFER_DST_OPTIMAL)
+    copy_buffer_to_image(staging_buffer, tex.image, u32(width), u32(height))
+    transition_image_layout(tex.image, .R8G8B8A8_UNORM, .TRANSFER_DST_OPTIMAL, .SHADER_READ_ONLY_OPTIMAL)
+
+    tex.view = create_image_view(tex.image, .R8G8B8A8_UNORM, {.COLOR})
+
+    sampler_info := vk.SamplerCreateInfo {
+        sType = .SAMPLER_CREATE_INFO,
+        magFilter = .LINEAR,
+        minFilter = .LINEAR,
+        addressModeU = .CLAMP_TO_EDGE,
+        addressModeV = .CLAMP_TO_EDGE,
+        addressModeW = .CLAMP_TO_EDGE,
+    }
+    must(vk.CreateSampler(rb.device, &sampler_info, nil, &tex.sampler))
+
+    tex.image_layout = .SHADER_READ_ONLY_OPTIMAL
+    texture_update_descriptor(&tex)
+
+    // Cleanup staging
+    vma.DestroyBuffer(rb.vma_allocator, staging_buffer, staging_allocation)
+
+    return tex
+}
 
 bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     // Load TTF (e.g., "assets/fonts/arial.ttf")
@@ -1341,6 +1495,9 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
         i32(len(baked_chars)),
         raw_data(&baked_chars)
     )
+
+    g_font.info = info
+    g_font.baked_chars = baked_chars
 
     // Create Vulkan texture from bitmap (RGBA, assuming 1-channel bitmap -> expand to RGBA)
     rgba_data := make([]byte, bitmap_width * bitmap_height * 4)
@@ -1382,109 +1539,6 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     }
 }
 
-update_text :: proc(tc: ^Cmp_Text) {
-    // Clear old guis if text changed length
-    for ref in tc.shader_refs {
-        // Optional: remove from rt.guis if dynamic removal needed
-    }
-    clear(&tc.shader_refs)
-
-    pos := tc.min  // Start position
-    for char in tc.text {
-        if char not_in g_font.char_data { continue }  // Skip unsupported chars
-
-        data := g_font.char_data[char]
-        gui := gpu.Gui {
-            min = pos + data.offset * tc.font_scale,
-            extents = data.uv_ext * f32(g_font.atlas_width) * tc.font_scale,  // Size in screen space
-            align_min = data.uv_min,
-            align_ext = data.uv_ext,
-            layer = 0,  // Your layer
-            id = g_texture_indexes["Deutsch.ttf"],  // Atlas index
-            alpha = 1.0,  // Or tc.alpha
-        }
-        append(&tc.shader_refs, i32(len(rt.guis)))
-        append(&rt.guis, gui)
-
-        pos.x += data.advance * tc.font_scale  // Advance cursor
-    }
-
-    // Update buffer if needed (expand if over MAX_GUIS)
-    if len(rt.guis) > MAX_GUIS { /* panic or resize */ }
-    gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.guis, &rb.vma_allocator, rt.guis[:], u32(len(rt.guis)))
-    update_descriptors()  // If bindings changed
-}
-
-// update_vulkan :: proc()
-// {
-//     if !glfw.WindowShouldClose(rb.window) {
-// 		free_all(context.temp_allocator)
-
-// 		glfw.PollEvents()
-
-// 		// Wait for previous frame.
-// 		must(vk.WaitForFences(rb.device, 1, &rb.in_flight_fences[current_frame], true, fence_timeout_ns))
-
-// 		// Acquire an image from the swapchain.
-// 		acquire_result := vk.AcquireNextImageKHR(
-// 			rb.device,
-// 			rb.swapchain,
-// 			max(u64),
-// 			rb.image_available_semaphores[current_frame],
-// 			0,
-// 			&image_index,
-// 		)
-// 		#partial switch acquire_result {
-// 		case .ERROR_OUT_OF_DATE_KHR:
-// 			recreate_swapchain()
-// 			break//continue
-// 		case .SUCCESS, .SUBOPTIMAL_KHR:
-// 		case:
-// 			log.panicf("vulkan: acquire next image failure: %v", acquire_result)
-// 		}
-
-// 		must(vk.ResetFences(rb.device, 1, &rb.in_flight_fences[current_frame]))
-
-// 		must(vk.ResetCommandBuffer(rb.command_buffers[current_frame], {}))
-// 		record_command_buffer(rb.command_buffers[current_frame], image_index)
-
-// 		// Submit.
-// 		rb.submit_info = vk.SubmitInfo {
-// 			sType                = .SUBMIT_INFO,
-// 			waitSemaphoreCount   = 1,
-// 			pWaitSemaphores      = &rb.image_available_semaphores[current_frame],
-// 			pWaitDstStageMask    = &vk.PipelineStageFlags{.COLOR_ATTACHMENT_OUTPUT},
-// 			commandBufferCount   = 1,
-// 			pCommandBuffers      = &rb.command_buffers[current_frame],
-// 			signalSemaphoreCount = 1,
-// 			pSignalSemaphores    = &rb.render_finished_semaphores[current_frame],
-// 		}
-// 		must(vk.QueueSubmit(rb.graphics_queue, 1, &rb.submit_info, rb.in_flight_fences[current_frame]))
-
-// 		// Present.
-// 		present_info := vk.PresentInfoKHR {
-// 			sType              = .PRESENT_INFO_KHR,
-// 			waitSemaphoreCount = 1,
-// 			pWaitSemaphores    = &rb.render_finished_semaphores[current_frame],
-// 			swapchainCount     = 1,
-// 			pSwapchains        = &rb.swapchain,
-// 			pImageIndices      = &image_index,
-// 		}
-// 		present_result := vk.QueuePresentKHR(rb.present_queue, &present_info)
-// 		switch {
-// 		case present_result == .ERROR_OUT_OF_DATE_KHR || present_result == .SUBOPTIMAL_KHR || rb.framebuffer_resized:
-// 			rb.framebuffer_resized = false
-// 			recreate_swapchain()
-// 		case present_result == .SUCCESS:
-// 		case:
-// 			log.panicf("vulkan: present failure: %v", present_result)
-// 		}
-
-// 		current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT
-// 	}
-// 	vk.DeviceWaitIdle(rb.device)
-// }
-
 destroy_vulkan :: proc()
 {
     // Final cleanup after device is destroyed - only instance-level resources
@@ -1497,7 +1551,6 @@ destroy_vulkan :: proc()
 //----------------------------------------------------------------------------\\
 // /RAYTRACER /rt
 //----------------------------------------------------------------------------\\
-
 curr_id : u32 = 0
 MAX_MATERIALS :: 256
 MAX_MESHES :: 2048
@@ -1509,6 +1562,7 @@ MAX_GUIS :: 96
 MAX_NODES :: 2048
 MAX_BINDLESS_TEXTURES :u32= 0
 MAX_TEXTURES :: 1
+
 // Update flags for tracking what needs to be updated
 UpdateFlag :: enum {
     OBJECT,
@@ -2766,6 +2820,39 @@ update_gui :: proc(gc: ^Cmp_Gui) {
     rt.update_flags |= {.GUI}
 }
 
+update_text :: proc(tc: ^Cmp_Text) {
+    for ref in tc.shader_refs {
+        if ref >= 0 && ref < i32(len(rt.guis)) {
+            rt.guis[ref].alpha = 0
+        }
+    }
+    clear(&tc.shader_refs)
+
+    pos := tc.min
+    for char in tc.text {
+        if char not_in g_font.char_data { continue }
+
+        data := g_font.char_data[char]
+        gui := gpu.Gui {
+            min = pos + data.offset * tc.font_scale,
+            extents = data.uv_ext * tc.font_scale,
+            align_min = data.uv_min,
+            align_ext = data.uv_ext,
+            layer = tc.layer,
+            id = g_texture_indexes["Deutsch.ttf"],
+            alpha = tc.alpha,
+            // color = tc.color,  // If you add this to gpu.Gui
+        }
+        append(&tc.shader_refs, i32(len(rt.guis)))
+        append(&rt.guis, gui)
+        pos.x += data.advance * tc.font_scale
+    }
+
+    if len(tc.shader_refs) > 0 do tc.ref = tc.shader_refs[0]
+    update_descriptors()
+    rt.update_flags |= {.GUI}
+}
+
 int_to_array_of_ints :: proc(n: i32) -> [dynamic]i32 {
     if n == 0 {
         res := make([dynamic]i32, 1)
@@ -3043,6 +3130,7 @@ added_entity :: proc(e: Entity) {
     if .TEXT in t {
         tc := get_component(e,Cmp_Text)
         update_text(tc)
+        tc.ref = tc.shader_refs[0] if len(tc.shader_refs) > 0 else -1
         rt.update_flags |= {.GUI}
     }
 }
@@ -3065,6 +3153,16 @@ removed_entity :: proc(e: Entity) {
             clear(&rt.lights)
             clear(&rt.light_comps)
         }
+    }
+    if .TEXT in t {
+        tc := get_component(e, Cmp_Text)
+        for ref in tc.shader_refs {
+            if ref >= 0 && ref < i32(len(rt.guis)) {
+                rt.guis[ref].alpha = 0
+            }
+        }
+        delete(tc.shader_refs)
+        rt.update_flags |= {.GUI}
     }
 }
 
@@ -3092,7 +3190,10 @@ process_entity :: proc(e: Entity) {
         }
     case .TEXT in type:
             tc := get_component(e, Cmp_Text)
-            update_text(tc)
+            if tc.update{
+                tc.update = false
+                update_text(tc)
+        }
     }
 }
 
