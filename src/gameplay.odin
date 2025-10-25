@@ -12,12 +12,7 @@ import b2"vendor:box2d"
 
 curr_phase : u8 = 0
 
-ArenaStruct :: struct
-{
-    arena: vmem.Arena,
-    data : []byte,
-    alloc : mem.Allocator
-}
+
 level_mem : ArenaStruct
 game_mem : ArenaStruct
 

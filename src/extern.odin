@@ -8,7 +8,8 @@ import "resource"
 import "resource/scene"
 import "core:os"
 import "core:encoding/json"
-
+import "core:mem"
+import vmem"core:mem/virtual"
 // Helper types for vectors/matrices
 vec2f :: [2]f32
 vec3f :: [3]f32
@@ -23,16 +24,29 @@ mat3 :: math.Matrix3f32
 // Import the ECS Entity type
 Entity :: ecs.EntityID
 World :: ecs.World
+ecs_mem: ArenaStruct
+
+ArenaStruct :: struct
+{
+    arena: vmem.Arena,
+    data : []byte,
+    alloc : mem.Allocator
+}
+
 //----------------------------------------------------------------------------\\
 // /ECS
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
 create_world :: #force_inline proc() -> ^World {
-     return ecs.create_world()// track_alloc.backing)
+    arena_err := vmem.arena_init_growing(&ecs_mem.arena, mem.Megabyte * 16,) // Start at 16 MiB, grow to 1 GiB max
+    assert(arena_err == nil)
+    ecs_mem.alloc = vmem.arena_allocator(&ecs_mem.arena)
+    return ecs.create_world(ecs_mem.alloc)// track_alloc.backing)
 }
 delete_world :: #force_inline proc(){
 	//context.allocator = track_alloc.backing
 	ecs.delete_world(g_world)
+	vmem.arena_free_all(&ecs_mem.arena)
 }
 // Entity management
 add_entity :: #force_inline proc() -> ecs.EntityID {
@@ -40,7 +54,7 @@ add_entity :: #force_inline proc() -> ecs.EntityID {
 }
 
 remove_entity :: #force_inline proc(entity: ecs.EntityID){
-    ecs.remove_entity(g_world, entity)
+    // ecs.remove_entity(g_world, entity)
 }
 // Component management
 add_component :: #force_inline proc(entity: ecs.EntityID, component: $T) {
@@ -54,7 +68,7 @@ remove_component :: #force_inline proc(entity: ecs.EntityID, $T: typeid){
     // prev_alloc := context.allocator
     // defer context.allocator = prev_alloc
     // context.allocator = track_alloc.backing
-    ecs.remove_component(g_world, entity, typeid)
+    // ecs.remove_component(g_world, entity, typeid)
 }
 
 entity_exists :: #force_inline proc(entity: ecs.EntityID) -> bool {

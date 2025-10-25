@@ -63,7 +63,6 @@ main :: proc() {
 	defer vmem.arena_free_all(&arena) // Free all allocations from the arena (though defer delete handles backing)
 	arena_alloc = vmem.arena_allocator(&arena)
 
-
 	// Create a per-frame arena for transient data (e.g., BVH construction primitives/nodes)
 	per_frame_arena: mem.Arena
 	per_frame_arena_data: []byte = make([]byte, mem.Megabyte * 8, context.allocator) // 8 MiB example; monitor with tracking allocator

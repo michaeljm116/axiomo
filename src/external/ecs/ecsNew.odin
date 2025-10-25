@@ -80,14 +80,14 @@ EntityInfo :: struct {
 }
 
 Query :: struct {
-	component_ids: []ComponentID,
+	component_ids: [dynamic]ComponentID,
 	archetypes:    [dynamic]^Archetype,
 }
 
 Archetype :: struct {
 	id:               ArchetypeID,
-	component_ids:    []ComponentID,
-	tag_ids:          []ComponentID,
+	component_ids:    [dynamic]ComponentID,
+	tag_ids:          [dynamic]ComponentID,
 	component_types:  map[ComponentID]^reflect.Type_Info,
 	entities:         [dynamic]EntityID,
 	tables:           map[ComponentID][dynamic]byte,
@@ -110,18 +110,16 @@ create_world :: proc(alloc: runtime.Allocator) -> ^World {
 	world.next_entity_id = EntityID(1)
 
 	// Pre-reserve capacities (adjust based on your game)
-	reserve(&world.entity_index, 10000) // e.g., 10k entities
+	reserve(&world.entity_index, 10000)
 	reserve(&world.component_ids, 100) // e.g., 100 component types
 
 	// NEW: Preallocate archetype pool (e.g., 128 max archetypes)
-	world.archetype_pool = make([dynamic]^Archetype, alloc)
-	world.free_archetype_indices = make([dynamic]int, alloc)
-	reserve(&world.archetype_pool, 128)
-	reserve(&world.free_archetype_indices, 128)
+	world.archetype_pool = make([dynamic]^Archetype, 128, alloc)
+	world.free_archetype_indices = make([dynamic]int, 128, alloc)
 	for i in 0..<128 {
 		arch := new(Archetype, alloc)
-		arch.component_ids = make([]ComponentID, alloc)
-		arch.tag_ids = make([]ComponentID, alloc)
+		arch.component_ids = make([dynamic]ComponentID, alloc)
+		arch.tag_ids = make([dynamic]ComponentID, alloc)
 		arch.component_types = make(map[ComponentID]^reflect.Type_Info, alloc)
 		arch.entities = make([dynamic]EntityID, alloc)
 		arch.tables = make(map[ComponentID][dynamic]byte, alloc)
@@ -131,7 +129,8 @@ create_world :: proc(alloc: runtime.Allocator) -> ^World {
 
 		// Pre-reserve per-archetype (e.g., 500 entities per archetype)
 		reserve(&arch.entities, 500)
-		reserve(&arch.tables, 50) // Components per archetype
+		reserve(&arch.component_types, 50)
+		reserve(&arch.tables, 50)
 		append(&world.archetype_pool, arch)
 		append(&world.free_archetype_indices, i)
 	}
@@ -158,7 +157,7 @@ delete_world :: proc(world: ^World) {
 	clear(&world.component_ids)
 	clear(&world.pair_component_ids)
 	clear(&world.entity_index)
-	for _, comp_map in world.component_archetypes {
+	for cid, &comp_map in world.component_archetypes {
 		clear(&comp_map)
 	}
 	clear(&world.component_archetypes)
@@ -180,7 +179,7 @@ clear_archetype :: proc(archetype: ^Archetype, alloc: runtime.Allocator) {
 	clear(&archetype.tag_ids)
 	clear(&archetype.component_types)
 	clear(&archetype.entities)
-	for _, &table in archetype.tables {
+	for cid, &table in archetype.tables {
 		clear(&table)
 	}
 	clear(&archetype.tables)
@@ -194,7 +193,6 @@ register_component :: proc {
 }
 
 register_component_typeid :: proc(world: ^World, T: typeid) -> ComponentID {
-	alloc := world.allocator
 	id := add_entity(world)
 	type_info := type_info_of(T)
 	info := ComponentTypeInfo {
@@ -212,7 +210,8 @@ add_entity :: proc(world: ^World) -> EntityID {
 	world.next_entity_id = world.next_entity_id + 1
 
 	// TODO: pack version etc into ID bits
-	if info, exists := &world.entity_index[entity]; exists {
+	if entity in world.entity_index {
+		info := &world.entity_index[entity]
 		info.archetype = nil
 		info.row = -1
 		info.version += 1
@@ -252,7 +251,7 @@ has_component_type :: proc(world: ^World, entity: EntityID, $T: typeid) -> bool 
 	if !ok {
 		return false
 	}
-	return slice.contains(info.archetype.component_ids, cid)
+	return slice.contains(info.archetype.component_ids[:], cid)
 }
 
 has_component_instance :: proc(world: ^World, entity: EntityID, component: $T) -> bool {
@@ -265,7 +264,7 @@ has_component_instance :: proc(world: ^World, entity: EntityID, component: $T) -
 	if !ok {
 		return false
 	}
-	return slice.contains(info.archetype.component_ids, cid)
+	return slice.contains(info.archetype.component_ids[:], cid)
 }
 
 get_relation_typeid :: proc(c: PairType($R, $T)) -> typeid {
@@ -318,6 +317,7 @@ add_component :: proc(world: ^World, entity: EntityID, component: $T) {
     }
 
     info := world.entity_index[entity]
+    info_ptr := &world.entity_index[entity]
     old_archetype := info.archetype
     new_archetype: ^Archetype
 
@@ -342,13 +342,13 @@ add_component :: proc(world: ^World, entity: EntityID, component: $T) {
         if !ok {
             new_component_ids: [dynamic]ComponentID = make([dynamic]ComponentID, alloc)
             defer clear(&new_component_ids)
-            append(&new_component_ids, ..old_archetype.component_ids)
+            append(&new_component_ids, ..old_archetype.component_ids[:])
             append(&new_component_ids, cid)
-            slice.sort(new_component_ids[:]) // Was sort_component_ids, assume slice.sort
+            slice.sort(new_component_ids[:])
 
             new_tag_ids: [dynamic]ComponentID = make([dynamic]ComponentID, alloc)
             defer clear(&new_tag_ids)
-            append(&new_tag_ids, ..old_archetype.tag_ids)
+            append(&new_tag_ids, ..old_archetype.tag_ids[:])
             if size_of(T) == 0 {
                 append(&new_tag_ids, cid)
             }
@@ -363,7 +363,7 @@ add_component :: proc(world: ^World, entity: EntityID, component: $T) {
     }
 
     when size_of(T) > 0 {
-        index := world.entity_index[entity].row
+        index := info_ptr.row
         local_component := component
 
         when intrinsics.type_is_struct(T) && intrinsics.type_has_field(T, "relation") && intrinsics.type_has_field(T, "target") {
@@ -401,7 +401,7 @@ add_component_data :: proc(
 
 	required_size := (index + 1) * size
 	if len(table^) < required_size {
-		resize(table, required_size)
+		resize(table, required_size) // Use resize for [dynamic]
 	}
 
 	offset := index * size
@@ -419,7 +419,7 @@ move_entity :: proc(world: ^World, entity: EntityID, info: EntityInfo, old_arche
 
 	// Copy component data from old to new
 	if old_archetype != nil {
-		for cid in old_archetype.component_ids {
+		for cid in old_archetype.component_ids[:] {
 			old_table := old_archetype.tables[cid]
 			new_table, _ := &new_archetype.tables[cid]
 
@@ -441,9 +441,10 @@ move_entity :: proc(world: ^World, entity: EntityID, info: EntityInfo, old_arche
 		if old_row != last_old_row {
 			moved_entity := old_archetype.entities[last_old_row]
 			old_archetype.entities[old_row] = moved_entity
-			world.entity_index[moved_entity].row = old_row
+			moved_info := &world.entity_index[moved_entity]
+			moved_info.row = old_row
 
-			for cid in old_archetype.component_ids {
+			for cid in old_archetype.component_ids[:] {
 				component_size := size_of_type(old_archetype.component_types[cid])
 				if component_size == 0 { continue }
 
@@ -455,7 +456,7 @@ move_entity :: proc(world: ^World, entity: EntityID, info: EntityInfo, old_arche
 		}
 
 		pop(&old_archetype.entities)
-		for cid in old_archetype.component_ids {
+		for cid in old_archetype.component_ids[:] {
 			component_size := size_of_type(old_archetype.component_types[cid])
 			if component_size == 0 { continue }
 
@@ -466,18 +467,21 @@ move_entity :: proc(world: ^World, entity: EntityID, info: EntityInfo, old_arche
 		// If old archetype empty, clear it (no delete)
 		if len(old_archetype.entities) == 0 {
 			clear_archetype(old_archetype, alloc)
+			// remove archetype entry from the world map
 			delete_key(&world.archetypes, old_archetype.id)
-			for cid in old_archetype.component_ids {
-				if comp_arch, ok := &world.component_archetypes[cid]; ok {
-					delete_key(&comp_arch, old_archetype.id)
+			// remove archetype from component -> archetype maps (in-place)
+			for cid in old_archetype.component_ids[:] {
+				if _, ok := world.component_archetypes[cid]; ok {
+					delete_key(&world.component_archetypes[cid], old_archetype.id)
 				}
 			}
 		}
 	}
 
 	// Update entity info
-	world.entity_index[entity].archetype = new_archetype
-	world.entity_index[entity].row = new_row
+	entity_info := &world.entity_index[entity]
+	entity_info.archetype = new_archetype
+	entity_info.row = new_row
 }
 
 get_or_create_archetype :: proc(world: ^World, component_ids: []ComponentID, tag_ids: []ComponentID) -> ^Archetype {
@@ -492,8 +496,8 @@ get_or_create_archetype :: proc(world: ^World, component_ids: []ComponentID, tag
 		// Grow pool
 		new_idx := len(world.archetype_pool)
 		arch := new(Archetype, alloc)
-		arch.component_ids = make([]ComponentID, alloc)
-		arch.tag_ids = make([]ComponentID, alloc)
+		arch.component_ids = make([dynamic]ComponentID, alloc)
+		arch.tag_ids = make([dynamic]ComponentID, alloc)
 		arch.component_types = make(map[ComponentID]^reflect.Type_Info, alloc)
 		arch.entities = make([dynamic]EntityID, alloc)
 		arch.tables = make(map[ComponentID][dynamic]byte, alloc)
@@ -502,6 +506,7 @@ get_or_create_archetype :: proc(world: ^World, component_ids: []ComponentID, tag
 		arch.add_edges = make(map[ComponentID]^Archetype, alloc)
 
 		reserve(&arch.entities, 500)
+		reserve(&arch.component_types, 50)
 		reserve(&arch.tables, 50)
 		append(&world.archetype_pool, arch)
 		append(&world.free_archetype_indices, new_idx)
@@ -533,7 +538,8 @@ get_or_create_archetype :: proc(world: ^World, component_ids: []ComponentID, tag
 		if _, ok := world.component_archetypes[cid]; !ok {
 			world.component_archetypes[cid] = make(map[ArchetypeID]^Archetype, alloc)
 		}
-		world.component_archetypes[cid][id] = archetype
+		comp_arch := world.component_archetypes[cid]
+		comp_arch[id] = archetype
 	}
 
 	return archetype
@@ -804,18 +810,18 @@ execute :: proc(q: ^QueryBuilder) -> []^Archetype {
 
 	result: [dynamic]^Archetype = make([dynamic]^Archetype, alloc)
 	defer clear(&result)
-	for _, archetype in q.world.archetypes {
+	for key, archetype in q.world.archetypes {
 		all_has_present := true
-		for id in has_terms {
-			if !slice.contains(archetype.component_ids, id) {
+		for id in has_terms[:] {
+			if !slice.contains(archetype.component_ids[:], id) {
 				all_has_present = false
 				break
 			}
 		}
 
 		no_not_present := true
-		for id in not_terms {
-			if slice.contains(archetype.component_ids, id) {
+		for id in not_terms[:] {
+			if slice.contains(archetype.component_ids[:], id) {
 				no_not_present = false
 				break
 			}
@@ -826,6 +832,7 @@ execute :: proc(q: ^QueryBuilder) -> []^Archetype {
 		}
 	}
 
+	// Return as slice (caller can copy if needed)
 	return result[:]
 }
 
