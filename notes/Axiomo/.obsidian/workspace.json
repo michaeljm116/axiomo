@@ -37,22 +37,14 @@
             "id": "663bab98dd640001",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "markdown",
               "state": {
-                "file": "Showcase Kanban.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false,
-                    false,
-                    false
-                  ]
-                }
+                "file": "BeeKillingsInn/Megastructification.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-trello",
-              "title": "Showcase Kanban"
+              "icon": "lucide-file",
+              "title": "Megastructification"
             }
           }
         ],
@@ -208,8 +200,9 @@
   },
   "active": "663bab98dd640001",
   "lastOpenFiles": [
-    "BeeKillingsInn/Personal FeedBack.md",
     "Showcase Kanban.md",
+    "BeeKillingsInn/Megastructification.md",
+    "BeeKillingsInn/Personal FeedBack.md",
     "BeeKillingsInn/Menu system.md",
     "Kanban.md",
     "Photos/{0DA3E792-94E9-46F5-B6DE-8EDBEA4E55CD}.png",
@@ -236,7 +229,6 @@
     "BeeKillingsInn/Grok.md",
     "BeeKillingsInn/Merge Bee with Axiomo.md",
     "BeeKillingsInn/KillerBee prototype.md",
-    "BeeKillingsInn/Next Steps.md",
     "Photos/533a3e3f-448d-4c5f-a028-29d6aa9a81bf.png",
     "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
     "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",

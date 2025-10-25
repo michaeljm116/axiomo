@@ -114,6 +114,7 @@ destroy_level1 :: proc() {
     }
     for gw in g_level.grid_weapons do delete_parent_node(gw.chest)
     destroy_arenas()
+    assert(entity_exists(g_floor))
 }
 
 //----------------------------------------------------------------------------\\
@@ -1464,7 +1465,6 @@ app_run :: proc(dt: f32, state: ^AppState) {
 			ToggleMenuUI(state)
 		}
 	}
-
 }
 
 set_game_over :: proc(){

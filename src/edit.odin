@@ -274,6 +274,11 @@ handle_destroy_mode :: proc()
     if is_key_just_pressed(glfw.KEY_ENTER)
     {
         set_game_start()
+        fc := get_component(g_floor, Cmp_Node)
+        fp := get_component(g_floor, Cmp_Primitive)
+        ft := get_component(g_floor, Cmp_Primitive)
+        fmt.println("Floor: ", fc.name, " T: ", ft.world, " P: ", fp.extents)
+
         // delete_parent_node(selected_destroy)
         // child := get_component(selected_destroy,Cmp_Node).child
         // child_node := get_component(child,Cmp_Node)

@@ -38,15 +38,15 @@ ArenaStruct :: struct
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
 create_world :: #force_inline proc() -> ^World {
-    arena_err := vmem.arena_init_growing(&ecs_mem.arena, mem.Megabyte * 64,) // Start at 16 MiB, grow to 1 GiB max
+    arena_err := vmem.arena_init_growing(&ecs_mem.arena, mem.Megabyte * 128,) // Start at 16 MiB, grow to 1 GiB max
     assert(arena_err == nil)
     ecs_mem.alloc = vmem.arena_allocator(&ecs_mem.arena)
-    return ecs.create_world(ecs_mem.alloc)// track_alloc.backing)
+    return ecs.create_world(track_alloc.backing)// track_alloc.backing)
 }
 delete_world :: #force_inline proc(){
 	//context.allocator = track_alloc.backing
 	ecs.delete_world(g_world)
-	vmem.arena_free_all(&ecs_mem.arena)
+	// vmem.arena_free_all(&ecs_mem.arena)
 }
 // Entity management
 add_entity :: #force_inline proc() -> ecs.EntityID {
@@ -61,6 +61,8 @@ remove_entity :: #force_inline proc(entity: ecs.EntityID){
 add_component :: #force_inline proc(entity: ecs.EntityID, component: $T) {
     // prev_alloc := context.allocator
     // defer context.allocator = prev_alloc
+    // context.allocator = ecs_mem.alloc
+
     // context.allocator = track_alloc.backing
 	ecs.add_component(g_world, entity, component)
 }
@@ -69,6 +71,7 @@ remove_component :: #force_inline proc(entity: ecs.EntityID, $T: typeid){
     // prev_alloc := context.allocator
     // defer context.allocator = prev_alloc
     // context.allocator = track_alloc.backing
+    // context.allocator = ecs_mem.alloc
     ecs.remove_component(g_world, entity, typeid)
 }
 

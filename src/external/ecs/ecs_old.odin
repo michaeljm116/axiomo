@@ -57,6 +57,7 @@ World :: struct {
 	component_archetypes: map[ComponentID]map[ArchetypeID]^Archetype,
 	next_entity_id:       EntityID,
 	queries:              [dynamic]^Query,
+	alloc:                runtime.Allocator
 }
 
 // Entity Info stores the location of an entity within an archetype and its version
@@ -96,6 +97,7 @@ Archetype :: struct {
 
 create_world :: proc(alloc := context.allocator) -> ^World {
 	world := new(World, alloc)
+	world.alloc = alloc
 	world.component_info = make(map[ComponentID]ComponentTypeInfo, alloc)
 	world.entity_index = make(map[EntityID]EntityInfo, alloc)
 	world.archetypes = make(map[ArchetypeID]^Archetype, alloc)
@@ -183,6 +185,7 @@ add_entity :: proc(world: ^World) -> EntityID {
 create_entity :: add_entity
 
 remove_entity :: proc(world: ^World, entity: EntityID) {
+	assert (entity != 11)
 	info, ok := &world.entity_index[entity]
 	if !ok || info.archetype == nil {
 		return // Entity does not exist or has already been removed
@@ -546,7 +549,7 @@ move_entity :: proc(
 
 		new_table, ok := &new_archetype.tables[component_id]
 		if !ok {
-			new_table^ = make([dynamic]byte)
+			new_table^ = make([dynamic]byte, world.alloc)
 			new_archetype.tables[component_id] = new_table^
 		}
 		type_info := new_archetype.component_types[component_id]
@@ -651,19 +654,19 @@ get_or_create_archetype :: proc(
 	archetype = new(Archetype)
 	archetype.id = archetype_id
 	archetype.component_ids = slice.clone(component_ids)
-	archetype.entities = make([dynamic]EntityID)
-	archetype.tables = make(map[ComponentID][dynamic]byte)
-	archetype.component_types = make(map[ComponentID]^reflect.Type_Info)
-	archetype.tag_ids = slice.clone(tag_ids)
-	archetype.disabled_set = make(map[ComponentID]bool)
-	archetype.add_edges = make(map[ComponentID]^Archetype)
-	archetype.remove_edges = make(map[ComponentID]^Archetype)
+	archetype.entities = make([dynamic]EntityID, world.alloc)
+	archetype.tables = make(map[ComponentID][dynamic]byte, world.alloc)
+	archetype.component_types = make(map[ComponentID]^reflect.Type_Info, world.alloc)
+	archetype.tag_ids = slice.clone(tag_ids, world.alloc)
+	archetype.disabled_set = make(map[ComponentID]bool, world.alloc)
+	archetype.add_edges = make(map[ComponentID]^Archetype, world.alloc)
+	archetype.remove_edges = make(map[ComponentID]^Archetype, world.alloc)
 	// Initialize component arrays and update component archetypes
 	for cid in component_ids {
 		component_info := world.component_info[cid]
 		if component_info.size > 0 {
 			// Only allocate storage for components with data
-			new_table := make([dynamic]byte)
+			new_table := make([dynamic]byte, world.alloc)
 			archetype.tables[cid] = new_table
 			archetype.component_types[cid] = component_info.type_info
 		}

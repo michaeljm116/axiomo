@@ -19,7 +19,7 @@ game_mem : ArenaStruct
 set_up_arenas :: proc()
 {
    // level_mem.data = make([]byte, mem.Megabyte, context.allocator)
-    err := vmem.arena_init_static(&level_mem.arena, mem.Megabyte)
+    err := vmem.arena_init_static(&level_mem.arena, mem.Kilobyte * 500)
     assert(err == nil)
     level_mem.alloc = vmem.arena_allocator(&level_mem.arena)
 
