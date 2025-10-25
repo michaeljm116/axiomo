@@ -1319,9 +1319,9 @@ Font :: struct {
     info: sttt.fontinfo,         // Add this
     baked_chars: [95]sttt.bakedchar,  // Add this (matches your ASCII range)
     char_data: map[rune]struct {
-        uv_min, uv_ext: vec2,
+        uv_min, uv_ext: vec2f,
         advance: f32,
-        offset: vec2,
+        offset: vec2f,
     },
 }
 g_font: Font
