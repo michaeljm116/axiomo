@@ -28,9 +28,31 @@ The lifetime is ultimately the entire scene. although unfortunately
 	* Technically its per-scene?
 * BVH Data: per-frame
 * Game Data: per-game
+* Scene Data: per-scene... or is it?
+	* yeah so scene data is per-scene. but because you might die often you dont want to constantly reload this after every death
 	* but the complications are that it uses scene-data
 * maybe this is the issue is you have scene data and game-data and they overlap
 * What if, at the start of every scene you create the ecs world?
 	* there is no remove_entity just pure idk
 	* i think first thing is to fix the ecs to no longer remove any components
 		* remove component is ONLY used for animate :)
+* okay so the problem is there's like a scene resource data and the ecs data
+* the scene resources should be allocated with a different allocator than the ecs (maybe)
+* realistically you'd create many scenes and you'd probably delete
+so its like... zone data, scene data, should scene data be in zone data? there's really no need to
+
+
+So the ultimate question when it comes to lifetimes is...
+* how do you want to structure your resources
+* cause data isn't entire program its entire zone
+* ... just leave it as that then
+* so for a zone... everything that is currently global will be zonified
+* but tbh it doesn't matter right now cause you dont plan on having zones
+* so yeah there's now a question about data 
+* well yeah so there's scene data and scene setup those should be separate
+* load scene should load all scene data into the datamem
+	* but something like a start_scene should start the scene and use that data's mem
+* I think everything is fine, question is about scene data
+* should there be a per yeah... there should
+* sooo
+Final

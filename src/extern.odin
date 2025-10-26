@@ -27,26 +27,22 @@ Entity :: ecs.EntityID
 World :: ecs.World
 ecs_mem: ArenaStruct
 
-ArenaStruct :: struct
-{
-    arena: vmem.Arena,
-    data : []byte,
-    alloc : mem.Allocator
-}
-
 //----------------------------------------------------------------------------\\
 // /ECS
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
 create_world :: #force_inline proc(alloc : runtime.Allocator) -> ^World {
-    // arena_err := vmem.arena_init_growing(&ecs_mem.arena, mem.Megabyte * 128,) // Start at 16 MiB, grow to 1 GiB max
-    // assert(arena_err == nil)
-    // ecs_mem.alloc = vmem.arena_allocator(&ecs_mem.arena)
-    return ecs.create_world(alloc)// track_alloc.backing)
+    arena_err := vmem.arena_init_growing(&ecs_mem.arena, mem.Megabyte * 128,) // Start at 16 MiB, grow to 1 GiB max
+    assert(arena_err == nil)
+    ecs_mem.alloc = vmem.arena_allocator(&ecs_mem.arena)
+    g_world = ecs.create_world(ecs_mem.alloc)// track_alloc.backing)
+    g_world_ent = add_entity()
+    return g_world
 }
 delete_world :: #force_inline proc(){
 	//context.allocator = track_alloc.backing
-	ecs.delete_world(g_world)
+	// ecs.delete_world(g_world)
+	vmem.arena_destroy(&ecs_mem.arena)
 	// vmem.arena_free_all(&ecs_mem.arena)
 }
 // Entity management
@@ -54,10 +50,6 @@ add_entity :: #force_inline proc() -> ecs.EntityID {
 	return ecs.add_entity(g_world)
 }
 
-remove_entity :: #force_inline proc(entity: ecs.EntityID){
-    ecs.remove_entity(g_world, entity)
-    // add_component()
-}
 // Component management
 add_component :: #force_inline proc(entity: ecs.EntityID, component: $T) {
     // prev_alloc := context.allocator
@@ -73,7 +65,7 @@ remove_component :: #force_inline proc(entity: ecs.EntityID, $T: typeid){
     // defer context.allocator = prev_alloc
     // context.allocator = track_alloc.backing
     // context.allocator = ecs_mem.alloc
-    ecs.remove_component(g_world, entity, typeid)
+    ecs.disable_component(g_world, entity, typeid)
 }
 
 entity_exists :: #force_inline proc(entity: ecs.EntityID) -> bool {

@@ -44,6 +44,15 @@ g_frame := FrameRate {
 	physics_time_step = 1.0 / 60.0,
 }
 
+ArenaStruct :: struct
+{
+    arena: vmem.Arena,
+    data : []byte,
+    alloc : mem.Allocator
+}
+
+data_mem : ArenaStruct
+
 arena_alloc: mem.Allocator
 track_alloc: mem.Tracking_Allocator
 
@@ -81,7 +90,7 @@ main :: proc() {
     //----------------------------------------------------------------------------\\
 	g_world = create_world(default_alloc)
 	defer delete_world()
-	g_world_ent = add_entity()
+
 	g_bvh = bvh_system_create(per_frame_alloc)
 	defer bvh_system_destroy(g_bvh)
 
@@ -89,8 +98,8 @@ main :: proc() {
 	g_materials = make([dynamic]res.Material, 0, arena_alloc)
 	res.load_materials("assets/Materials.xml", &g_materials)
 	g_models = make([dynamic]res.Model, 0, arena_alloc)
-	scene := sc.load_new_scene("assets/scenes/BeeKillingsInn.json", arena_alloc)
 	res.load_directory("assets/models/", &g_models)
+	scene := sc.load_new_scene("assets/scenes/BeeKillingsInn.json", arena_alloc)
 	// poses := res.load_pose("assets/animations/Froku.anim", "Froku", arena_alloc)
 	g_animations = make(map[u32]res.Animation, 0, arena_alloc)
 	res.load_anim_directory("assets/animations/", &g_animations, arena_alloc)
@@ -100,7 +109,6 @@ main :: proc() {
 	sc.load_prefab_directory("assets/prefabs/ui", &g_ui_prefabs, arena_alloc)
 
 	//Begin renderer and scene loading
-	add_component(g_world_ent, Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, "title.png", 0, 0, false})
 	// init_GameUI(&g_gameui)
 
 	start_up_raytracer(arena_alloc)
@@ -117,7 +125,7 @@ main :: proc() {
 
 	//begin renderer
 	initialize_raytracer()
-	text := create_test_text_entity()
+	// text := create_test_text_entity()
 	glfw.PollEvents()
 	g_frame.prev_time = glfw.GetTime()
 	// gameplay_update(0.015)
@@ -141,10 +149,6 @@ main :: proc() {
 			gameplay_update(f32(g_frame.physics_time_step))
 			mem.arena_free_all(&per_frame_arena)
 			g_frame.physics_acc_time -= f32(g_frame.physics_time_step)
-
-			tc := get_component(text, Cmp_Text)
-			gc := get_component(text, Cmp_Node)
-			update_text(tc)
 		}
 		update_buffers()
 		update_descriptors()

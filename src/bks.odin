@@ -22,7 +22,7 @@ g_state : GameState = .Start
 g_current_bee: int = 0
 g_level :Level
 g_dice :  [2]Dice
-g_saftey_bee : Bee
+// g_saftey_bee : Bee
 
 Grid :: [][]Tile
 Level :: struct
@@ -38,10 +38,10 @@ Level :: struct
 }
 prestart :: proc()
 {
-    g_saftey_bee = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
-    tc := get_component(g_saftey_bee.entity, Cmp_Transform)
-    tc.global.pos.y = 100000000000000.0
-    add_component(g_saftey_bee.entity, Cmp_Visual{})
+    // g_saftey_bee = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
+    // tc := get_component(g_saftey_bee.entity, Cmp_Transform)
+    // tc.global.pos.y = 100000000000000.0
+    // add_component(g_saftey_bee.entity, Cmp_Visual{})
 }
 //----------------------------------------------------------------------------\\
 // /Start UP

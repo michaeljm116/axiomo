@@ -610,7 +610,7 @@ delete_parent_node :: proc(parent_entity: Entity) {
     // If this node has a parent, unlink this node from that parent first.
     // Do this before calling remove_entity so the parent can be updated safely.
     if entity_exists(parent_node.parent) do remove_child(parent_node.parent, parent_entity)
-    if entity_exists(parent_entity) do remove_entity(parent_entity)
+    if entity_exists(parent_entity) do remove_component(parent_entity, Cmp_Node)
 }
 
 

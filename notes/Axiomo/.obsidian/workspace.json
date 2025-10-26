@@ -46,9 +46,21 @@
               "icon": "lucide-file",
               "title": "Megastructification"
             }
+          },
+          {
+            "id": "46cbbd527191174f",
+            "type": "leaf",
+            "state": {
+              "type": "excalidraw",
+              "state": {
+                "file": "Excalidraw/Arenas.md"
+              },
+              "icon": "excalidraw-icon",
+              "title": "Arenas"
+            }
           }
         ],
-        "currentTab": 2
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -198,11 +210,18 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "663bab98dd640001",
+  "active": "46cbbd527191174f",
   "lastOpenFiles": [
-    "BeeKillingsInn/Bugs.md",
     "Excalidraw/PlayersTUrn.excalidraw.md",
+    "Excalidraw/Drawing 2025-10-25 22.22.29.excalidraw.md",
+    "Excalidraw/Drawing 2025-10-25 22.22.27.excalidraw.md",
+    "Excalidraw/Drawing 2025-10-08 18.07.41.excalidraw.md",
+    "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md",
+    "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
+    "Excalidraw/Arenas.md",
     "BeeKillingsInn/Megastructification.md",
+    "Excalidraw/AnimationStates.excalidraw.md",
+    "BeeKillingsInn/Bugs.md",
     "Showcase Kanban.md",
     "BeeKillingsInn/Personal FeedBack.md",
     "BeeKillingsInn/Menu system.md",
@@ -216,19 +235,12 @@
     "BeeKillingsInn/Rules Engine.md",
     "BeeKillingsInn/ECS Notes.md",
     "BeeKillingsInn/Animation - Again.md",
-    "Excalidraw/Drawing 2025-10-08 18.07.41.excalidraw.md",
     "BeeKillingsInn/Story.md",
     "Photos/BKS_Title.png",
-    "Excalidraw/AnimationStates.excalidraw.md",
     "BeeKillingsInn/Bee Ideas.md",
     "BeeKillingsInn/Art Inspo.md",
     "BeeKillingsInn/bg.md",
     "BeeKillingsInn/Code.md",
-    "BeeKillingsInn/Engine Improvements.md",
-    "BeeKillingsInn/Epics.md",
-    "BeeKillingsInn/Grok.md",
-    "BeeKillingsInn/Merge Bee with Axiomo.md",
-    "BeeKillingsInn/KillerBee prototype.md",
     "Photos/533a3e3f-448d-4c5f-a028-29d6aa9a81bf.png",
     "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
     "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",

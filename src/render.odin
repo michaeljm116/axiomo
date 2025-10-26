@@ -1698,7 +1698,7 @@ prepare_storage_buffers :: proc() {
         rt.materials[:],
         MAX_MATERIALS)
 
-   gui_cmp := get_component(g_world_ent, Cmp_Gui)
+   gui_cmp := Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, "title.png", 0, 0, false}
    gpu_gui := gpu.Gui{min = gui_cmp.min, extents = gui_cmp.extents,
        align_min = gui_cmp.align_min, align_ext = gui_cmp.align_ext,
        layer = gui_cmp.layer, id = g_texture_indexes[gui_cmp.id], alpha = gui_cmp.alpha
@@ -2445,7 +2445,7 @@ start_up_raytracer :: proc(alloc: mem.Allocator)
    set_camera()
    map_models_to_gpu(alloc)
    map_materials_to_gpu(alloc)
-   bake_font_atlas("assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
+   // bake_font_atlas("assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
 }
 
 set_camera :: proc()

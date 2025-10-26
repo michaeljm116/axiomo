@@ -108,27 +108,25 @@ create_world :: proc(alloc := context.allocator) -> ^World {
 }
 
 new_world :: create_world
-
 delete_world :: proc(world: ^World) {
 	if world == nil {
 		return
 	}
-
-	for _, archetype in world.archetypes {
-		delete_archetype(archetype, false)
-	}
-	delete(world.component_info)
-	delete(world.info_component)
-	delete(world.component_ids)
-	delete(world.pair_component_ids)
-	delete(world.entity_index)
-	delete(world.archetypes)
-	for _, comp_map in world.component_archetypes {
-		delete(comp_map)
-	}
-	delete(world.component_archetypes)
-	delete(world.queries)
-	free(world)
+	// for _, archetype in world.archetypes {
+	// 	delete_archetype(archetype, false)
+	// }
+	// delete(world.component_info)
+	// delete(world.info_component)
+	// delete(world.component_ids)
+	// delete(world.pair_component_ids)
+	// delete(world.entity_index)
+	// delete(world.archetypes)
+	// for _, comp_map in world.component_archetyes {
+	// 	delete(comp_map)
+	// }
+	// delete(world.component_archetypes)
+	// delete(world.queries)
+	// free(world)
 }
 
 
@@ -183,76 +181,6 @@ add_entity :: proc(world: ^World) -> EntityID {
 }
 
 create_entity :: add_entity
-
-remove_entity :: proc(world: ^World, entity: EntityID) {
-	assert (entity != 11)
-	info, ok := &world.entity_index[entity]
-	if !ok || info.archetype == nil {
-		return // Entity does not exist or has already been removed
-	}
-
-	archetype := info.archetype
-	row := info.row
-	last_row := len(archetype.entities) - 1
-
-	// Swap the entity to be removed with the last entity in the archetype
-	if row != last_row {
-		last_entity := archetype.entities[last_row]
-		archetype.entities[row] = last_entity
-
-		// Update all component tables
-		for component_id, &component_array in &archetype.tables {
-			if slice.contains(archetype.tag_ids, component_id) {
-				continue // Skip tags as they don't have data
-			}
-
-			type_info := archetype.component_types[component_id]
-			size := size_of_type(type_info)
-
-			// Move the last element's data to the removed entity's position
-			mem.copy(&component_array[row * size], &component_array[last_row * size], size)
-		}
-
-		// Update the moved entity's index
-		if moved_info, exists := &world.entity_index[last_entity]; exists {
-			moved_info.row = row
-		}
-	}
-
-	// Remove the last entity (which is now the entity we want to remove)
-	pop(&archetype.entities)
-
-	// Resize all component arrays
-	for component_id, &component_array in &archetype.tables {
-		if slice.contains(archetype.tag_ids, component_id) {
-			continue // Skip tags as they don't have data
-		}
-
-		type_info := archetype.component_types[component_id]
-		size := size_of_type(type_info)
-
-		resize(&component_array, len(archetype.entities) * size)
-	}
-
-	// Recycle the entity
-	info.archetype = nil
-	info.row = -1
-	info.version += 1
-	world.next_entity_id = entity
-
-	// If the archetype is now empty, remove it from the world
-	if len(archetype.entities) == 0 {
-		delete_key(&world.archetypes, archetype.id)
-		for component_id in archetype.component_ids {
-			if component_archetypes, ok := &world.component_archetypes[component_id]; ok {
-				delete_key(component_archetypes, archetype.id)
-			}
-		}
-		delete_archetype(archetype)
-	}
-}
-
-delete_entity :: remove_entity
 
 entity_exists :: proc(world: ^World, entity: EntityID) -> bool {
 	info, ok := world.entity_index[entity]
@@ -427,56 +355,6 @@ add_component_data :: proc(
 	mem.copy(&table^[offset], component, size)
 }
 
-remove_component_id :: proc(ids: []ComponentID, cid: ComponentID) -> []ComponentID {
-	new_ids: [dynamic]ComponentID
-	for id in ids {
-		if u64(id) != u64(cid) {
-			append(&new_ids, id)
-		}
-	}
-	return new_ids[:]
-}
-
-remove_component :: proc(world: ^World, entity: EntityID, $T: typeid) {
-	cid, ok := get_component_id(world, T)
-	if !ok {
-		return
-	}
-	info := world.entity_index[entity]
-
-	old_archetype := info.archetype
-	if old_archetype == nil {
-		return // Entity does not have this component
-	}
-
-	// Check if the component exists in the archetype
-	if !slice.contains(old_archetype.component_ids, cid) {
-		return // Component not present
-	}
-
-	// Use the remove_edges graph to get the next archetype
-	new_archetype, ok2 := old_archetype.remove_edges[cid]
-	if !ok2 {
-		// If the edge doesn't exist, create a new archetype
-		new_component_ids := remove_component_id(old_archetype.component_ids, cid)
-		defer delete(new_component_ids)
-
-		new_tag_ids: [dynamic]ComponentID
-		defer delete(new_tag_ids)
-		for tag_id in old_archetype.tag_ids {
-			if tag_id != cid {
-				append(&new_tag_ids, tag_id)
-			}
-		}
-
-		new_archetype = get_or_create_archetype(world, new_component_ids[:], new_tag_ids[:])
-		old_archetype.remove_edges[cid] = new_archetype
-	}
-
-	// Move entity to new archetype
-	move_entity(world, entity, info, old_archetype, new_archetype)
-}
-
 disable_component :: proc(world: ^World, entity: EntityID, $T: typeid) {
 	cid, ok := get_component_id(world, T)
 	if !ok {
@@ -630,13 +508,13 @@ move_entity :: proc(
 
 	}
 
-	// If the old archetype exists and has 0 entities, remove it
-	// TODO: probably should make this manual, as recreating archetypes is expensive
-	if old_archetype != nil && len(old_archetype.entities) == 0 {
-		delete_key(&world.archetypes, old_archetype.id)
-		delete_archetype(old_archetype)
-		// TODO: remove from queries
-	}
+	// // If the old archetype exists and has 0 entities, remove it
+	// // TODO: probably should make this manual, as recreating archetypes is expensive
+	// if old_archetype != nil && len(old_archetype.entities) == 0 {
+	// 	delete_key(&world.archetypes, old_archetype.id)
+	// 	delete_archetype(old_archetype)
+	// 	// TODO: remove from queries
+	// }
 }
 
 get_or_create_archetype :: proc(
@@ -678,80 +556,80 @@ get_or_create_archetype :: proc(
 	return archetype
 }
 
-delete_archetype :: proc(archetype: ^Archetype, cleanup_edges := true) {
-	if archetype == nil {
-		return
-	}
+// delete_archetype :: proc(archetype: ^Archetype, cleanup_edges := true) {
+// 	if archetype == nil {
+// 		return
+// 	}
 
-	if cleanup_edges {
-		// Clean add_edges neighbors
-		for _, other_archetype in archetype.add_edges {
-			// Collect keys for add_edges
-			add_keys: [dynamic]ComponentID
-			defer delete(add_keys)
-			for key, a in other_archetype.add_edges {
-				if a.id == archetype.id {
-					append(&add_keys, key)
-				}
-			}
-			for key in add_keys {
-				delete_key(&other_archetype.add_edges, key)
-			}
+// 	if cleanup_edges {
+// 		// Clean add_edges neighbors
+// 		for _, other_archetype in archetype.add_edges {
+// 			// Collect keys for add_edges
+// 			add_keys: [dynamic]ComponentID
+// 			defer delete(add_keys)
+// 			for key, a in other_archetype.add_edges {
+// 				if a.id == archetype.id {
+// 					append(&add_keys, key)
+// 				}
+// 			}
+// 			for key in add_keys {
+// 				delete_key(&other_archetype.add_edges, key)
+// 			}
 
-			// Collect keys for remove_edges
-			remove_keys: [dynamic]ComponentID
-			defer delete(remove_keys)
-			for key, a in other_archetype.remove_edges {
-				if a.id == archetype.id {
-					append(&remove_keys, key)
-				}
-			}
-			for key in remove_keys {
-				delete_key(&other_archetype.remove_edges, key)
-			}
-		}
+// 			// Collect keys for remove_edges
+// 			remove_keys: [dynamic]ComponentID
+// 			defer delete(remove_keys)
+// 			for key, a in other_archetype.remove_edges {
+// 				if a.id == archetype.id {
+// 					append(&remove_keys, key)
+// 				}
+// 			}
+// 			for key in remove_keys {
+// 				delete_key(&other_archetype.remove_edges, key)
+// 			}
+// 		}
 
-		// Clean remove_edges neighbors
-		for _, other_archetype in archetype.remove_edges {
-			// Collect keys for add_edges
-			add_keys: [dynamic]ComponentID
-			defer delete(add_keys)
-			for key, a in other_archetype.add_edges {
-				if a.id == archetype.id {
-					append(&add_keys, key)
-				}
-			}
-			for key in add_keys {
-				delete_key(&other_archetype.add_edges, key)
-			}
+// 		// Clean remove_edges neighbors
+// 		for _, other_archetype in archetype.remove_edges {
+// 			// Collect keys for add_edges
+// 			add_keys: [dynamic]ComponentID
+// 			defer delete(add_keys)
+// 			for key, a in other_archetype.add_edges {
+// 				if a.id == archetype.id {
+// 					append(&add_keys, key)
+// 				}
+// 			}
+// 			for key in add_keys {
+// 				delete_key(&other_archetype.add_edges, key)
+// 			}
 
-			// Collect keys for remove_edges
-			remove_keys: [dynamic]ComponentID
-			defer delete(remove_keys)
-			for key, a in other_archetype.remove_edges {
-				if a.id == archetype.id {
-					append(&remove_keys, key)
-				}
-			}
-			for key in remove_keys {
-				delete_key(&other_archetype.remove_edges, key)
-			}
-		}
-	}
+// 			// Collect keys for remove_edges
+// 			remove_keys: [dynamic]ComponentID
+// 			defer delete(remove_keys)
+// 			for key, a in other_archetype.remove_edges {
+// 				if a.id == archetype.id {
+// 					append(&remove_keys, key)
+// 				}
+// 			}
+// 			for key in remove_keys {
+// 				delete_key(&other_archetype.remove_edges, key)
+// 			}
+// 		}
+// 	}
 
-	delete(archetype.component_ids)
-	delete(archetype.entities)
-	for _, array in archetype.tables {
-		delete(array)
-	}
-	delete(archetype.tables)
-	delete(archetype.component_types)
-	// if len(archetype.tag_ids) > 0 do delete(archetype.tag_ids)
-	delete(archetype.disabled_set)
-	delete(archetype.add_edges)
-	delete(archetype.remove_edges)
-	free(archetype)
-}
+// 	delete(archetype.component_ids)
+// 	delete(archetype.entities)
+// 	for _, array in archetype.tables {
+// 		delete(array)
+// 	}
+// 	delete(archetype.tables)
+// 	delete(archetype.component_types)
+// 	// if len(archetype.tag_ids) > 0 do delete(archetype.tag_ids)
+// 	delete(archetype.disabled_set)
+// 	delete(archetype.add_edges)
+// 	delete(archetype.remove_edges)
+// 	free(archetype)
+// }
 
 sort_component_ids :: proc(ids: []ComponentID) {
 	// Simple insertion sort for small arrays
