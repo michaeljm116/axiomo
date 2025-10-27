@@ -71,7 +71,7 @@ main :: proc() {
 	res.load_materials("assets/Materials.xml", &g_materials)
 	g_models = make([dynamic]res.Model, 0, mem_area.alloc)
 	res.load_directory("assets/models/", &g_models)
-	scene := sc.load_new_scene("assets/scenes/BeeKillingsInn.json", mem_area.alloc)
+	scene := sc.load_new_scene("assets/scenes/BeeKillingsInn.json", mem_scene.alloc)
 	g_animations = make(map[u32]res.Animation, 0, mem_area.alloc)
 	res.load_anim_directory("assets/animations/", &g_animations, mem_area.alloc)
 
