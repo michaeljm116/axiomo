@@ -83,7 +83,7 @@ main :: proc() {
 	// init_GameUI(&g_gameui)
 
 	start_up_raytracer(mem_area.alloc)
-	load_scene(scene, mem_scene.alloc)
+	load_scene(scene, mem_game.alloc)
 	added_entity(g_world_ent)
 
 	g_player = load_prefab("Froku")
