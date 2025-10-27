@@ -107,13 +107,14 @@ destroy_visuals :: proc(visuals : ^Cmp_Visual) {
 }
 
 destroy_level1 :: proc() {
+    destroy_world()
     for b in g_level.bees {
         vc := get_component(b.entity, Cmp_Visual)
         if vc != nil do destroy_visuals(vc)
         if(entity_exists(b.entity)) do delete_parent_node(b.entity)
     }
     for gw in g_level.grid_weapons do delete_parent_node(gw.chest)
-    destroy_arenas()
+
     assert(entity_exists(g_floor))
 }
 
@@ -568,8 +569,8 @@ deck_init :: proc(deck : ^BeeDeck, size : int = 36)
     for i in 0..<deck.CrawlAway.freq do append(&temp_deck, BeeAction.CrawlAway)
     for i in 0..<deck.Sting.freq do append(&temp_deck, BeeAction.Sting)
 
-    queue.init(&deck.deck, 36, level_mem.alloc)
-    queue.init(&deck.discard, 36, level_mem.alloc)
+    queue.init(&deck.deck, 36, mem_game.alloc)
+    queue.init(&deck.discard, 36, mem_game.alloc)
     deck_shuffle(&temp_deck)
     for c in temp_deck{
         queue.push_front(&deck.deck, c)
@@ -880,7 +881,7 @@ hide_dice :: proc() {
 place_chest_on_grid :: proc(pos : vec2, lvl : ^Level)
 {
     chest := load_prefab("Chest")
-    context.allocator = level_mem.alloc
+    context.allocator = mem_game.alloc
     set_entity_on_tile(g_floor, chest, lvl^, pos.x, pos.y)
     append(&lvl.grid_weapons, WeaponGrid{pos, chest})
 }
@@ -1394,14 +1395,14 @@ MenuAnimStatus :: enum{
 app_start :: proc()
 {
     prestart()
-    init_GameUI(&gui, game_mem.alloc)
+    init_GameUI(&gui, mem_game.alloc)
     // start_game()
     ToggleUI("Title", true)
 }
 
 start_game :: proc()
 {
-    start_level1(level_mem.alloc)
+    start_level1(mem_game.alloc)
     find_floor_entities()
     set_grid_scale(g_floor, &g_level)
     set_entity_on_tile(g_floor, g_player, g_level, g_level.player.pos.x, g_level.player.pos.y)

@@ -12,28 +12,6 @@ import b2"vendor:box2d"
 
 curr_phase : u8 = 0
 
-
-level_mem : ArenaStruct
-game_mem : ArenaStruct
-
-set_up_arenas :: proc()
-{
-   // level_mem.data = make([]byte, mem.Megabyte, context.allocator)
-    err := vmem.arena_init_static(&level_mem.arena, mem.Kilobyte * 500)
-    assert(err == nil)
-    level_mem.alloc = vmem.arena_allocator(&level_mem.arena)
-
-    // game_mem.data = make([]byte, mem.Megabyte, context.allocator)
-    err = vmem.arena_init_static(&game_mem.arena, mem.Megabyte)
-    assert(err == nil)
-    game_mem.alloc = vmem.arena_allocator(&game_mem.arena)
-}
-
-destroy_arenas :: proc()
-{
-   vmem.arena_free_all(&level_mem.arena)
-}
-
 // Input state tracking
 InputState :: struct {
     keys_pressed: [glfw.KEY_LAST + 1]bool,
@@ -68,7 +46,7 @@ g_objects : [2][dynamic]Entity
 
 // Initialize the gameplay system
 gameplay_init :: proc() {
-    set_up_arenas()
+    init_memory_arena(&mem_game)
     g_input = InputState{
         mouse_sensitivity = 0.1,
         movement_speed = 5.0,
@@ -397,6 +375,5 @@ gameplay_destroy :: proc() {
     // Release mouse cursor
     glfw.SetInputMode(rb.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
 
-    destroy_arenas()
-    vmem.arena_free_all(&game_mem.arena)
+    reset_memory_arena(&mem_game)
 }

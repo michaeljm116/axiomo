@@ -44,75 +44,46 @@ g_frame := FrameRate {
 	physics_time_step = 1.0 / 60.0,
 }
 
-ArenaStruct :: struct
-{
-    arena: vmem.Arena,
-    data : []byte,
-    alloc : mem.Allocator
-}
-
-data_mem : ArenaStruct
-
-arena_alloc: mem.Allocator
-track_alloc: mem.Tracking_Allocator
 
 main :: proc() {
     windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
     //----------------------------------------------------------------------------\\
     // /MEMORY
     //----------------------------------------------------------------------------\\
-    default_alloc := context.allocator
-	mem.tracking_allocator_init(&track_alloc, default_alloc)
-	context.allocator = mem.tracking_allocator(&track_alloc)
-	defer leak_detection()
-
-	// Create an arena allocator for long-lived allocations (e.g., materials, models, scenes)
-	arena: vmem.Arena
-	arena_err := vmem.arena_init_growing(&arena, mem.Megabyte * 16,) // Start at 16 MiB, grow to 1 GiB max
-	assert(arena_err == nil)
-	defer vmem.arena_free_all(&arena) // Free all allocations from the arena (though defer delete handles backing)
-	arena_alloc = vmem.arena_allocator(&arena)
-
-	// Create a per-frame arena for transient data (e.g., BVH construction primitives/nodes)
-	per_frame_arena: mem.Arena
-	per_frame_arena_data: []byte = make([]byte, mem.Megabyte * 8, context.allocator) // 8 MiB example; monitor with tracking allocator
-	mem.arena_init(&per_frame_arena, per_frame_arena_data)
-	defer delete(per_frame_arena_data) // Explicitly free backing buffer at program end
-	defer mem.arena_free_all(&per_frame_arena) // Free all (though typically reset per frame)
-	per_frame_alloc := mem.arena_allocator(&per_frame_arena)
-
-	context.logger = log.create_console_logger()
+    context.logger = log.create_console_logger()
 	defer free(context.logger.data)
+    init_tracking()
+    defer detect_memory_leaks()
+    set_up_all_arenas()
+    defer destroy_all_arenas()
 	rb.ctx = context
 
 	//----------------------------------------------------------------------------\\
     // /World Creation
     //----------------------------------------------------------------------------\\
-	g_world = create_world(default_alloc)
-	defer delete_world()
-
-	g_bvh = bvh_system_create(per_frame_alloc)
+    g_world = create_world()
+	defer destroy_world()
+	g_bvh = bvh_system_create(mem_frame.alloc)
 	defer bvh_system_destroy(g_bvh)
 
 	// begin loading data
-	g_materials = make([dynamic]res.Material, 0, arena_alloc)
+	g_materials = make([dynamic]res.Material, 0, mem_area.alloc)
 	res.load_materials("assets/Materials.xml", &g_materials)
-	g_models = make([dynamic]res.Model, 0, arena_alloc)
+	g_models = make([dynamic]res.Model, 0, mem_area.alloc)
 	res.load_directory("assets/models/", &g_models)
-	scene := sc.load_new_scene("assets/scenes/BeeKillingsInn.json", arena_alloc)
-	// poses := res.load_pose("assets/animations/Froku.anim", "Froku", arena_alloc)
-	g_animations = make(map[u32]res.Animation, 0, arena_alloc)
-	res.load_anim_directory("assets/animations/", &g_animations, arena_alloc)
+	scene := sc.load_new_scene("assets/scenes/BeeKillingsInn.json", mem_area.alloc)
+	g_animations = make(map[u32]res.Animation, 0, mem_area.alloc)
+	res.load_anim_directory("assets/animations/", &g_animations, mem_area.alloc)
 
-	g_prefabs = make(map[string]sc.Node, 0, arena_alloc)
-	sc.load_prefab_directory("assets/prefabs", &g_prefabs, arena_alloc)
-	sc.load_prefab_directory("assets/prefabs/ui", &g_ui_prefabs, arena_alloc)
+	g_prefabs = make(map[string]sc.Node, 0, mem_area.alloc)
+	sc.load_prefab_directory("assets/prefabs", &g_prefabs, mem_area.alloc)
+	sc.load_prefab_directory("assets/prefabs/ui", &g_ui_prefabs, mem_area.alloc)
 
 	//Begin renderer and scene loading
 	// init_GameUI(&g_gameui)
 
-	start_up_raytracer(arena_alloc)
-	load_scene(scene, context.allocator)
+	start_up_raytracer(mem_area.alloc)
+	load_scene(scene, mem_scene.alloc)
 	added_entity(g_world_ent)
 
 	g_player = load_prefab("Froku")
@@ -121,7 +92,7 @@ main :: proc() {
 	defer gameplay_destroy()
 	sys_trans_process_ecs()
 	// gameplay_post_init()
-	sys_bvh_process_ecs(g_bvh, per_frame_alloc)
+	sys_bvh_process_ecs(g_bvh, mem_frame.alloc)
 
 	//begin renderer
 	initialize_raytracer()
@@ -145,9 +116,9 @@ main :: proc() {
 			sys_visual_process_ecs(f32(g_frame.physics_time_step))
 			sys_anim_process_ecs(f32(g_frame.physics_time_step))
 			sys_trans_process_ecs()
-			sys_bvh_process_ecs(g_bvh, per_frame_alloc)
+			sys_bvh_process_ecs(g_bvh, mem_frame.alloc)
 			gameplay_update(f32(g_frame.physics_time_step))
-			mem.arena_free_all(&per_frame_arena)
+			reset_memory_arena(&mem_frame)
 			g_frame.physics_acc_time -= f32(g_frame.physics_time_step)
 		}
 		update_buffers()
@@ -168,17 +139,4 @@ create_test_text_entity :: proc() -> Entity
     update_text(&tc)
     update_descriptors()
     return e
-}
-
-leak_detection :: proc() {
-	fmt.eprintf("\n")
-	for _, entry in track_alloc.allocation_map {
-		fmt.eprintf("- %v leaked %v bytes\n", entry.location, entry.size)
-	}
-	for entry in track_alloc.bad_free_array {
-		fmt.eprintf("- %v bad free\n", entry.location)
-	}
-	mem.tracking_allocator_destroy(&track_alloc)
-	fmt.eprintf("\n")
-	free_all(context.temp_allocator)
 }

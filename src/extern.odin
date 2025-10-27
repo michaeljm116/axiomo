@@ -25,25 +25,25 @@ mat3 :: math.Matrix3f32
 // Import the ECS Entity type
 Entity :: ecs.EntityID
 World :: ecs.World
-ecs_mem: ArenaStruct
 
 //----------------------------------------------------------------------------\\
 // /ECS
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
-create_world :: #force_inline proc(alloc : runtime.Allocator) -> ^World {
-    arena_err := vmem.arena_init_growing(&ecs_mem.arena, mem.Megabyte * 128,) // Start at 16 MiB, grow to 1 GiB max
-    assert(arena_err == nil)
-    ecs_mem.alloc = vmem.arena_allocator(&ecs_mem.arena)
-    g_world = ecs.create_world(ecs_mem.alloc)// track_alloc.backing)
+create_world :: #force_inline proc() -> ^World {
+    init_memory_arena(&mem_game, 40 * mem.Megabyte)
+    g_world = ecs.create_world(mem_game.alloc)// track_alloc.backing)
     g_world_ent = add_entity()
     return g_world
 }
-delete_world :: #force_inline proc(){
+destroy_world :: #force_inline proc(){
 	//context.allocator = track_alloc.backing
 	// ecs.delete_world(g_world)
-	vmem.arena_destroy(&ecs_mem.arena)
-	// vmem.arena_free_all(&ecs_mem.arena)
+	vmem.arena_destroy(&mem_game.arena)
+	// vmem.arena_free_all(&mem_game.arena)
+}
+restart_world :: #force_inline proc(){
+    vmem.arena_free_all(&mem_game.arena)
 }
 // Entity management
 add_entity :: #force_inline proc() -> ecs.EntityID {
@@ -54,7 +54,7 @@ add_entity :: #force_inline proc() -> ecs.EntityID {
 add_component :: #force_inline proc(entity: ecs.EntityID, component: $T) {
     // prev_alloc := context.allocator
     // defer context.allocator = prev_alloc
-    // context.allocator = ecs_mem.alloc
+    // context.allocator = mem_game.alloc
 
     // context.allocator = track_alloc.backing
 	ecs.add_component(g_world, entity, component)
@@ -64,7 +64,7 @@ remove_component :: #force_inline proc(entity: ecs.EntityID, $T: typeid){
     // prev_alloc := context.allocator
     // defer context.allocator = prev_alloc
     // context.allocator = track_alloc.backing
-    // context.allocator = ecs_mem.alloc
+    // context.allocator = mem_game.alloc
     ecs.disable_component(g_world, entity, typeid)
 }
 
