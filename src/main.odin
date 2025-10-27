@@ -25,7 +25,7 @@ g_materials: [dynamic]res.Material
 g_models: [dynamic]res.Model
 g_prefabs: map[string]sc.Node
 g_ui_prefabs: map[string]sc.Node
-g_scene: [dynamic]Entity
+g_scene: sc.SceneData
 g_bvh: ^Sys_Bvh
 g_enemies: map[string]Entity
 g_player: Entity
@@ -59,39 +59,42 @@ main :: proc() {
 	rb.ctx = context
 
 	//----------------------------------------------------------------------------\\
-    // /World Creation
+    // /Asset Loading
     //----------------------------------------------------------------------------\\
-    g_world = create_world()
-	defer destroy_world()
-	g_bvh = bvh_system_create(mem_frame.alloc)
-	defer bvh_system_destroy(g_bvh)
 
 	// begin loading data
 	g_materials = make([dynamic]res.Material, 0, mem_area.alloc)
-	res.load_materials("assets/Materials.xml", &g_materials)
 	g_models = make([dynamic]res.Model, 0, mem_area.alloc)
-	res.load_directory("assets/models/", &g_models)
-	scene := sc.load_new_scene("assets/scenes/BeeKillingsInn.json", mem_scene.alloc)
 	g_animations = make(map[u32]res.Animation, 0, mem_area.alloc)
-	res.load_anim_directory("assets/animations/", &g_animations, mem_area.alloc)
-
 	g_prefabs = make(map[string]sc.Node, 0, mem_area.alloc)
+	g_ui_prefabs = make(map[string]sc.Node, 0, mem_area.alloc)
+
+	res.load_materials("assets/Materials.xml", &g_materials)
+	res.load_models("assets/models/", &g_models)
+	res.load_anim_directory("assets/animations/", &g_animations, mem_area.alloc)
 	sc.load_prefab_directory("assets/prefabs", &g_prefabs, mem_area.alloc)
 	sc.load_prefab_directory("assets/prefabs/ui", &g_ui_prefabs, mem_area.alloc)
 
-	//Begin renderer and scene loading
-	// init_GameUI(&g_gameui)
+	//----------------------------------------------------------------------------\\
+    // /Game Starting
+    //----------------------------------------------------------------------------\\
+    start_up_raytracer(mem_area.alloc)
+	g_bvh = bvh_system_create(mem_frame.alloc)
+	defer bvh_system_destroy(g_bvh)
 
-	start_up_raytracer(mem_area.alloc)
-	load_scene(scene, mem_game.alloc)
+
+	g_scene = sc.load_new_scene("assets/scenes/BeeKillingsInn.json", mem_scene.alloc)
+	g_world = create_world()
+	defer destroy_world()
+	load_scene(g_scene, mem_game.alloc)
 	added_entity(g_world_ent)
-
 	g_player = load_prefab("Froku")
-	sys_trans_process_ecs()
+
 	gameplay_init()
 	defer gameplay_destroy()
+
+	// You need to have an ecs ready before you do the stuff below
 	sys_trans_process_ecs()
-	// gameplay_post_init()
 	sys_bvh_process_ecs(g_bvh, mem_frame.alloc)
 
 	//begin renderer

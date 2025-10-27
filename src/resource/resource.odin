@@ -120,7 +120,7 @@ BVHNode :: struct {
 //----------------------------------------------------------------------------\\
 // /LoadOthers /lo
 //----------------------------------------------------------------------------\\
-load_directory :: proc(directory: string, models: ^[dynamic]Model) {
+load_models :: proc(directory: string, models: ^[dynamic]Model) {
     files := path2.get_dir_files(directory)
     for f in files{
         append(models, load_pmodel(f.fullpath, models^.allocator))
