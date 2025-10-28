@@ -31,7 +31,7 @@ World :: ecs.World
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
 create_world :: #force_inline proc() -> ^World {
-    init_memory_arena(&mem_game, 40 * mem.Megabyte)
+    init_memory_arena(&mem_game, mem.Megabyte)
     g_world = ecs.create_world(mem_game.alloc)// track_alloc.backing)
     g_world_ent = add_entity()
     return g_world

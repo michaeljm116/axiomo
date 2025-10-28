@@ -162,12 +162,12 @@ Node :: struct {
 // /PROCS
 //----------------------------------------------------------------------------\\
 
-load_new_scene :: proc(name : string, allocator := context.temp_allocator) -> SceneData {
+load_new_scene :: proc(name : string, allocator := context.temp_allocator) -> ^SceneData {
     data, ok := os.read_entire_file_from_filename(name, allocator)
     res.log_if_err(!ok, fmt.tprintf("Finding file(%s)",name))
 
-    scene: SceneData
-    json_err := json.unmarshal(data, &scene, allocator = allocator);
+    scene := new(SceneData, allocator)
+    json_err := json.unmarshal(data, scene, allocator = allocator);
     res.log_if_err(json_err)
 
     // Process scene and nodes

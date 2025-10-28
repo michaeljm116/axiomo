@@ -25,7 +25,7 @@ g_materials: [dynamic]res.Material
 g_models: [dynamic]res.Model
 g_prefabs: map[string]sc.Node
 g_ui_prefabs: map[string]sc.Node
-g_scene: sc.SceneData
+g_scene: ^sc.SceneData
 g_bvh: ^Sys_Bvh
 g_enemies: map[string]Entity
 g_player: Entity
@@ -61,8 +61,6 @@ main :: proc() {
 	//----------------------------------------------------------------------------\\
     // /Asset Loading
     //----------------------------------------------------------------------------\\
-
-	// begin loading data
 	g_materials = make([dynamic]res.Material, 0, mem_area.alloc)
 	g_models = make([dynamic]res.Model, 0, mem_area.alloc)
 	g_animations = make(map[u32]res.Animation, 0, mem_area.alloc)
@@ -73,38 +71,30 @@ main :: proc() {
 	res.load_models("assets/models/", &g_models)
 	res.load_anim_directory("assets/animations/", &g_animations, mem_area.alloc)
 	sc.load_prefab_directory("assets/prefabs", &g_prefabs, mem_area.alloc)
-	sc.load_prefab_directory("assets/prefabs/ui", &g_ui_prefabs, mem_area.alloc)
+	sc.load_prefab_directory("assets/prefabs/ui", &g_ui_prefabs, mem_core.alloc)
 
 	//----------------------------------------------------------------------------\\
     // /Game Starting
     //----------------------------------------------------------------------------\\
-    start_up_raytracer(mem_area.alloc)
-	g_bvh = bvh_system_create(mem_frame.alloc)
-	defer bvh_system_destroy(g_bvh)
-
-
 	g_scene = sc.load_new_scene("assets/scenes/BeeKillingsInn.json", mem_scene.alloc)
-	g_world = create_world()
-	defer destroy_world()
-	load_scene(g_scene, mem_game.alloc)
-	added_entity(g_world_ent)
-	g_player = load_prefab("Froku")
-
+	g_bvh = bvh_system_create(mem_core.alloc)
+	start_up_raytracer(mem_area.alloc)
 	gameplay_init()
+	defer bvh_system_destroy(g_bvh)
 	defer gameplay_destroy()
 
 	// You need to have an ecs ready before you do the stuff below
 	sys_trans_process_ecs()
 	sys_bvh_process_ecs(g_bvh, mem_frame.alloc)
 
-	//begin renderer
+	// you need to have trannsformed and constructed a bh before stuff below
 	initialize_raytracer()
-	// text := create_test_text_entity()
 	glfw.PollEvents()
 	g_frame.prev_time = glfw.GetTime()
-	// gameplay_update(0.015)
-	// if true do return
-	//Update renderer
+
+	//----------------------------------------------------------------------------\\
+    // /Game Updating
+    //----------------------------------------------------------------------------\\
 	for !glfw.WindowShouldClose(rb.window) {
 		start_frame(&image_index)
 		// Poll and free: Move to main loop if overlapping better
@@ -120,8 +110,10 @@ main :: proc() {
 			sys_anim_process_ecs(f32(g_frame.physics_time_step))
 			sys_trans_process_ecs()
 			sys_bvh_process_ecs(g_bvh, mem_frame.alloc)
+			print_tracking_stats(&mem_track)
 			gameplay_update(f32(g_frame.physics_time_step))
 			reset_memory_arena(&mem_frame)
+
 			g_frame.physics_acc_time -= f32(g_frame.physics_time_step)
 		}
 		update_buffers()
@@ -129,17 +121,4 @@ main :: proc() {
 		end_frame(&image_index)
 	}
 	cleanup()
-}
-
-create_test_text_entity :: proc() -> Entity
-{
-    e := add_entity()
-    rc := Cmp_Render{type = {.TEXT, .GUI}}
-    add_component(e, Cmp_Node{name = "HOAL", engine_flags = {.GUI}})
-    tc := cmp_text_create(text = "HELLLLLLLLO YOOOO", min = {0.1, 0.9}, font_scale = 4.0)
-    add_component(e, tc)
-    added_entity(e)
-    update_text(&tc)
-    update_descriptors()
-    return e
 }

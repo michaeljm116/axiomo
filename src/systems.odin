@@ -265,7 +265,7 @@ g_num_nodes: i32 = 0
 
 // Create a new BVH system
 bvh_system_create :: proc(alloc: mem.Allocator) -> ^Sys_Bvh {
-    system := new(Sys_Bvh)
+    system := new(Sys_Bvh, alloc)
     system.rebuild = true
 
     // Initialize Embree
@@ -420,7 +420,7 @@ create_leaf :: proc "c" (
 
 // Build the BVH tree
 sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
-    //context.allocator = alloc
+    context.allocator = alloc
     if !rebuild do return
     g_num_nodes = 0
 

@@ -46,7 +46,13 @@ g_objects : [2][dynamic]Entity
 
 // Initialize the gameplay system
 gameplay_init :: proc() {
-    init_memory_arena(&mem_game)
+    g_world = create_world()
+	// defer destroy_world()
+	load_scene(g_scene^, mem_game.alloc)
+	added_entity(g_world_ent)
+	g_player = load_prefab("Froku")
+
+	init_memory_arena(&mem_game, mem.Megabyte)
     g_input = InputState{
         mouse_sensitivity = 0.1,
         movement_speed = 5.0,
@@ -367,6 +373,7 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 
 // Cleanup
 gameplay_destroy :: proc() {
+    defer destroy_world()
     // Reset callbacks
     glfw.SetKeyCallback(rb.window, nil)
     glfw.SetCursorPosCallback(rb.window, nil)
