@@ -39,11 +39,12 @@ create_world :: #force_inline proc() -> ^World {
 destroy_world :: #force_inline proc(){
 	//context.allocator = track_alloc.backing
 	// ecs.delete_world(g_world)
-	vmem.arena_destroy(&mem_game.arena)
+	destroy_memory_arena(&mem_game)
 	// vmem.arena_free_all(&mem_game.arena)
 }
 restart_world :: #force_inline proc(){
-    vmem.arena_free_all(&mem_game.arena)
+    // destroy_memory_arena(&mem_game)
+    reset_memory_arena(&mem_game)
 }
 // Entity management
 add_entity :: #force_inline proc() -> ecs.EntityID {
