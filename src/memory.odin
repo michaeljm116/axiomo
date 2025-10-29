@@ -8,29 +8,26 @@ import vmem "core:mem/virtual"
 
 MemoryArena :: struct
 {
-    arena: mem.Arena,
+    arena: vmem.Arena,
     alloc : mem.Allocator,
-    buffer : []byte,
     name : string
 }
 
-mem_track: mem.Tracking_Allocator       // To track the memory leaks
 mem_core :MemoryArena                   // Memory that persists througout the whole game
 mem_area :MemoryArena                   // Main memory for loading of resources of an area of the game
 mem_scene :MemoryArena                  // This holds the scene data from the json, should be reset upon scene change
 mem_game :MemoryArena                   // This holds game data, reset upon restarting of a game, ecs goes here
 mem_frame :MemoryArena                  // Mostly for BVH or anything that exist for a single frame
+mem_track: mem.Tracking_Allocator       // To track the memory leaks
 
-GlobalDataStruct :: struct{}
-g_data : GlobalDataStruct
-
+// 128 MB totals
 set_up_all_arenas :: proc()
 {
-    init_memory_arena(&mem_core, mem.Megabyte * 1)
-    init_memory_arena(&mem_area, mem.Megabyte * 1)
-    init_memory_arena(&mem_scene, mem.Megabyte * 1)
-    init_memory_arena(&mem_game, mem.Megabyte * 1)
-    init_memory_arena(&mem_frame, mem.Kilobyte * 16)
+    init_memory_arena_growing(&mem_core, mem.Megabyte * 1)
+    init_memory_arena_growing(&mem_area, mem.Megabyte * 1)
+    init_memory_arena_growing(&mem_scene, mem.Megabyte * 1)
+    init_memory_arena_growing(&mem_game, mem.Megabyte * 1)
+    init_memory_arena_static(&mem_frame, mem.Kilobyte * 16, mem.Kilobyte * 4)
     mem_core.name = "core"
     mem_area.name = "area"
     mem_scene.name = "scene"
@@ -67,25 +64,38 @@ detect_memory_leaks :: proc() {
 	free_all(context.temp_allocator)
 }
 
+init_memory_arena :: proc{init_memory_arena_growing, init_memory_arena_static}
 
-init_memory_arena ::#force_inline proc(ma : ^MemoryArena, reserved :uint= vmem.DEFAULT_ARENA_STATIC_RESERVE_SIZE)
+@(private)
+init_memory_arena_growing :: proc(ma : ^MemoryArena, min_block_size :uint= vmem.DEFAULT_ARENA_GROWING_MINIMUM_BLOCK_SIZE)
 {
-    ma.buffer = make([]byte, reserved, mem_track.backing)
-    mem.arena_init(&ma.arena, ma.buffer)
-    ma.alloc = mem.arena_allocator(&ma.arena)
+    err := vmem.arena_init_growing(&ma.arena, min_block_size)
+    if err == .None do  ma.alloc = vmem.arena_allocator(&ma.arena)
+    else{
+        fmt.println("Error Failed to allocate memory: ", err, "\n", context.logger)
+        panic("Error Failed to allocate memory: ")
+    }
 }
 
-destroy_memory_arena ::#force_inline proc(ma : ^MemoryArena){
-    delete(ma.buffer)
-    reset_memory_arena(ma)
+@(private)
+init_memory_arena_static :: proc(ma : ^MemoryArena, reserved :uint= vmem.DEFAULT_ARENA_STATIC_RESERVE_SIZE, commit_size :uint= vmem.DEFAULT_ARENA_GROWING_COMMIT_SIZE)
+{
+    err := vmem.arena_init_static(&ma.arena, reserved, commit_size)
+    if err == .None do ma.alloc = vmem.arena_allocator(&ma.arena)
+    else{
+        fmt.println("Error Failed to allocate memory: ", err, "\n", context.logger)
+        panic("Error Failed to allocate memory: ")
+    }
 }
 
-reset_memory_arena ::#force_inline proc(ma : ^MemoryArena){
-    mem.arena_free_all(&ma.arena)
+destroy_memory_arena :: proc(ma : ^MemoryArena){
+    vmem.arena_destroy(&ma.arena)
 }
-
-print_arena_usage ::#force_inline proc(ma: ^MemoryArena) {
-    fmt.printfln("Memory Arena '%v' Usage: Total Used = %v bytes, Total Reserved = %v bytes", ma.name)
+reset_memory_arena :: proc(ma : ^MemoryArena){
+    vmem.arena_free_all(&ma.arena)
+}
+print_arena_usage :: proc(ma: ^MemoryArena) {
+    fmt.printfln("Memory Arena '%v' Usage: Total Used = %v bytes, Total Reserved = %v bytes", ma.name, ma.arena.total_used, ma.arena.total_reserved)
 }
 print_all_arenas :: proc()
 {
