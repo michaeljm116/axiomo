@@ -1574,7 +1574,7 @@ ComputeRaytracer :: struct {
     },
 
     // Scene data
-    primitives: [dynamic]gpu.Primitive,
+    primitives: [dynamic]gpu.Primitive, // isn't this going to be per-frame?
     materials: [dynamic]gpu.Material,
     lights: [dynamic]gpu.Light,
     guis: [dynamic]gpu.Gui,
@@ -2640,13 +2640,15 @@ update_camera_component :: proc(camera: ^Cmp_Camera) {
 
 update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity, root: BvhNode, num_nodes : i32)
 {
-    context.allocator = context.temp_allocator
+    context.allocator = mem_frame.alloc
     num_prims := len(ordered_prims)
     if(num_prims == 0) do return
-    clear(&rt.primitives)
-    clear(&rt.ordered_prims_map)
-    reserve(&rt.primitives, num_prims)
-    resize(&rt.ordered_prims_map, num_prims)
+    rt.primitives = make([dynamic]gpu.Primitive, 0, num_prims, mem_frame.alloc)
+    rt.ordered_prims_map = make([dynamic]int, num_prims, mem_frame.alloc)
+    // clear(&rt.primitives)
+    // clear(&rt.ordered_prims_map)
+    // reserve(&rt.primitives, num_prims)
+    // resize(&rt.ordered_prims_map, num_prims)
     for op, i in ordered_prims{
         rt.ordered_prims_map[op.primID] = i
         prim := prims[op.primID]
@@ -2872,36 +2874,6 @@ update_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
 //----------------------------------------------------------------------------\\
 // /Main Procs /main procs
 //----------------------------------------------------------------------------\\
-add_material :: proc(diff: vec3, rfl: f32, rough: f32, trans: f32, ri: f32) {
-    mat := gpu.Material{
-        diffuse = diff,
-        reflective = rfl,
-        roughness = rough,
-        transparency = trans,
-        refractive_index = ri,
-        texture_id = 0,
-    }
-    append(&rt.materials, mat)
-    gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.materials, &rb.vma_allocator, rt.materials[:], u32(len(rt.materials)))
-    update_descriptors()
-}
-
-add_node :: proc(node: ^Cmp_Node) {
-    if .MODEL in node.engine_flags {
-        return
-    }
-    if .LIGHT in node.engine_flags {
-        return
-    }
-    if .CAMERA in node.engine_flags {
-        cam := get_component(node.entity, Cmp_Camera)
-        trans_comp := get_component(node.entity, Cmp_Transform)
-        rt.compute.ubo.aspect_ratio = cam.aspect_ratio
-        rt.compute.ubo.rotM = transmute(mat4f)trans_comp.world
-        rt.compute.ubo.fov = math.tan(cam.fov * 0.03490658503)
-    }
-}
-
 add_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
     nums := int_to_array_of_ints(gnc.number)
     num_size := i32(len(nums))

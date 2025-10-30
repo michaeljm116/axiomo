@@ -113,13 +113,13 @@ main :: proc() {
 			sys_bvh_process_ecs(g_bvh, mem_frame.alloc)
 			// print_tracking_stats(&mem_track)
 			gameplay_update(f32(g_frame.physics_time_step))
-			reset_memory_arena(&mem_frame)
 			g_frame.physics_acc_time -= f32(g_frame.physics_time_step)
 		}
 		update_buffers()
 		update_descriptors()
 		end_frame(&image_index)
-		free_all(context.temp_allocator)
+		reset_memory_arena(&mem_frame)
+		// free_all(context.temp_allocator)
 	}
 	cleanup()
 }
