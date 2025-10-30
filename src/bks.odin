@@ -560,8 +560,7 @@ deck_init :: proc(deck : ^BeeDeck, size : int = 36)
     deck.CrawlAway = BeeActionDeckData{type = .CrawlAway, freq =  6}
     deck.Sting = BeeActionDeckData{type = .Sting, freq =  12}
 
-    temp_deck := make([dynamic]BeeAction, context.temp_allocator)
-    reserve(&temp_deck, 36)
+    temp_deck := make([dynamic]BeeAction, 0, 36, context.temp_allocator)
 
     for i in 0..<deck.FlyTowards.freq do append(&temp_deck, BeeAction.FlyTowards)
     for i in 0..<deck.FlyAway.freq do append(&temp_deck, BeeAction.FlyAway)

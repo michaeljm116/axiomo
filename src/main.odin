@@ -52,11 +52,8 @@ main :: proc() {
     //----------------------------------------------------------------------------\\
     context.logger = log.create_console_logger()
 	defer free(context.logger.data)
-    // init_tracking()
-    default_alloc := context.allocator
-    mem.tracking_allocator_init(&mem_track, default_alloc)
-    context.allocator = mem.tracking_allocator(&mem_track)
-
+    init_tracking()
+    // In init, after setting context.allocator
     defer detect_memory_leaks()
     set_up_all_arenas()
     defer destroy_all_arenas()
@@ -117,13 +114,12 @@ main :: proc() {
 			// print_tracking_stats(&mem_track)
 			gameplay_update(f32(g_frame.physics_time_step))
 			reset_memory_arena(&mem_frame)
-
 			g_frame.physics_acc_time -= f32(g_frame.physics_time_step)
-			free_all(context.temp_allocator)
 		}
 		update_buffers()
 		update_descriptors()
 		end_frame(&image_index)
+		free_all(context.temp_allocator)
 	}
 	cleanup()
 }

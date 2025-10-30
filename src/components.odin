@@ -1157,7 +1157,6 @@ flatten_entity :: proc(e : Entity)
             cn := get_component(n.child, Cmp_Node)
             bro := cn.brotha
             for bro != 0{
-                context.allocator = context.temp_allocator
                 queue.push(&q, bro)
                 len += 1
                 bro = get_component(bro, Cmp_Node).brotha

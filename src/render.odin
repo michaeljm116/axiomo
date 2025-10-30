@@ -1095,56 +1095,6 @@ copy_buffer_to_image :: proc(buffer: vk.Buffer, image: vk.Image, width, height: 
     end_single_time_commands(&command_buffer)
 }
 
-// Pixel and Image structs
-PrPixel :: struct {
-    r, g, b, a: u8,
-}
-
-prpixel_get :: proc(pixel: ^PrPixel, index: int) -> ^u8 {
-    assert(index >= 0 && index < 4)
-    switch index {
-    case 0: return &pixel.r
-    case 1: return &pixel.g
-    case 2: return &pixel.b
-    case 3: return &pixel.a
-    case: return &pixel.r
-    }
-}
-
-PrImage :: struct {
-    width, height, channels: i32,
-    data: [][]PrPixel,
-}
-
-primage_init :: proc(image: ^PrImage, image_width, image_height, image_channels: i32) {
-    image.width = image_width
-    image.height = image_height
-    image.channels = image_channels
-    image.data = make([][]PrPixel, image_width)
-    for i in 0..<image_width {
-        image.data[i] = make([]PrPixel, image_height)
-    }
-}
-
-primage_load_from_texture :: proc(image: ^PrImage, texture_file: string) {
-    // This is a placeholder - you'll need to implement stb_image loading
-    // For now, just initialize with default values
-    primage_init(image, 512, 512, 4)
-
-    // TODO: Implement stb_image loading
-    // stbi_uc* pixels = stbi_load(texture_file.c_str(), &width, &height, &channels, 0);
-    // Process pixels and fill image.data
-}
-
-primage_destroy :: proc(image: ^PrImage) {
-    if image.data != nil {
-        for row in image.data {
-            delete(row)
-        }
-        delete(image.data)
-    }
-}
-
 // Texture struct and related procedures
 Texture :: struct {
     image: vk.Image,
@@ -1353,7 +1303,7 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32) {
     bitmap_height := i32(math.ceil(max_height + baseline)) + 10
 
     // Allocate RGBA bitmap (4 bytes per pixel)
-    bitmap := make([]u8, bitmap_width * bitmap_height * 4)
+    bitmap := make([]u8, bitmap_width * bitmap_height * 4, context.temp_allocator)
 
     // Second pass: Render each glyph
     x_pos: f32 = 5  // Left padding
@@ -1500,7 +1450,7 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     g_font.baked_chars = baked_chars
 
     // Create Vulkan texture from bitmap (RGBA, assuming 1-channel bitmap -> expand to RGBA)
-    rgba_data := make([]byte, bitmap_width * bitmap_height * 4)
+    rgba_data := make([]byte, bitmap_width * bitmap_height * 4, context.temp_allocator)
     defer delete(rgba_data)
     for i in 0..<bitmap_width*bitmap_height {
         rgba_data[i*4 + 0] = 255
@@ -2324,7 +2274,7 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
     // Allocate command buffers if not already done
     if len(rb.command_buffers) == 0
     {
-        rb.command_buffers = make([]vk.CommandBuffer, len(rb.swapchain_frame_buffers), context.temp_allocator)
+        rb.command_buffers = make([]vk.CommandBuffer, len(rb.swapchain_frame_buffers))
         command_buffer_info := vk.CommandBufferAllocateInfo{
             sType = .COMMAND_BUFFER_ALLOCATE_INFO,
             commandPool = rb.command_pool,
@@ -3284,12 +3234,8 @@ cleanup_vulkan :: proc() {
 
     // Destroy textures
     texture_destroy(&rt.compute_texture, rb.device, &rb.vma_allocator)
-    for &tex in rt.gui_textures {
-        texture_destroy(&tex, rb.device, &rb.vma_allocator)
-    }
-    for &tex in rt.bindless_textures {
-        texture_destroy(&tex, rb.device, &rb.vma_allocator)
-    }
+    for &tex in rt.gui_textures do texture_destroy(&tex, rb.device, &rb.vma_allocator)
+    for &tex in rt.bindless_textures do texture_destroy(&tex, rb.device, &rb.vma_allocator)
     texture_destroy(&g_font.atlas_texture, rb.device, &rb.vma_allocator)
     delete(g_font.char_data)
 
@@ -3307,54 +3253,33 @@ cleanup_vulkan :: proc() {
     // Destroy command pools (this automatically frees command buffers)
     vk.DestroyCommandPool(rb.device, rt.compute.command_pool, nil)
     vk.DestroyCommandPool(rb.device, rb.command_pool, nil)
-
-    // Destroy fence
     vk.DestroyFence(rb.device, rt.compute.fence, nil)
 
     // Destroy pipelines and layouts
     vk.DestroyPipeline(rb.device, rt.compute.pipeline, nil)
     vk.DestroyPipelineLayout(rb.device, rt.compute.pipeline_layout, nil)
     vk.DestroyDescriptorSetLayout(rb.device, rt.compute.descriptor_set_layout, nil)
-
-    // Destroy pipeline cache
     vk.DestroyPipelineCache(rb.device, rb.pipeline_cache, nil)
 
-    // Destroy framebuffers first
+    // Destroy framebuffers first, then depth resources, then swapchain
     destroy_framebuffers()
-
-    // Destroy depth resources
     destroy_depth_resources()
-
-    // Destroy swapchain views and swapchain
     destroy_swapchain()
-
-    // Cleanup any remaining swap chain resources
     cleanup_swapchain_vulkan()
 
-    // Destroy render pass after swapchain cleanup
     vk.DestroyRenderPass(rb.device, rb.render_pass, nil)
 
     // Destroy semaphores
-    for sem in rb.image_available_semaphores {
-        vk.DestroySemaphore(rb.device, sem, nil)
-    }
-    for sem in rb.render_finished_semaphores {
-        vk.DestroySemaphore(rb.device, sem, nil)
-    }
-    for fence in rb.in_flight_fences {
-        vk.DestroyFence(rb.device, fence, nil)
-    }
+    for sem in rb.image_available_semaphores do vk.DestroySemaphore(rb.device, sem, nil)
+    for sem in rb.render_finished_semaphores do vk.DestroySemaphore(rb.device, sem, nil)
+    for fence in rb.in_flight_fences do vk.DestroyFence(rb.device, fence, nil)
 
     // Destroy remaining graphics resources
     vk.DestroyShaderModule(rb.device, rb.vert_shader_module, nil)
     vk.DestroyShaderModule(rb.device, rb.frag_shader_module, nil)
-
-    // Destroy VMA allocator before device
     vma.DestroyAllocator(rb.vma_allocator)
 
     // Finally destroy device
     vk.DestroyDevice(rb.device, nil)
-
-    // Destroy surface after device
     vk.DestroySurfaceKHR(rb.instance, rb.surface, nil)
 }
