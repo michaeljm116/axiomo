@@ -34,7 +34,7 @@ handle_ui_edit_mode :: proc() {
             fmt.println("Entered UI Edit Mode")
             // Make all UIs visible on enter
             for key in ui_keys {
-                ent := gui[key]
+                ent := g.gui[key]
                 gc := get_component(ent, Cmp_Gui)
                 if gc != nil {
                     gc.alpha = 1.0
@@ -46,7 +46,7 @@ handle_ui_edit_mode :: proc() {
             fmt.println("Exited UI Edit Mode")
             // Restore defaults on exit
             for key in ui_keys {
-                ent := gui[key]
+                ent := g.gui[key]
                 gc := get_component(ent, Cmp_Gui)
                 if gc != nil {
                     gc.alpha = 0.0  // Or restore original
@@ -71,7 +71,7 @@ handle_ui_edit_mode :: proc() {
     // Tweak the selected UI
     if len(ui_keys) > 0 {
         selected_key := ui_keys[selected_ui_index]
-        selected_ent := gui[selected_key]
+        selected_ent := g.gui[selected_key]
         tweak_game_UI(selected_ent)
 
         // Ensure selected is visible/editable
@@ -87,7 +87,7 @@ handle_ui_edit_mode :: proc() {
     if is_key_pressed(glfw.KEY_LEFT_CONTROL) && is_key_just_pressed(glfw.KEY_INSERT) {
         if len(ui_keys) > 0 {
             selected_key := ui_keys[selected_ui_index]
-            selected_ent := gui[selected_key]
+            selected_ent := g.gui[selected_key]
             filename := fmt.tprintf("assets/prefabs/ui/%s.json", selected_key)
             save_ui_prefab(selected_ent, filename)
             fmt.printf("Saved UI prefab: %s\n", filename)

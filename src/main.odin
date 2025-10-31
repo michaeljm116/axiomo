@@ -87,13 +87,27 @@ Game_Memory :: struct
 
     game_started : bool,
     ves : VisualEventData,
-
 }
 g: ^Game_Memory
 
 
 main :: proc() {
-    g.frame = FrameRate {
+    windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
+    //----------------------------------------------------------------------------\\
+    // /MEMORY
+    //----------------------------------------------------------------------------\\
+    g = new(Game_Memory)
+    context.logger = log.create_console_logger()
+	defer free(context.logger.data)
+    init_tracking()
+    // In init, after setting context.allocator
+    defer detect_memory_leaks()
+
+    set_up_all_arenas()
+    defer destroy_all_arenas()
+	g.rb.ctx = context
+
+	g.frame = FrameRate {
     	prev_time         = glfw.GetTime(),
     	curr_time         = 0,
     	wait_time         = 0,
@@ -104,47 +118,34 @@ main :: proc() {
     	physics_acc_time  = 0,
     	physics_time_step = 1.0 / 60.0,
     }
-    windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
-    //----------------------------------------------------------------------------\\
-    // /MEMORY
-    //----------------------------------------------------------------------------\\
-    context.logger = log.create_console_logger()
-	defer free(context.logger.data)
-    init_tracking()
-    // In init, after setting context.allocator
-    defer detect_memory_leaks()
-    set_up_all_arenas()
-    defer destroy_all_arenas()
-	rb.ctx = context
-
 	//----------------------------------------------------------------------------\\
     // /Asset Loading
     //----------------------------------------------------------------------------\\
-	g.materials = make([dynamic]res.Material, 0, mem_area.alloc)
-	g.models = make([dynamic]res.Model, 0, mem_area.alloc)
-	g.animations = make(map[u32]res.Animation, 0, mem_area.alloc)
-	g.prefabs = make(map[string]sc.Node, 0, mem_area.alloc)
-	g.ui_prefabs = make(map[string]sc.Node, 0, mem_area.alloc)
+	g.materials = make([dynamic]res.Material, 0, g.mem_area.alloc)
+	g.models = make([dynamic]res.Model, 0, g.mem_area.alloc)
+	g.animations = make(map[u32]res.Animation, 0, g.mem_area.alloc)
+	g.prefabs = make(map[string]sc.Node, 0, g.mem_area.alloc)
+	g.ui_prefabs = make(map[string]sc.Node, 0, g.mem_area.alloc)
 
 	res.load_materials("assets/Materials.xml", &g.materials)
 	res.load_models("assets/models/", &g.models)
-	res.load_anim_directory("assets/animations/", &g.animations, mem_area.alloc)
-	sc.load_prefab_directory("assets/prefabs", &g.prefabs, mem_area.alloc)
-	sc.load_prefab_directory("assets/prefabs/ui", &g.ui_prefabs, mem_core.alloc)
+	res.load_anim_directory("assets/animations/", &g.animations, g.mem_area.alloc)
+	sc.load_prefab_directory("assets/prefabs", &g.prefabs, g.mem_area.alloc)
+	sc.load_prefab_directory("assets/prefabs/ui", &g.ui_prefabs, g.mem_core.alloc)
 
 	//----------------------------------------------------------------------------\\
     // /Game Starting
     //----------------------------------------------------------------------------\\
-	g.scene = sc.load_new_scene("assets/scenes/BeeKillingsInn.json", mem_scene.alloc)
-	g.bvh = bvh_system_create(mem_core.alloc)
-	start_up_raytracer(mem_area.alloc)
+	g.scene = sc.load_new_scene("assets/scenes/BeeKillingsInn.json", g.mem_scene.alloc)
+	g.bvh = bvh_system_create(g.mem_core.alloc)
+	start_up_raytracer(g.mem_area.alloc)
 	gameplay_init()
 	defer bvh_system_destroy(g.bvh)
 	defer gameplay_destroy()
 
 	// You need to have an ecs ready before you do the stuff below
 	sys_trans_process_ecs()
-	sys_bvh_process_ecs(g.bvh, mem_frame.alloc)
+	sys_bvh_process_ecs(g.bvh, g.mem_frame.alloc)
 
 	// you need to have trannsformed and constructed a bh before stuff below
 	initialize_raytracer()
@@ -167,15 +168,15 @@ main :: proc() {
 			sys_visual_process_ecs(f32(g.frame.physics_time_step))
 			sys_anim_process_ecs(f32(g.frame.physics_time_step))
 			sys_trans_process_ecs()
-			// print_tracking_stats(&mem_track)
+			// print_tracking_stats(&g.mem_track)
 			gameplay_update(f32(g.frame.physics_time_step))
 			g.frame.physics_acc_time -= f32(g.frame.physics_time_step)
 		}
-		sys_bvh_process_ecs(g.bvh, mem_frame.alloc)
+		sys_bvh_process_ecs(g.bvh, g.mem_frame.alloc)
 		update_buffers()
 		update_descriptors()
 		end_frame(&image_index)
-		reset_memory_arena(&mem_frame)
+		reset_memory_arena(&g.mem_frame)
 		free_all(context.temp_allocator)
 	}
 	cleanup()

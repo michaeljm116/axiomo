@@ -13,53 +13,46 @@ MemoryArena :: struct
     name : string
 }
 
-mem_core : MemoryArena                   // Memory that persists througout the whole game
-mem_area : MemoryArena                   // Main memory for loading of resources of an area of the game
-mem_scene : MemoryArena                  // This holds the scene data from the json, should be reset upon scene change
-mem_game : MemoryArena                   // This holds game data, reset upon restarting of a game, ecs goes here
-mem_frame : MemoryArena                  // Mostly for BVH or anything that exist for a single frame
-mem_track: mem.Tracking_Allocator       // To track the memory leaks
-
 // 128 MB totals
 set_up_all_arenas :: proc()
 {
-    init_memory_arena_growing(&mem_core, mem.Megabyte * 1)
-    init_memory_arena_growing(&mem_area, mem.Megabyte * 1)
-    init_memory_arena_growing(&mem_scene, mem.Megabyte * 1)
-    init_memory_arena_growing(&mem_game, mem.Megabyte * 1)
-    init_memory_arena_static(&mem_frame, mem.Kilobyte * 512, mem.Kilobyte * 4)
-    mem_core.name = "core"
-    mem_area.name = "area"
-    mem_scene.name = "scene"
-    mem_game.name = "game"
-    mem_frame.name = "frame"
+    init_memory_arena_growing(&g.mem_core, mem.Megabyte * 1)
+    init_memory_arena_growing(&g.mem_area, mem.Megabyte * 1)
+    init_memory_arena_growing(&g.mem_scene, mem.Megabyte * 1)
+    init_memory_arena_growing(&g.mem_game, mem.Megabyte * 1)
+    init_memory_arena_static(&g.mem_frame, mem.Kilobyte * 512, mem.Kilobyte * 4)
+    g.mem_core.name = "core"
+    g.mem_area.name = "area"
+    g.mem_scene.name = "scene"
+    g.mem_game.name = "game"
+    g.mem_frame.name = "frame"
 }
 
 destroy_all_arenas :: proc()
 {
-    destroy_memory_arena(&mem_core)
-    destroy_memory_arena(&mem_area)
-    destroy_memory_arena(&mem_scene)
-    destroy_memory_arena(&mem_game)
-    destroy_memory_arena(&mem_frame)
+    destroy_memory_arena(&g.mem_core)
+    destroy_memory_arena(&g.mem_area)
+    destroy_memory_arena(&g.mem_scene)
+    destroy_memory_arena(&g.mem_game)
+    destroy_memory_arena(&g.mem_frame)
 }
 
 init_tracking :: proc()
 {
     default_alloc := context.allocator
-    mem.tracking_allocator_init(&mem_track, default_alloc)
-    context.allocator = mem.tracking_allocator(&mem_track)
+    mem.tracking_allocator_init(&g.mem_track, default_alloc)
+    context.allocator = mem.tracking_allocator(&g.mem_track)
 }
 
 detect_memory_leaks :: proc() {
 	fmt.eprintf("\n")
-	for _, entry in mem_track.allocation_map {
+	for _, entry in g.mem_track.allocation_map {
 		fmt.eprintf("- %v leaked %v bytes\n", entry.location, entry.size)
 	}
-	for entry in mem_track.bad_free_array {
+	for entry in g.mem_track.bad_free_array {
 		fmt.eprintf("- %v bad free\n", entry.location)
 	}
-	mem.tracking_allocator_destroy(&mem_track)
+	mem.tracking_allocator_destroy(&g.mem_track)
 	fmt.eprintf("\n")
 	free_all(context.temp_allocator)
 }
@@ -99,11 +92,11 @@ print_arena_usage :: proc(ma: ^MemoryArena) {
 }
 print_all_arenas :: proc()
 {
-    print_arena_usage(&mem_core)
-	print_arena_usage(&mem_area)
-	print_arena_usage(&mem_scene)
-	print_arena_usage(&mem_game)
-	print_arena_usage(&mem_frame)
+    print_arena_usage(&g.mem_core)
+	print_arena_usage(&g.mem_area)
+	print_arena_usage(&g.mem_scene)
+	print_arena_usage(&g.mem_game)
+	print_arena_usage(&g.mem_frame)
 }
 
 print_tracking_stats :: proc(ta: ^mem.Tracking_Allocator) {

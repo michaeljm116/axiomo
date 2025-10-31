@@ -40,11 +40,11 @@ gameplay_init :: proc() {
 
     g.world = create_world()
 	// defer destroy_world()
-	load_scene(g.scene^, mem_game.alloc)
+	load_scene(g.scene^, g.mem_game.alloc)
 	added_entity(g.world_ent)
 	g.player = load_prefab("Froku")
-
-	init_memory_arena(&mem_game, mem.Megabyte)
+	g.app_state = .TitleScreen
+	init_memory_arena(&g.mem_game, mem.Megabyte)
     g.input = InputState{
         mouse_sensitivity = 0.1,
         movement_speed = 5.0,
@@ -105,7 +105,7 @@ gameplay_update :: proc(delta_time: f32) {
     handle_player_edit_mode()
     handle_destroy_mode()
     if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode{
-       app_run(delta_time, &g_app_state)
+       app_run(delta_time, &g.app_state)
     }
     // Clear just pressed/released states
     for i in 0..<len(g.input.keys_just_pressed) {
@@ -198,7 +198,7 @@ update_light_orbit :: proc(delta_time: f32) {
     tc.local.pos.z = new_z
     tc.local.pos.y = new_y
 
-    rt.update_flags += {.LIGHT}
+    g.rt.update_flags += {.LIGHT}
 }
 
 update_player_movement :: proc(delta_time: f32)
@@ -292,7 +292,7 @@ is_mouse_button_pressed :: proc(button: i32) -> bool {
 
 // GLFW Callbacks
 key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods: i32) {
-    context = rb.ctx
+    context = g.rb.ctx
 
     if key < 0 || key > glfw.KEY_LAST {
         return
@@ -330,7 +330,7 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods
 }
 
 mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
-    context = rb.ctx
+    context = g.rb.ctx
 
     if g.input.first_mouse {
         g.input.last_mouse_x = xpos
@@ -348,7 +348,7 @@ mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
 }
 
 mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mods: i32) {
-    context = rb.ctx
+    context = g.rb.ctx
 
     if button < 0 || button > glfw.MOUSE_BUTTON_LAST {
         return
@@ -374,5 +374,5 @@ gameplay_destroy :: proc() {
     // Release mouse cursor
     glfw.SetInputMode(g.rb.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
 
-    reset_memory_arena(&mem_game)
+    reset_memory_arena(&g.mem_game)
 }

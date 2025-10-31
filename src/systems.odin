@@ -99,7 +99,7 @@ sqt_transform :: proc(nc: ^Cmp_Node) {
         l := get_component(nc.entity, Cmp_Light)
         if l != nil {
             // Update light in render system
-            rt.lights[0] = gpu.Light{
+            g.rt.lights[0] = gpu.Light{
                 pos = tc.world[3].xyz,
                 color = l.color,
                 intensity = l.intensity,
@@ -176,7 +176,7 @@ sqt_transform_e :: proc(entity: Entity) {
         l := get_component(nc.entity, Cmp_Light)
         if l != nil {
             // Update light in render system
-            rt.lights[0] = gpu.Light{
+            g.rt.lights[0] = gpu.Light{
                 pos = tc.world[3].xyz,
                 color = l.color,
                 intensity = l.intensity,

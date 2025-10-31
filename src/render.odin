@@ -343,7 +343,7 @@ init_vulkan :: proc()
 			pDependencies   = &dependency,
 		}
 
-		must(vk.CreateRenderPass(g.rb.device, &render_pass, nil, &rb.render_pass))
+		must(vk.CreateRenderPass(g.rb.device, &render_pass, nil, &g.rb.render_pass))
 	}
 
 	create_pipeline_cache()
@@ -643,7 +643,7 @@ find_depth_format :: proc() -> vk.Format
 }
 
 glfw_error_callback :: proc "c" (code: i32, description: cstring) {
-	context = rb.ctx
+	context = g.rb.ctx
 	log.errorf("glfw: %i: %s", code, description)
 }
 
@@ -653,7 +653,7 @@ vk_messenger_callback :: proc "system" (
 	pCallbackData: ^vk.DebugUtilsMessengerCallbackDataEXT,
 	pUserData: rawptr,
 ) -> b32 {
-	context = rb.ctx
+	context = g.rb.ctx
 
 	level: log.Level
 	if .ERROR in messageSeverity {
@@ -779,7 +779,7 @@ create_framebuffers :: proc() {
         attachments := []vk.ImageView{view, g.rb.depth_view} // Color and depth attachments
         frame_buffer := vk.FramebufferCreateInfo {
             sType           = .FRAMEBUFFER_CREATE_INFO,
-            renderPass      = rb.render_pass,
+            renderPass      = g.rb.render_pass,
             attachmentCount = 2,
             pAttachments    = raw_data(attachments),
             width           = g.rb.swapchain_extent.width,
@@ -795,7 +795,7 @@ create_pipeline_cache :: proc()
 	create_info : vk.PipelineCacheCreateInfo = {
 		sType = .PIPELINE_CACHE_CREATE_INFO,
 	}
-	must(vk.CreatePipelineCache(g.rb.device, &create_info, nil, &rb.pipeline_cache))
+	must(vk.CreatePipelineCache(g.rb.device, &create_info, nil, &g.rb.pipeline_cache))
 }
 
 init_vma :: proc()
@@ -924,7 +924,7 @@ record_command_buffer :: proc(command_buffer: vk.CommandBuffer, image_index: u32
 
     render_pass_info := vk.RenderPassBeginInfo {
         sType = .RENDER_PASS_BEGIN_INFO,
-        renderPass = rb.render_pass,
+        renderPass = g.rb.render_pass,
         framebuffer = g.rb.swapchain_frame_buffers[image_index],
         renderArea = {extent = g.rb.swapchain_extent},
         clearValueCount = 2,
@@ -932,7 +932,7 @@ record_command_buffer :: proc(command_buffer: vk.CommandBuffer, image_index: u32
     }
     vk.CmdBeginRenderPass(command_buffer, &render_pass_info, .INLINE)
 
-    vk.CmdBindPipeline(command_buffer, .GRAPHICS, rb.pipeline)
+    vk.CmdBindPipeline(command_buffer, .GRAPHICS, g.rb.pipeline)
 
     viewport := vk.Viewport {
         width    = f32(g.rb.swapchain_extent.width),
@@ -1468,7 +1468,7 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     // Call texture_update_descriptor(&g_font.atlas_texture)
     //
     if(texture_create(&g_font.atlas_texture, raw_data(rgba_data))){
-        append(&rt.bindless_textures, g_font.atlas_texture)
+        append(&g.rt.bindless_textures, g_font.atlas_texture)
         g.texture_indexes["Deutsch.ttf"] = i32(len(g.texture_indexes))
     }
     texture_update_descriptor(&g_font.atlas_texture)
@@ -1602,14 +1602,14 @@ initialize_raytracer :: proc()
 {
     prepare_storage_buffers()
     create_uniform_buffers()
-    prepare_texture_target(&rt.compute_texture, u32(monitor_width), u32(monitor_height), .R8G8B8A8_UNORM)
+    prepare_texture_target(&g.rt.compute_texture, u32(monitor_width), u32(monitor_height), .R8G8B8A8_UNORM)
     create_descriptor_set_layout() // multiple
     create_graphics_pipeline() // multiple
     create_descriptor_pool()
     create_descriptor_sets()
     prepare_compute()
     create_command_buffers(1.0, 0, 0) // multiple
-    rt.prepared = true
+    g.rt.prepared = true
 }
 
 // Initialize a uniform buffer with the provided data
@@ -1623,25 +1623,25 @@ init_uniform_buffer :: proc(vb: ^gpu.VBuffer, rc: ^RenderBase, data: $T) {
     vma.UnmapMemory(rc.vma_allocator, vb.allocation)
 }
 prepare_storage_buffers :: proc() {
-    reserve(&rt.materials, MAX_MATERIALS)
-    reserve(&rt.lights, MAX_LIGHTS)
+    reserve(&g.rt.materials, MAX_MATERIALS)
+    reserve(&g.rt.lights, MAX_LIGHTS)
 
     gpu.vbuffer_init_storage_buffer_custom_size(
-        &rt.compute.storage_buffers.primitives,
+        &g.rt.compute.storage_buffers.primitives,
         &g.rb.vma_allocator,
-        rt.primitives[:],
+        g.rt.primitives[:],
         MAX_OBJS)
 
     gpu.vbuffer_init_storage_buffer_custom_size(
-        &rt.compute.storage_buffers.lights,
+        &g.rt.compute.storage_buffers.lights,
         &g.rb.vma_allocator,
-        rt.lights[:],
+        g.rt.lights[:],
         MAX_LIGHTS)
 
     gpu.vbuffer_init_storage_buffer_custom_size(
-        &rt.compute.storage_buffers.materials,
+        &g.rt.compute.storage_buffers.materials,
         &g.rb.vma_allocator,
-        rt.materials[:],
+        g.rt.materials[:],
         MAX_MATERIALS)
 
    gui_cmp := Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, "title.png", 0, 0, false}
@@ -1649,23 +1649,23 @@ prepare_storage_buffers :: proc() {
        align_min = gui_cmp.align_min, align_ext = gui_cmp.align_ext,
        layer = gui_cmp.layer, id = g.texture_indexes[gui_cmp.id], alpha = gui_cmp.alpha
    }
-   append(&rt.guis, gpu_gui)
-   gui_cmp.ref = i32(len(rt.guis))
+   append(&g.rt.guis, gpu_gui)
+   gui_cmp.ref = i32(len(g.rt.guis))
    gpu.vbuffer_init_storage_buffer_custom_size(
-        &rt.compute.storage_buffers.guis,
+        &g.rt.compute.storage_buffers.guis,
         &g.rb.vma_allocator,
-        rt.guis[:],
+        g.rt.guis[:],
         MAX_GUIS)
    gpu.vbuffer_init_storage_buffer_custom_size(
-       &rt.compute.storage_buffers.bvh,
+       &g.rt.compute.storage_buffers.bvh,
        &g.rb.vma_allocator,
-       rt.bvh[:],
+       g.rt.bvh[:],
        MAX_NODES)
 }
 
 create_uniform_buffers :: proc() {
-    gpu.vbuffer_init_custom(&rt.compute.uniform_buffer, &g.rb.vma_allocator, 1, {.UNIFORM_BUFFER}, .CPU_TO_GPU)
-    gpu.vbuffer_apply_changes_no_data(&rt.compute.uniform_buffer, &g.rb.vma_allocator)
+    gpu.vbuffer_init_custom(&g.rt.compute.uniform_buffer, &g.rb.vma_allocator, 1, {.UNIFORM_BUFFER}, .CPU_TO_GPU)
+    gpu.vbuffer_apply_changes_no_data(&g.rt.compute.uniform_buffer, &g.rb.vma_allocator)
 }
 
 prepare_texture_target :: proc(tex: ^Texture, width, height: u32, format: vk.Format) {
@@ -1760,14 +1760,14 @@ create_descriptor_set_layout :: proc() {
         bindingCount = 1,
         pBindings = &bindings[0],
     }
-    must(vk.CreateDescriptorSetLayout(g.rb.device, &layout_info, nil, &rt.graphics.descriptor_set_layout))
+    must(vk.CreateDescriptorSetLayout(g.rb.device, &layout_info, nil, &g.rt.graphics.descriptor_set_layout))
 
     pipeline_layout_info := vk.PipelineLayoutCreateInfo{
         sType = .PIPELINE_LAYOUT_CREATE_INFO,
         setLayoutCount = 1,
-        pSetLayouts = &rt.graphics.descriptor_set_layout,
+        pSetLayouts = &g.rt.graphics.descriptor_set_layout,
     }
-    must(vk.CreatePipelineLayout(g.rb.device, &pipeline_layout_info, nil, &rt.graphics.pipeline_layout))
+    must(vk.CreatePipelineLayout(g.rb.device, &pipeline_layout_info, nil, &g.rt.graphics.pipeline_layout))
 }
 
 create_graphics_pipeline :: proc() {
@@ -1899,12 +1899,12 @@ create_graphics_pipeline :: proc() {
         pDepthStencilState = &depth_stencil_state,
         pColorBlendState = &color_blend_state,
         pDynamicState = &dynamic_state,
-        layout = rt.graphics.pipeline_layout,
-        renderPass = rb.render_pass,
+        layout = g.rt.graphics.pipeline_layout,
+        renderPass = g.rb.render_pass,
         subpass = 0,
     }
 
-    must(vk.CreateGraphicsPipelines(g.rb.device, rb.pipeline_cache, 1, &pipeline_info, nil, &rt.graphics.pipeline))
+    must(vk.CreateGraphicsPipelines(g.rb.device, g.rb.pipeline_cache, 1, &pipeline_info, nil, &g.rt.graphics.pipeline))
 
     // Destroy shader modules
     vk.DestroyShaderModule(g.rb.device, frag_shader_module, nil)
@@ -1925,32 +1925,32 @@ create_descriptor_pool :: proc() {
         poolSizeCount = 5,
         pPoolSizes = &pool_sizes[0],
     }
-    must(vk.CreateDescriptorPool(g.rb.device, &pool_info, nil, &rt.descriptor_pool))
+    must(vk.CreateDescriptorPool(g.rb.device, &pool_info, nil, &g.rt.descriptor_pool))
 }
 
 create_descriptor_sets :: proc() {
     alloc_info := vk.DescriptorSetAllocateInfo{
         sType = .DESCRIPTOR_SET_ALLOCATE_INFO,
-        descriptorPool = rt.descriptor_pool,
+        descriptorPool = g.rt.descriptor_pool,
         descriptorSetCount = 1,
-        pSetLayouts = &rt.graphics.descriptor_set_layout,
+        pSetLayouts = &g.rt.graphics.descriptor_set_layout,
     }
-    must(vk.AllocateDescriptorSets(g.rb.device, &alloc_info, &rt.graphics.descriptor_set))
+    must(vk.AllocateDescriptorSets(g.rb.device, &alloc_info, &g.rt.graphics.descriptor_set))
     write_set := vk.WriteDescriptorSet{
         sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.graphics.descriptor_set,
+        dstSet = g.rt.graphics.descriptor_set,
         dstBinding = 0,
         dstArrayElement = 0,
         descriptorCount = 1,
         descriptorType = .COMBINED_IMAGE_SAMPLER,
-        pImageInfo = &rt.compute_texture.descriptor,
+        pImageInfo = &g.rt.compute_texture.descriptor,
     }
     vk.UpdateDescriptorSets(g.rb.device, 1, &write_set, 0, nil)
 }
 
 prepare_compute :: proc() {
     // Get compute queue
-    vk.GetDeviceQueue(g.rb.device, g.rb.compute_queue_family_index, 0, &rt.compute.queue)
+    vk.GetDeviceQueue(g.rb.device, g.rb.compute_queue_family_index, 0, &g.rt.compute.queue)
 
     // Define descriptor set layout bindings
     bindings: [13]vk.DescriptorSetLayoutBinding
@@ -1995,33 +1995,33 @@ prepare_compute :: proc() {
         pBindings = &bindings[0],
         pNext = &extended_flags_info,
     }
-    must(vk.CreateDescriptorSetLayout(g.rb.device, &layout_info, nil, &rt.compute.descriptor_set_layout))
+    must(vk.CreateDescriptorSetLayout(g.rb.device, &layout_info, nil, &g.rt.compute.descriptor_set_layout))
 
     // Create pipeline layout
     pipeline_layout_info := vk.PipelineLayoutCreateInfo{
         sType = .PIPELINE_LAYOUT_CREATE_INFO,
         setLayoutCount = 1,
-        pSetLayouts = &rt.compute.descriptor_set_layout,
+        pSetLayouts = &g.rt.compute.descriptor_set_layout,
     }
-    must(vk.CreatePipelineLayout(g.rb.device, &pipeline_layout_info, nil, &rt.compute.pipeline_layout))
+    must(vk.CreatePipelineLayout(g.rb.device, &pipeline_layout_info, nil, &g.rt.compute.pipeline_layout))
 
     // Allocate descriptor set
     alloc_info := vk.DescriptorSetAllocateInfo{
         sType = .DESCRIPTOR_SET_ALLOCATE_INFO,
-        descriptorPool = rt.descriptor_pool,
+        descriptorPool = g.rt.descriptor_pool,
         descriptorSetCount = 1,
-        pSetLayouts = &rt.compute.descriptor_set_layout,
+        pSetLayouts = &g.rt.compute.descriptor_set_layout,
     }
-    must(vk.AllocateDescriptorSets(g.rb.device, &alloc_info, &rt.compute.descriptor_set))
+    must(vk.AllocateDescriptorSets(g.rb.device, &alloc_info, &g.rt.compute.descriptor_set))
 
     // Prepare image infos for gui_textures and bindless_textures
     texture_image_infos: [MAX_TEXTURES]vk.DescriptorImageInfo
     for i in 0..<MAX_TEXTURES {
-        texture_image_infos[i] = rt.gui_textures[i].descriptor
+        texture_image_infos[i] = g.rt.gui_textures[i].descriptor
     }
-    bindless_image_infos := make([]vk.DescriptorImageInfo, len(rt.bindless_textures))
+    bindless_image_infos := make([]vk.DescriptorImageInfo, len(g.rt.bindless_textures))
     defer delete(bindless_image_infos)
-    for t, i in rt.bindless_textures {
+    for t, i in g.rt.bindless_textures {
         bindless_image_infos[i] = t.descriptor
     }
 
@@ -2029,151 +2029,151 @@ prepare_compute :: proc() {
     write_sets: [dynamic]vk.WriteDescriptorSet
     defer delete(write_sets)
 
-    // Binding 0: STORAGE_IMAGE (always write, assuming rt.compute_texture.descriptor is valid; it's pImageInfo anyway)
+    // Binding 0: STORAGE_IMAGE (always write, assuming g.rt.compute_texture.descriptor is valid; it's pImageInfo anyway)
     append(&write_sets, vk.WriteDescriptorSet{
         sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
+        dstSet = g.rt.compute.descriptor_set,
         dstBinding = 0,
         dstArrayElement = 0,
         descriptorCount = 1,
         descriptorType = .STORAGE_IMAGE,
-        pImageInfo = &rt.compute_texture.descriptor,
+        pImageInfo = &g.rt.compute_texture.descriptor,
     })
 
     // Binding 1: UNIFORM_BUFFER (skip if null)
-    if rt.compute.uniform_buffer.buffer_info.buffer != vk.Buffer(0) {
+    if g.rt.compute.uniform_buffer.buffer_info.buffer != vk.Buffer(0) {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 1,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .UNIFORM_BUFFER,
-            pBufferInfo = &rt.compute.uniform_buffer.buffer_info,
+            pBufferInfo = &g.rt.compute.uniform_buffer.buffer_info,
         })
     }
 
     // Binding 2: STORAGE_BUFFER verts (skip if null)
-    if rt.compute.storage_buffers.verts.buffer_info.buffer != vk.Buffer(0) {
+    if g.rt.compute.storage_buffers.verts.buffer_info.buffer != vk.Buffer(0) {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 2,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.verts.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.verts.buffer_info,
         })
     }
 
     // Binding 3: STORAGE_BUFFER faces (skip if null)
-    if rt.compute.storage_buffers.faces.buffer_info.buffer != vk.Buffer(0) {
+    if g.rt.compute.storage_buffers.faces.buffer_info.buffer != vk.Buffer(0) {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 3,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.faces.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.faces.buffer_info,
         })
     }
 
     // Binding 4: STORAGE_BUFFER blas (skip if null)
-    if rt.compute.storage_buffers.blas.buffer_info.buffer != vk.Buffer(0) {
+    if g.rt.compute.storage_buffers.blas.buffer_info.buffer != vk.Buffer(0) {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 4,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.blas.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.blas.buffer_info,
         })
     }
 
     // Binding 5: STORAGE_BUFFER shapes (skip if null)
-    if rt.compute.storage_buffers.shapes.buffer_info.buffer != vk.Buffer(0) {
+    if g.rt.compute.storage_buffers.shapes.buffer_info.buffer != vk.Buffer(0) {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 5,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.shapes.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.shapes.buffer_info,
         })
     }
 
     // Binding 6: STORAGE_BUFFER primitives (skip if null)
-    if rt.compute.storage_buffers.primitives.buffer_info.buffer != vk.Buffer(0) {
+    if g.rt.compute.storage_buffers.primitives.buffer_info.buffer != vk.Buffer(0) {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 6,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.primitives.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.primitives.buffer_info,
         })
     }
 
     // Binding 7: STORAGE_BUFFER materials (skip if null)
-    if rt.compute.storage_buffers.materials.buffer_info.buffer != vk.Buffer(0) {
+    if g.rt.compute.storage_buffers.materials.buffer_info.buffer != vk.Buffer(0) {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 7,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.materials.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.materials.buffer_info,
         })
     }
 
     // Binding 8: STORAGE_BUFFER lights (skip if null)
-    if rt.compute.storage_buffers.lights.buffer_info.buffer != vk.Buffer(0) {
+    if g.rt.compute.storage_buffers.lights.buffer_info.buffer != vk.Buffer(0) {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 8,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.lights.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.lights.buffer_info,
         })
     }
 
     // Binding 9: STORAGE_BUFFER guis (skip if null)
-    if rt.compute.storage_buffers.guis.buffer_info.buffer != vk.Buffer(0) {
+    if g.rt.compute.storage_buffers.guis.buffer_info.buffer != vk.Buffer(0) {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 9,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.guis.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.guis.buffer_info,
         })
     }
 
     // Binding 10: STORAGE_BUFFER bvh (skip if null)
-    if rt.compute.storage_buffers.bvh.buffer_info.buffer != vk.Buffer(0) {
+    if g.rt.compute.storage_buffers.bvh.buffer_info.buffer != vk.Buffer(0) {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 10,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.bvh.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.bvh.buffer_info,
         })
     }
 
     // Binding 11: COMBINED_IMAGE_SAMPLER array (always write, but could add checks if some are invalid)
     append(&write_sets, vk.WriteDescriptorSet{
         sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
+        dstSet = g.rt.compute.descriptor_set,
         dstBinding = 11,
         dstArrayElement = 0,
         descriptorCount = MAX_TEXTURES,
@@ -2184,10 +2184,10 @@ prepare_compute :: proc() {
     // Binding 12: COMBINED_IMAGE_SAMPLER bindless array (always write, with dynamic count)
     append(&write_sets, vk.WriteDescriptorSet{
         sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = rt.compute.descriptor_set,
+        dstSet = g.rt.compute.descriptor_set,
         dstBinding = 12,
         dstArrayElement = 0,
-        descriptorCount = u32(len(rt.bindless_textures)),
+        descriptorCount = u32(len(g.rt.bindless_textures)),
         descriptorType = .COMBINED_IMAGE_SAMPLER,
         pImageInfo = raw_data(bindless_image_infos),
     })
@@ -2216,9 +2216,9 @@ prepare_compute :: proc() {
             module = shader_module,
             pName = "main",
         },
-        layout = rt.compute.pipeline_layout,
+        layout = g.rt.compute.pipeline_layout,
     }
-    must(vk.CreateComputePipelines(g.rb.device, rb.pipeline_cache, 1, &pipeline_info, nil, &rt.compute.pipeline))
+    must(vk.CreateComputePipelines(g.rb.device, g.rb.pipeline_cache, 1, &pipeline_info, nil, &g.rt.compute.pipeline))
     defer vk.DestroyShaderModule(g.rb.device, shader_module, nil)
 
     // Create command pool
@@ -2227,23 +2227,23 @@ prepare_compute :: proc() {
         queueFamilyIndex = g.rb.compute_queue_family_index,
         flags = { .RESET_COMMAND_BUFFER },
     }
-    must(vk.CreateCommandPool(g.rb.device, &cmd_pool_info, nil, &rt.compute.command_pool))
+    must(vk.CreateCommandPool(g.rb.device, &cmd_pool_info, nil, &g.rt.compute.command_pool))
 
     // Allocate command buffer
     cmd_buf_info := vk.CommandBufferAllocateInfo{
         sType = .COMMAND_BUFFER_ALLOCATE_INFO,
-        commandPool = rt.compute.command_pool,
+        commandPool = g.rt.compute.command_pool,
         level = .PRIMARY,
         commandBufferCount = 1,
     }
-    must(vk.AllocateCommandBuffers(g.rb.device, &cmd_buf_info, &rt.compute.command_buffer))
+    must(vk.AllocateCommandBuffers(g.rb.device, &cmd_buf_info, &g.rt.compute.command_buffer))
 
     // Create fence
     fence_info := vk.FenceCreateInfo{
         sType = .FENCE_CREATE_INFO,
         flags = { .SIGNALED },
     }
-    must(vk.CreateFence(g.rb.device, &fence_info, nil, &rt.compute.fence))
+    must(vk.CreateFence(g.rb.device, &fence_info, nil, &g.rt.compute.fence))
 
     create_compute_command_buffer()
 
@@ -2255,29 +2255,29 @@ create_compute_command_buffer :: proc() {
         // No flags needed; equivalent to vks::initializers default (no ONE_TIME_SUBMIT for re-recordable if desired)
     }
 
-    must(vk.BeginCommandBuffer(rt.compute.command_buffer, &cmd_buf_info))
+    must(vk.BeginCommandBuffer(g.rt.compute.command_buffer, &cmd_buf_info))
 
-    vk.CmdBindPipeline(rt.compute.command_buffer, .COMPUTE, rt.compute.pipeline)
-    vk.CmdBindDescriptorSets(rt.compute.command_buffer, .COMPUTE, rt.compute.pipeline_layout, 0, 1, &rt.compute.descriptor_set, 0, nil)
+    vk.CmdBindPipeline(g.rt.compute.command_buffer, .COMPUTE, g.rt.compute.pipeline)
+    vk.CmdBindDescriptorSets(g.rt.compute.command_buffer, .COMPUTE, g.rt.compute.pipeline_layout, 0, 1, &g.rt.compute.descriptor_set, 0, nil)
 
     // Dispatch: Matches your /16 (assuming workgroup size 16x16 in shader; adjust if different)
-    vk.CmdDispatch(rt.compute.command_buffer, rt.compute_texture.width / 16, rt.compute_texture.height / 16, 1)
+    vk.CmdDispatch(g.rt.compute.command_buffer, g.rt.compute_texture.width / 16, g.rt.compute_texture.height / 16, 1)
 
-    must(vk.EndCommandBuffer(rt.compute.command_buffer))
+    must(vk.EndCommandBuffer(g.rt.compute.command_buffer))
 }
 
 create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, offset_height: i32 = 0) {
     // Allocate command buffers if not already done
-    if len(rb.command_buffers) == 0
+    if len(g.rb.command_buffers) == 0
     {
-        rb.command_buffers = make([]vk.CommandBuffer, len(g.rb.swapchain_frame_buffers))
+        g.rb.command_buffers = make([]vk.CommandBuffer, len(g.rb.swapchain_frame_buffers))
         command_buffer_info := vk.CommandBufferAllocateInfo{
             sType = .COMMAND_BUFFER_ALLOCATE_INFO,
             commandPool = g.rb.command_pool,
             level = .PRIMARY,
             commandBufferCount = u32(len(g.rb.swapchain_images)),
         }
-        must(vk.AllocateCommandBuffers(g.rb.device, &command_buffer_info, &rb.command_buffers[0]))
+        must(vk.AllocateCommandBuffers(g.rb.device, &command_buffer_info, &g.rb.command_buffers[0]))
     }
 
     // Calculate viewport and scissor based on parameters
@@ -2286,8 +2286,8 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
     x := f32(offset_width)
     y := f32(offset_height)
 
-    for i in 0..<len(rb.command_buffers) {
-        cmd_buffer := rb.command_buffers[i]
+    for i in 0..<len(g.rb.command_buffers) {
+        cmd_buffer := g.rb.command_buffers[i]
 
         // Begin command buffer
         begin_info := vk.CommandBufferBeginInfo{
@@ -2303,7 +2303,7 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
             newLayout = .GENERAL,
             srcQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED,
             dstQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED,
-            image = rt.compute_texture.image,
+            image = g.rt.compute_texture.image,
             subresourceRange = {
                 aspectMask = { .COLOR},
                 baseMipLevel = 0,
@@ -2330,7 +2330,7 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
         clear_values[1].depthStencil = { depth = 1.0, stencil = 0 }
         render_pass_info := vk.RenderPassBeginInfo{
             sType = .RENDER_PASS_BEGIN_INFO,
-            renderPass = rb.render_pass,
+            renderPass = g.rb.render_pass,
             framebuffer = g.rb.swapchain_frame_buffers[i],
             renderArea = { offset = {0, 0}, extent = g.rb.swapchain_extent },
             clearValueCount = 2,
@@ -2339,7 +2339,7 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
         vk.CmdBeginRenderPass(cmd_buffer, &render_pass_info, .INLINE)
 
         // Bind graphics pipeline
-        vk.CmdBindPipeline(cmd_buffer, .GRAPHICS, rt.graphics.pipeline)
+        vk.CmdBindPipeline(cmd_buffer, .GRAPHICS, g.rt.graphics.pipeline)
 
         // Set viewport
         viewport := vk.Viewport{
@@ -2363,10 +2363,10 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
         vk.CmdBindDescriptorSets(
             cmd_buffer,
             .GRAPHICS,
-            rt.graphics.pipeline_layout,
+            g.rt.graphics.pipeline_layout,
             0,
             1,
-            &rt.graphics.descriptor_set,
+            &g.rt.graphics.descriptor_set,
             0,
             nil,
         )
@@ -2396,16 +2396,16 @@ start_up_raytracer :: proc(alloc: mem.Allocator)
 
 set_camera :: proc()
 {
-    rt.compute.ubo.aspect_ratio = 1280.0 / 720.0
-    rt.compute.ubo.fov = math.tan(f32(13.0 * 0.03490658503))
-    rt.compute.ubo.rotM = mat4f(0)
-    rt.compute.ubo.rand = rand.int31()
+    g.rt.compute.ubo.aspect_ratio = 1280.0 / 720.0
+    g.rt.compute.ubo.fov = math.tan(f32(13.0 * 0.03490658503))
+    g.rt.compute.ubo.rotM = mat4f(0)
+    g.rt.compute.ubo.rand = rand.int31()
 }
 
 
 map_materials_to_gpu :: proc(alloc : mem.Allocator)
 {
-	rt.materials = make([dynamic]gpu.Material, len(g.materials), alloc)
+	g.rt.materials = make([dynamic]gpu.Material, len(g.materials), alloc)
 	for &m, i in g.materials{
 	    gpu_mat : gpu.Material = {
 			diffuse = m.diffuse,
@@ -2415,7 +2415,7 @@ map_materials_to_gpu :: proc(alloc : mem.Allocator)
 			refractive_index = m.refractive_index,
 			texture_id = g.texture_indexes[m.texture]
 		}
-        rt.materials[i] = gpu_mat
+        g.rt.materials[i] = gpu_mat
 	}
 }
 
@@ -2430,7 +2430,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     defer delete(faces)
     defer delete(verts)
 
-    rt.mesh_assigner = make(map[i32][2]int, alloc)
+    g.rt.mesh_assigner = make(map[i32][2]int, alloc)
 
     for mod in g.models
     {
@@ -2452,7 +2452,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
             for bvh in mesh.bvhs{
                 append(&blas, gpu.BvhNode{bvh.upper, bvh.offset, bvh.lower, bvh.numChildren})
             }
-            rt.mesh_assigner[mod.unique_id + i32(i)] = {prev_ind_size, prev_ind_size + len(mesh.faces)}
+            g.rt.mesh_assigner[mod.unique_id + i32(i)] = {prev_ind_size, prev_ind_size + len(mesh.faces)}
         }
     }
 
@@ -2460,13 +2460,13 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     append(&blas, gpu.BvhNode{} )
 
     //Load them into the gpu
-    init_staging_buf(&rt.compute.storage_buffers.verts,verts, len(verts))
-    init_staging_buf(&rt.compute.storage_buffers.faces,faces, len(faces))
-    init_staging_buf(&rt.compute.storage_buffers.blas, blas, len(blas))
-    init_staging_buf(&rt.compute.storage_buffers.shapes, shapes, len(shapes))
+    init_staging_buf(&g.rt.compute.storage_buffers.verts,verts, len(verts))
+    init_staging_buf(&g.rt.compute.storage_buffers.faces,faces, len(faces))
+    init_staging_buf(&g.rt.compute.storage_buffers.blas, blas, len(blas))
+    init_staging_buf(&g.rt.compute.storage_buffers.shapes, shapes, len(shapes))
 
     //Dynamically load textures
-    // g.texture_indexes = make(map[string]i32, mem_area.alloc)
+    // g.texture_indexes = make(map[string]i32, g.mem_area.alloc)
     g.texture_indexes[""] = -1
     index :i32= 0
     files := path2.get_dir_files("assets/textures")
@@ -2476,17 +2476,17 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
         filename := strings.clone(f.name, alloc)
         t := Texture{path = f.fullpath}
         if texture_create(&t){
-            append(&rt.bindless_textures, t)
+            append(&g.rt.bindless_textures, t)
             g.texture_indexes[filename] = index
             index += 1
         }
     }
     os.file_info_slice_delete(files)
-    MAX_BINDLESS_TEXTURES = u32(len(rt.bindless_textures)) + 1
+    MAX_BINDLESS_TEXTURES = u32(len(g.rt.bindless_textures)) + 1
 
     // Similarly for gui_textures if needed, but since it's fixed array, perhaps initialize with a default texture or handle differently
     // For now, assume gui_textures are critical, so check in loop
-    for &t, i in rt.gui_textures {
+    for &t, i in g.rt.gui_textures {
         t = Texture{path = texture_paths[i]}
         if !texture_create(&t) do log.errorf("Failed to create GUI texture for path: %s", texture_paths[i])
     }
@@ -2507,72 +2507,72 @@ init_staging_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int
 //----------------------------------------------------------------------------\\
 update_descriptors :: proc() {
     // Wait for fence - equivalent to vkWaitForFences with UINT64_MAX
-    vk.WaitForFences(g.rb.device, 1, &rt.compute.fence, true, fence_timeout_ns)
+    vk.WaitForFences(g.rb.device, 1, &g.rt.compute.fence, true, fence_timeout_ns)
 
     // Create write descriptor sets for the specific bindings you need
     // Based on your C++ code, you need bindings 6-10 for primitives, materials, lights, guis, and bvh
-    rt.compute_write_descriptor_sets = {
+    g.rt.compute_write_descriptor_sets = {
         // Binding 6: for objects (primitives)
         vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 6,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.primitives.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.primitives.buffer_info,
         },
 
         // Binding 7: for materials
         vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 7,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.materials.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.materials.buffer_info,
         },
 
         // Binding 8: for lights
         vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 8,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.lights.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.lights.buffer_info,
         },
 
         // Binding 9: for gui
         vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 9,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.guis.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.guis.buffer_info,
         },
 
         // Binding 10: for bvhnodes
         vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = rt.compute.descriptor_set,
+            dstSet = g.rt.compute.descriptor_set,
             dstBinding = 10,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &rt.compute.storage_buffers.bvh.buffer_info,
+            pBufferInfo = &g.rt.compute.storage_buffers.bvh.buffer_info,
         },
     }
 
     // Update descriptor sets
     vk.UpdateDescriptorSets(
         g.rb.device,
-        u32(len(rt.compute_write_descriptor_sets)),
-        &rt.compute_write_descriptor_sets[0],
+        u32(len(g.rt.compute_write_descriptor_sets)),
+        &g.rt.compute_write_descriptor_sets[0],
         0,
         nil
     )
@@ -2582,36 +2582,36 @@ update_descriptors :: proc() {
 }
 
 update_buffers :: proc() {
-    vk.WaitForFences(g.rb.device, 1, &rt.compute.fence, true, fence_timeout_ns)
+    vk.WaitForFences(g.rb.device, 1, &g.rt.compute.fence, true, fence_timeout_ns)
 
-    if rt.update_flags == {} do return
+    if g.rt.update_flags == {} do return
 
-    if .OBJECT in rt.update_flags {
+    if .OBJECT in g.rt.update_flags {
         // compute_.storage_buffers.primitives.UpdateBuffers(vkDevice, primitives);
-        rt.update_flags -= {.OBJECT}
+        g.rt.update_flags -= {.OBJECT}
     }
 
-    if .MATERIAL in rt.update_flags {
-        rt.update_flags -= {.MATERIAL}
+    if .MATERIAL in g.rt.update_flags {
+        g.rt.update_flags -= {.MATERIAL}
     }
 
-    if .LIGHT in rt.update_flags {
-        gpu.vbuffer_update(&rt.compute.storage_buffers.lights, &g.rb.vma_allocator, rt.lights[:])
-        rt.update_flags -= {.LIGHT}
+    if .LIGHT in g.rt.update_flags {
+        gpu.vbuffer_update(&g.rt.compute.storage_buffers.lights, &g.rb.vma_allocator, g.rt.lights[:])
+        g.rt.update_flags -= {.LIGHT}
     }
 
-    if .GUI in rt.update_flags {
-        gpu.vbuffer_update(&rt.compute.storage_buffers.guis, &g.rb.vma_allocator, rt.guis[:])
-        rt.update_flags -= {.GUI}
+    if .GUI in g.rt.update_flags {
+        gpu.vbuffer_update(&g.rt.compute.storage_buffers.guis, &g.rb.vma_allocator, g.rt.guis[:])
+        g.rt.update_flags -= {.GUI}
     }
 
-    if .BVH in rt.update_flags {
-        gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.primitives, &g.rb.vma_allocator, rt.primitives[:], u32(len(rt.primitives)))
-        gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.bvh, &g.rb.vma_allocator, rt.bvh[:], u32(len(rt.bvh)))
-        rt.update_flags -= {.BVH}
+    if .BVH in g.rt.update_flags {
+        gpu.vbuffer_update_and_expand(&g.rt.compute.storage_buffers.primitives, &g.rb.vma_allocator, g.rt.primitives[:], u32(len(g.rt.primitives)))
+        gpu.vbuffer_update_and_expand(&g.rt.compute.storage_buffers.bvh, &g.rb.vma_allocator, g.rt.bvh[:], u32(len(g.rt.bvh)))
+        g.rt.update_flags -= {.BVH}
     }
 
-    rt.update_flags = {}
+    g.rt.update_flags = {}
     // compute_.storage_buffers.objects.UpdateAndExpandBuffers(vkDevice, objects, objects.size());
     // compute_.storage_buffers.bvh.UpdateAndExpandBuffers(vkDevice, bvh, bvh.size());
     update_descriptors()
@@ -2620,34 +2620,34 @@ update_buffers :: proc() {
 update_camera :: proc{update_camera_full, update_camera_component}
 
 update_camera_full :: proc(camera: ^Camera) {
-    rt.compute.ubo.aspect_ratio = camera.aspect
-    rt.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
-    rt.compute.ubo.rotM = transmute(mat4f)camera.matrices.view
-    rt.compute.ubo.rand = rand.int31()
-    gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &g.rb.vma_allocator, &rt.compute.ubo)
+    g.rt.compute.ubo.aspect_ratio = camera.aspect
+    g.rt.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
+    g.rt.compute.ubo.rotM = transmute(mat4f)camera.matrices.view
+    g.rt.compute.ubo.rand = rand.int31()
+    gpu.vbuffer_apply_changes(&g.rt.compute.uniform_buffer, &g.rb.vma_allocator, &g.rt.compute.ubo)
 }
 
 update_camera_component :: proc(camera: ^Cmp_Camera) {
-    rt.compute.ubo.aspect_ratio = camera.aspect_ratio
-    rt.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
-    rt.compute.ubo.rotM = transmute(mat4f)camera.rot_matrix
-    rt.compute.ubo.rand = rand.int31()
-    gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &g.rb.vma_allocator, &rt.compute.ubo)
+    g.rt.compute.ubo.aspect_ratio = camera.aspect_ratio
+    g.rt.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
+    g.rt.compute.ubo.rotM = transmute(mat4f)camera.rot_matrix
+    g.rt.compute.ubo.rand = rand.int31()
+    gpu.vbuffer_apply_changes(&g.rt.compute.uniform_buffer, &g.rb.vma_allocator, &g.rt.compute.ubo)
 }
 
 update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity, root: BvhNode, num_nodes : i32)
 {
-    context.allocator = mem_frame.alloc
+    context.allocator = g.mem_frame.alloc
     num_prims := len(ordered_prims)
     if(num_prims == 0) do return
-    rt.primitives = make([dynamic]gpu.Primitive, 0, num_prims, mem_frame.alloc)
-    rt.ordered_prims_map = make([dynamic]int, num_prims, mem_frame.alloc)
-    // clear(&rt.primitives)
-    // clear(&rt.ordered_prims_map)
-    // reserve(&rt.primitives, num_prims)
-    // resize(&rt.ordered_prims_map, num_prims)
+    g.rt.primitives = make([dynamic]gpu.Primitive, 0, num_prims, g.mem_frame.alloc)
+    g.rt.ordered_prims_map = make([dynamic]int, num_prims, g.mem_frame.alloc)
+    // clear(&g.rt.primitives)
+    // clear(&g.rt.ordered_prims_map)
+    // reserve(&g.rt.primitives, num_prims)
+    // resize(&g.rt.ordered_prims_map, num_prims)
     for op, i in ordered_prims{
-        rt.ordered_prims_map[op.primID] = i
+        g.rt.ordered_prims_map[op.primID] = i
         prim := prims[op.primID]
         pc := get_component(prim, Cmp_Primitive)
 
@@ -2664,12 +2664,12 @@ update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [d
                 start_index = pc.start_index,
                 end_index = pc.end_index,
             }
-            append(&rt.primitives, gpu_prim)
+            append(&g.rt.primitives, gpu_prim)
         }
     }
 
     // Flatten BVH tree
-    resize(&rt.bvh, int(num_nodes))
+    resize(&g.rt.bvh, int(num_nodes))
 
     // Get root bounds
     root_bounds: BvhBounds
@@ -2687,14 +2687,14 @@ update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [d
 
     offset := 0
     flatten_bvh(root, root_bounds, &offset)
-    rt.update_flags |= {.BVH}
+    g.rt.update_flags |= {.BVH}
 }
 
 // Flatten BVH tree into linear array for GPU
 flatten_bvh :: proc(node: BvhNode, bounds: BvhBounds, offset: ^int) -> i32 {
     if node == nil { return -1 }  // Safeguard
 
-    bvh_node := &rt.bvh[offset^]
+    bvh_node := &g.rt.bvh[offset^]
     my_offset := i32(offset^)
     offset^ += 1
 
@@ -2707,7 +2707,7 @@ flatten_bvh :: proc(node: BvhNode, bounds: BvhBounds, offset: ^int) -> i32 {
         bvh_node.upper = n.bounds.upper
         bvh_node.lower = n.bounds.lower
         bvh_node.num_children = 0
-        bvh_node.offset = i32(rt.ordered_prims_map[n.id])
+        bvh_node.offset = i32(g.rt.ordered_prims_map[n.id])
 
     case .Inner:
         n := cast(^InnerBvhNode)node
@@ -2743,22 +2743,22 @@ print_update_bvh_debug :: proc(ordered_prims: ^[dynamic]embree.RTCBuildPrimitive
 
 
 update_uniform_buffers :: proc() {
-    gpu.vbuffer_apply_changes(&rt.compute.uniform_buffer, &g.rb.vma_allocator, &rt.compute.ubo)
+    gpu.vbuffer_apply_changes(&g.rt.compute.uniform_buffer, &g.rb.vma_allocator, &g.rt.compute.ubo)
 }
 
 update_material :: proc(id: i32) {
     m := get_material(id)
-    rt.materials[id].diffuse = m.diffuse
-    rt.materials[id].reflective = m.reflective
-    rt.materials[id].roughness = m.roughness
-    rt.materials[id].transparency = m.transparency
-    rt.materials[id].refractive_index = m.refractive_index
-    rt.materials[id].texture_id = g.texture_indexes[m.texture]
-    gpu.vbuffer_update(&rt.compute.storage_buffers.materials, &g.rb.vma_allocator, rt.materials[:])
+    g.rt.materials[id].diffuse = m.diffuse
+    g.rt.materials[id].reflective = m.reflective
+    g.rt.materials[id].roughness = m.roughness
+    g.rt.materials[id].transparency = m.transparency
+    g.rt.materials[id].refractive_index = m.refractive_index
+    g.rt.materials[id].texture_id = g.texture_indexes[m.texture]
+    gpu.vbuffer_update(&g.rt.compute.storage_buffers.materials, &g.rb.vma_allocator, g.rt.materials[:])
 }
 
 update_gui :: proc(_gc: ^Cmp_Gui) {
-    gc := &rt.guis[_gc.ref]
+    gc := &g.rt.guis[_gc.ref]
     gc.min = gc.min
     gc.extents = gc.extents
     gc.align_min = gc.align_min
@@ -2766,13 +2766,13 @@ update_gui :: proc(_gc: ^Cmp_Gui) {
     gc.layer = gc.layer
     gc.id = g.texture_indexes[_gc.id]
     gc.alpha = gc.alpha
-    rt.update_flags |= {.GUI}
+    g.rt.update_flags |= {.GUI}
 }
 
 update_text :: proc(tc: ^Cmp_Text) {
     for ref in tc.shader_refs {
-        if ref >= 0 && ref < i32(len(rt.guis)) {
-            rt.guis[ref].alpha = 0
+        if ref >= 0 && ref < i32(len(g.rt.guis)) {
+            g.rt.guis[ref].alpha = 0
         }
     }
     clear(&tc.shader_refs)
@@ -2792,14 +2792,14 @@ update_text :: proc(tc: ^Cmp_Text) {
             alpha = tc.alpha,
             // color = tc.color,  // If you add this to gpu.Gui
         }
-        append(&tc.shader_refs, i32(len(rt.guis)))
-        append(&rt.guis, gui)
+        append(&tc.shader_refs, i32(len(g.rt.guis)))
+        append(&g.rt.guis, gui)
         pos.x += data.advance * tc.font_scale
     }
 
     if len(tc.shader_refs) > 0 do tc.ref = tc.shader_refs[0]
     update_descriptors()
-    rt.update_flags |= {.GUI}
+    g.rt.update_flags |= {.GUI}
 }
 
 int_to_array_of_ints :: proc(n: i32) -> [dynamic]i32 {
@@ -2824,8 +2824,8 @@ update_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
     change_occured := num_size != gnc.highest_active_digit_index + i32(1)
     if !change_occured {
         for i in 0..<gnc.highest_active_digit_index + 1 {
-            rt.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
-            rt.guis[gnc.shader_references[i]].alpha = gnc.alpha
+            g.rt.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
+            g.rt.guis[gnc.shader_references[i]].alpha = gnc.alpha
         }
     } else {
         increased := num_size > gnc.highest_active_digit_index + 1
@@ -2842,30 +2842,30 @@ update_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
                         id = 0,
                         alpha = gnc.alpha,
                     }
-                    append(&gnc.shader_references, i32(len(rt.guis)))
-                    append(&rt.guis, gui)
+                    append(&gnc.shader_references, i32(len(g.rt.guis)))
+                    append(&g.rt.guis, gui)
                 }
-                gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.guis, &g.rb.vma_allocator, rt.guis[:], u32(len(rt.guis)))
+                gpu.vbuffer_update_and_expand(&g.rt.compute.storage_buffers.guis, &g.rb.vma_allocator, g.rt.guis[:], u32(len(g.rt.guis)))
             }
             for i in 0..<num_size {
-                rt.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
-                rt.guis[gnc.shader_references[i]].alpha = gnc.alpha
-                rt.guis[gnc.shader_references[i]].min.x = gnc.min.x - (f32(num_size - 1 - i) * gnc.extents.x)
+                g.rt.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
+                g.rt.guis[gnc.shader_references[i]].alpha = gnc.alpha
+                g.rt.guis[gnc.shader_references[i]].min.x = gnc.min.x - (f32(num_size - 1 - i) * gnc.extents.x)
             }
             gnc.highest_active_digit_index = num_size - 1
         } else {
             for i in 0..<num_size {
-                rt.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
-                rt.guis[gnc.shader_references[i]].alpha = gnc.alpha
-                rt.guis[gnc.shader_references[i]].min.x = gnc.min.x - (f32(num_size - 1 - i) * gnc.extents.x)
+                g.rt.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
+                g.rt.guis[gnc.shader_references[i]].alpha = gnc.alpha
+                g.rt.guis[gnc.shader_references[i]].min.x = gnc.min.x - (f32(num_size - 1 - i) * gnc.extents.x)
             }
             for i in gnc.highest_active_digit_index..<num_size {
-                rt.guis[gnc.shader_references[i]].alpha = 0
+                g.rt.guis[gnc.shader_references[i]].alpha = 0
             }
             gnc.highest_active_digit_index = num_size - 1
         }
     }
-    rt.update_flags |= {.GUI}
+    g.rt.update_flags |= {.GUI}
 }
 
 //----------------------------------------------------------------------------\\
@@ -2884,11 +2884,11 @@ add_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
             id = 0,
             alpha = gnc.alpha,
         }
-        append(&gnc.shader_references, i32(len(rt.guis)))
-        append(&rt.guis, gui)
+        append(&gnc.shader_references, i32(len(g.rt.guis)))
+        append(&g.rt.guis, gui)
     }
     gnc.ref = gnc.shader_references[0]
-    rt.update_flags |= {.GUI}
+    g.rt.update_flags |= {.GUI}
 }
 
 fence_timeout_ns :: 10_000_000_000 // 1 second
@@ -2916,17 +2916,17 @@ start_frame :: proc(image_index: ^u32) {
     }
 
     wait_stages := vk.PipelineStageFlags{.COLOR_ATTACHMENT_OUTPUT}
-    rb.submit_info = vk.SubmitInfo{
+    g.rb.submit_info = vk.SubmitInfo{
         sType = .SUBMIT_INFO,
         commandBufferCount = 1,
-        pCommandBuffers = &rb.command_buffers[image_index^],
+        pCommandBuffers = &g.rb.command_buffers[image_index^],
         waitSemaphoreCount = 1,
         pWaitSemaphores = &g.rb.image_available_semaphores[current_frame],
         pWaitDstStageMask = &wait_stages,
         signalSemaphoreCount = 1,
         pSignalSemaphores = &g.rb.render_finished_semaphores[current_frame]
     }
-    must(vk.QueueSubmit(g.rb.graphics_queue, 1, &rb.submit_info, g.rb.in_flight_fences[current_frame]))  // Fence for graphics
+    must(vk.QueueSubmit(g.rb.graphics_queue, 1, &g.rb.submit_info, g.rb.in_flight_fences[current_frame]))  // Fence for graphics
 }
 
 end_frame :: proc(image_index: ^u32) {
@@ -2939,10 +2939,10 @@ end_frame :: proc(image_index: ^u32) {
         pImageIndices = image_index,
     }
 
-    result := vk.QueuePresentKHR(rb.present_queue, &present_info)
+    result := vk.QueuePresentKHR(g.rb.present_queue, &present_info)
     switch {
-    case result == .ERROR_OUT_OF_DATE_KHR || result == .SUBOPTIMAL_KHR || rb.framebuffer_resized:
-        rb.framebuffer_resized = false
+    case result == .ERROR_OUT_OF_DATE_KHR || result == .SUBOPTIMAL_KHR || g.rb.framebuffer_resized:
+        g.rb.framebuffer_resized = false
         rt_recreate_swapchain()
         return  // Skip advance on recreate
     case result == .SUCCESS:
@@ -2953,15 +2953,15 @@ end_frame :: proc(image_index: ^u32) {
     // No QueueWaitIdle: Use fences for async sync instead
 
     // Compute: Wait/reset dedicated compute fence (matches C++)
-    must(vk.WaitForFences(g.rb.device, 1, &rt.compute.fence, true, fence_timeout_ns))
-    must(vk.ResetFences(g.rb.device, 1, &rt.compute.fence))
+    must(vk.WaitForFences(g.rb.device, 1, &g.rt.compute.fence, true, fence_timeout_ns))
+    must(vk.ResetFences(g.rb.device, 1, &g.rt.compute.fence))
 
     compute_submit_info := vk.SubmitInfo{
         sType = .SUBMIT_INFO,
         commandBufferCount = 1,
-        pCommandBuffers = &rt.compute.command_buffer,
+        pCommandBuffers = &g.rt.compute.command_buffer,
     }
-    must(vk.QueueSubmit(g.rb.compute_queue, 1, &compute_submit_info, rt.compute.fence))  // Dedicated fence
+    must(vk.QueueSubmit(g.rb.compute_queue, 1, &compute_submit_info, g.rt.compute.fence))  // Dedicated fence
 
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT
 }
@@ -2982,11 +2982,11 @@ added_entity :: proc(e: Entity) {
         prim_comp.world = trans_comp.world
         prim_comp.extents = trans_comp.local.sca.xyz
         if prim_comp.id > 0 {
-            temp := rt.mesh_assigner[prim_comp.id]
+            temp := g.rt.mesh_assigner[prim_comp.id]
             prim_comp.start_index = i32(temp[0])
             prim_comp.end_index = i32(temp[1])
         }
-        rt.update_flags |= {.OBJECT}
+        g.rt.update_flags |= {.OBJECT}
     }
     if .LIGHT in t {
         light_comp := get_component(e, Cmp_Light)
@@ -2998,11 +2998,11 @@ added_entity :: proc(e: Entity) {
             id = i32(e),
         }
         light_comp.id = light.id
-        append(&rt.lights, light)
-        append(&rt.light_comps, light_comp^)
+        append(&g.rt.lights, light)
+        append(&g.rt.light_comps, light_comp^)
 
-        gpu.vbuffer_update_and_expand(&rt.compute.storage_buffers.lights, &g.rb.vma_allocator, rt.lights[:], u32(len(rt.lights)))
-        rt.update_flags |= {.LIGHT}
+        gpu.vbuffer_update_and_expand(&g.rt.compute.storage_buffers.lights, &g.rb.vma_allocator, g.rt.lights[:], u32(len(g.rt.lights)))
+        g.rt.update_flags |= {.LIGHT}
     }
     if .GUI in t {
         gc := get_component(e, Cmp_Gui)
@@ -3015,9 +3015,9 @@ added_entity :: proc(e: Entity) {
             id = g.texture_indexes[gc.id],
             alpha = gc.alpha,
         }
-        gc.ref = i32(len(rt.guis))
-        append(&rt.guis, gui)
-        rt.update_flags |= {.GUI}
+        gc.ref = i32(len(g.rt.guis))
+        append(&g.rt.guis, gui)
+        g.rt.update_flags |= {.GUI}
     }
     if .GUINUM in t {
         gnc := get_component(e, Cmp_GuiNumber)
@@ -3032,25 +3032,25 @@ added_entity :: proc(e: Entity) {
                 id = 0,
                 alpha = gnc.alpha,
             }
-            append(&gnc.shader_references, i32(len(rt.guis)))
-            append(&rt.guis, gui)
+            append(&gnc.shader_references, i32(len(g.rt.guis)))
+            append(&g.rt.guis, gui)
         }
         gnc.ref = gnc.shader_references[0]
-        rt.update_flags |= {.GUI}
+        g.rt.update_flags |= {.GUI}
     }
     if .CAMERA in t {
         cam := get_component(e, Cmp_Camera)
         trans_comp := get_component(e, Cmp_Transform)
-        rt.compute.ubo.aspect_ratio = cam.aspect_ratio
-        rt.compute.ubo.rotM = transmute(mat4f)trans_comp.world
-        rt.compute.ubo.fov = cam.fov
+        g.rt.compute.ubo.aspect_ratio = cam.aspect_ratio
+        g.rt.compute.ubo.rotM = transmute(mat4f)trans_comp.world
+        g.rt.compute.ubo.fov = cam.fov
         update_camera(cam)
     }
     if .TEXT in t {
         tc := get_component(e,Cmp_Text)
         update_text(tc)
         tc.ref = tc.shader_refs[0] if len(tc.shader_refs) > 0 else -1
-        rt.update_flags |= {.GUI}
+        g.rt.update_flags |= {.GUI}
     }
 }
 
@@ -3061,27 +3061,27 @@ removed_entity :: proc(e: Entity) {
 
     if .LIGHT in t {
         lc := get_component(e, Cmp_Light)
-        for l, i in rt.lights {
+        for l, i in g.rt.lights {
             if lc.id == l.id {
-                ordered_remove(&rt.lights, i)
-                ordered_remove(&rt.light_comps, i)
+                ordered_remove(&g.rt.lights, i)
+                ordered_remove(&g.rt.light_comps, i)
                 break
             }
         }
-        if len(rt.lights) == 0 {
-            clear(&rt.lights)
-            clear(&rt.light_comps)
+        if len(g.rt.lights) == 0 {
+            clear(&g.rt.lights)
+            clear(&g.rt.light_comps)
         }
     }
     if .TEXT in t {
         tc := get_component(e, Cmp_Text)
         for ref in tc.shader_refs {
-            if ref >= 0 && ref < i32(len(rt.guis)) {
-                rt.guis[ref].alpha = 0
+            if ref >= 0 && ref < i32(len(g.rt.guis)) {
+                g.rt.guis[ref].alpha = 0
             }
         }
         delete(tc.shader_refs)
-        rt.update_flags |= {.GUI}
+        g.rt.update_flags |= {.GUI}
     }
 }
 
@@ -3093,11 +3093,11 @@ process_entity :: proc(e: Entity) {
 
     switch {
     case .MATERIAL in type:
-        rt.update_flags |= {.MATERIAL}
+        g.rt.update_flags |= {.MATERIAL}
     case .PRIMITIVE in type:
-        rt.update_flags |= {.OBJECT}
+        g.rt.update_flags |= {.OBJECT}
     case .LIGHT in type:
-        rt.update_flags |= {.LIGHT}
+        g.rt.update_flags |= {.LIGHT}
     case .GUI in type:
         gc := get_component(e, Cmp_Gui)
         update_gui(gc)
@@ -3121,7 +3121,7 @@ end :: proc() {
     update_descriptors()
     if glfw.WindowShouldClose(g.rb.window) {
         end_ecs()
-        vk.DeviceWaitIdle(g.g.rb.device)
+        vk.DeviceWaitIdle(g.rb.device)
     }
 }
 
@@ -3132,8 +3132,8 @@ cleanup :: proc() {
     cleanup_swapchain()
 
     // Destroy descriptor pool and layout before other resources
-    vk.DestroyDescriptorPool(g.rb.device, rt.descriptor_pool, nil)
-    vk.DestroyDescriptorSetLayout(g.rb.device, rt.graphics.descriptor_set_layout, nil)
+    vk.DestroyDescriptorPool(g.rb.device, g.rt.descriptor_pool, nil)
+    vk.DestroyDescriptorSetLayout(g.rb.device, g.rt.graphics.descriptor_set_layout, nil)
 
     // Now cleanup everything else including the device
     cleanup_vulkan()
@@ -3149,8 +3149,8 @@ destroy_compute :: proc() {
 }
 
 cleanup_swapchain :: proc() {
-    vk.DestroyPipeline(g.rb.device, rt.graphics.pipeline, nil)
-    vk.DestroyPipelineLayout(g.rb.device, rt.graphics.pipeline_layout, nil)
+    vk.DestroyPipeline(g.rb.device, g.rt.graphics.pipeline, nil)
+    vk.DestroyPipelineLayout(g.rb.device, g.rt.graphics.pipeline_layout, nil)
 
     cleanup_swapchain_vulkan()
 }
@@ -3190,45 +3190,45 @@ cleanup_vulkan :: proc() {
     vk.DeviceWaitIdle(g.rb.device)
 
     // First cleanup all VMA buffers (must be done before device destruction)
-    gpu.vbuffer_destroy(&rt.compute.uniform_buffer, &g.rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.verts, &g.rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.faces, &g.rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.blas, &g.rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.shapes, &g.rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.primitives, &g.rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.materials, &g.rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.lights, &g.rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.guis, &g.rb.vma_allocator)
-    gpu.vbuffer_destroy(&rt.compute.storage_buffers.bvh, &g.rb.vma_allocator)
+    gpu.vbuffer_destroy(&g.rt.compute.uniform_buffer, &g.rb.vma_allocator)
+    gpu.vbuffer_destroy(&g.rt.compute.storage_buffers.verts, &g.rb.vma_allocator)
+    gpu.vbuffer_destroy(&g.rt.compute.storage_buffers.faces, &g.rb.vma_allocator)
+    gpu.vbuffer_destroy(&g.rt.compute.storage_buffers.blas, &g.rb.vma_allocator)
+    gpu.vbuffer_destroy(&g.rt.compute.storage_buffers.shapes, &g.rb.vma_allocator)
+    gpu.vbuffer_destroy(&g.rt.compute.storage_buffers.primitives, &g.rb.vma_allocator)
+    gpu.vbuffer_destroy(&g.rt.compute.storage_buffers.materials, &g.rb.vma_allocator)
+    gpu.vbuffer_destroy(&g.rt.compute.storage_buffers.lights, &g.rb.vma_allocator)
+    gpu.vbuffer_destroy(&g.rt.compute.storage_buffers.guis, &g.rb.vma_allocator)
+    gpu.vbuffer_destroy(&g.rt.compute.storage_buffers.bvh, &g.rb.vma_allocator)
 
     // Destroy textures
-    texture_destroy(&rt.compute_texture, g.rb.device, &g.rb.vma_allocator)
-    for &tex in rt.gui_textures do texture_destroy(&tex, g.rb.device, &g.rb.vma_allocator)
-    for &tex in rt.bindless_textures do texture_destroy(&tex, g.rb.device, &g.rb.vma_allocator)
+    texture_destroy(&g.rt.compute_texture, g.rb.device, &g.rb.vma_allocator)
+    for &tex in g.rt.gui_textures do texture_destroy(&tex, g.rb.device, &g.rb.vma_allocator)
+    for &tex in g.rt.bindless_textures do texture_destroy(&tex, g.rb.device, &g.rb.vma_allocator)
     texture_destroy(&g_font.atlas_texture, g.rb.device, &g.rb.vma_allocator)
     delete(g_font.char_data)
 
     // Destroy all dynamic objects
-    delete(rt.primitives)
-    delete(rt.materials)
-    delete(rt.lights)
-    delete(rt.guis)
-    delete(rt.bvh)
-    delete(rt.mesh_comps)
-    delete(rt.light_comps)
-    delete(rt.mesh_assigner)
-    delete(rt.bindless_textures)
-    delete(rt.ordered_prims_map)
+    delete(g.rt.primitives)
+    delete(g.rt.materials)
+    delete(g.rt.lights)
+    delete(g.rt.guis)
+    delete(g.rt.bvh)
+    delete(g.rt.mesh_comps)
+    delete(g.rt.light_comps)
+    delete(g.rt.mesh_assigner)
+    delete(g.rt.bindless_textures)
+    delete(g.rt.ordered_prims_map)
     // Destroy command pools (this automatically frees command buffers)
-    vk.DestroyCommandPool(g.rb.device, rt.compute.command_pool, nil)
+    vk.DestroyCommandPool(g.rb.device, g.rt.compute.command_pool, nil)
     vk.DestroyCommandPool(g.rb.device, g.rb.command_pool, nil)
-    vk.DestroyFence(g.rb.device, rt.compute.fence, nil)
+    vk.DestroyFence(g.rb.device, g.rt.compute.fence, nil)
 
     // Destroy pipelines and layouts
-    vk.DestroyPipeline(g.rb.device, rt.compute.pipeline, nil)
-    vk.DestroyPipelineLayout(g.rb.device, rt.compute.pipeline_layout, nil)
-    vk.DestroyDescriptorSetLayout(g.rb.device, rt.compute.descriptor_set_layout, nil)
-    vk.DestroyPipelineCache(g.rb.device, rb.pipeline_cache, nil)
+    vk.DestroyPipeline(g.rb.device, g.rt.compute.pipeline, nil)
+    vk.DestroyPipelineLayout(g.rb.device, g.rt.compute.pipeline_layout, nil)
+    vk.DestroyDescriptorSetLayout(g.rb.device, g.rt.compute.descriptor_set_layout, nil)
+    vk.DestroyPipelineCache(g.rb.device, g.rb.pipeline_cache, nil)
 
     // Destroy framebuffers first, then depth resources, then swapchain
     destroy_framebuffers()
@@ -3236,7 +3236,7 @@ cleanup_vulkan :: proc() {
     destroy_swapchain()
     cleanup_swapchain_vulkan()
 
-    vk.DestroyRenderPass(g.rb.device, rb.render_pass, nil)
+    vk.DestroyRenderPass(g.rb.device, g.rb.render_pass, nil)
 
     // Destroy semaphores
     for sem in g.rb.image_available_semaphores do vk.DestroySemaphore(g.rb.device, sem, nil)
