@@ -742,7 +742,7 @@ load_node_components :: proc(scene_node: scene.Node, entity: Entity, e_flags :^C
     }
 }
 // Load a scene.Node into ECS Cmp_Node hierarchy
-load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0)) -> Entity {
+load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc := context.temp_allocator) -> Entity {
     entity := add_entity()
     e_flags := transmute(ComponentFlags)scene_node.eFlags
     load_node_components(scene_node, entity, &e_flags)
@@ -753,7 +753,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0)) -> Entity 
         parent       = parent,  // Set parent Entity ID here
         child        = Entity(0),  // Will be set when loading children
         brotha       = Entity(0),  // Will be set by parent when adding as child
-        name         = strings.clone(scene_node.Name, context.temp_allocator),
+        name         = strings.clone(scene_node.Name, alloc),
         is_dynamic   = scene_node.Dynamic,
         is_parent    = scene_node.hasChildren,
         engine_flags = e_flags,
@@ -774,7 +774,7 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0)) -> Entity 
     // Recurse for children and link via Entity IDs
     if scene_node.hasChildren {
         for &child_scene in scene_node.Children {
-            child_entity := load_node(child_scene, entity)  // Pass parent entity
+            child_entity := load_node(child_scene, entity, alloc)  // Pass parent entity
             if child_entity != Entity(0) {
                 add_child(entity, child_entity)
                 // Optionally: Get child_node and set its parent if not already (but it's set in cmp_node_local above)
@@ -795,7 +795,7 @@ load_scene :: proc(scene_data: scene.SceneData, alloc: mem.Allocator) {
 		return // Entity(0)
 	}
 	for node in scene_data.Node {
-		load_node(node)
+		load_node(node, alloc = alloc)
 	}
 }
 

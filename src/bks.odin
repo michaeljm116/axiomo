@@ -1140,8 +1140,8 @@ get_top_of_entity :: proc(e : Entity) -> f32
 // /UI
 //----------------------------------------------------------------------------\\
 gui : map[string]Entity
-init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator)
-{
+init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
+    ui_keys = make([dynamic]string, 0, len(g_ui_prefabs), alloc)
     gui = make(map[string]Entity, alloc)
     for key,ui in g_ui_prefabs{
         cmp := map_gui(ui.gui)
@@ -1149,11 +1149,11 @@ init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator)
         cmp.update = true
         e := add_ui(cmp, key)
 
-        context.allocator = alloc
         game_ui[key] = e
         append(&ui_keys, key)
     }
 }
+
 ToggleUI :: proc(name : string, on : bool)
 {
     gc := get_component(gui[name], Cmp_Gui)
@@ -1394,7 +1394,7 @@ MenuAnimStatus :: enum{
 app_start :: proc()
 {
     prestart()
-    init_GameUI(&gui, mem_game.alloc)
+    init_GameUI(&gui, mem_core.alloc)
     // start_game()
     ToggleUI("Title", true)
 }
