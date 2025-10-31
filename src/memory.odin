@@ -13,11 +13,11 @@ MemoryArena :: struct
     name : string
 }
 
-mem_core :MemoryArena                   // Memory that persists througout the whole game
-mem_area :MemoryArena                   // Main memory for loading of resources of an area of the game
-mem_scene :MemoryArena                  // This holds the scene data from the json, should be reset upon scene change
-mem_game :MemoryArena                   // This holds game data, reset upon restarting of a game, ecs goes here
-mem_frame :MemoryArena                  // Mostly for BVH or anything that exist for a single frame
+mem_core : MemoryArena                   // Memory that persists througout the whole game
+mem_area : MemoryArena                   // Main memory for loading of resources of an area of the game
+mem_scene : MemoryArena                  // This holds the scene data from the json, should be reset upon scene change
+mem_game : MemoryArena                   // This holds game data, reset upon restarting of a game, ecs goes here
+mem_frame : MemoryArena                  // Mostly for BVH or anything that exist for a single frame
 mem_track: mem.Tracking_Allocator       // To track the memory leaks
 
 // 128 MB totals

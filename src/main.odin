@@ -19,6 +19,44 @@ import vk "vendor:vulkan"
 import "external/ecs"
 import res "resource"
 import sc "resource/scene"
+import "core:c"
+
+Game_Memory :: struct
+{
+    world: ^ecs.World,
+    world_ent: Entity,
+    materials: [dynamic]res.Material,
+    models: [dynamic]res.Model,
+    prefabs: map[string]sc.Node,
+    ui_prefabs: map[string]sc.Node,
+    scene: ^sc.SceneData,
+    bvh: ^Sys_Bvh,
+    enemies: map[string]Entity,
+    player: Entity,
+    texture_indexes : map[string]i32,
+    animations : map[u32]res.Animation,
+    frame : FrameRate,
+
+    mem_core : MemoryArena,                   // Memory that persists througout the whole game
+    mem_area : MemoryArena,                   // Main memory for loading of resources of an area of the game
+    mem_scene : MemoryArena,                  // This holds the scene data from the json, should be reset upon scene change
+    mem_game : MemoryArena,                   // This holds game data, reset upon restarting of a game, ecs goes here
+    mem_frame : MemoryArena,                  // Mostly for BVH or anything that exist for a single frame
+    mem_track: mem.Tracking_Allocator,       // To track the memory leaks
+
+    rb : RenderBase,
+    rt : ComputeRaytracer,
+    monitor_width : c.int,
+    monitor_height : c.int,
+
+    dbg_messenger: vk.DebugUtilsMessengerEXT,
+    current_frame: int,
+    image_index: u32,
+    font: Font,
+    curr_id : u32,
+    texture_paths : [1]string
+}
+g: ^Game_Memory
 
 g_world: ^ecs.World
 g_world_ent: Entity
