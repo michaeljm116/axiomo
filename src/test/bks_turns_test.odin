@@ -8,20 +8,20 @@ import "core:container/queue"
 
 // Helper to clear input state between tests
 clear_input :: proc() {
-    for i in 0..<len(g_input.keys_just_pressed) {
-        g_input.keys_just_pressed[i] = false
-        g_input.keys_pressed[i] = false
-        g_input.keys_just_released[i] = false
+    for i in 0..<len(g.input.keys_just_pressed) {
+        g.input.keys_just_pressed[i] = false
+        g.input.keys_pressed[i] = false
+        g.input.keys_just_released[i] = false
     }
-    for i in 0..<len(g_input.mouse_buttons) {
-        g_input.mouse_buttons[i] = false
+    for i in 0..<len(g.input.mouse_buttons) {
+        g.input.mouse_buttons[i] = false
     }
 }
 
 // Ensure level is initialized in a known state for each test.
 // Uses existing helper from bks.odin
 setup_level :: proc() {
-    // start_level1 will set g_level, player, bees, deck, etc.
+    // start_level1 will set g.level, player, bees, deck, etc.
     start_level1()
     // clear any input noise
     clear_input()
@@ -43,19 +43,19 @@ test_run_players_turn_movement_flow :: proc(t: ^testing.T) {
 
     // Press '1' to enter Movement state
     clear_input()
-    g_input.keys_just_pressed[glfw.KEY_1] = true
-    run_players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
+    g.input.keys_just_pressed[glfw.KEY_1] = true
+    run_players_turn(&pt, &gs, &g.level.player, &g.level.bees, &bee_sel, &bee_near_local)
     testing.expect(t, pt == .Movement, "Pressing KEY_1 from SelectAction should transition to Movement")
 
     // Now simulate a movement input (D) to move player to the right
     clear_input()
-    g_input.keys_just_pressed[glfw.KEY_D] = true
+    g.input.keys_just_pressed[glfw.KEY_D] = true
 
-    prev_pos := g_level.player.pos
-    run_players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
+    prev_pos := g.level.player.pos
+    run_players_turn(&pt, &gs, &g.level.player, &g.level.bees, &bee_sel, &bee_near_local)
 
     // After a successful move, player turn state should return to SelectAction and game state -> BeesTurn
-    moved_right := g_level.player.pos.x == prev_pos.x + 1
+    moved_right := g.level.player.pos.x == prev_pos.x + 1
     testing.expect(t, pt == .SelectAction, "After moving, player turn state should return to SelectAction")
     testing.expect(t, gs == .BeesTurn, "After moving, global game state should be set to BeesTurn")
     testing.expect(t, moved_right, "Player X position should increment when pressing 'd' in Movement state")
@@ -72,8 +72,8 @@ test_run_players_turn_enemy_selection_and_focus :: proc(t: ^testing.T) {
 
     // Press '2' to enter SelectEnemy
     clear_input()
-    g_input.keys_just_pressed[glfw.KEY_2] = true
-    run_players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
+    g.input.keys_just_pressed[glfw.KEY_2] = true
+    run_players_turn(&pt, &gs, &g.level.player, &g.level.bees, &bee_sel, &bee_near_local)
 
     testing.expect(t, pt == .SelectEnemy, "Pressing KEY_2 should transition to SelectEnemy")
     testing.expect(t, bee_sel == 0, "Selecting enemy should reset selection to 0")
@@ -81,21 +81,21 @@ test_run_players_turn_enemy_selection_and_focus :: proc(t: ^testing.T) {
 
     // Press SPACE to attempt action selection (player not near the bee in start_level1)
     clear_input()
-    g_input.keys_just_pressed[glfw.KEY_SPACE] = true
-    run_players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
+    g.input.keys_just_pressed[glfw.KEY_SPACE] = true
+    run_players_turn(&pt, &gs, &g.level.player, &g.level.bees, &bee_sel, &bee_near_local)
 
     testing.expect(t, pt == .Action, "Pressing SPACE in SelectEnemy should transition to Action")
     testing.expect(t, bee_near_local == false, "bee_is_near should reflect actual proximity (start_level1 bees are far)")
 
     // Press 'F' to apply Focus ability/flag to the selected bee
     clear_input()
-    g_input.keys_just_pressed[glfw.KEY_F] = true
-    run_players_turn(&pt, &gs, &g_level.player, &g_level.bees, &bee_sel, &bee_near_local)
+    g.input.keys_just_pressed[glfw.KEY_F] = true
+    run_players_turn(&pt, &gs, &g.level.player, &g.level.bees, &bee_sel, &bee_near_local)
 
     // After focusing: selected bee should have PlayerFocused flag, state returns to SelectAction and game state -> BeesTurn
     testing.expect(t, pt == .SelectAction, "After applying Focus, state should return to SelectAction")
     testing.expect(t, gs == .BeesTurn, "After applying Focus, game state should transition to BeesTurn")
-    testing.expect(t, .PlayerFocused in g_level.bees[0].flags, "Bee 0 should have PlayerFocused flag after pressing 'F'")
+    testing.expect(t, .PlayerFocused in g.level.bees[0].flags, "Bee 0 should have PlayerFocused flag after pressing 'F'")
 }
 
 @(test)
@@ -103,21 +103,21 @@ test_handle_back_button_transitions :: proc(t: ^testing.T) {
     // Movement -> back should go to SelectAction
     st := PlayerTurnState.Movement
     clear_input()
-    g_input.keys_just_pressed[glfw.KEY_B] = true
+    g.input.keys_just_pressed[glfw.KEY_B] = true
     handle_back_button(&st)
     testing.expect(t, st == .SelectAction, "B from Movement should go back to SelectAction")
 
     // SelectEnemy -> back should go to SelectAction
     st = PlayerTurnState.SelectEnemy
     clear_input()
-    g_input.keys_just_pressed[glfw.KEY_B] = true
+    g.input.keys_just_pressed[glfw.KEY_B] = true
     handle_back_button(&st)
     testing.expect(t, st == .SelectAction, "B from SelectEnemy should go back to SelectAction")
 
     // Action -> back should go to SelectEnemy
     st = PlayerTurnState.Action
     clear_input()
-    g_input.keys_just_pressed[glfw.KEY_B] = true
+    g.input.keys_just_pressed[glfw.KEY_B] = true
     handle_back_button(&st)
     testing.expect(t, st == .SelectEnemy, "B from Action should go back to SelectEnemy")
 }
@@ -131,20 +131,20 @@ test_perform_bee_sting_reduces_player_health :: proc(t: ^testing.T) {
     setup_level()
 
     // Place player and a bee adjacent so sting should apply
-    g_level.player.pos = vec2{0, 0}
-    g_level.player.health = 5
+    g.level.player.pos = vec2{0, 0}
+    g.level.player.health = 5
 
     // Ensure there's at least one bee
-    testing.expect(t, len(g_level.bees) > 0, "Level should have at least one bee for this test")
+    testing.expect(t, len(g.level.bees) > 0, "Level should have at least one bee for this test")
 
-    b := &g_level.bees[0]
+    b := &g.level.bees[0]
     b.pos = vec2{0, 1} // adjacent
     b.flags ~= {}      // clear flags
 
-    prev_hp := g_level.player.health
-    bee_action_select(.Sting, b, &g_level.player)
+    prev_hp := g.level.player.health
+    bee_action_select(.Sting, b, &g.level.player)
 
-    testing.expect(t, g_level.player.health == prev_hp - 1, "Sting action should reduce player health by 1 when player not dodging")
+    testing.expect(t, g.level.player.health == prev_hp - 1, "Sting action should reduce player health by 1 when player not dodging")
 }
 
 @(test)
@@ -161,18 +161,18 @@ test_bee_turn_draws_from_deck_and_performs_action :: proc(t: ^testing.T) {
     queue.push_front(&bd.deck, BeeAction.Sting)
 
     // Place player and bee adjacent so Sting will hit
-    g_level.player.pos = vec2{2, 2}
-    g_level.player.health = 4
+    g.level.player.pos = vec2{2, 2}
+    g.level.player.health = 4
 
     // Ensure we have at least one bee and make it Normal so bee_turn draws 1 card
-    testing.expect(t, len(g_level.bees) > 0, "Level should have bees for this test")
-    b := &g_level.bees[0]
+    testing.expect(t, len(g.level.bees) > 0, "Level should have bees for this test")
+    b := &g.level.bees[0]
     b.pos = vec2{2, 3} // adjacent
     b.type = .Normal
     b.flags ~= {}
 
-    prev_hp := g_level.player.health
+    prev_hp := g.level.player.health
     run_bee_turn(b, &bd)
 
-    testing.expect(t, g_level.player.health < prev_hp, "bee_turn with Sting drawn should reduce player health")
+    testing.expect(t, g.level.player.health < prev_hp, "bee_turn with Sting drawn should reduce player health")
 }

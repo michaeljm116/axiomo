@@ -29,6 +29,7 @@ Game_Memory :: struct
     models: [dynamic]res.Model,
     prefabs: map[string]sc.Node,
     ui_prefabs: map[string]sc.Node,
+    gui : map[string]Entity,
     scene: ^sc.SceneData,
     bvh: ^Sys_Bvh,
     enemies: map[string]Entity,
@@ -49,42 +50,60 @@ Game_Memory :: struct
     monitor_width : c.int,
     monitor_height : c.int,
 
+    // RENDER
     dbg_messenger: vk.DebugUtilsMessengerEXT,
     current_frame: int,
     image_index: u32,
     font: Font,
     curr_id : u32,
-    texture_paths : [1]string
+    texture_paths : [1]string,
+
+    // gameplay
+    input: InputState,
+    camera_entity: Entity,
+    light_entity: Entity,
+    light_orbit_radius : f32,
+    light_orbit_speed : f32,   // radians per second,
+    light_orbit_angle : f32,
+
+    floor : Entity,
+    objects : [2][dynamic]Entity,
+
+    // BKS
+    state : GameState,
+    current_bee: int,
+    level :Level,
+    dice :  [2]Dice,
+
+    bee_selection : int,
+    bee_is_near : bool,
+    pt_state : PlayerInputState,
+
+    app_state : AppState,
+    title : Entity,
+    titleAnim : MenuAnimation,
+    main_menu : Entity,
+    main_menuAnim : MenuAnimation,
+
+    game_started : bool,
+    ves : VisualEventData,
+
 }
 g: ^Game_Memory
 
-g_world: ^ecs.World
-g_world_ent: Entity
-g_materials: [dynamic]res.Material
-g_models: [dynamic]res.Model
-g_prefabs: map[string]sc.Node
-g_ui_prefabs: map[string]sc.Node
-g_scene: ^sc.SceneData
-g_bvh: ^Sys_Bvh
-g_enemies: map[string]Entity
-g_player: Entity
-g_texture_indexes : map[string]i32
-g_animations : map[u32]res.Animation
-
-g_frame := FrameRate {
-	prev_time         = glfw.GetTime(),
-	curr_time         = 0,
-	wait_time         = 0,
-	delta_time        = 0,
-	target            = 120.0,
-	target_dt         = (1.0 / 120.0),
-	locked            = true,
-	physics_acc_time  = 0,
-	physics_time_step = 1.0 / 60.0,
-}
-
 
 main :: proc() {
+    g.frame = FrameRate {
+    	prev_time         = glfw.GetTime(),
+    	curr_time         = 0,
+    	wait_time         = 0,
+    	delta_time        = 0,
+    	target            = 120.0,
+    	target_dt         = (1.0 / 120.0),
+    	locked            = true,
+    	physics_acc_time  = 0,
+    	physics_time_step = 1.0 / 60.0,
+    }
     windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
     //----------------------------------------------------------------------------\\
     // /MEMORY
@@ -101,58 +120,58 @@ main :: proc() {
 	//----------------------------------------------------------------------------\\
     // /Asset Loading
     //----------------------------------------------------------------------------\\
-	g_materials = make([dynamic]res.Material, 0, mem_area.alloc)
-	g_models = make([dynamic]res.Model, 0, mem_area.alloc)
-	g_animations = make(map[u32]res.Animation, 0, mem_area.alloc)
-	g_prefabs = make(map[string]sc.Node, 0, mem_area.alloc)
-	g_ui_prefabs = make(map[string]sc.Node, 0, mem_area.alloc)
+	g.materials = make([dynamic]res.Material, 0, mem_area.alloc)
+	g.models = make([dynamic]res.Model, 0, mem_area.alloc)
+	g.animations = make(map[u32]res.Animation, 0, mem_area.alloc)
+	g.prefabs = make(map[string]sc.Node, 0, mem_area.alloc)
+	g.ui_prefabs = make(map[string]sc.Node, 0, mem_area.alloc)
 
-	res.load_materials("assets/Materials.xml", &g_materials)
-	res.load_models("assets/models/", &g_models)
-	res.load_anim_directory("assets/animations/", &g_animations, mem_area.alloc)
-	sc.load_prefab_directory("assets/prefabs", &g_prefabs, mem_area.alloc)
-	sc.load_prefab_directory("assets/prefabs/ui", &g_ui_prefabs, mem_core.alloc)
+	res.load_materials("assets/Materials.xml", &g.materials)
+	res.load_models("assets/models/", &g.models)
+	res.load_anim_directory("assets/animations/", &g.animations, mem_area.alloc)
+	sc.load_prefab_directory("assets/prefabs", &g.prefabs, mem_area.alloc)
+	sc.load_prefab_directory("assets/prefabs/ui", &g.ui_prefabs, mem_core.alloc)
 
 	//----------------------------------------------------------------------------\\
     // /Game Starting
     //----------------------------------------------------------------------------\\
-	g_scene = sc.load_new_scene("assets/scenes/BeeKillingsInn.json", mem_scene.alloc)
-	g_bvh = bvh_system_create(mem_core.alloc)
+	g.scene = sc.load_new_scene("assets/scenes/BeeKillingsInn.json", mem_scene.alloc)
+	g.bvh = bvh_system_create(mem_core.alloc)
 	start_up_raytracer(mem_area.alloc)
 	gameplay_init()
-	defer bvh_system_destroy(g_bvh)
+	defer bvh_system_destroy(g.bvh)
 	defer gameplay_destroy()
 
 	// You need to have an ecs ready before you do the stuff below
 	sys_trans_process_ecs()
-	sys_bvh_process_ecs(g_bvh, mem_frame.alloc)
+	sys_bvh_process_ecs(g.bvh, mem_frame.alloc)
 
 	// you need to have trannsformed and constructed a bh before stuff below
 	initialize_raytracer()
 	glfw.PollEvents()
-	g_frame.prev_time = glfw.GetTime()
+	g.frame.prev_time = glfw.GetTime()
 	//----------------------------------------------------------------------------\\
     // /Game Updating
     //----------------------------------------------------------------------------\\
-	for !glfw.WindowShouldClose(rb.window) {
+	for !glfw.WindowShouldClose(g.rb.window) {
 		start_frame(&image_index)
 		// Poll and free: Move to main loop if overlapping better
 		glfw.PollEvents()
-		g_frame.curr_time = glfw.GetTime()
-		frame_time := g_frame.curr_time - g_frame.prev_time
-		g_frame.prev_time = g_frame.curr_time
+		g.frame.curr_time = glfw.GetTime()
+		frame_time := g.frame.curr_time - g.frame.prev_time
+		g.frame.prev_time = g.frame.curr_time
 		if frame_time > 0.25 {frame_time = 0.25}
-		g_frame.delta_time = f32(frame_time)
-		g_frame.physics_acc_time += f32(frame_time)
-		for g_frame.physics_acc_time >= f32(g_frame.physics_time_step) {
-			sys_visual_process_ecs(f32(g_frame.physics_time_step))
-			sys_anim_process_ecs(f32(g_frame.physics_time_step))
+		g.frame.delta_time = f32(frame_time)
+		g.frame.physics_acc_time += f32(frame_time)
+		for g.frame.physics_acc_time >= f32(g.frame.physics_time_step) {
+			sys_visual_process_ecs(f32(g.frame.physics_time_step))
+			sys_anim_process_ecs(f32(g.frame.physics_time_step))
 			sys_trans_process_ecs()
 			// print_tracking_stats(&mem_track)
-			gameplay_update(f32(g_frame.physics_time_step))
-			g_frame.physics_acc_time -= f32(g_frame.physics_time_step)
+			gameplay_update(f32(g.frame.physics_time_step))
+			g.frame.physics_acc_time -= f32(g.frame.physics_time_step)
 		}
-		sys_bvh_process_ecs(g_bvh, mem_frame.alloc)
+		sys_bvh_process_ecs(g.bvh, mem_frame.alloc)
 		update_buffers()
 		update_descriptors()
 		end_frame(&image_index)

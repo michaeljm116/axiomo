@@ -29,16 +29,16 @@ World :: ecs.World
 //----------------------------------------------------------------------------\\
 // /ECS
 //----------------------------------------------------------------------------\\
-// Helper functions that assume g_world
+// Helper functions that assume g.world
 create_world :: #force_inline proc() -> ^World {
     init_memory_arena(&mem_game, mem.Megabyte)
-    g_world = ecs.create_world(mem_game.alloc)// track_alloc.backing)
-    g_world_ent = add_entity()
-    return g_world
+    g.world = ecs.create_world(mem_game.alloc)// track_alloc.backing)
+    g.world_ent = add_entity()
+    return g.world
 }
 destroy_world :: #force_inline proc(){
 	//context.allocator = track_alloc.backing
-	// ecs.delete_world(g_world)
+	// ecs.delete_world(g.world)
 	destroy_memory_arena(&mem_game)
 	// vmem.arena_free_all(&mem_game.arena)
 }
@@ -48,7 +48,7 @@ restart_world :: #force_inline proc(){
 }
 // Entity management
 add_entity :: #force_inline proc() -> ecs.EntityID {
-	return ecs.add_entity(g_world)
+	return ecs.add_entity(g.world)
 }
 
 // Component management
@@ -58,7 +58,7 @@ add_component :: #force_inline proc(entity: ecs.EntityID, component: $T) {
     // context.allocator = mem_game.alloc
 
     // context.allocator = track_alloc.backing
-	ecs.add_component(g_world, entity, component)
+	ecs.add_component(g.world, entity, component)
 }
 
 remove_component :: #force_inline proc(entity: ecs.EntityID, $T: typeid){
@@ -66,11 +66,11 @@ remove_component :: #force_inline proc(entity: ecs.EntityID, $T: typeid){
     // defer context.allocator = prev_alloc
     // context.allocator = track_alloc.backing
     // context.allocator = mem_game.alloc
-    ecs.disable_component(g_world, entity, typeid)
+    ecs.disable_component(g.world, entity, typeid)
 }
 
 entity_exists :: #force_inline proc(entity: ecs.EntityID) -> bool {
-    return ecs.entity_exists(g_world, entity)
+    return ecs.entity_exists(g.world, entity)
 }
 
 // Query system
@@ -78,7 +78,7 @@ query :: #force_inline proc(terms: ..ecs.Term) -> []^ecs.Archetype {
     // prev_alloc := context.allocator
     // defer context.allocator = prev_alloc
     // context.allocator = track_alloc.backing
-	return ecs.query(g_world, ..terms)
+	return ecs.query(g.world, ..terms)
 }
 
 // Table access - overloaded procedure set
@@ -89,7 +89,7 @@ get_table :: proc {
 }
 
 get_table_same :: #force_inline proc(archetype: ^ecs.Archetype, $Component: typeid) -> []Component {
-	return ecs.get_table_same(g_world, archetype, Component)
+	return ecs.get_table_same(g.world, archetype, Component)
 }
 
 get_table_cast :: #force_inline proc(
@@ -97,11 +97,11 @@ get_table_cast :: #force_inline proc(
 	$Component: typeid,
 	$CastTo: typeid,
 ) -> []CastTo {
-	return ecs.get_table_cast(g_world, archetype, Component, CastTo)
+	return ecs.get_table_cast(g.world, archetype, Component, CastTo)
 }
 
 get_table_pair :: #force_inline proc(archetype: ^ecs.Archetype, pair: ecs.PairType($R, $T)) -> []R {
-	return ecs.get_table_pair(g_world, archetype, pair)
+	return ecs.get_table_pair(g.world, archetype, pair)
 }
 
 get_component :: proc {
@@ -111,13 +111,13 @@ get_component :: proc {
 }
 
 get_component_same :: #force_inline proc(entity: Entity, $Component: typeid) -> ^Component {
-	return ecs.get_component_same(g_world, entity, Component)
+	return ecs.get_component_same(g.world, entity, Component)
 }
 get_component_cast :: #force_inline proc(entity: Entity, $Component: typeid, $CastTo: typeid) -> ^CastTo {
-	return ecs.get_component_cast(g_world, entity, Component, CastTo)
+	return ecs.get_component_cast(g.world, entity, Component, CastTo)
 }
 get_component_pair :: #force_inline proc(entity: Entity, pair: ecs.PairType($R, $T)) -> ^R {
-	return ecs.get_component_pair(g_world, entity, pair)
+	return ecs.get_component_pair(g.world, entity, pair)
 }
 
 has :: proc {
@@ -134,7 +134,7 @@ has_pair :: #force_inline proc(p: $P/ecs.PairType) -> ecs.Term {
 }
 
 end_ecs :: #force_inline proc() {
-	ecs.delete_world(g_world)
+	ecs.delete_world(g.world)
 }
 
 has_component :: proc {
@@ -143,11 +143,11 @@ has_component :: proc {
 }
 
 has_component_type :: #force_inline proc(entity: Entity, $T: typeid) -> bool {
-    return ecs.has_component_type(g_world, entity, T)
+    return ecs.has_component_type(g.world, entity, T)
 }
 
 has_component_instance :: #force_inline proc(entity: Entity, component: $T) -> bool {
-    return ecs.has_component_instance(g_world, entity, component)
+    return ecs.has_component_instance(g.world, entity, component)
 }
 
 //----------------------------------------------------------------------------\\
@@ -155,10 +155,10 @@ has_component_instance :: #force_inline proc(entity: Entity, component: $T) -> b
 //----------------------------------------------------------------------------\\
 
 get_material :: #force_inline proc(i: i32) -> ^resource.Material {
-	return &g_materials[i]
+	return &g.materials[i]
 }
 get_material_index :: #force_inline proc(id: i32) -> i32 {
-	for m, i in g_materials {
+	for m, i in g.materials {
 		if (m.unique_id == id) {
 			return i32(i)
 		}

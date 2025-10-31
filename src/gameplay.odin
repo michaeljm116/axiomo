@@ -31,29 +31,21 @@ InputState :: struct {
     rotation_speed: f32,
 }
 
-// Global input state
-g_input: InputState
-g_camera_entity: Entity = 0
-g_light_entity: Entity = 0
-
-// Orbit parameters (world units / radians)
-g_light_orbit_radius: f32 = 5.0
-g_light_orbit_speed: f32 = 0.25   // radians per second
-g_light_orbit_angle: f32 = 15.0
-
-g_floor : Entity
-g_objects : [2][dynamic]Entity
-
 // Initialize the gameplay system
 gameplay_init :: proc() {
-    g_world = create_world()
+
+    g.light_orbit_radius = 5.0
+    g.light_orbit_speed = 0.25   // radians per second
+    g.light_orbit_angle = 15.0
+
+    g.world = create_world()
 	// defer destroy_world()
-	load_scene(g_scene^, mem_game.alloc)
-	added_entity(g_world_ent)
-	g_player = load_prefab("Froku")
+	load_scene(g.scene^, mem_game.alloc)
+	added_entity(g.world_ent)
+	g.player = load_prefab("Froku")
 
 	init_memory_arena(&mem_game, mem.Megabyte)
-    g_input = InputState{
+    g.input = InputState{
         mouse_sensitivity = 0.1,
         movement_speed = 5.0,
         rotation_speed = 20.0,
@@ -61,18 +53,18 @@ gameplay_init :: proc() {
     }
 
     // Set up GLFW callbacks
-    glfw.SetKeyCallback(rb.window, key_callback)
-    glfw.SetCursorPosCallback(rb.window, mouse_callback)
-    glfw.SetMouseButtonCallback(rb.window, mouse_button_callback)
+    glfw.SetKeyCallback(g.rb.window, key_callback)
+    glfw.SetCursorPosCallback(g.rb.window, mouse_callback)
+    glfw.SetMouseButtonCallback(g.rb.window, mouse_button_callback)
 
     // Capture mouse cursor
-    glfw.SetInputMode(rb.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
+    glfw.SetInputMode(g.rb.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
 
     // Find the camera entity
     find_camera_entity()
     find_light_entity()
     find_player_entity()
-    face_left(g_player)
+    face_left(g.player)
     //setup_physics()
 
     ////////////////// actual bks init ////////////////
@@ -81,10 +73,10 @@ gameplay_init :: proc() {
 
 gameplay_post_init :: proc()
 {
-    // chest := g_level.chests[0]
-    // chest2 := g_level.chests[1]
-    // move_entity_to_tile(chest, g_level.grid_scale, vec2{2,0})
-    // move_entity_to_tile(chest2, g_level.grid_scale, vec2{4,3})
+    // chest := g.level.chests[0]
+    // chest2 := g.level.chests[1]
+    // move_entity_to_tile(chest, g.level.grid_scale, vec2{2,0})
+    // move_entity_to_tile(chest2, g.level.grid_scale, vec2{4,3})
 }
 
 // Find the camera entity in the scene
@@ -94,8 +86,8 @@ find_camera_entity :: proc() {
     for archetype in camera_archetypes {
         entities := archetype.entities
         if len(entities) > 0 {
-            g_camera_entity = entities[0]
-            ct := get_component(g_camera_entity, Cmp_Transform)
+            g.camera_entity = entities[0]
+            ct := get_component(g.camera_entity, Cmp_Transform)
             return
         }
     }
@@ -105,8 +97,8 @@ find_camera_entity :: proc() {
 
 // Update input state and camera
 gameplay_update :: proc(delta_time: f32) {
-    if !entity_exists(g_camera_entity) do find_camera_entity()
-    if !entity_exists(g_player) do find_player_entity()
+    if !entity_exists(g.camera_entity) do find_camera_entity()
+    if !entity_exists(g.player) do find_player_entity()
 
     handle_ui_edit_mode()
     // handle_chest_mode()
@@ -116,9 +108,9 @@ gameplay_update :: proc(delta_time: f32) {
        app_run(delta_time, &g_app_state)
     }
     // Clear just pressed/released states
-    for i in 0..<len(g_input.keys_just_pressed) {
-        g_input.keys_just_pressed[i] = false
-        g_input.keys_just_released[i] = false
+    for i in 0..<len(g.input.keys_just_pressed) {
+        g.input.keys_just_pressed[i] = false
+        g.input.keys_just_released[i] = false
     }
 
         // Update light orbit (if a light entity was found)
@@ -137,7 +129,7 @@ find_player_entity :: proc() {
         nodes := get_table(archetype, Cmp_Node)
         for node, i in nodes {
             if node.name == "Froku" {
-                g_player = archetype.entities[i]
+                g.player = archetype.entities[i]
                 fmt.println("Found Player")
                 return
             }
@@ -150,7 +142,7 @@ find_floor_entities :: proc() {
     for archetype in arcs {
         nodes := get_table(archetype, Cmp_Node)
         for node, i in nodes {
-            if node.name == "Floor" do g_floor = archetype.entities[i]
+            if node.name == "Floor" do g.floor = archetype.entities[i]
         }
     }
 }
@@ -163,42 +155,42 @@ find_light_entity :: proc() {
     for archetype in light_archetypes {
        for entity in archetype.entities{
            fmt.println("Light found")
-           g_light_entity = entity
+           g.light_entity = entity
            return
        }
     }
 
-    // No light found -> leave g_light_entity as 0
+    // No light found -> leave g.light_entity as 0
 }
 
 // Update the cached light entity so it orbits around a center point.
 // If a player exists, orbit around the player's world position; otherwise use world origin.
 update_light_orbit :: proc(delta_time: f32) {
-    if !entity_exists(g_light_entity) {
+    if !entity_exists(g.light_entity) {
         return
     }
 
-    lc := get_component(g_light_entity, Cmp_Light)
-    tc := get_component(g_light_entity, Cmp_Transform)
+    lc := get_component(g.light_entity, Cmp_Light)
+    tc := get_component(g.light_entity, Cmp_Transform)
     if tc == nil || lc == nil {
         return
     }
 
     // Determine orbit center: prefer player position if available
     center := vec3{0.0, 11.5, 0.0}
-    if g_player != 0 {
-        pc := get_component(g_player, Cmp_Transform)
+    if g.player != 0 {
+        pc := get_component(g.player, Cmp_Transform)
         if pc != nil {
             center = pc.local.pos.xyz
         }
     }
 
     // Advance angle
-    g_light_orbit_angle += g_light_orbit_speed * delta_time
+    g.light_orbit_angle += g.light_orbit_speed * delta_time
 
     // Compute new local position on XZ plane; keep Y relative to center
-    new_x := center.x + math.cos(g_light_orbit_angle) * g_light_orbit_radius
-    new_z := center.z + math.sin(g_light_orbit_angle) * g_light_orbit_radius
+    new_x := center.x + math.cos(g.light_orbit_angle) * g.light_orbit_radius
+    new_z := center.z + math.sin(g.light_orbit_angle) * g.light_orbit_radius
     new_y := center.y + 10.5 // offset above center (tweak as desired)
 
     // Update transform local position so the transform system will update world matrix
@@ -211,7 +203,7 @@ update_light_orbit :: proc(delta_time: f32) {
 
 update_player_movement :: proc(delta_time: f32)
 {
-    tc := get_component(g_player, Cmp_Transform)
+    tc := get_component(g.player, Cmp_Transform)
     if tc == nil do return
 
     move_speed :f32= .10
@@ -274,28 +266,28 @@ is_key_pressed :: proc(key: i32) -> bool {
     if key < 0 || key > glfw.KEY_LAST {
         return false
     }
-    return g_input.keys_pressed[key]
+    return g.input.keys_pressed[key]
 }
 
 is_key_just_pressed :: proc(key: i32) -> bool {
     if key < 0 || key > glfw.KEY_LAST {
         return false
     }
-    return g_input.keys_just_pressed[key]
+    return g.input.keys_just_pressed[key]
 }
 
 is_key_just_released :: proc(key: i32) -> bool {
     if key < 0 || key > glfw.KEY_LAST {
         return false
     }
-    return g_input.keys_just_released[key]
+    return g.input.keys_just_released[key]
 }
 
 is_mouse_button_pressed :: proc(button: i32) -> bool {
     if button < 0 || button > glfw.MOUSE_BUTTON_LAST {
         return false
     }
-    return g_input.mouse_buttons[button]
+    return g.input.mouse_buttons[button]
 }
 
 // GLFW Callbacks
@@ -308,14 +300,14 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods
 
     switch action {
     case glfw.PRESS:
-        if !g_input.keys_pressed[key] {
-            g_input.keys_just_pressed[key] = true
+        if !g.input.keys_pressed[key] {
+            g.input.keys_just_pressed[key] = true
         }
-        g_input.keys_pressed[key] = true
+        g.input.keys_pressed[key] = true
 
     case glfw.RELEASE:
-        g_input.keys_just_released[key] = true
-        g_input.keys_pressed[key] = false
+        g.input.keys_just_released[key] = true
+        g.input.keys_pressed[key] = false
 
     case glfw.REPEAT:
         // Keep key pressed state
@@ -332,7 +324,7 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods
             glfw.SetInputMode(window, glfw.CURSOR, glfw.CURSOR_NORMAL)
         } else {
             glfw.SetInputMode(window, glfw.CURSOR, glfw.CURSOR_DISABLED)
-            g_input.first_mouse = true
+            g.input.first_mouse = true
         }
     }
 }
@@ -340,19 +332,19 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods
 mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
     context = rb.ctx
 
-    if g_input.first_mouse {
-        g_input.last_mouse_x = xpos
-        g_input.last_mouse_y = ypos
-        g_input.first_mouse = false
+    if g.input.first_mouse {
+        g.input.last_mouse_x = xpos
+        g.input.last_mouse_y = ypos
+        g.input.first_mouse = false
     }
 
-    g_input.mouse_delta_x = xpos - g_input.last_mouse_x
-    g_input.mouse_delta_y = ypos - g_input.last_mouse_y
+    g.input.mouse_delta_x = xpos - g.input.last_mouse_x
+    g.input.mouse_delta_y = ypos - g.input.last_mouse_y
 
-    g_input.last_mouse_x = xpos
-    g_input.last_mouse_y = ypos
-    g_input.mouse_x = xpos
-    g_input.mouse_y = ypos
+    g.input.last_mouse_x = xpos
+    g.input.last_mouse_y = ypos
+    g.input.mouse_x = xpos
+    g.input.mouse_y = ypos
 }
 
 mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mods: i32) {
@@ -364,10 +356,10 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 
     switch action {
     case glfw.PRESS:
-        g_input.mouse_buttons[button] = true
+        g.input.mouse_buttons[button] = true
 
     case glfw.RELEASE:
-        g_input.mouse_buttons[button] = false
+        g.input.mouse_buttons[button] = false
     }
 }
 
@@ -375,12 +367,12 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 gameplay_destroy :: proc() {
     defer destroy_world()
     // Reset callbacks
-    glfw.SetKeyCallback(rb.window, nil)
-    glfw.SetCursorPosCallback(rb.window, nil)
-    glfw.SetMouseButtonCallback(rb.window, nil)
+    glfw.SetKeyCallback(g.rb.window, nil)
+    glfw.SetCursorPosCallback(g.rb.window, nil)
+    glfw.SetMouseButtonCallback(g.rb.window, nil)
 
     // Release mouse cursor
-    glfw.SetInputMode(rb.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
+    glfw.SetInputMode(g.rb.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
 
     reset_memory_arena(&mem_game)
 }

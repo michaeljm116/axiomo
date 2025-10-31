@@ -158,8 +158,8 @@ chest_mode := false
 //     if !chest_mode do return
 
 //     if is_key_just_pressed(glfw.KEY_TAB) {
-//         chest_index = (chest_index + 1) % len(g_level.chests)
-//         selected_chest = g_level.chests[chest_index]
+//         chest_index = (chest_index + 1) % len(g.level.chests)
+//         selected_chest = g.level.chests[chest_index]
 //         fmt.printf("Selected Chest: %d\n", chest_index)
 //     }
 //     tc := get_component(selected_chest, Cmp_Transform)
@@ -184,7 +184,7 @@ handle_player_edit_mode :: proc() {
         else do fmt.println("Exited Player Edit Mode")
     }
     if !player_edit_mode do return
-    bfg := get_component(g_level.player.entity, Cmp_BFGraph)
+    bfg := get_component(g.level.player.entity, Cmp_BFGraph)
     if bfg == nil do return
     if is_key_just_pressed(glfw.KEY_TAB) {
         selected_player_part_index = (selected_player_part_index + 1) % int(bfg.len)
@@ -260,23 +260,23 @@ handle_destroy_mode :: proc()
 
     if is_key_just_pressed(glfw.KEY_SPACE) {
         set_game_over()
-        // for b in g_level.bees {
+        // for b in g.level.bees {
         // vc := get_component(b.entity, Cmp_Visual)
         // if vc != nil do destroy_visuals(vc)
         // delete_parent_node(b.entity)
         // }
 
         // selected_destroy = load_prefab("Froku")
-        // set_entity_on_tile(g_floor, selected_destroy, g_level, grid_pos_x, grid_pos_y)
+        // set_entity_on_tile(g.floor, selected_destroy, g.level, grid_pos_x, grid_pos_y)
         // fmt.printf("Placed %s at (%d, %d)\n", selected_destroy, grid_pos_x, grid_pos_y)
     }
 
     if is_key_just_pressed(glfw.KEY_ENTER)
     {
         set_game_start()
-        fc := get_component(g_floor, Cmp_Node)
-        fp := get_component(g_floor, Cmp_Primitive)
-        ft := get_component(g_floor, Cmp_Primitive)
+        fc := get_component(g.floor, Cmp_Node)
+        fp := get_component(g.floor, Cmp_Primitive)
+        ft := get_component(g.floor, Cmp_Primitive)
         fmt.println("Floor: ", fc.name, " T: ", ft.world, " P: ", fp.extents)
 
         // delete_parent_node(selected_destroy)
@@ -297,7 +297,7 @@ handle_destroy_mode :: proc()
         // else do fmt.println("CONTGRATS ITS GONE")
     }
 
-    if is_key_just_pressed(glfw.KEY_A) do g_level.player.health = 0
+    if is_key_just_pressed(glfw.KEY_A) do g.level.player.health = 0
     if is_key_just_pressed(glfw.KEY_D) do grid_pos_x += 1
     if is_key_just_pressed(glfw.KEY_W) do grid_pos_y += 1
     if is_key_just_pressed(glfw.KEY_S) do grid_pos_y -= 1

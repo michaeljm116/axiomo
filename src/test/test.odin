@@ -64,10 +64,10 @@ test_get_last_sibling :: proc(t: ^testing.T) {
     defer ecs.delete_world(test_world)
 
     // Store original world and restore it after test
-    original_world := g_world
-    g_world = test_world
+    original_world := g.world
+    g.world = test_world
     defer {
-        g_world = original_world
+        g.world = original_world
     }
 
     // Test Case 1: Single child (should return itself)

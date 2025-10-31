@@ -782,9 +782,9 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc := c
         }
     }
 
-    // If this is a root (no parent), append to g_scene
+    // If this is a root (no parent), append to g.scene
     // if parent == Entity(0) && .ROOT in cmp_node.engine_flags {
-    //     append(&g_scene, entity)
+    //     append(&g.scene, entity)
     // }
     return entity
 }
@@ -801,9 +801,9 @@ load_scene :: proc(scene_data: scene.SceneData, alloc: mem.Allocator) {
 
 load_prefab :: proc(name: string) -> (prefab : Entity)
 {
-    node, ok := g_prefabs[name]
+    node, ok := g.prefabs[name]
     if !ok{
-        fmt.printf("[load_prefab] Prefab '%s' not found in g_prefabs map \n", name)
+        fmt.printf("[load_prefab] Prefab '%s' not found in g.prefabs map \n", name)
         return 0
     }
     // Create the entity using the requested ECS allocator
@@ -814,7 +814,7 @@ load_prefab :: proc(name: string) -> (prefab : Entity)
         cc := get_component(n, Cmp_Node)
         cc.parent = prefab
     }
-    //append(&g_scene, prefab)
+    //append(&g.scene, prefab)
     return prefab
 }
 
@@ -854,7 +854,7 @@ setup_physics :: proc (){
         ///////////////////////////////////
         // /plr
         ///////////////////////////////////
-        pt := get_component(g_player, Cmp_Transform)
+        pt := get_component(g.player, Cmp_Transform)
         // Build collision components. Body position is the body origin in world space.
         col := Cmp_Collision2D{
             bodydef = b2.DefaultBodyDef(),
@@ -878,8 +878,8 @@ setup_physics :: proc (){
         col.shapedef.density = g_contact_identifier.Player
         // col.shapeid = b2.CreateCapsuleShape(col.bodyid, col.shapedef, capsule)
         col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
-        add_component(g_player, col)
-        //add_component(g_player, capsule)
+        add_component(g.player, col)
+        //add_component(g.player, capsule)
     }
 
     fmt.println("Floor created")
@@ -931,7 +931,7 @@ set_floor_entities :: proc()
     }
 
     find_floor_entities()
-    fc := get_component(g_floor, Cmp_Transform)
+    fc := get_component(g.floor, Cmp_Transform)
     col := Cmp_Collision2D{
         bodydef = b2.DefaultBodyDef(),
         shapedef = b2.DefaultShapeDef(),
@@ -953,7 +953,7 @@ set_floor_entities :: proc()
     col.shapedef.density = 1000.0
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
-    add_component(g_floor, col)
+    add_component(g.floor, col)
 }
 
 barrel : Entity
@@ -996,9 +996,9 @@ create_barrel :: proc(pos : b2.Vec2)
 
 // update_movables :: proc(delta_time: f32)
 // {
-//     //First just the visible g_floor
+//     //First just the visible g.floor
 //     for i in 0..<2{
-//         fc := get_component(g_floor, Cmp_Transform)
+//         fc := get_component(g.floor, Cmp_Transform)
 //         fc.local.pos.x -= 1.0 * delta_time
 
 //         //refresh world if done
@@ -1008,7 +1008,7 @@ create_barrel :: proc(pos : b2.Vec2)
 //             vmem.arena_free_all(&distance_arena[curr_phase])
 //             curr_phase = (curr_phase + 1) % 2
 
-//             col := get_component(g_floor, Cmp_Collision2D)
+//             col := get_component(g.floor, Cmp_Collision2D)
 //             fc.local.pos.x += 200.0
 //             trans := b2.Body_GetTransform(col.bodyid)
 //             trans.p.x = fc.local.pos.x
@@ -1057,15 +1057,15 @@ update_physics :: proc(delta_time: f32)
 
 update_player_movement_phys :: proc(delta_time: f32)
 {
-    cc := get_component(g_player, Cmp_Collision2D)
+    cc := get_component(g.player, Cmp_Collision2D)
     if cc == nil do return
     vel := b2.Body_GetLinearVelocity(cc.bodyid).y
     move_speed :f32= 0.40
     if is_key_pressed(glfw.KEY_SPACE) do vel += move_speed
     b2.Body_SetLinearVelocity(cc.bodyid, {0,vel})
     // b2.Body_ApplyForceToCenter(cc.bodyid, {0,100}, true)
-    // fmt.println("Entity ",g_player, " | Force : ", b2.Body_GetLinearVelocity(cc.bodyid), " | ")
-    // fmt.println("Entity ",g_player, " | Position : ", b2.Body_GetPosition(cc.bodyid), " | ")
+    // fmt.println("Entity ",g.player, " | Force : ", b2.Body_GetLinearVelocity(cc.bodyid), " | ")
+    // fmt.println("Entity ",g.player, " | Position : ", b2.Body_GetPosition(cc.bodyid), " | ")
 }
 
 //----------------------------------------------------------------------------\\
@@ -1159,7 +1159,7 @@ sys_anim_add :: proc(e : Entity){
     bfg := get_component(e, Cmp_BFGraph)
     // node := get_component(e, Cmp_Node)
     assert(ac != nil && bfg != nil, "Animation, BFGraph, and Node components are required")
-    animation := g_animations[ac.prefab_name]
+    animation := g.animations[ac.prefab_name]
     end_pose := animation.poses[ac.end]
 
     // If there's only 1 pose, then it'll only be the end pose
@@ -1300,7 +1300,7 @@ sys_anim_transition :: proc(entity: Entity)
     bfg := get_component(entity, Cmp_BFGraph)
     assert(ac != nil && bfg != nil, "Animation and BFGraph components are required")
 
-    animation := g_animations[ac.prefab_name]
+    animation := g.animations[ac.prefab_name]
     start_pose := animation.poses[ac.start]
     end_pose   := animation.poses[ac.end]
     trans_pose := animation.poses[ac.trans]
@@ -1403,7 +1403,7 @@ sys_anim_deactivate_component :: proc(entity : Entity)
     bfg := get_component(entity, Cmp_BFGraph)
     assert(ac != nil && bfg != nil, "Animation and BFGraph components are required")
 
-    animation := g_animations[ac.prefab_name]
+    animation := g.animations[ac.prefab_name]
     end_pose := animation.poses[ac.end]
 
     //First remove the endpose
@@ -1475,7 +1475,7 @@ in_bounds :: proc(p : vec2) -> bool {
 is_walkable :: proc(p : vec2, goal : vec2) -> bool {
     if pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !in_bounds(p) { return false }
-    t := g_level.grid[p[0]][p[1]]
+    t := g.level.grid[p[0]][p[1]]
     return t == Tile.Blank || t == Tile.Weapon
 }
 
@@ -1595,7 +1595,7 @@ a_star_find_path :: proc(start : vec2, goal : vec2) -> [dynamic]vec2 {
 is_walkable_internal :: proc(p : vec2, goal : vec2, allow_through_walls : bool) -> bool {
     if pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !in_bounds(p) { return false }
-    t := g_level.grid[p[0]][p[1]]
+    t := g.level.grid[p[0]][p[1]]
     if t == Tile.Blank || t == Tile.Weapon { return true }
     if allow_through_walls && t == Tile.Wall { return true }
     return false

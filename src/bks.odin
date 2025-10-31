@@ -17,13 +17,7 @@ import xxh2"extensions/xxhash2"
 vec2 :: [2]i16
 GRID_WIDTH :: 7
 GRID_HEIGHT :: 5
-s : bufio.Scanner
-g_state : GameState = .Start
-g_current_bee: int = 0
-g_level :Level
-g_dice :  [2]Dice
 // g_saftey_bee : Bee
-
 Grid :: [][]Tile
 Level :: struct
 {
@@ -36,8 +30,12 @@ Level :: struct
     grid_scale : vec2f,
     grid_weapons : [dynamic]WeaponGrid,
 }
+
 prestart :: proc()
 {
+    g.state = .Start
+    g.current_bee = 0
+
     // g_saftey_bee = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
     // tc := get_component(g_saftey_bee.entity, Cmp_Transform)
     // tc.global.pos.y = 100000000000000.0
@@ -49,8 +47,8 @@ prestart :: proc()
 start_level1 :: proc(alloc : mem.Allocator = context.allocator)
 {
     context.allocator = alloc
-    using g_level
-    g_state = .PlayerTurn
+    using g.level
+    g.state = .PlayerTurn
     ves.curr_screen = .SelectAction
     // Clear and initialize grid contiguously
     grid_data = make([]Tile, GRID_WIDTH * GRID_HEIGHT)
@@ -80,18 +78,18 @@ start_level1 :: proc(alloc : mem.Allocator = context.allocator)
     player.abilities[1] = Ability{type = .Focused, use_on = &bees[1], level = 1, uses = 1}
 
     //Shuffle bee BeeDeck
-    deck_init(&g_level.deck, 36)
+    deck_init(&g.level.deck, 36)
 
     //Set up visuals over bee
     for b in bees do add_component(b.entity, Cmp_Visual{})
-    for &dice, i in g_dice{
+    for &dice, i in g.dice{
         dice = Dice{num = i8(i)}//, entity = gui["Dice"]}
         dice.time.max = 1.0
         dice.interval.max = 0.16
     }
-    g_dice.x.entity = gui["Dice1"]
-    g_dice.y.entity = gui["Dice2"]
-    for &d, i in g_dice {
+    g.dice.x.entity = gui["Dice1"]
+    g.dice.y.entity = gui["Dice2"]
+    for &d, i in g.dice {
         gc := get_component(d.entity, Cmp_Gui)
         gc.alpha = 0.0
         gc.min.x += (f32(i) * 0.16)
@@ -108,14 +106,14 @@ destroy_visuals :: proc(visuals : ^Cmp_Visual) {
 
 destroy_level1 :: proc() {
     destroy_world()
-    for b in g_level.bees {
+    for b in g.level.bees {
         vc := get_component(b.entity, Cmp_Visual)
         if vc != nil do destroy_visuals(vc)
         if(entity_exists(b.entity)) do delete_parent_node(b.entity)
     }
-    for gw in g_level.grid_weapons do delete_parent_node(gw.chest)
+    for gw in g.level.grid_weapons do delete_parent_node(gw.chest)
 
-    assert(entity_exists(g_floor))
+    assert(entity_exists(g.floor))
 }
 
 //----------------------------------------------------------------------------\\
@@ -136,13 +134,13 @@ run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, dec
             run_players_turn(&pt_state, state, player, bees, &bee_selection, &bee_is_near)
             break
         case .BeesTurn:
-            if g_current_bee >= len(bees) {
-                g_current_bee = 0
+            if g.current_bee >= len(bees) {
+                g.current_bee = 0
                 state^ = .PlayerTurn
                 return
             }
-            bee := &bees[g_current_bee]
-            update_bee(bee, deck, player, f32(g_frame.physics_time_step))  // New proc (defined below)
+            bee := &bees[g.current_bee]
+            update_bee(bee, deck, player, f32(g.frame.physics_time_step))  // New proc (defined below)
             break
         case .End:
             // destroy_bee_deck(deck)
@@ -196,11 +194,11 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
 
-                if weap_check(player.target, &g_level.grid) {
-                    pick_up_weapon(player, g_level.weapons)
+                if weap_check(player.target, &g.level.grid) {
+                    pick_up_weapon(player, g.level.weapons)
 
                     //check for chest
-                    for weap in g_level.grid_weapons{
+                    for weap in g.level.grid_weapons{
                         if player.target == weap.pos do animate_chest(weap.chest)
                     }
                 }
@@ -232,7 +230,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
                 if .Dead in bees[bee_selection^].flags{
                     fmt.printfln("Bee %v is dead", bees[bee_selection^].name)
                     //remove the bee for now
-                    ordered_remove(&g_level.bees, bee_selection^)
+                    ordered_remove(&g.level.bees, bee_selection^)
                 }
             }
             else if is_key_just_pressed(glfw.KEY_F){
@@ -261,8 +259,8 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
             if ves.dice_state == .Finished{
                 ves.dice_state = .None
                 ves.curr_screen = .None
-                fmt.println("Dice Num 1: ", g_dice[0].num, " Dice Num 2: ", g_dice[1].num)
-                acc := g_dice[0].num + g_dice[1].num
+                fmt.println("Dice Num 1: ", g.dice[0].num, " Dice Num 2: ", g.dice[1].num)
+                acc := g.dice[0].num + g.dice[1].num
                 bee := &bees[bee_selection^]
                 player_attack(player^, bee, acc)
                 state^ = .SelectAction
@@ -271,7 +269,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
             }
         // case .Animate:
         //     TogglePlayerTurnUI(state)
-        //     animate_player(player, f32(g_frame.physics_time_step), state)
+        //     animate_player(player, f32(g.frame.physics_time_step), state)
         //     if state^ == .SelectAction do game_state^ = .BeesTurn
         //     break
     }
@@ -293,14 +291,14 @@ run_bee_decision :: proc(bee : ^Bee, deck : ^BeeDeck) -> BeeAction{
     }
     fmt.printf("Chosen 🎴: %v\n", chosen_card)
     return chosen_card
-    // bee_action_perform(chosen_card, bee, &g_level.player)
+    // bee_action_perform(chosen_card, bee, &g.level.player)
 }
 
 update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
     if .Dead in bee.flags
     {
         set_dead_bee(bee)
-        g_current_bee += 1
+        g.current_bee += 1
         return
     }
     switch bee.state {
@@ -322,7 +320,7 @@ update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
                 ves.dice_state = .Start
             }
             if ves.dice_state == .Finished {
-                bee_action_attack(bee, player, g_dice.x.num + g_dice.y.num)
+                bee_action_attack(bee, player, g.dice.x.num + g.dice.y.num)
                 bee.state = .Finishing
             }
             if ves.dice_state == .None {
@@ -333,7 +331,7 @@ update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
     case .Finishing:
         bee.state = .Deciding
         bee.removed += {.Animate, .Attack, .Moving}
-        g_current_bee += 1
+        g.current_bee += 1
         ves.anim_state = .None
         ves.dice_state = .None
     }
@@ -342,8 +340,8 @@ update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
 // If B button is pressed, go back to previous menu
 handle_back_button :: proc(state : ^PlayerInputState){
     if(!is_key_just_pressed(glfw.KEY_B)) do return
-    hide_weapon(g_level.player.weapon)
-    g_level.bees[bee_selection].removed |= {.PlayerSelected}
+    hide_weapon(g.level.player.weapon)
+    g.level.bees[bee_selection].removed |= {.PlayerSelected}
     #partial switch state^ {
         case .Movement:
             state^ = .SelectAction
@@ -657,7 +655,7 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
             else do bee.state = .Finishing
             // bee_action_attack(bee, player)
     }
-    // move_entity_to_tile(bee.entity, g_level.grid_scale, bee.pos)
+    // move_entity_to_tile(bee.entity, g.level.grid_scale, bee.pos)
     // if bee is hovering player, turn on alert
 }
 
@@ -856,21 +854,21 @@ dice_rolls :: proc() -> i8 {
 }
 
 start_dice_roll :: proc() {
-    for &d in g_dice {
+    for &d in g.dice {
         d.time.curr = 0
         d.interval.curr = 0
         d.num = i8(rand.int31() % 6) + 1  // Initial random
         gc := get_component(d.entity, Cmp_Gui)
         if gc != nil {
             gc.alpha = 1.0  // Show dice
-            gc.align_min = f32(one_sixth * f64(d.num - 1))  // Set initial face
+            gc.align_min = f32(ONE_SIXTH * f64(d.num - 1))  // Set initial face
             update_gui(gc)
         }
     }
 }
 
 hide_dice :: proc() {
-    for d in g_dice {
+    for d in g.dice {
         gc := get_component(d.entity, Cmp_Gui)
         if gc != nil { gc.alpha = 0.0 }
         update_gui(gc)
@@ -881,7 +879,7 @@ place_chest_on_grid :: proc(pos : vec2, lvl : ^Level)
 {
     chest := load_prefab("Chest")
     context.allocator = mem_game.alloc
-    set_entity_on_tile(g_floor, chest, lvl^, pos.x, pos.y)
+    set_entity_on_tile(g.floor, chest, lvl^, pos.x, pos.y)
     append(&lvl.grid_weapons, WeaponGrid{pos, chest})
 }
 
@@ -909,7 +907,7 @@ GameFlag :: enum
 GameFlags :: bit_set[GameFlag; u32]
 move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
 {
-    // display_level(g_level)
+    // display_level(g.level)
     dir : vec2
     switch (key)
     {
@@ -923,7 +921,7 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
             dir.x = 1
     }
     bounds := p.pos + dir
-    if bounds_check(bounds, g_level.grid) {
+    if bounds_check(bounds, g.level.grid) {
         //Animate Player
         p.target = bounds
         p.c_flags = {.Walk}
@@ -1056,7 +1054,7 @@ set_entity_on_tile :: proc(floor : Entity, entity : Entity, lvl : Level, x, y : 
 move_entity_to_tile :: proc(entity : Entity, scale : vec2f, pos : vec2)
 {
     pt := get_component(entity, Cmp_Transform)
-    ft := get_component(g_floor, Cmp_Transform)
+    ft := get_component(g.floor, Cmp_Transform)
     if pt == nil || ft == nil do return
 
     full_cell_x := 2.0 * scale.x
@@ -1141,9 +1139,9 @@ get_top_of_entity :: proc(e : Entity) -> f32
 //----------------------------------------------------------------------------\\
 gui : map[string]Entity
 init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
-    ui_keys = make([dynamic]string, 0, len(g_ui_prefabs), alloc)
+    ui_keys = make([dynamic]string, 0, len(g.ui_prefabs), alloc)
     gui = make(map[string]Entity, alloc)
-    for key,ui in g_ui_prefabs{
+    for key,ui in g.ui_prefabs{
         cmp := map_gui(ui.gui)
         cmp.alpha = 0.0
         cmp.update = true
@@ -1300,17 +1298,17 @@ add_animation :: proc(c : ^Character, prefab : string)
 
 add_animations :: proc()
 {
-    add_animation(&g_level.player.base, "Froku")
-    add_animation(&g_level.bees[0].base, "AggressiveBee")
-    add_animation(&g_level.bees[1].base, "Bee")
+    add_animation(&g.level.player.base, "Froku")
+    add_animation(&g.level.bees[0].base, "AggressiveBee")
+    add_animation(&g.level.bees[1].base, "Bee")
 }
 
 // Similar to move_entity_to_tile but just sets the vectors up
 set_up_character_anim :: proc(cha : ^Character)
 {
-    scale := g_level.grid_scale
+    scale := g.level.grid_scale
     pt := get_component(cha.entity, Cmp_Transform)
-    ft := get_component(g_floor, Cmp_Transform)
+    ft := get_component(g.floor, Cmp_Transform)
     if pt == nil || ft == nil do return
 
     full_cell_x := 2.0 * scale.x
@@ -1403,16 +1401,16 @@ start_game :: proc()
 {
     start_level1(mem_game.alloc)
     find_floor_entities()
-    set_grid_scale(g_floor, &g_level)
-    set_entity_on_tile(g_floor, g_player, g_level, g_level.player.pos.x, g_level.player.pos.y)
-    for bee in g_level.bees{
-        set_entity_on_tile(g_floor, bee.entity, g_level, bee.pos.x, bee.pos.y)
+    set_grid_scale(g.floor, &g.level)
+    set_entity_on_tile(g.floor, g.player, g.level, g.level.player.pos.x, g.level.player.pos.y)
+    for bee in g.level.bees{
+        set_entity_on_tile(g.floor, bee.entity, g.level, bee.pos.x, bee.pos.y)
         face_right(bee.entity)
     }
 
-    place_chest_on_grid(vec2{2,0}, &g_level)
-    place_chest_on_grid(vec2{4,3}, &g_level)
-    g_level.player.entity = g_player
+    place_chest_on_grid(vec2{2,0}, &g.level)
+    place_chest_on_grid(vec2{4,3}, &g.level)
+    g.level.player.entity = g.player
     add_animations()
 }
 
@@ -1432,14 +1430,14 @@ app_run :: proc(dt: f32, state: ^AppState) {
             start_game()
         }
 	case .Game:
-		run_game(&g_state, &g_level.player, &g_level.bees, &g_level.deck)
+		run_game(&g.state, &g.level.player, &g.level.bees, &g.level.deck)
 		ves_update_all(dt)
-		if (g_level.player.health <= 0){
+		if (g.level.player.health <= 0){
 			state^ = .GameOver
             destroy_level1()
 			ToggleMenuUI(state)
 		}
-	    else if (len(g_level.bees) <= 0){
+	    else if (len(g.level.bees) <= 0){
     		state^ = .Victory
             destroy_level1()
             ToggleMenuUI(state)
@@ -1448,7 +1446,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
             state^ = .Pause
             ToggleMenuUI(state)
         }
-        ves_cleanup(&g_level)
+        ves_cleanup(&g.level)
 	case .Pause:
         if is_key_just_pressed(glfw.KEY_ENTER){
             state^ = .Game
@@ -1517,7 +1515,6 @@ menu_run_title :: proc(dt : f32, state : ^AppState)
     }
 }
 
-game_started := false
 // menu_run_main :: proc(dt : f32, state : ^AppState)
 // {
 //     if is_key_just_pressed(glfw.KEY_ENTER) do state^ = .Game
@@ -1723,8 +1720,7 @@ Dice :: struct {
     interval : cmu,
     entity : Entity,
 }
-one_sixth := 1.0/6.0
-
+ONE_SIXTH :: 1.0/6.0
 dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
     for &d in dice{
         d.time.curr += dt
@@ -1747,7 +1743,7 @@ dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
             assert(d.num > 0 && d.num <= 6)
             //set dice face
             icon := get_component(d.entity, Cmp_Gui)
-            icon.align_min.x = f32(one_sixth * f64(d.num - 1))
+            icon.align_min.x = f32(ONE_SIXTH * f64(d.num - 1))
             icon.align_min.y = 0.0
             update_gui(icon)
         }
@@ -1788,8 +1784,8 @@ ves_update_all :: proc(dt : f32)
 {
     ves_update_dice()
     ves_update_screen()
-    ves_update_visuals(&g_level)
-    ves_update_animations(&g_level, dt)
+    ves_update_visuals(&g.level)
+    ves_update_animations(&g.level, dt)
 }
 
 // When a screen is turned off or on, update it accordingly
@@ -1842,8 +1838,8 @@ ves_update_dice :: proc(){
         start_dice_roll()
         ves.dice_state = .Update
     case .Update:
-        dice_roll_vis(&g_dice, f32(g_frame.physics_time_step))
-        for d in g_dice {
+        dice_roll_vis(&g.dice, f32(g.frame.physics_time_step))
+        for d in g.dice {
             if d.time.curr >= d.time.max + 1 do ves.dice_state = .Finished
         }
     case .Finished:
@@ -1983,7 +1979,7 @@ ves_animate_bee_start :: proc(bee: ^Bee){
 
 ves_animate_bee_end :: #force_inline proc(bee : ^Bee)
 {
-    move_entity_to_tile(bee.entity, g_level.grid_scale, bee.target)
+    move_entity_to_tile(bee.entity, g.level.grid_scale, bee.target)
     bee.pos = bee.target
     bee.anim.timer = 0
 }
@@ -2009,7 +2005,7 @@ ves_animate_player_start :: #force_inline proc(p : ^Player){
 }
 
 ves_animate_player_end :: #force_inline proc(p : ^Player){
-    move_entity_to_tile(p.entity, g_level.grid_scale, p.target)
+    move_entity_to_tile(p.entity, g.level.grid_scale, p.target)
     p.pos = p.target
     p.anim.timer = 0
     ac := get_component(p.entity, Cmp_Animation)
