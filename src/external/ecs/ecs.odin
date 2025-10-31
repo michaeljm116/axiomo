@@ -531,7 +531,7 @@ get_or_create_archetype :: proc(
 	// Create new archetype
 	archetype = new(Archetype)
 	archetype.id = archetype_id
-	archetype.component_ids = slice.clone(component_ids)
+	archetype.component_ids = slice.clone(component_ids, world.alloc)
 	archetype.entities = make([dynamic]EntityID, world.alloc)
 	archetype.tables = make(map[ComponentID][dynamic]byte, world.alloc)
 	archetype.component_types = make(map[ComponentID]^reflect.Type_Info, world.alloc)

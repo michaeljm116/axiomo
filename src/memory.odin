@@ -27,7 +27,7 @@ set_up_all_arenas :: proc()
     init_memory_arena_growing(&mem_area, mem.Megabyte * 1)
     init_memory_arena_growing(&mem_scene, mem.Megabyte * 1)
     init_memory_arena_growing(&mem_game, mem.Megabyte * 1)
-    init_memory_arena_static(&mem_frame, mem.Kilobyte * 16, mem.Kilobyte * 4)
+    init_memory_arena_static(&mem_frame, mem.Kilobyte * 512, mem.Kilobyte * 4)
     mem_core.name = "core"
     mem_area.name = "area"
     mem_scene.name = "scene"

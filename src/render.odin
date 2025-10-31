@@ -2470,13 +2470,14 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     init_staging_buf(&rt.compute.storage_buffers.shapes, shapes, len(shapes))
 
     //Dynamically load textures
+    // g_texture_indexes = make(map[string]i32, mem_area.alloc)
     g_texture_indexes[""] = -1
     index :i32= 0
     files := path2.get_dir_files("assets/textures")
     for f,i in files{
         file_ext := path2.get_file_stem(f.fullpath, alloc)
         if file_ext != ".png" && file_ext != ".jpg" && file_ext != ".jpeg" do continue
-        filename := strings.clone(f.name, context.temp_allocator)
+        filename := strings.clone(f.name, alloc)
         t := Texture{path = f.fullpath}
         if texture_create(&t){
             append(&rt.bindless_textures, t)

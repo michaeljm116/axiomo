@@ -508,7 +508,7 @@ save_node :: proc(entity: Entity) -> scene.Node {
     }
 
     scene_node := scene.Node {
-        Name        = strings.clone(cmp_node.name),
+        Name        = strings.clone(cmp_node.name, context.temp_allocator),
         hasChildren = cmp_node.is_parent,
         eFlags      = transmute(u32)cmp_node.engine_flags,
         gFlags      = cmp_node.game_flags,
@@ -618,7 +618,7 @@ save_node :: proc(entity: Entity) -> scene.Node {
             }
         }
 
-        scene_node.Children = make([dynamic]scene.Node, child_count)
+        scene_node.Children = make([dynamic]scene.Node, child_count, context.temp_allocator)
         curr_child = cmp_node.child
         i := 0
         for curr_child != Entity(0) && i < child_count {

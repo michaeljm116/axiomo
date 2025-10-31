@@ -92,7 +92,7 @@ main :: proc() {
 	initialize_raytracer()
 	glfw.PollEvents()
 	g_frame.prev_time = glfw.GetTime()
-
+	print_resource_strings(6)
 	//----------------------------------------------------------------------------\\
     // /Game Updating
     //----------------------------------------------------------------------------\\
@@ -110,16 +110,172 @@ main :: proc() {
 			sys_visual_process_ecs(f32(g_frame.physics_time_step))
 			sys_anim_process_ecs(f32(g_frame.physics_time_step))
 			sys_trans_process_ecs()
-			sys_bvh_process_ecs(g_bvh, mem_frame.alloc)
 			// print_tracking_stats(&mem_track)
 			gameplay_update(f32(g_frame.physics_time_step))
 			g_frame.physics_acc_time -= f32(g_frame.physics_time_step)
 		}
+		sys_bvh_process_ecs(g_bvh, mem_frame.alloc)
 		update_buffers()
 		update_descriptors()
 		end_frame(&image_index)
 		reset_memory_arena(&mem_frame)
-		// free_all(context.temp_allocator)
+		free_all(context.temp_allocator)
+
+		print_resource_strings(10)
 	}
 	cleanup()
+}
+
+// ...existing code...
+
+// Quick debug printers for globals
+print_frame_info :: proc() {
+    if &g_frame == nil {
+        fmt.println("Frame: <nil>")
+        return
+    }
+    fmt.printfln("Frame: target=%.2f delta_time=%.6f physics_step=%.6f\n",
+        g_frame.target, g_frame.delta_time, g_frame.physics_time_step)
+}
+
+print_resource_info :: proc() {
+    fmt.printfln("Resources: materials=%d models=%d animations=%d\n",
+        len(g_materials), len(g_models), len(g_animations))
+    fmt.printfln("Prefabs: ui=%d scene=%d\n", len(g_ui_prefabs), len(g_prefabs))
+    fmt.printfln("Textures=%d enemies=%d\n", len(g_texture_indexes), len(g_enemies))
+}
+
+// Print first `limit` keys from a string->Node map
+print_prefab_keys :: proc(prefabs: map[string]sc.Node, limit: int) {
+    i := 0
+    for k, _ in prefabs {
+        fmt.printfln("  prefab: %s\n", k)
+        i += 1
+        if i >= limit {
+            break
+        }
+    }
+    if i == 0 {
+        fmt.println("  (no prefabs)")
+    }
+}
+
+// Print first `limit` keys from a string->Entity map
+print_enemy_keys :: proc(enemies: map[string]Entity, limit: int) {
+    i := 0
+    for k, _ in enemies {
+        fmt.printfln("  enemy: %s\n", k)
+        i += 1
+        if i >= limit {
+            break
+        }
+    }
+    if i == 0 {
+        fmt.println("  (no enemies)")
+    }
+}
+
+print_world_info :: proc() {
+    if g_world == nil {
+        fmt.println("World: <nil>")
+    } else {
+        fmt.printfln("World pointer: %v\n", g_world)
+        fmt.printfln("World entity root: %v player: %v\n", g_world_ent, g_player)
+    }
+}
+
+// High level summary of important globals
+print_globals_summary :: proc(limit_keys: int) {
+    fmt.println("=== Globals Summary ===")
+    print_frame_info()
+    print_resource_info()
+    print_world_info()
+
+    fmt.println("Sample prefabs:")
+    print_prefab_keys(g_prefabs, limit_keys)
+
+    fmt.println("Sample UI prefabs:")
+    print_prefab_keys(g_ui_prefabs, limit_keys)
+
+    fmt.println("Sample enemies:")
+    print_enemy_keys(g_enemies, limit_keys)
+
+    fmt.println("Animation keys (first few):")
+    j := 0
+    for k, _ in g_animations {
+        fmt.printfln("  anim key: %d\n", k)
+        j += 1
+        if j >= limit_keys { break }
+    }
+    fmt.println("=======================")
+}
+// ...existing code...
+
+// diagnostic counter used to call heavier dumps periodically
+g_frame_counter: int = 0
+
+// Dump a few materials (struct dump, shows embedded strings)
+print_materials_dump :: proc(limit: int) {
+    i := 0
+    for i < len(g_materials) && i < limit {
+        fmt.printfln("material[%d]: %v", i, g_materials[i])
+        i += 1
+    }
+    if len(g_materials) == 0 {
+        fmt.println("  (no materials)")
+    }
+}
+
+// Dump a few models (struct dump, shows embedded strings/paths)
+print_models_dump :: proc(limit: int) {
+    i := 0
+    for i < len(g_models) && i < limit {
+        fmt.printfln("model[%d]: %v", i, g_models[i])
+        i += 1
+    }
+    if len(g_models) == 0 {
+        fmt.println("  (no models)")
+    }
+}
+
+// Dump some animations (key + struct dump)
+print_animations_dump :: proc(limit: int) {
+    j := 0
+    for k, v in g_animations {
+        fmt.printfln("anim key=%d -> %v", k, v)
+        j += 1
+        if j >= limit { break }
+    }
+    if len(g_animations) == 0 {
+        fmt.println("  (no animations)")
+    }
+}
+
+// List texture key strings (these are the primary string keys for your textures)
+print_texture_keys :: proc(limit: int) {
+    i := 0
+    for k, _ in g_texture_indexes {
+        fmt.printfln("texture key: %s", k)
+        i += 1
+        if i >= limit { break }
+    }
+    if i == 0 {
+        fmt.println("  (no texture keys)")
+    }
+}
+
+// Higher-level resource string dump (calls the specific dumps)
+print_resource_strings :: proc(limit: int) {
+    fmt.println("=== Resource String Dump ===")
+    fmt.printfln("materials: %d  models: %d  animations: %d  textures: %d",
+        len(g_materials), len(g_models), len(g_animations), len(g_texture_indexes))
+    fmt.println("-- materials --")
+    print_materials_dump(limit)
+    // fmt.println("-- models --")
+    // print_models_dump(limit)
+    fmt.println("-- animations --")
+    print_animations_dump(limit)
+    fmt.println("-- texture keys --")
+    print_texture_keys(limit)
+    fmt.println("============================")
 }
