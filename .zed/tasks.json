@@ -1,13 +1,12 @@
 [
   {
     "label": "Build",
-    "command": "if (!(Test-Path .\\build)) { mkdir .\\build }; odin build src/. -debug -out:build/debug.exe",
+    "command": ".\build_debug.bat; .\build_hot_reload.bat",
     "args": [],
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
     "reveal": "always",
     "hide": "never",
-    "show_summary": true,
-    "show_output": true
+    "show_summary": true
   }
 ]

@@ -158,7 +158,7 @@ game_init :: proc() {
 	g.prefabs = make(map[string]sc.Node, 0, g.mem_area.alloc)
 	g.ui_prefabs = make(map[string]sc.Node, 0, g.mem_area.alloc)
 
-	res.load_materials("assets/Materials.xml", &g.materials)
+	res.load_materials("assets/config/Materials.xml", &g.materials)
 	res.load_models("assets/models/", &g.models)
 	res.load_anim_directory("assets/animations/", &g.animations, g.mem_area.alloc)
 	sc.load_prefab_directory("assets/prefabs", &g.prefabs, g.mem_area.alloc)

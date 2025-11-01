@@ -7,6 +7,7 @@ set OUT_DIR=build\release
 if not exist %OUT_DIR% mkdir %OUT_DIR%
 
 odin build src\main_release -no-bounds-check -o:speed -subsystem:windows -out:%OUT_DIR%\beekillingsinn.exe
+rcedit-x64.exe %OUT_DIR%\beekillingsinn.exe --set-icon assets/bird.ico
 IF %ERRORLEVEL% NEQ 0 exit /b 1
 
 xcopy /y /e /i assets %OUT_DIR%\assets > nul
