@@ -2757,15 +2757,15 @@ update_material :: proc(id: i32) {
     gpu.vbuffer_update(&g.rt.compute.storage_buffers.materials, &g.rb.vma_allocator, g.rt.materials[:])
 }
 
-update_gui :: proc(_gc: ^Cmp_Gui) {
-    gc := &g.rt.guis[_gc.ref]
-    gc.min = gc.min
-    gc.extents = gc.extents
-    gc.align_min = gc.align_min
-    gc.align_ext = gc.align_ext
-    gc.layer = gc.layer
-    gc.id = g.texture_indexes[_gc.id]
-    gc.alpha = gc.alpha
+update_gui :: proc(gc: ^Cmp_Gui) {
+    gui := &g.rt.guis[gc.ref]
+    gui.min = gc.min
+    gui.extents = gc.extents
+    gui.align_min = gc.align_min
+    gui.align_ext = gc.align_ext
+    gui.layer = gc.layer
+    gui.id = g.texture_indexes[gc.id]
+    gui.alpha = gc.alpha
     g.rt.update_flags |= {.GUI}
 }
 

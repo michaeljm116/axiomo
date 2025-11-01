@@ -176,8 +176,6 @@ main :: proc() {
 		end_frame(&image_index)
 		reset_memory_arena(&g.mem_frame)
 		free_all(context.temp_allocator)
-		fmt.print("Frame Time: ", frame_time, "\n")
-		for key, val in g.gui do fmt.println(key, val)
 	}
 	cleanup()
 }
