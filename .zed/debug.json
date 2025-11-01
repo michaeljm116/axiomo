@@ -3,7 +3,7 @@
     "label": "Debug",
     "adapter": "CodeLLDB",
     "request": "launch",
-    "program": "$ZED_WORKTREE_ROOT/build/debug.exe",
+    "program": "$ZED_WORKTREE_ROOT/build/axiomo_debug.exe",
     "cwd": "$ZED_WORKTREE_ROOT",
     "build": "Build"
   }
