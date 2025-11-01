@@ -84,12 +84,12 @@ start_level1 :: proc(alloc : mem.Allocator = context.allocator)
     //Set up visuals over bee
     for b in bees do add_component(b.entity, Cmp_Visual{})
     for &dice, i in g.dice{
-        dice = Dice{num = i8(i)}//, entity = g.gui["Dice"]}
+        dice = Dice{num = i8(i)}//, entity = g_gui["Dice"]}
         dice.time.max = 1.0
         dice.interval.max = 0.16
     }
-    g.dice.x.entity = g.gui["Dice1"]
-    g.dice.y.entity = g.gui["Dice2"]
+    g.dice.x.entity = g_gui["Dice1"]
+    g.dice.y.entity = g_gui["Dice2"]
     for &d, i in g.dice {
         gc := get_component(d.entity, Cmp_Gui)
         gc.alpha = 0.0
@@ -793,12 +793,12 @@ show_weapon :: proc(w : Weapon)
     ToggleUI("WeaponStatsAccuracy", true)
     ToggleUI("WeaponStatsPower", true)
 
-    gc := get_component(g.gui["WeaponStatsAccuracy"], Cmp_Gui)
+    gc := get_component(g_gui["WeaponStatsAccuracy"], Cmp_Gui)
     if gc != nil {
         gc.align_min.y = adjust_acc_y(w.flying.accuracy)
         update_gui(gc)
     }
-    ac := get_component(g.gui["WeaponStatsPower"], Cmp_Gui)
+    ac := get_component(g_gui["WeaponStatsPower"], Cmp_Gui)
     if ac != nil {
         ac.align_min.y = .4
         if w.flying.power == 100 do ac.align_min.y = .3
@@ -1136,9 +1136,9 @@ get_top_of_entity :: proc(e : Entity) -> f32
 // /UI
 //----------------------------------------------------------------------------\\
 init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
-    g.ui_keys = make([dynamic]string, 0, len(g.ui_prefabs), alloc)
-    g.gui = make(map[string]Entity, alloc)
-    for key,ui in g.ui_prefabs{
+    g.ui_keys = make([dynamic]string, 0, len(g_ui_prefabs), alloc)
+    g_gui = make(map[string]Entity, alloc)
+    for key,ui in g_ui_prefabs{
         cmp := map_gui(ui.gui)
         cmp.alpha = 0.0
         cmp.update = true
@@ -1151,7 +1151,7 @@ init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
 
 ToggleUI :: proc(name : string, on : bool)
 {
-    gc := get_component(g.gui[name], Cmp_Gui)
+    gc := get_component(g_gui[name], Cmp_Gui)
     gc.alpha = on ? 1.0 : 0.0
     gc.update = on
     update_gui(gc)
@@ -1389,7 +1389,7 @@ MenuAnimStatus :: enum{
 app_start :: proc()
 {
     prestart()
-    init_GameUI(&g.gui, g.mem_core.alloc)
+    init_GameUI(&g_gui, g_mem_core.alloc)
     // start_game()
     ToggleUI("Title", true)
 }
@@ -1477,7 +1477,7 @@ set_game_start :: proc(){
 
 menu_show_title :: proc()
 {
-   g.title = g.gui["Title"]
+   g.title = g_gui["Title"]
    gc := get_component(g.title, Cmp_Gui)
    gc.alpha = 0.0
    g.titleAnim = MenuAnimation{timer = 0.0, duration = 1.0}
@@ -1486,7 +1486,7 @@ menu_show_title :: proc()
 }
 menu_show_main :: proc()
 {
-    g.main_menu = g.gui["MainMenu"]
+    g.main_menu = g_gui["MainMenu"]
     gc := get_component(g.main_menu, Cmp_Gui)
     gc.alpha = 0.0
     g.main_menuAnim = MenuAnimation{timer = 0.0, duration = 1.0}

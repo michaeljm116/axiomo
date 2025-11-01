@@ -15,15 +15,19 @@ MemoryArena :: struct
 
 mem_track: mem.Tracking_Allocator       // To track the memory leaks
 // 128 MB totals
-set_up_all_arenas :: proc()
+set_up_core_arenas :: proc()
 {
-    init_memory_arena_growing(&g.mem_core, mem.Megabyte * 1)
-    init_memory_arena_growing(&g.mem_area, mem.Megabyte * 1)
+    init_memory_arena_growing(&g_mem_core, mem.Megabyte * 1)
+    init_memory_arena_growing(&g_mem_area, mem.Megabyte * 1)
+    g_mem_core.name = "core"
+    g_mem_area.name = "area"
+}
+
+set_up_game_arenas :: proc()
+{
     init_memory_arena_growing(&g.mem_scene, mem.Megabyte * 1)
     init_memory_arena_growing(&g.mem_game, mem.Megabyte * 1)
     init_memory_arena_static(&g.mem_frame, mem.Kilobyte * 512, mem.Kilobyte * 4)
-    g.mem_core.name = "core"
-    g.mem_area.name = "area"
     g.mem_scene.name = "scene"
     g.mem_game.name = "game"
     g.mem_frame.name = "frame"
@@ -31,8 +35,8 @@ set_up_all_arenas :: proc()
 
 destroy_all_arenas :: proc()
 {
-    destroy_memory_arena(&g.mem_core)
-    destroy_memory_arena(&g.mem_area)
+    destroy_memory_arena(&g_mem_core)
+    destroy_memory_arena(&g_mem_area)
     destroy_memory_arena(&g.mem_scene)
     destroy_memory_arena(&g.mem_game)
     destroy_memory_arena(&g.mem_frame)
@@ -93,8 +97,8 @@ print_arena_usage :: proc(ma: ^MemoryArena) {
 }
 print_all_arenas :: proc()
 {
-    print_arena_usage(&g.mem_core)
-	print_arena_usage(&g.mem_area)
+    print_arena_usage(&g_mem_core)
+	print_arena_usage(&g_mem_area)
 	print_arena_usage(&g.mem_scene)
 	print_arena_usage(&g.mem_game)
 	print_arena_usage(&g.mem_frame)

@@ -65,8 +65,30 @@ IF %ERRORLEVEL% NEQ 0 exit /b 1
 set ODIN_PATH=
 for /f "delims=" %%i in ('odin root') do set "ODIN_PATH=%%i"
 
+if "%~1"=="" (
+    echo Usage: %~nx0 [run^|rad^|attach]
+    exit /b 0
+)
+
 if "%~1"=="run" (
 	echo Running %EXE%...
 	start %EXE%
 )
 
+if "%~1"=="rad" (
+    set "RADDBG=c:dev/raddbg/raddbg.exe"
+    echo Launching new RAD Debugger session for axiomo_reload.exe...
+
+    "c:/dev/raddbg/raddbg.exe" "axiomo_reload.exe"
+
+    popd
+    exit /b 0
+)
+
+if "%~1"=="attach" (
+    echo Attaching existing RAD Debugger to running axiomo_reloaded.exe...
+    pushd %OUT_DIR%
+    c:/dev/raddbg/raddbg.exe --ipc attach axiomo_reload.exe
+    popd
+    exit /b 0
+)

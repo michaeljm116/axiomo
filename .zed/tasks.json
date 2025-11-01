@@ -1,7 +1,7 @@
 [
   {
     "label": "Build",
-    "command": "./build_debug.bat && ./build_hot_reload.bat",
+    "command": "./build_debug.bat ./build_hot_reload.bat run",
     "args": [],
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
@@ -11,12 +11,18 @@
   },
   {
     "label": "Run",
-    "command": "./build_hot_reload.bat run",
-    "args": [],
+    "command": "./build_debug.bat run",
+    "args": ["rad"],
     "use_new_terminal": false,
     "allow_concurrent_runs": true,
     "reveal": "always",
     "hide": "never",
     "show_summary": true
+  },
+  {
+    "label": "Reload",
+    "command": "./build_hot_reload.bat rad",
+    "args": [],
+    "use_new_terminal": false
   }
 ]

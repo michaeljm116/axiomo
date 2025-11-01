@@ -1,7 +1,5 @@
 @echo off
-:: This creates a build that is similar to a release build, but it's debuggable.
-:: There is no hot reloading and no separate game library.
-:: add these in teh future -strict-style -vet
+:: Build (and optionally run, debug, or attach) the game.
 set OUT_DIR=build\debug
 if not exist %OUT_DIR% mkdir %OUT_DIR%
 odin build src\main_release -debug -subsystem:windows -out:%OUT_DIR%\axiomo_debug.exe
@@ -11,9 +9,17 @@ xcopy /y /e /i assets %OUT_DIR%\assets > nul
 IF %ERRORLEVEL% NEQ 0 exit /b 1
 echo Debug build created in %OUT_DIR%
 
+if "%~1"=="" (
+    echo Usage: %~nx0 [run^|rad^|attach]
+    exit /b 0
+)
+
 if "%~1"=="run" (
     echo Running axiomo_debug.exe...
     pushd %OUT_DIR%
     start "" axiomo_debug.exe
     popd
+    exit /b 0
 )
+
+

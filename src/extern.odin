@@ -155,10 +155,10 @@ has_component_instance :: #force_inline proc(entity: Entity, component: $T) -> b
 //----------------------------------------------------------------------------\\
 
 get_material :: #force_inline proc(i: i32) -> ^resource.Material {
-	return &g.materials[i]
+	return &g_materials[i]
 }
 get_material_index :: #force_inline proc(id: i32) -> i32 {
-	for m, i in g.materials {
+	for m, i in g_materials {
 		if (m.unique_id == id) {
 			return i32(i)
 		}
