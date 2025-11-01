@@ -44,6 +44,8 @@ destroy_world :: #force_inline proc(){
 }
 restart_world :: #force_inline proc(){
     // destroy_memory_arena(&g.mem_game)
+    //
+    render_clear_entities()
     reset_memory_arena(&g.mem_game)
 }
 // Entity management
@@ -233,4 +235,11 @@ save_ui_prefab :: #force_inline proc(entity: Entity, filename: string) {
     if !ok {
         fmt.eprintf("Error writing UI prefab file '%s'\n", filename)
     }
+}
+
+set_new_scene :: proc(name : string) -> ^scene.SceneData
+{
+    destroy_memory_arena(&g.mem_scene)
+    init_memory_arena(&g.mem_scene, mem.Megabyte)
+    return scene.load_new_scene(name, g.mem_scene.alloc)
 }

@@ -3064,6 +3064,13 @@ removed_entity :: proc(e: Entity) {
     }
 }
 
+render_clear_entities :: proc() {
+    clear(&g_raytracer.lights)
+    clear(&g_raytracer.light_comps)
+    clear(&g_raytracer.primitives)
+    clear(&g_raytracer.guis)
+}
+
 process_entity :: proc(e: Entity) {
     rc := get_component(e, Cmp_Render)
     if rc == nil { return }

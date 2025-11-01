@@ -31,42 +31,43 @@ InputState :: struct {
 
 // Initialize the gameplay system
 gameplay_init :: proc() {
+    // Set up GLFW callbacks
+    glfw.SetKeyCallback(g_renderbase.window, key_callback)
+    glfw.SetCursorPosCallback(g_renderbase.window, mouse_callback)
+    glfw.SetMouseButtonCallback(g_renderbase.window, mouse_button_callback)
+    glfw.SetInputMode(g_renderbase.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
+    //setup_physics()
+    gameplay_start()
+}
 
-    g.light_orbit_radius = 5.0
-    g.light_orbit_speed = 0.25   // radians per second
-    g.light_orbit_angle = 15.0
-
+gameplay_start :: proc()
+{
     g.world = create_world()
-	// defer destroy_world()
-	load_scene(g_scene^, g.mem_game.alloc)
+	load_scene(g.scene^, g.mem_game.alloc)
 	added_entity(g.world_ent)
 	g.player = load_prefab("Froku")
 	g.app_state = .TitleScreen
-	init_memory_arena(&g.mem_game, mem.Megabyte)
     g.input = InputState{
         mouse_sensitivity = 0.1,
         movement_speed = 5.0,
         rotation_speed = 20.0,
         first_mouse = true,
     }
-
-    // Set up GLFW callbacks
-    glfw.SetKeyCallback(g_renderbase.window, key_callback)
-    glfw.SetCursorPosCallback(g_renderbase.window, mouse_callback)
-    glfw.SetMouseButtonCallback(g_renderbase.window, mouse_button_callback)
-
-    // Capture mouse cursor
-    glfw.SetInputMode(g_renderbase.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
-
     // Find the camera entity
     find_camera_entity()
     find_light_entity()
     find_player_entity()
     face_left(g.player)
-    //setup_physics()
 
     ////////////////// actual bks init ////////////////
     app_start()
+}
+
+gameplay_restart :: proc()
+{
+    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
+    restart_world()
+    gameplay_start()
 }
 
 gameplay_post_init :: proc()
@@ -100,10 +101,10 @@ gameplay_update :: proc(delta_time: f32) {
 
     // handle_ui_edit_mode()
     // handle_player_edit_mode()
-    // handle_destroy_mode()
-    // if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode{
+    handle_destroy_mode()
+    if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode{
        app_run(delta_time, &g.app_state)
-    // }
+    }
     // Clear just pressed/released states
     for i in 0..<len(g.input.keys_just_pressed) {
         g.input.keys_just_pressed[i] = false
@@ -158,6 +159,12 @@ find_light_entity :: proc() {
     }
 
     // No light found -> leave g.light_entity as 0
+}
+
+init_light_entity :: proc() {
+    g.light_orbit_radius = 5.0
+    g.light_orbit_speed = 0.25   // radians per second
+    g.light_orbit_angle = 15.0
 }
 
 // Update the cached light entity so it orbits around a center point.

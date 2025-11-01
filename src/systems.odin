@@ -782,18 +782,16 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc := c
         }
     }
 
-    // If this is a root (no parent), append to g_scene
+    // If this is a root (no parent), append to g.scene
     // if parent == Entity(0) && .ROOT in cmp_node.engine_flags {
-    //     append(&g_scene, entity)
+    //     append(&g.scene, entity)
     // }
     return entity
 }
 
 // Load entire scene
 load_scene :: proc(scene_data: scene.SceneData, alloc: mem.Allocator) {
-	if len(scene_data.Node) == 0 {
-		return // Entity(0)
-	}
+	assert(len(scene_data.Node) != 0)
 	for node in scene_data.Node {
 		load_node(node, alloc = alloc)
 	}
@@ -814,7 +812,7 @@ load_prefab :: proc(name: string) -> (prefab : Entity)
         cc := get_component(n, Cmp_Node)
         cc.parent = prefab
     }
-    //append(&g_scene, prefab)
+    //append(&g.scene, prefab)
     return prefab
 }
 

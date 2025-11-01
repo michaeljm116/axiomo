@@ -21,11 +21,14 @@ import res "resource"
 import sc "resource/scene"
 import "core:c"
 
+//--------------------------------------------------------------------------------\\
+// /Globals
+//--------------------------------------------------------------------------------\\
 Game_Memory :: struct
 {
     world: ^ecs.World,
     world_ent: Entity,
-
+    scene : ^sc.SceneData,
     frame : FrameRate,
     player : Entity,
     monitor_width : c.int,
@@ -79,7 +82,6 @@ g_ui_prefabs : map[string]sc.Node
 g_gui  : map[string]Entity
 g_bvh : ^Sys_Bvh
 g_texture_indexes : map[string]i32
-g_scene : ^sc.SceneData
 g_animations : map[u32]res.Animation
 
 //--------------------------------------------------------------------------------\\
@@ -112,35 +114,8 @@ game_init_window :: proc(){
 }
 
 @(export)
-game_memory :: proc() -> rawptr{
-    return g
-}
-@(export)
-game_memory_size :: proc() -> int{
-    return size_of(Game_Memory)
-}
-@(export)
-game_hot_reloaded :: proc(mem:rawptr){
-    g = (^Game_Memory)(mem)
-}
-@(export)
-game_force_reload :: proc() -> bool{
-    return is_key_just_pressed(glfw.KEY_F5)
-}
-@(export)
-game_force_restart :: proc() -> bool{
-    return is_key_just_pressed(glfw.KEY_F6)
-}
-
-@(export)
 game_init :: proc() {
-    //----------------------------------------------------------------------------\\
-    // /MEMORY
-    //----------------------------------------------------------------------------\\
     g = new(Game_Memory)
-    context.logger = log.create_console_logger()
-	// init_tracking()
-    // g = new(Game_Memory)
     set_up_game_arenas()
 	g_renderbase.ctx = context
 
@@ -173,9 +148,10 @@ game_init :: proc() {
        	locked            = true,
        	physics_acc_time  = 0,
        	physics_time_step = 1.0 / 60.0,}
-    g_scene = sc.load_new_scene("assets/scenes/BeeKillingsInn.json", g.mem_scene.alloc)
+    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
 	g_bvh = bvh_system_create(g_mem_core.alloc)
 	start_up_raytracer(g_mem_area.alloc)
+
 	gameplay_init()
 
 	// You need to have an ecs ready before you do the stuff below
@@ -231,11 +207,34 @@ game_shutdown :: proc(){
     gameplay_destroy()
     bvh_system_destroy(g_bvh)
     destroy_all_arenas()
-    free(context.logger.data)
     free_all(context.temp_allocator)
 }
 
 @(export)
 game_shutdown_window :: proc(){
-    glfw.SetWindowShouldClose(g_renderbase.window,true)
+    glfw.DestroyWindow(g_renderbase.window)
+}
+
+//--------------------------------------------------------------------------------\\
+// /Hot Reload
+//--------------------------------------------------------------------------------\\
+@(export)
+game_memory :: proc() -> rawptr{
+    return g
+}
+@(export)
+game_memory_size :: proc() -> int{
+    return size_of(Game_Memory)
+}
+@(export)
+game_hot_reloaded :: proc(mem:rawptr){
+    g = (^Game_Memory)(mem)
+}
+@(export)
+game_force_reload :: proc() -> bool{
+    return is_key_just_pressed(glfw.KEY_F5)
+}
+@(export)
+game_force_restart :: proc() -> bool{
+    return is_key_just_pressed(glfw.KEY_F6)
 }

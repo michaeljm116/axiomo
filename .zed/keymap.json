@@ -2,13 +2,13 @@
   {
     "context": "Workspace",
     "bindings": {
-      "f5": ["task::Spawn", { "task_name": "Run" }]
+      "f6": ["task::Spawn", { "task_name": "Run" }]
     }
   },
   {
     "context": "Workspace",
     "bindings": {
-      "f6": ["task::Spawn", { "task_name": "RadDebug" }]
+      "f5": ["task::Spawn", { "task_name": "RadDebug" }]
     }
   },
   {

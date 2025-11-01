@@ -42,6 +42,13 @@ destroy_all_arenas :: proc()
     destroy_memory_arena(&g.mem_frame)
 }
 
+reset_game_arenas :: proc()
+{
+    reset_memory_arena(&g.mem_scene)
+    reset_memory_arena(&g.mem_game)
+    reset_memory_arena(&g.mem_frame)
+}
+
 init_tracking :: proc()
 {
     default_alloc := context.allocator

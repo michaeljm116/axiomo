@@ -106,15 +106,16 @@ destroy_visuals :: proc(visuals : ^Cmp_Visual) {
 }
 
 destroy_level1 :: proc() {
-    destroy_world()
-    for b in g.level.bees {
-        vc := get_component(b.entity, Cmp_Visual)
-        if vc != nil do destroy_visuals(vc)
-        if(entity_exists(b.entity)) do delete_parent_node(b.entity)
-    }
-    for gw in g.level.grid_weapons do delete_parent_node(gw.chest)
+    gameplay_restart()
+    // destroy_world()
+    // for b in g.level.bees {
+    //     vc := get_component(b.entity, Cmp_Visual)
+    //     if vc != nil do destroy_visuals(vc)
+    //     if(entity_exists(b.entity)) do delete_parent_node(b.entity)
+    // }
+    // for gw in g.level.grid_weapons do delete_parent_node(gw.chest)
 
-    assert(entity_exists(g.floor))
+    // assert(entity_exists(g.floor))
 }
 
 //----------------------------------------------------------------------------\\
