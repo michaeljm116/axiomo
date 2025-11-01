@@ -20,8 +20,14 @@
     "show_summary": true
   },
   {
-    "label": "Reload",
+    "label": "RadDebug",
     "command": "./build_hot_reload.bat rad",
+    "args": [],
+    "use_new_terminal": false
+  },
+  {
+    "label": "HotReload",
+    "command": "./build_hot_reload.bat",
     "args": [],
     "use_new_terminal": false
   }

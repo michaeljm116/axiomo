@@ -1,0 +1,20 @@
+[
+  {
+    "context": "Workspace",
+    "bindings": {
+      "f5": ["task::Spawn", { "task_name": "Run" }]
+    }
+  },
+  {
+    "context": "Workspace",
+    "bindings": {
+      "f6": ["task::Spawn", { "task_name": "RadDebug" }]
+    }
+  },
+  {
+    "context": "Workspace",
+    "bindings": {
+      "f7": ["task::Spawn", { "task_name": "HotReload" }]
+    }
+  }
+]

@@ -290,7 +290,7 @@ bvh_system_destroy :: proc(using system: ^Sys_Bvh) {
     if system == nil do return
     embree.rtcReleaseBVH(bvh)
     embree.rtcReleaseDevice(device)
-    free(system)
+    // free(system)
 }
 
 bvh_destroy :: proc(node: BvhNode) {
