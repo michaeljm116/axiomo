@@ -1,4 +1,4 @@
-package main
+package game
 
 import "base:intrinsics"
 import "base:runtime"
@@ -91,20 +91,63 @@ Game_Memory :: struct
 g: ^Game_Memory
 
 
-main :: proc() {
+//--------------------------------------------------------------------------------\\
+// /Game Initializing
+//--------------------------------------------------------------------------------\\
+@(export)
+game_init_window :: proc(){
+    g = new(Game_Memory)
+    glfw.SetErrorCallback(glfw_error_callback)
+    if !glfw.Init() {log.panic("glfw: could not be initialized")}
+
+    glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
+    glfw.WindowHint(glfw.RESIZABLE, glfw.FALSE)
+    glfw.WindowHint(glfw.DECORATED, glfw.TRUE)
+
+    // Get monitor and set to full screen
+    primary_monitor := glfw.GetPrimaryMonitor()
+    mode := glfw.GetVideoMode(primary_monitor)
+    monitor_width = c.int(f32(mode^.width) * .5)
+    monitor_height = c.int(f32(mode^.height) * .5)
+
+    g.rb.window = glfw.CreateWindow(monitor_width, monitor_height, "Bee Killins Inn", nil, nil)
+    glfw.SetFramebufferSizeCallback(g.rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
+        g.rb.framebuffer_resized = true
+    })
+}
+
+@(export)
+game_memory :: proc() -> rawptr{
+    return g
+}
+@(export)
+game_memory_size :: proc() -> int{
+    return size_of(Game_Memory)
+}
+@(export)
+game_hot_reloaded :: proc(mem:rawptr){
+    g = (^Game_Memory)(mem)
+}
+@(export)
+game_force_reload :: proc() -> bool{
+    return is_key_just_pressed(glfw.KEY_F5)
+}
+@(export)
+game_force_restart :: proc() -> bool{
+    return is_key_just_pressed(glfw.KEY_F6)
+}
+
+@(export)
+game_init :: proc() {
     //----------------------------------------------------------------------------\\
     // /MEMORY
     //----------------------------------------------------------------------------\\
     context.logger = log.create_console_logger()
-	defer free(context.logger.data)
-
-	init_tracking()
-    defer detect_memory_leaks()
-    g = new(Game_Memory, mem_track.backing)
-
+	// init_tracking()
+ //    g = new(Game_Memory)
     set_up_all_arenas()
-    defer destroy_all_arenas()
 	g.rb.ctx = context
+
 	//----------------------------------------------------------------------------\\
     // /Asset Loading
     //----------------------------------------------------------------------------\\
@@ -138,8 +181,6 @@ main :: proc() {
 	g.bvh = bvh_system_create(g.mem_core.alloc)
 	start_up_raytracer(g.mem_area.alloc)
 	gameplay_init()
-	defer bvh_system_destroy(g.bvh)
-	defer gameplay_destroy()
 
 	// You need to have an ecs ready before you do the stuff below
 	sys_trans_process_ecs()
@@ -149,33 +190,56 @@ main :: proc() {
 	initialize_raytracer()
 	glfw.PollEvents()
 	g.frame.prev_time = glfw.GetTime()
-	//----------------------------------------------------------------------------\\
-    // /Game Updating
-    //----------------------------------------------------------------------------\\
-	for !glfw.WindowShouldClose(g.rb.window) {
-		start_frame(&image_index)
-		// Poll and free: Move to main loop if overlapping better
-		glfw.PollEvents()
-		g.frame.curr_time = glfw.GetTime()
-		frame_time := g.frame.curr_time - g.frame.prev_time
-		g.frame.prev_time = g.frame.curr_time
-		if frame_time > 0.25 {frame_time = 0.25}
-		g.frame.delta_time = f32(frame_time)
-		g.frame.physics_acc_time += f32(frame_time)
-		for g.frame.physics_acc_time >= f32(g.frame.physics_time_step) {
-			sys_visual_process_ecs(f32(g.frame.physics_time_step))
-			sys_anim_process_ecs(f32(g.frame.physics_time_step))
-			sys_trans_process_ecs()
-			// print_tracking_stats(&g.mem_track)
-			gameplay_update(f32(g.frame.physics_time_step))
-			g.frame.physics_acc_time -= f32(g.frame.physics_time_step)
-		}
-		sys_bvh_process_ecs(g.bvh, g.mem_frame.alloc)
-		update_buffers()
-		update_descriptors()
-		end_frame(&image_index)
-		reset_memory_arena(&g.mem_frame)
-		free_all(context.temp_allocator)
+}
+
+//--------------------------------------------------------------------------------\\
+// /Game Updating
+//--------------------------------------------------------------------------------\\
+@(export)
+game_should_run :: proc() -> bool{
+    if glfw.WindowShouldClose(g.rb.window) do return false
+    return true
+}
+@(export)
+game_update :: proc(){
+	start_frame(&image_index)
+	// Poll and free: Move to main loop if overlapping better
+	glfw.PollEvents()
+	g.frame.curr_time = glfw.GetTime()
+	frame_time := g.frame.curr_time - g.frame.prev_time
+	g.frame.prev_time = g.frame.curr_time
+	if frame_time > 0.25 {frame_time = 0.25}
+	g.frame.delta_time = f32(frame_time)
+	g.frame.physics_acc_time += f32(frame_time)
+	for g.frame.physics_acc_time >= f32(g.frame.physics_time_step) {
+		sys_visual_process_ecs(f32(g.frame.physics_time_step))
+		sys_anim_process_ecs(f32(g.frame.physics_time_step))
+		sys_trans_process_ecs()
+		gameplay_update(f32(g.frame.physics_time_step))
+		g.frame.physics_acc_time -= f32(g.frame.physics_time_step)
 	}
-	cleanup()
+	sys_bvh_process_ecs(g.bvh, g.mem_frame.alloc)
+	update_buffers()
+	update_descriptors()
+	end_frame(&image_index)
+	reset_memory_arena(&g.mem_frame)
+	free_all(context.temp_allocator)
+}
+
+//--------------------------------------------------------------------------------\\
+// /Game Shutdown
+//--------------------------------------------------------------------------------\\
+@(export)
+game_shutdown :: proc(){
+    cleanup()
+    gameplay_destroy()
+    bvh_system_destroy(g.bvh)
+    destroy_all_arenas()
+    free(context.logger.data)
+    free_all(context.temp_allocator)
+}
+
+@(export)
+game_shutdown_window :: proc(){
+    glfw.SetWindowShouldClose(g.rb.window,true)
 }

@@ -1,4 +1,4 @@
-  
+
 
 Hi, I'm making a game called bee killings inn and im going to use the odin programming language. Right now I'm trying to create a rules engine for the game. I've made a paper prototype of the game and im now going to implement it. I'd like data structures for all the weapons, caharcters and actions. here's some notes:  
 
@@ -228,7 +228,7 @@ Key assumptions from your notes:
 - Weapons: Picked up when on tile (as per sample); no equip turn for now, but you can add.
 - Maths: HP (start with e.g., 1 for bee, more for player?), accuracy (roll vs threshold), distances for ranges.
 
-I'll define enums and structs below. Use package main for a top-level file, and import core libs like core:math/rand for shuffling/rolls, core:slice for slices.
+I'll define enums and structs below. Use package  game for a top-level file, and import core libs like core:math/rand for shuffling/rolls, core:slice for slices.
 
 odin
 
@@ -239,7 +239,7 @@ odin
 The rules engine can be a set of procedures in Odin that manage game initialization, turns, and resolution. It's turn-based: Player acts first (as per sample), then bee(s). Use a main loop for simulation, or expose procs for a UI/game loop.
 
 1. **Initialization** (setup proc):
-    
+
     - Create GameState.
     - Alloc grid: state.grid = make([][]Tile, GRID_HEIGHT); for &row in state.grid { row = make([]Tile, GRID_WIDTH) }
     - Place player at (0,2), bee at (6,2) for level 1.
@@ -248,15 +248,15 @@ The rules engine can be a set of procedures in Odin that manage game initializat
     - Shuffle bee_deck.
     - Randomly place weapons: Pick 2 from weapons_pool, place at random empty positions (e.g., (2,0), (4,3)).
     - For multi-bee: Add more bees with different personalities.
-    
+
     Example proc:
-    
+
     odin
-    
+
     `   init_game :: proc() -> GameState {  state: GameState  state.rng = rand.create(123) // Seed for repro  state.weapons_pool = init_weapons()  state.bee_deck = init_bee_deck()  // Alloc grid...  state.player = { .Player, {0,2}, START_PLAYER_HP, 0, { .None,0,0,0,0,0 }, false, .Aggressive, false, false } // Personality irrelevant for player  state.bees[0] = { .Bee, {6,2}, START_BEE_HP, 0, { .None,0,0,0,0,0 }, false, .Aggressive, true, false }  state.num_bees = 1  state.level = 1  // Place weapons randomly  positions := []Vec2i{{2,0}, {4,3}} // Or rand  for pos, i in positions {  w_idx := rand.int31_max(i32(len(state.weapons_pool)), &state.rng)  state.placed_weapons[pos] = state.weapons_pool[w_idx]  state.grid[pos.y][pos.x] = { .Weapon, state.weapons_pool[w_idx] }  }  return state  }       `
-    
+
 2. **Player Turn**:
-    
+
     - Input or simulate PlayerAction (e.g., from UI: Move to new pos, Look to +1 accuracy, Attack target bee).
     - Validate: Can't move off grid, collision check (bees block?).
     - Move: Update position. If on weapon tile, pickup: if tile.type == .Weapon { player.current_weapon = tile.weapon; tile.type = .Empty }
@@ -267,7 +267,7 @@ The rules engine can be a set of procedures in Odin that manage game initializat
     - Dodge: Prep bonus vs bee sting.
     - After action: Check if player wins (all bees dead).
 3. **Bee Turn** (for each bee):
-    
+
     - Draw cards: N based on personality (2 for aggressive, 1 for defensive).
         - drawn := slice.clone(state.bee_deck[:num_draws]); state.bee_deck = state.bee_deck[num_draws:] (or reshuffle if empty? Notes debate mandatory reshuffle).
     - Choose action: Based on personality.
@@ -285,17 +285,17 @@ The rules engine can be a set of procedures in Odin that manage game initializat
     - Multi-bee: All bees act, possibly alert all on hit (per notes).
     - After: Check if player loses (hp <=0).
 4. **Main Game Loop** (in main or engine proc):
-    
+
     odin
-    
+
     `   main :: proc() {  state := init_game()  for state.player.hp > 0 && state.num_bees > 0 {  // Player turn: Simulate or input  player_action := PlayerAction{ .Move, {1,0}, nil } // Example  execute_player_action(&state, player_action)  if all_bees_dead(&state) { advance_level(&state); continue }  // Bee turns  for &bee in state.bees[:state.num_bees] {  execute_bee_turn(&state, &bee)  }  if state.player.hp <= 0 { fmt.println("Player loses!"); break }  state.turn += 1  }  if state.player.hp > 0 { fmt.println("Player wins!") }  }       `
-    
+
     - execute_player_action: Switch on type, update state.
     - execute_bee_turn: Draw, choose, execute.
     - advance_level: Increase num_bees, respawn, more weapons, etc.
     - all_bees_dead: Loop check hp <=0.
 5. **Additional Rules/Flow Notes**:
-    
+
     - Alert: Set on player attack or close (dist<=1?). Resets? (Notes: Make remove looks more frequently).
     - Reshuffle: Optional per notes; if deck empty, state.bee_deck = init_bee_deck() if mandatory.
     - Multiplayer: Add more players as Characters, trading? (Future: Add queue for turns).
@@ -546,7 +546,7 @@ Tasks are actionable, bite-sized steps. I've ordered the entire list by dependen
 32. Test full game: Run visual version, ensure rules engine drives visuals (e.g., bee move updates model position).
 33. Polish: Add hold-ESC timer for exit, ensure no mouse needed (WASD only).
 
-  
+
 
 AutoChooses best modeFastQuick responses (using Grok 3)ExpertThinks hard (using Grok 4)HeavyTeam of experts (using Grok 4 Heavy)
 

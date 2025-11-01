@@ -1,4 +1,4 @@
-package main
+package game
 import math "core:math/linalg"
 import ecs "external/ecs"
 import embree "external/embree"

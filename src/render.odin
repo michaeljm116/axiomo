@@ -1,4 +1,4 @@
-package main
+package game
 import vk "vendor:vulkan"
 import "vendor:glfw"
 import "base:runtime"
@@ -89,27 +89,9 @@ DEVICE_EXTENSIONS := []cstring {
 }
 monitor_width :c.int= 640
 monitor_height :c.int= 480
+
 init_vulkan :: proc()
 {
-    glfw.SetErrorCallback(glfw_error_callback)
-
-        if !glfw.Init() {log.panic("glfw: could not be initialized")}
-
-        glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
-        glfw.WindowHint(glfw.RESIZABLE, glfw.FALSE)
-        glfw.WindowHint(glfw.DECORATED, glfw.TRUE)
-
-        // Get monitor and set to full screen
-        primary_monitor := glfw.GetPrimaryMonitor()
-        mode := glfw.GetVideoMode(primary_monitor)
-        monitor_width = c.int(f32(mode^.width) * .5)
-        monitor_height = c.int(f32(mode^.height) * .5)
-
-        g.rb.window = glfw.CreateWindow(monitor_width, monitor_height, "Bee Killins Inn", nil, nil)
-        glfw.SetFramebufferSizeCallback(g.rb.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
-            g.rb.framebuffer_resized = true
-        })
-
 	//----------------------------------------------------------------------------\\
     // /Create Instance /ci
     //----------------------------------------------------------------------------\\
@@ -120,7 +102,7 @@ init_vulkan :: proc()
 		sType            = .INSTANCE_CREATE_INFO,
 		pApplicationInfo = &vk.ApplicationInfo {
 			sType = .APPLICATION_INFO,
-			pApplicationName = "JetpackJoyrayde",
+			pApplicationName = "BeeKillingsInn",
 			applicationVersion = vk.MAKE_VERSION(0, 0, 1),
 			pEngineName = "Axiomo",
 			engineVersion = vk.MAKE_VERSION(0, 0, 1),
