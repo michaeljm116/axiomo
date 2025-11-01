@@ -229,6 +229,7 @@ game_memory_size :: proc() -> int{
 @(export)
 game_hot_reloaded :: proc(mem:rawptr){
     g = (^Game_Memory)(mem)
+    gameplay_restart()
 }
 @(export)
 game_force_reload :: proc() -> bool{
