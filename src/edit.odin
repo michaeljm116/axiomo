@@ -16,7 +16,6 @@ import b2"vendor:box2d"
 //----------------------------------------------------------------------------\\
 edit_mode: bool = false
 selected_ui_index: int = 0
-ui_keys: [dynamic]string
 // New separate function in gameplay.odin
 // F1 - Enter/Exit Edit Mode
 // Tab - Select Ui Index
@@ -33,7 +32,7 @@ handle_ui_edit_mode :: proc() {
         if edit_mode {
             fmt.println("Entered UI Edit Mode")
             // Make all UIs visible on enter
-            for key in ui_keys {
+            for key in g.ui_keys {
                 ent := g.gui[key]
                 gc := get_component(ent, Cmp_Gui)
                 if gc != nil {
@@ -45,7 +44,7 @@ handle_ui_edit_mode :: proc() {
         } else {
             fmt.println("Exited UI Edit Mode")
             // Restore defaults on exit
-            for key in ui_keys {
+            for key in g.ui_keys {
                 ent := g.gui[key]
                 gc := get_component(ent, Cmp_Gui)
                 if gc != nil {
@@ -63,14 +62,14 @@ handle_ui_edit_mode :: proc() {
 
     // Cycle through UIs
     if is_key_just_pressed(glfw.KEY_TAB) {
-        selected_ui_index = (selected_ui_index + 1) % len(ui_keys)
-        selected_key := ui_keys[selected_ui_index]
+        selected_ui_index = (selected_ui_index + 1) % len(g.ui_keys)
+        selected_key := g.ui_keys[selected_ui_index]
         fmt.printf("Selected UI: %s\n", selected_key)
     }
 
     // Tweak the selected UI
-    if len(ui_keys) > 0 {
-        selected_key := ui_keys[selected_ui_index]
+    if len(g.ui_keys) > 0 {
+        selected_key := g.ui_keys[selected_ui_index]
         selected_ent := g.gui[selected_key]
         tweak_game_UI(selected_ent)
 
@@ -85,8 +84,8 @@ handle_ui_edit_mode :: proc() {
 
     // Save selected UI to JSON (CTRL+S)
     if is_key_pressed(glfw.KEY_LEFT_CONTROL) && is_key_just_pressed(glfw.KEY_INSERT) {
-        if len(ui_keys) > 0 {
-            selected_key := ui_keys[selected_ui_index]
+        if len(g.ui_keys) > 0 {
+            selected_key := g.ui_keys[selected_ui_index]
             selected_ent := g.gui[selected_key]
             filename := fmt.tprintf("assets/prefabs/ui/%s.json", selected_key)
             save_ui_prefab(selected_ent, filename)

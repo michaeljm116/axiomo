@@ -13,6 +13,7 @@ MemoryArena :: struct
     name : string
 }
 
+mem_track: mem.Tracking_Allocator       // To track the memory leaks
 // 128 MB totals
 set_up_all_arenas :: proc()
 {
@@ -40,19 +41,19 @@ destroy_all_arenas :: proc()
 init_tracking :: proc()
 {
     default_alloc := context.allocator
-    mem.tracking_allocator_init(&g.mem_track, default_alloc)
-    context.allocator = mem.tracking_allocator(&g.mem_track)
+    mem.tracking_allocator_init(&mem_track, default_alloc)
+    context.allocator = mem.tracking_allocator(&mem_track)
 }
 
 detect_memory_leaks :: proc() {
 	fmt.eprintf("\n")
-	for _, entry in g.mem_track.allocation_map {
+	for _, entry in mem_track.allocation_map {
 		fmt.eprintf("- %v leaked %v bytes\n", entry.location, entry.size)
 	}
-	for entry in g.mem_track.bad_free_array {
+	for entry in mem_track.bad_free_array {
 		fmt.eprintf("- %v bad free\n", entry.location)
 	}
-	mem.tracking_allocator_destroy(&g.mem_track)
+	mem.tracking_allocator_destroy(&mem_track)
 	fmt.eprintf("\n")
 	free_all(context.temp_allocator)
 }

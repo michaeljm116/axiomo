@@ -43,7 +43,6 @@ Game_Memory :: struct
     mem_scene : MemoryArena,                  // This holds the scene data from the json, should be reset upon scene change
     mem_game : MemoryArena,                   // This holds game data, reset upon restarting of a game, ecs goes here
     mem_frame : MemoryArena,                  // Mostly for BVH or anything that exist for a single frame
-    mem_track: mem.Tracking_Allocator,       // To track the memory leaks
 
     rb : RenderBase,
     rt : ComputeRaytracer,
@@ -72,8 +71,9 @@ Game_Memory :: struct
     // BKS
     state : GameState,
     current_bee: int,
-    level :Level,
+    level : Level,
     dice :  [2]Dice,
+    ui_keys: [dynamic]string,
 
     bee_selection : int,
     bee_is_near : bool,
@@ -92,35 +92,23 @@ g: ^Game_Memory
 
 
 main :: proc() {
-    windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
     //----------------------------------------------------------------------------\\
     // /MEMORY
     //----------------------------------------------------------------------------\\
-    g = new(Game_Memory)
     context.logger = log.create_console_logger()
 	defer free(context.logger.data)
-    init_tracking()
-    // In init, after setting context.allocator
+
+	init_tracking()
     defer detect_memory_leaks()
+    g = new(Game_Memory, mem_track.backing)
 
     set_up_all_arenas()
     defer destroy_all_arenas()
 	g.rb.ctx = context
-
-	g.frame = FrameRate {
-    	prev_time         = glfw.GetTime(),
-    	curr_time         = 0,
-    	wait_time         = 0,
-    	delta_time        = 0,
-    	target            = 120.0,
-    	target_dt         = (1.0 / 120.0),
-    	locked            = true,
-    	physics_acc_time  = 0,
-    	physics_time_step = 1.0 / 60.0,
-    }
 	//----------------------------------------------------------------------------\\
     // /Asset Loading
     //----------------------------------------------------------------------------\\
+    windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
 	g.materials = make([dynamic]res.Material, 0, g.mem_area.alloc)
 	g.models = make([dynamic]res.Model, 0, g.mem_area.alloc)
 	g.animations = make(map[u32]res.Animation, 0, g.mem_area.alloc)
@@ -136,7 +124,17 @@ main :: proc() {
 	//----------------------------------------------------------------------------\\
     // /Game Starting
     //----------------------------------------------------------------------------\\
-	g.scene = sc.load_new_scene("assets/scenes/BeeKillingsInn.json", g.mem_scene.alloc)
+    g.frame = FrameRate {
+       	prev_time         = glfw.GetTime(),
+       	curr_time         = 0,
+       	wait_time         = 0,
+       	delta_time        = 0,
+       	target            = 120.0,
+       	target_dt         = (1.0 / 120.0),
+       	locked            = true,
+       	physics_acc_time  = 0,
+       	physics_time_step = 1.0 / 60.0,}
+    g.scene = sc.load_new_scene("assets/scenes/BeeKillingsInn.json", g.mem_scene.alloc)
 	g.bvh = bvh_system_create(g.mem_core.alloc)
 	start_up_raytracer(g.mem_area.alloc)
 	gameplay_init()
@@ -178,6 +176,8 @@ main :: proc() {
 		end_frame(&image_index)
 		reset_memory_arena(&g.mem_frame)
 		free_all(context.temp_allocator)
+		fmt.print("Frame Time: ", frame_time, "\n")
+		for key, val in g.gui do fmt.println(key, val)
 	}
 	cleanup()
 }

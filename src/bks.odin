@@ -34,6 +34,7 @@ Level :: struct
 prestart :: proc()
 {
     g.state = .Start
+    g.app_state = .TitleScreen
     g.current_bee = 0
 
     // g_saftey_bee = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
@@ -1135,7 +1136,7 @@ get_top_of_entity :: proc(e : Entity) -> f32
 // /UI
 //----------------------------------------------------------------------------\\
 init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
-    ui_keys = make([dynamic]string, 0, len(g.ui_prefabs), alloc)
+    g.ui_keys = make([dynamic]string, 0, len(g.ui_prefabs), alloc)
     g.gui = make(map[string]Entity, alloc)
     for key,ui in g.ui_prefabs{
         cmp := map_gui(ui.gui)
@@ -1144,7 +1145,7 @@ init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
         e := add_ui(cmp, key)
 
         game_ui[key] = e
-        append(&ui_keys, key)
+        append(&g.ui_keys, key)
     }
 }
 

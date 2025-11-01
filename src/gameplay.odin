@@ -10,8 +10,6 @@ import "core:c"
 import "vendor:glfw"
 import b2"vendor:box2d"
 
-curr_phase : u8 = 0
-
 // Input state tracking
 InputState :: struct {
     keys_pressed: [glfw.KEY_LAST + 1]bool,
@@ -100,13 +98,12 @@ gameplay_update :: proc(delta_time: f32) {
     if !entity_exists(g.camera_entity) do find_camera_entity()
     if !entity_exists(g.player) do find_player_entity()
 
-    handle_ui_edit_mode()
-    // handle_chest_mode()
-    handle_player_edit_mode()
-    handle_destroy_mode()
-    if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode{
+    // handle_ui_edit_mode()
+    // handle_player_edit_mode()
+    // handle_destroy_mode()
+    // if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode{
        app_run(delta_time, &g.app_state)
-    }
+    // }
     // Clear just pressed/released states
     for i in 0..<len(g.input.keys_just_pressed) {
         g.input.keys_just_pressed[i] = false
