@@ -29,11 +29,10 @@ SHADER_FRAG :: #load("../assets/shaders/texture.frag.spv")
 
 // Enables Vulkan debug logging and validation layers.
 ENABLE_VALIDATION_LAYERS :: #config(ENABLE_VALIDATION_LAYERS, ODIN_DEBUG)
-dbg_messenger: vk.DebugUtilsMessengerEXT
-current_frame: int
 MAX_FRAMES_IN_FLIGHT :: 1
 MAX_SWAPCHAIN_IMAGES := 3
 RenderBase :: struct{
+    dbg_messenger: vk.DebugUtilsMessengerEXT,
 	ctx: runtime.Context,
 	window: glfw.WindowHandle,
 
@@ -78,6 +77,12 @@ RenderBase :: struct{
 	depth_view: vk.ImageView,
 
 	submit_info: vk.SubmitInfo,
+
+	monitor_width :c.int,
+    monitor_height :c.int,
+
+	current_frame: int,
+	image_index: u32,
 }
 
 // KHR_PORTABILITY_SUBSET_EXTENSION_NAME :: "VK_KHR_portability_subset"
@@ -86,9 +91,6 @@ DEVICE_EXTENSIONS := []cstring {
 	vk.KHR_SWAPCHAIN_EXTENSION_NAME,
 	// KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
 }
-monitor_width :c.int= 640
-monitor_height :c.int= 480
-
 init_vulkan :: proc()
 {
 	//----------------------------------------------------------------------------\\
@@ -155,7 +157,7 @@ init_vulkan :: proc()
 	vk.load_proc_addresses_instance(g_renderbase.instance)
 
 	when ENABLE_VALIDATION_LAYERS {
-		must(vk.CreateDebugUtilsMessengerEXT(g_renderbase.instance, &dbg_create_info, nil, &dbg_messenger))
+		must(vk.CreateDebugUtilsMessengerEXT(g_renderbase.instance, &dbg_create_info, nil, &g_renderbase.dbg_messenger))
 	}
 
 	//----------------------------------------------------------------------------\\
@@ -358,7 +360,7 @@ init_vulkan :: proc()
 		}
 	}
 
-	current_frame = 0
+	g_renderbase.current_frame = 0
 	//update_vulkan()
 }
 
@@ -1224,7 +1226,6 @@ texture_update_descriptor :: proc(texture: ^Texture) {
     }
 }
 
-image_index: u32
 
 //----------------------------------------------------------------------------\\
 // /TFONT
@@ -1254,7 +1255,6 @@ Font :: struct {
         offset: vec2f,
     },
 }
-g_font: Font
 
 // Renders a string to an RGBA bitmap (returns buffer, width, height)
 render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32) {
@@ -1265,8 +1265,8 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32) {
     for char in text {
         advance_width, left_side_bearing: i32
         x0, y0, x1, y1: i32
-        sttt.GetCodepointHMetrics(&g_font.info, char, &advance_width, &left_side_bearing)
-        sttt.GetCodepointBitmapBox(&g_font.info, char, scale, scale, &x0, &y0, &x1, &y1)
+        sttt.GetCodepointHMetrics(&g_raytracer.font.info, char, &advance_width, &left_side_bearing)
+        sttt.GetCodepointBitmapBox(&g_raytracer.font.info, char, scale, scale, &x0, &y0, &x1, &y1)
 
         glyph_width := f32(x1 - x0)
         glyph_height := f32(y1 - y0)
@@ -1276,7 +1276,7 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32) {
     }
 
     ascent, descent, line_gap: i32
-    sttt.GetFontVMetrics(&g_font.info, &ascent, &descent, &line_gap)
+    sttt.GetFontVMetrics(&g_raytracer.font.info, &ascent, &descent, &line_gap)
     baseline = max(baseline, f32(ascent) * scale)
 
     bitmap_width := i32(math.ceil(total_width)) + 10  // Padding
@@ -1290,14 +1290,14 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32) {
     for char in text {
         if char == ' ' {
             advance_width: i32
-            sttt.GetCodepointHMetrics(&g_font.info, char, &advance_width, nil)
+            sttt.GetCodepointHMetrics(&g_raytracer.font.info, char, &advance_width, nil)
             x_pos += f32(advance_width) * scale
             continue
         }
 
         // Render glyph to temp alpha buffer
         glyph_w, glyph_h, glyph_xoff, glyph_yoff: i32
-        glyph_bitmap := sttt.GetCodepointBitmap(&g_font.info, scale, scale, char, &glyph_w, &glyph_h, &glyph_xoff, &glyph_yoff)
+        glyph_bitmap := sttt.GetCodepointBitmap(&g_raytracer.font.info, scale, scale, char, &glyph_w, &glyph_h, &glyph_xoff, &glyph_yoff)
         defer sttt.FreeBitmap(glyph_bitmap, nil)  // STB cleanup
 
         // Blit alpha to RGBA (white text; adjust color if needed)
@@ -1320,7 +1320,7 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32) {
 
         // Advance
         advance_width: i32
-        sttt.GetCodepointHMetrics(&g_font.info, char, &advance_width, nil)
+        sttt.GetCodepointHMetrics(&g_raytracer.font.info, char, &advance_width, nil)
         x_pos += f32(advance_width) * scale
     }
 
@@ -1426,8 +1426,8 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
         raw_data(&baked_chars)
     )
 
-    g_font.info = info
-    g_font.baked_chars = baked_chars
+    g_raytracer.font.info = info
+    g_raytracer.font.baked_chars = baked_chars
 
     // Create Vulkan texture from bitmap (RGBA, assuming 1-channel bitmap -> expand to RGBA)
     rgba_data := make([]byte, bitmap_width * bitmap_height * 4, context.temp_allocator)
@@ -1440,27 +1440,27 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     }
 
     // Create texture (adapt your texture_create_device)
-    g_font.atlas_texture = Texture{path = font_path}  // Reuse path for logging
-    g_font.atlas_texture.width = u32(bitmap_width)
-    g_font.atlas_texture.height = u32(bitmap_height)
+    g_raytracer.font.atlas_texture = Texture{path = font_path}  // Reuse path for logging
+    g_raytracer.font.atlas_texture.width = u32(bitmap_width)
+    g_raytracer.font.atlas_texture.height = u32(bitmap_height)
     // Manual create: staging buffer, copy to image, etc. (copy from texture_create_device)
     // ... (use create_image, copy_buffer_to_image, etc., with .R8G8B8A8_UNORM)
     // Set sampler to .LINEAR for smooth scaling
-    // Call texture_update_descriptor(&g_font.atlas_texture)
+    // Call texture_update_descriptor(&g_raytracer.font.atlas_texture)
     //
-    if(texture_create(&g_font.atlas_texture, raw_data(rgba_data))){
-        append(&g_raytracer.bindless_textures, g_font.atlas_texture)
+    if(texture_create(&g_raytracer.font.atlas_texture, raw_data(rgba_data))){
+        append(&g_raytracer.bindless_textures, g_raytracer.font.atlas_texture)
         g_texture_indexes["Deutsch.ttf"] = i32(len(g_texture_indexes))
     }
-    texture_update_descriptor(&g_font.atlas_texture)
+    texture_update_descriptor(&g_raytracer.font.atlas_texture)
 
     // Store per-char UVs and metrics
-    g_font.scale = sttt.ScaleForPixelHeight(&info, pixel_height)
-    g_font.atlas_width, g_font.atlas_height = bitmap_width, bitmap_height
+    g_raytracer.font.scale = sttt.ScaleForPixelHeight(&info, pixel_height)
+    g_raytracer.font.atlas_width, g_raytracer.font.atlas_height = bitmap_width, bitmap_height
     for i in 0..<len(baked_chars) {
         c := baked_chars[i]
         char := rune(char_range[0] + rune(i))
-        g_font.char_data[char] = {
+        g_raytracer.font.char_data[char] = {
             uv_min = {f32(c.x0)/f32(bitmap_width), f32(c.y0)/f32(bitmap_height)},
             uv_ext = {f32(c.x1-c.x0)/f32(bitmap_width), f32(c.y1-c.y0)/f32(bitmap_height)},
             advance = c.xadvance,
@@ -1472,7 +1472,7 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
 destroy_vulkan :: proc()
 {
     // Final cleanup after device is destroyed - only instance-level resources
-    vk.DestroyDebugUtilsMessengerEXT(g_renderbase.instance, dbg_messenger, nil)
+    vk.DestroyDebugUtilsMessengerEXT(g_renderbase.instance, g_renderbase.dbg_messenger, nil)
     vk.DestroyInstance(g_renderbase.instance, nil)
     glfw.DestroyWindow(g_renderbase.window)
     glfw.Terminate()
@@ -1574,6 +1574,8 @@ ComputeRaytracer :: struct {
 
     prepared: bool,
     update_flags: UpdateFlags,
+    font: Font,
+    texture_paths : [1]string
 }
 
 //----------------------------------------------------------------------------\\
@@ -1583,7 +1585,7 @@ initialize_raytracer :: proc()
 {
     prepare_storage_buffers()
     create_uniform_buffers()
-    prepare_texture_target(&g_raytracer.compute_texture, u32(monitor_width), u32(monitor_height), .R8G8B8A8_UNORM)
+    prepare_texture_target(&g_raytracer.compute_texture, u32(g_renderbase.monitor_width), u32(g_renderbase.monitor_height), .R8G8B8A8_UNORM)
     create_descriptor_set_layout() // multiple
     create_graphics_pipeline() // multiple
     create_descriptor_pool()
@@ -2368,6 +2370,7 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
 //----------------------------------------------------------------------------\\
 start_up_raytracer :: proc(alloc: mem.Allocator)
 {
+    g_raytracer.texture_paths[0] =  "assets/textures/numbers.png"
    map_models_to_gpu(alloc)
    map_materials_to_gpu(alloc)
    // bake_font_atlas("assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
@@ -2380,7 +2383,6 @@ set_camera :: proc()
     g_raytracer.compute.ubo.rotM = mat4f(0)
     g_raytracer.compute.ubo.rand = rand.int31()
 }
-
 
 map_materials_to_gpu :: proc(alloc : mem.Allocator)
 {
@@ -2466,14 +2468,9 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     // Similarly for gui_textures if needed, but since it's fixed array, perhaps initialize with a default texture or handle differently
     // For now, assume gui_textures are critical, so check in loop
     for &t, i in g_raytracer.gui_textures {
-        t = Texture{path = texture_paths[i]}
-        if !texture_create(&t) do log.errorf("Failed to create GUI texture for path: %s", texture_paths[i])
+        t = Texture{path = g_raytracer.texture_paths[i]}
+        if !texture_create(&t) do log.errorf("Failed to create GUI texture for path: %s", g_raytracer.texture_paths[i])
     }
-}
-
-
-texture_paths := [1]string{
-    "assets/textures/numbers.png",
 }
 
 init_staging_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int )
@@ -2758,9 +2755,9 @@ update_text :: proc(tc: ^Cmp_Text) {
 
     pos := tc.min
     for char in tc.text {
-        if char not_in g_font.char_data { continue }
+        if char not_in g_raytracer.font.char_data { continue }
 
-        data := g_font.char_data[char]
+        data := g_raytracer.font.char_data[char]
         gui := gpu.Gui {
             min = pos + data.offset * tc.font_scale,
             extents = data.uv_ext * tc.font_scale,
@@ -2873,14 +2870,14 @@ add_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
 fence_timeout_ns :: 10_000_000_000 // 1 second
 start_frame :: proc(image_index: ^u32) {
     // Wait/reset graphics fence for prior frame sync (enables multi-frame overlap)
-    must(vk.WaitForFences(g_renderbase.device, 1, &g_renderbase.in_flight_fences[current_frame], true, fence_timeout_ns))
-    must(vk.ResetFences(g_renderbase.device, 1, &g_renderbase.in_flight_fences[current_frame]))
+    must(vk.WaitForFences(g_renderbase.device, 1, &g_renderbase.in_flight_fences[g_renderbase.current_frame], true, fence_timeout_ns))
+    must(vk.ResetFences(g_renderbase.device, 1, &g_renderbase.in_flight_fences[g_renderbase.current_frame]))
 
     result := vk.AcquireNextImageKHR(
         g_renderbase.device,
         g_renderbase.swapchain,
         max(u64),
-        g_renderbase.image_available_semaphores[current_frame],
+        g_renderbase.image_available_semaphores[g_renderbase.current_frame],
         {},
         image_index
     )
@@ -2900,19 +2897,19 @@ start_frame :: proc(image_index: ^u32) {
         commandBufferCount = 1,
         pCommandBuffers = &g_renderbase.command_buffers[image_index^],
         waitSemaphoreCount = 1,
-        pWaitSemaphores = &g_renderbase.image_available_semaphores[current_frame],
+        pWaitSemaphores = &g_renderbase.image_available_semaphores[g_renderbase.current_frame],
         pWaitDstStageMask = &wait_stages,
         signalSemaphoreCount = 1,
-        pSignalSemaphores = &g_renderbase.render_finished_semaphores[current_frame]
+        pSignalSemaphores = &g_renderbase.render_finished_semaphores[g_renderbase.current_frame]
     }
-    must(vk.QueueSubmit(g_renderbase.graphics_queue, 1, &g_renderbase.submit_info, g_renderbase.in_flight_fences[current_frame]))  // Fence for graphics
+    must(vk.QueueSubmit(g_renderbase.graphics_queue, 1, &g_renderbase.submit_info, g_renderbase.in_flight_fences[g_renderbase.current_frame]))  // Fence for graphics
 }
 
 end_frame :: proc(image_index: ^u32) {
     present_info := vk.PresentInfoKHR{
         sType = .PRESENT_INFO_KHR,
         waitSemaphoreCount = 1,  // Fixed to 1 (matches signal)
-        pWaitSemaphores = &g_renderbase.render_finished_semaphores[current_frame],
+        pWaitSemaphores = &g_renderbase.render_finished_semaphores[g_renderbase.current_frame],
         swapchainCount = 1,
         pSwapchains = &g_renderbase.swapchain,
         pImageIndices = image_index,
@@ -2942,7 +2939,7 @@ end_frame :: proc(image_index: ^u32) {
     }
     must(vk.QueueSubmit(g_renderbase.compute_queue, 1, &compute_submit_info, g_raytracer.compute.fence))  // Dedicated fence
 
-    current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT
+    g_renderbase.current_frame = (g_renderbase.current_frame + 1) % MAX_FRAMES_IN_FLIGHT
 }
 
 added_entity :: proc(e: Entity) {
@@ -3191,8 +3188,8 @@ cleanup_vulkan :: proc() {
     texture_destroy(&g_raytracer.compute_texture, g_renderbase.device, &g_renderbase.vma_allocator)
     for &tex in g_raytracer.gui_textures do texture_destroy(&tex, g_renderbase.device, &g_renderbase.vma_allocator)
     for &tex in g_raytracer.bindless_textures do texture_destroy(&tex, g_renderbase.device, &g_renderbase.vma_allocator)
-    texture_destroy(&g_font.atlas_texture, g_renderbase.device, &g_renderbase.vma_allocator)
-    delete(g_font.char_data)
+    texture_destroy(&g_raytracer.font.atlas_texture, g_renderbase.device, &g_renderbase.vma_allocator)
+    delete(g_raytracer.font.char_data)
 
     // Destroy all dynamic objects
     delete(g_raytracer.primitives)

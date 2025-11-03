@@ -31,8 +31,6 @@ Game_Memory :: struct
     scene : ^sc.SceneData,
     frame : FrameRate,
     player : Entity,
-    monitor_width : c.int,
-    monitor_height : c.int,
 
     // gameplay
     input: InputState,
@@ -102,10 +100,9 @@ game_init_window :: proc(){
     // Get monitor and set to full screen
     primary_monitor := glfw.GetPrimaryMonitor()
     mode := glfw.GetVideoMode(primary_monitor)
-    monitor_width = c.int(f32(mode^.width) * .5)
-    monitor_height = c.int(f32(mode^.height) * .5)
-
-    g_renderbase.window = glfw.CreateWindow(monitor_width, monitor_height, "Bee Killins Inn", nil, nil)
+    g_renderbase.monitor_width = c.int(f64(mode.width) * 0.5)
+    g_renderbase.monitor_height =  c.int(f64(mode.height) * 0.5)
+    g_renderbase.window = glfw.CreateWindow(g_renderbase.monitor_width, g_renderbase.monitor_height, "Bee Killins Inn", nil, nil)
     glfw.SetFramebufferSizeCallback(g_renderbase.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
         g_renderbase.framebuffer_resized = true
     })
@@ -174,7 +171,7 @@ game_should_run :: proc() -> bool{
 }
 @(export)
 game_update :: proc(){
-	start_frame(&image_index)
+	start_frame(&g_renderbase.image_index)
 	// Poll and free: Move to main loop if overlapping better
 	glfw.PollEvents()
 	g.frame.curr_time = glfw.GetTime()
@@ -193,7 +190,7 @@ game_update :: proc(){
 	sys_bvh_process_ecs(g_bvh, g.mem_frame.alloc)
 	update_buffers()
 	update_descriptors()
-	end_frame(&image_index)
+	end_frame(&g_renderbase.image_index)
 	reset_memory_arena(&g.mem_frame)
 	free_all(context.temp_allocator)
 }

@@ -1,20 +1,38 @@
+// Zed keymap
+//
+// For information on binding keys, see the Zed
+// documentation: https://zed.dev/docs/key-bindings
+//
+// To see the default key bindings run `zed: open default keymap`
+// from the command palette.
 [
   {
-    "context": "Workspace",
+      "context": "Workspace",
+      "bindings": {
+        "f6": ["task::Spawn", { "task_name": "Run" }]
+      }
+    },
+    {
+      "context": "Workspace",
+      "bindings": {
+        "f5": ["task::Spawn", { "task_name": "RadDebug" }]
+      }
+    },
+    {
+      "context": "Workspace",
+      "bindings": {
+        "f7": ["task::Spawn", { "task_name": "HotReload" }]
+      }
+    },
+  {
+    "context": "Editor && vim_mode == insert",
     "bindings": {
-      "f6": ["task::Spawn", { "task_name": "Run" }]
+      // "j k": "vim::NormalBefore"
     }
   },
   {
-    "context": "Workspace",
     "bindings": {
-      "f5": ["task::Spawn", { "task_name": "RadDebug" }]
-    }
-  },
-  {
-    "context": "Workspace",
-    "bindings": {
-      "f7": ["task::Spawn", { "task_name": "HotReload" }]
+      "ctrl-shift-w": null
     }
   }
 ]

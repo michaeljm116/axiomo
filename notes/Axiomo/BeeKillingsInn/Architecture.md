@@ -6,4 +6,28 @@ So you need something that like... starts...  with like....
 * Room Scenes
 * Overworld scenes
 * Maybe make a world of like a few ... lol doors and be able to go inside blah blah
-* *
+*
+
+
+# Ultimately:
+* right now all the game is in the single bks.odin file
+* But this couples the begin,middle,end of the game aka the menu system with the battle system
+* It's all a single game
+* what you want is a system that's decoupled from all this mess
+* also should there be a separation between axiomo and something else?
+* that's a goal but ultimately... not neccesary
+* but making everything like... axiom.entity... axiom.gui etc... makes things clear where any coupling could occur
+* blhe regardless... there should be 3 secitons now
+* ## 3 SECTIONS: 
+* #### MAIN
+	* Menus
+* #### OVERWORLD
+	* Freeflowing wasd movement
+	* level selection
+	* talking to npcs etc
+	* goals, journals, maps
+* #### BATTLE
+	* loading the level
+	* playing the battle 
+	* BKS basically
+* 
