@@ -1,0 +1,116 @@
+{
+  "Node": [
+    {
+      "Node": [
+        {
+          "Material": {
+            "_ID": 0
+          },
+          "Object": {
+            "_ID": 1222687436
+          },
+          "Transform": {
+            "Position": {
+              "_x": 0.5,
+              "_y": 0.8743003010749817,
+              "_z": 0.0
+            },
+            "Rotation": {
+              "_w": 1.0,
+              "_x": 0.0,
+              "_y": 0.0,
+              "_z": 0.0
+            },
+            "Scale": {
+              "_x": 0.4199957549571991,
+              "_y": 0.8743003010749817,
+              "_z": 0.11694610118865967
+            }
+          },
+          "_Dynamic": false,
+          "_Name": "DoorBody",
+          "_eFlags": 33863,
+          "_gFlags": 0,
+          "_hasChildren": false
+        }
+      ],
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 1.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "Door",
+      "_eFlags": 1059,
+      "_gFlags": 0,
+      "_hasChildren": true
+    },
+    {
+      "Material": {
+        "_ID": 0
+      },
+      "Object": {
+        "_ID": 1222687435
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.5,
+          "_y": 1.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 0.5584945678710938,
+          "_y": 1.0,
+          "_z": 0.09893783926963806
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "DoorFrame",
+      "_eFlags": 33863,
+      "_gFlags": 0,
+      "_hasChildren": false
+    }
+  ],
+  "Transform": {
+    "Position": {
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Rotation": {
+      "_w": 1.0,
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Scale": {
+      "_x": 1.0,
+      "_y": 1.0,
+      "_z": 1.0
+    }
+  },
+  "_Dynamic": false,
+  "_Name": "DoorFull",
+  "_eFlags": 3,
+  "_gFlags": 0,
+  "_hasChildren": true
+}

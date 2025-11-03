@@ -1,0 +1,9 @@
+So you need something that like... starts...  with like....
+* Title menu etc...
+* Game Overworld....
+* If in game then do this
+* so there'd be different kind of scenes
+* Room Scenes
+* Overworld scenes
+* Maybe make a world of like a few ... lol doors and be able to go inside blah blah
+* *

@@ -11,12 +11,14 @@
             "id": "b47c04f3ca1234e3",
             "type": "leaf",
             "state": {
-              "type": "excalidraw",
+              "type": "markdown",
               "state": {
-                "file": "Excalidraw/PlayersTUrn.excalidraw.md"
+                "file": "BeeKillingsInn/Architecture.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "excalidraw-icon",
-              "title": "PlayersTUrn.excalidraw"
+              "icon": "lucide-file",
+              "title": "Architecture"
             }
           },
           {
@@ -59,8 +61,7 @@
               "title": "Arenas"
             }
           }
-        ],
-        "currentTab": 3
+        ]
       }
     ],
     "direction": "vertical"
@@ -210,13 +211,14 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "811319f77a3ed2f1",
+  "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
+    "Excalidraw/PlayersTUrn.excalidraw.md",
+    "BeeKillingsInn/Architecture.md",
     "Excalidraw/Arenas.md",
     "Excalidraw/AnimationStates.excalidraw.md",
     "Excalidraw/ArenasDark.md",
     "BeeKillingsInn/Megastructification.md",
-    "Excalidraw/PlayersTUrn.excalidraw.md",
     "Excalidraw/Drawing 2025-10-25 22.22.29.excalidraw.md",
     "Excalidraw/Drawing 2025-10-25 22.22.27.excalidraw.md",
     "Excalidraw/Drawing 2025-10-08 18.07.41.excalidraw.md",
@@ -240,7 +242,6 @@
     "Photos/BKS_Title.png",
     "BeeKillingsInn/Bee Ideas.md",
     "BeeKillingsInn/Art Inspo.md",
-    "BeeKillingsInn/bg.md",
     "Photos/533a3e3f-448d-4c5f-a028-29d6aa9a81bf.png",
     "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
     "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",

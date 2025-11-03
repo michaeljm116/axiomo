@@ -4,7 +4,7 @@
 * which you can make into a map
 * and reference except hmmm do you load prefabs already?
 * im guessing there'a  reference prefab and then an actual prefab
-* right now there's  g_prefabs which is a map of scene nodes
+* right now there's  g.prefabs which is a map of scene nodes
 * lets check create texture
 # Deck
 * So quesiton is how do i handle the "deck" which tbh shouldn't real ly even bee a deck AHAH GET IT BEE A DECK? but real talk it shouldn't even be a deck but an editable group of statistics but for nwo its a deck of cards
@@ -77,7 +77,7 @@
 		* So the tile can have the type
 		* so there is both a tile type and na
 * so then what will there be like... a level with ...
-	* yeah there should be a level struct 
+	* yeah there should be a level struct
 	* level struct will have all the bee's and the. ..
 	* basically everything?
 	* scene?
@@ -92,26 +92,26 @@
 	  ``` Odin
 	  Scene :: struct
 	  {
-		  bees : [dynamic]Bee 
+		  bees : [dynamic]Bee
 		  players : [dynamic]Player
 		  weapons : [dyanmic]Weapon
 		  grid : [][]Tile
 	  }
 	  ```
 		* So the ultimate question you're STILL ASKING IS.... WHAT IS THE WEAPONS FLOW?
-		* Tile Weapons -> Rand weapon from -> weapondb from -> scene.weapons? 
+		* Tile Weapons -> Rand weapon from -> weapondb from -> scene.weapons?
 			* if so then no pos on weapon
 			*  but then the question is where do they go tile wise? shouldn't the weapon db tell you?
 			* the tile! seeing as how you'll have walls in teh scenes... the tile should be in the scene itself
 			* foro now just create a temp scene and yeah eventually it'll be dynamic but yeha the grid alone has the scene stuff
-			* 
+			*
 * ### Weapon Procs?
 	* So each weapon will have their own special features
 	* should a weapon carry its.... no, data oriented
 	* each weapon should have its own proc but... it should be more like each proc will be ref a weapon
 	* and stats etc.. idk but for now just do weap procs
 	* okay sooo lets just do it individually
-	* 
+	*
 * ### Weapons
 	* Hands : Acc: 10/12, Dmg, Half-Air, Full Ground, Range = on top
 	* Swatter: Acc: 8/12, Dmg, Full-air, full Ground, Range = 1
@@ -131,7 +131,7 @@
 		* TimeToDie
 		* Stunned
 		* Angered?
-* Overall Proc = 
+* Overall Proc =
 	* Params : Player, Bee, Weapon?
 	* Check Range (Player, Bee)
 	* CheckFlyingOrGround(Bee)
@@ -146,7 +146,7 @@
 		* or... ok the architecture of this is super complicated, maybe do l8r
 	* Oh yeah... ECS.... u have that lol
 		* On player select ability select the bee and then pass the bee a dodge component
-		* on bee attack if dodge component then do dodgey 
+		* on bee attack if dodge component then do dodgey
 		* ugh so simple so easy so beautiful
 		* i think its time to merge with engine
 	* okay so now you have ecs access....
@@ -164,7 +164,7 @@
 * so there is a bee actiona nd a player action state
 	* each can have a .Animation state too
 	* also give each a flag of the thing to animate
-	* like movement 
+	* like movement
 	* so like if a player is just like walk then yeah palyer animation flags and player targets
 	* targets = vec2
 	* [[AnimationStates.excalidraw]]
@@ -173,7 +173,7 @@
 * So question is how to make development not be slow for art assets
 * right now you hardcode every texture into the thing
 * materials draw from the index of where that hardcoded value is
-	* ultimately, the material should just find the texture name and if there's a keyvalue pair then match it up accordingly 
+	* ultimately, the material should just find the texture name and if there's a keyvalue pair then match it up accordingly
 	* its done once at startup so speed isn't that much of a concern
 	* oh another issue is there's texture name and theirs filename i guess it doesnt' matter ulitmately
 	* okay so question is how to do this in both c++ and odin
@@ -198,4 +198,4 @@
 		* you dont care about the order just a ref to it in the gpu
 		* so first do std set then shift to std vector for each in the set
 		* well first... can you access sets sequentually?
-		* 
+		*
