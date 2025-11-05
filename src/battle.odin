@@ -1176,28 +1176,6 @@ find_light_entity :: proc() {
 //----------------------------------------------------------------------------\\
 // /UI
 //----------------------------------------------------------------------------\\
-init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
-    g.ui_keys = make([dynamic]string, 0, len(g_ui_prefabs), alloc)
-    g_gui = make(map[string]Entity, alloc)
-    for key,ui in g_ui_prefabs{
-        cmp := map_gui(ui.gui)
-        cmp.alpha = 0.0
-        cmp.update = true
-        e := add_ui(cmp, key)
-
-        game_ui[key] = e
-        append(&g.ui_keys, key)
-    }
-}
-
-ToggleUI :: proc(name : string, on : bool)
-{
-    gc := get_component(g_gui[name], Cmp_Gui)
-    gc.alpha = on ? 1.0 : 0.0
-    gc.update = on
-    update_gui(gc)
-}
-
 TogglePlayerTurnUI :: proc(state : ^PlayerInputState)
 {
     #partial switch state^{
@@ -1225,34 +1203,6 @@ TogglePlayerTurnUI :: proc(state : ^PlayerInputState)
             ToggleUI("Attack", true)
             ToggleUI("Focus", true)
             ToggleUI("Dodge", true)
-    }
-}
-
-ToggleMenuUI :: proc(state : ^AppState)
-{
-    switch state^
-    {
-    case .TitleScreen:
-        ToggleUI("Title", true)
-    case .MainMenu:
-        ToggleUI("Title", true)
-        // ToggleUI("BeeKillinsInn", true)
-        ToggleUI("Background", true)
-        ToggleUI("StartGame", true)
-        ToggleUI ("GameOver", false)
-        ToggleUI("Victory", false)
-        ToggleUI("Paused", false)
-    case .Game:
-        ToggleUI("Title", false)
-        ToggleUI("Background", false)
-        ToggleUI("StartGame", false)
-        ToggleUI("Paused", false)
-    case .Pause:
-        ToggleUI("Paused", true)
-    case .GameOver:
-        ToggleUI ("GameOver", true)
-    case .Victory:
-        ToggleUI("Victory", true)
     }
 }
 
@@ -1397,7 +1347,6 @@ slerp_character_angle :: proc(cha : ^Character, dt : f32){
     ct.local.rot = linalg.quaternion_slerp(cha.anim.start_rot, cha.anim.end_rot, f32(eased_t))
 }
 
-
 battle_start :: proc(){
     prestart()
     init_GameUI(&g_gui, g_mem_core.alloc)
@@ -1483,15 +1432,6 @@ set_game_start :: proc(){
     g.app_state = .Game
     ToggleMenuUI(&g.app_state)
     start_game()
-}
-
-AppState :: enum{
-    TitleScreen,
-    MainMenu,
-    Game,
-    Pause,
-    GameOver,
-    Victory
 }
 
 //----------------------------------------------------------------------------\\

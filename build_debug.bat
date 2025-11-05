@@ -3,7 +3,7 @@
 set OUT_DIR=build\debug
 if not exist %OUT_DIR% mkdir %OUT_DIR%
 odin build src\main_release -debug -subsystem:windows -out:%OUT_DIR%\axiomo_debug.exe
-rcedit-x64.exe %OUT_DIR%\axiomo_debug.exe --set-icon assets/bird.ico
+build\rcedit-x64.exe %OUT_DIR%\axiomo_debug.exe --set-icon assets/bird.ico
 IF %ERRORLEVEL% NEQ 0 exit /b 1
 xcopy /y /e /i assets %OUT_DIR%\assets > nul
 IF %ERRORLEVEL% NEQ 0 exit /b 1

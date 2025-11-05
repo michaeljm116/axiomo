@@ -191,7 +191,6 @@ game_update :: proc(){
 	update_descriptors()
 	end_frame(&g_renderbase.image_index)
 	reset_memory_arena(&g.mem_frame)
-	free_all(context.temp_allocator)
 }
 
 //--------------------------------------------------------------------------------\\

@@ -10,23 +10,16 @@ import "core:c"
 import "vendor:glfw"
 import b2"vendor:box2d"
 
-// Input state tracking
-InputState :: struct {
-    keys_pressed: [glfw.KEY_LAST + 1]bool,
-    keys_just_pressed: [glfw.KEY_LAST + 1]bool,
-    keys_just_released: [glfw.KEY_LAST + 1]bool,
-
-    mouse_x, mouse_y: f64,
-    last_mouse_x, last_mouse_y: f64,
-    mouse_delta_x, mouse_delta_y: f64,
-    first_mouse: bool,
-
-    mouse_buttons: [glfw.MOUSE_BUTTON_LAST + 1]bool,
-    mouse_sensitivity: f32,
-
-    // Camera control settings
-    movement_speed: f32,
-    rotation_speed: f32,
+//----------------------------------------------------------------------------\\
+// /APP - Things needed globally
+//----------------------------------------------------------------------------\\
+AppState :: enum{
+    TitleScreen,
+    MainMenu,
+    Game,
+    Pause,
+    GameOver,
+    Victory
 }
 
 // Initialize the gameplay system
@@ -70,28 +63,26 @@ app_restart :: proc()
     app_start()
 }
 
+// Cleanup
+app_destroy :: proc() {
+    defer destroy_world()
+    // Reset callbacks
+    glfw.SetKeyCallback(g_renderbase.window, nil)
+    glfw.SetCursorPosCallback(g_renderbase.window, nil)
+    glfw.SetMouseButtonCallback(g_renderbase.window, nil)
+
+    // Release mouse cursor
+    glfw.SetInputMode(g_renderbase.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
+
+    reset_memory_arena(&g.mem_game)
+}
+
 app_post_init :: proc()
 {
     // chest := g.level.chests[0]
     // chest2 := g.level.chests[1]
     // move_entity_to_tile(chest, g.level.grid_scale, vec2{2,0})
     // move_entity_to_tile(chest2, g.level.grid_scale, vec2{4,3})
-}
-
-// Find the camera entity in the scene
-find_camera_entity :: proc() {
-    camera_archetypes := query(has(Cmp_Camera), has(Cmp_Transform), has(Cmp_Node))
-
-    for archetype in camera_archetypes {
-        entities := archetype.entities
-        if len(entities) > 0 {
-            g.camera_entity = entities[0]
-            ct := get_component(g.camera_entity, Cmp_Transform)
-            return
-        }
-    }
-
-    fmt.println("Warning: No camera entity found!")
 }
 
 // Update input state and camera
@@ -120,111 +111,28 @@ app_update :: proc(delta_time: f32) {
     // update_physics(delta_time)
 }
 
-init_light_entity :: proc() {
-    g.light_orbit_radius = 5.0
-    g.light_orbit_speed = 0.25   // radians per second
-    g.light_orbit_angle = 15.0
-}
-
-// Update the cached light entity so it orbits around a center point.
-// If a player exists, orbit around the player's world position; otherwise use world origin.
-update_light_orbit :: proc(delta_time: f32) {
-    if !entity_exists(g.light_entity) {
-        return
-    }
-
-    lc := get_component(g.light_entity, Cmp_Light)
-    tc := get_component(g.light_entity, Cmp_Transform)
-    if tc == nil || lc == nil {
-        return
-    }
-
-    // Determine orbit center: prefer player position if available
-    center := vec3{0.0, 11.5, 0.0}
-    if g.player != 0 {
-        pc := get_component(g.player, Cmp_Transform)
-        if pc != nil {
-            center = pc.local.pos.xyz
-        }
-    }
-
-    // Advance angle
-    g.light_orbit_angle += g.light_orbit_speed * delta_time
-
-    // Compute new local position on XZ plane; keep Y relative to center
-    new_x := center.x + math.cos(g.light_orbit_angle) * g.light_orbit_radius
-    new_z := center.z + math.sin(g.light_orbit_angle) * g.light_orbit_radius
-    new_y := center.y + 10.5 // offset above center (tweak as desired)
-
-    // Update transform local position so the transform system will update world matrix
-    tc.local.pos.x = new_x
-    tc.local.pos.z = new_z
-    tc.local.pos.y = new_y
-
-    g_raytracer.update_flags += {.LIGHT}
-}
-
-update_player_movement :: proc(delta_time: f32)
-{
-    tc := get_component(g.player, Cmp_Transform)
-    if tc == nil do return
-
-    move_speed :f32= .10
-    if is_key_pressed(glfw.KEY_W) {
-        tc.local.pos.z += move_speed
-    }
-    if is_key_pressed(glfw.KEY_S) {
-        tc.local.pos.z -= move_speed
-    }
-    if is_key_pressed(glfw.KEY_A) {
-        tc.local.pos.x -= move_speed
-    }
-    if is_key_pressed(glfw.KEY_D) {
-        tc.local.pos.x += move_speed
-    }
-    // Verticaltc.local.pos.x
-    if is_key_pressed(glfw.KEY_SPACE) {
-        tc.local.pos.y += move_speed
-    }
-    if is_key_pressed(glfw.KEY_LEFT_SHIFT) {
-        tc.local.pos.y -= move_speed
-    }
-}
-
-face_left :: proc(entity : Entity)
-{
-    tc := get_component(entity, Cmp_Transform)
-    tc.local.rot = linalg.quaternion_angle_axis_f32(89.5, {0,1,0})
-}
-
-face_180 :: proc(entity : Entity)
-{
-    tc := get_component(entity, Cmp_Transform)
-    tc.local.rot = linalg.quaternion_angle_axis_f32(179, {0,1,0})
-    fmt.println(linalg.angle_axis_from_quaternion(tc.local.rot))
-}
-
-face_right :: proc(entity : Entity)
-{
-    tc := get_component(entity, Cmp_Transform)
-    tc.local.rot = linalg.quaternion_angle_axis_f32(-89.5, {0,1,0})
-}
-
-// Get camera forward vector
-get_camera_forward :: proc(transform: ^Cmp_Transform) -> vec3 {
-    rotation_matrix := linalg.matrix4_from_quaternion_f32(transform.local.rot)
-    return -vec3{rotation_matrix[0][2], rotation_matrix[1][2], rotation_matrix[2][2]}
-}
-
-// Get camera right vector
-get_camera_right :: proc(transform: ^Cmp_Transform) -> vec3 {
-    rotation_matrix := linalg.matrix4_from_quaternion_f32(transform.local.rot)
-    return vec3{rotation_matrix[0][0], rotation_matrix[1][0], rotation_matrix[2][0]}
-}
-
 //----------------------------------------------------------------------------\\
 // /Input
 //----------------------------------------------------------------------------\\
+// Input state tracking
+InputState :: struct {
+    keys_pressed: [glfw.KEY_LAST + 1]bool,
+    keys_just_pressed: [glfw.KEY_LAST + 1]bool,
+    keys_just_released: [glfw.KEY_LAST + 1]bool,
+
+    mouse_x, mouse_y: f64,
+    last_mouse_x, last_mouse_y: f64,
+    mouse_delta_x, mouse_delta_y: f64,
+    first_mouse: bool,
+
+    mouse_buttons: [glfw.MOUSE_BUTTON_LAST + 1]bool,
+    mouse_sensitivity: f32,
+
+    // Camera control settings
+    movement_speed: f32,
+    rotation_speed: f32,
+}
+
 is_key_pressed :: proc(key: i32) -> bool {
     if key < 0 || key > glfw.KEY_LAST do return false
     return g.input.keys_pressed[key]
@@ -305,16 +213,142 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
     }
 }
 
-// Cleanup
-app_destroy :: proc() {
-    defer destroy_world()
-    // Reset callbacks
-    glfw.SetKeyCallback(g_renderbase.window, nil)
-    glfw.SetCursorPosCallback(g_renderbase.window, nil)
-    glfw.SetMouseButtonCallback(g_renderbase.window, nil)
+//----------------------------------------------------------------------------\\
+// /Menu
+//----------------------------------------------------------------------------\\
+MenuAnimation :: struct{
+    timer : f32,
+    duration : f32,
+}
 
-    // Release mouse cursor
-    glfw.SetInputMode(g_renderbase.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
+MenuAnimStatus :: enum{
+    Running,
+    Finished
+}
 
-    reset_memory_arena(&g.mem_game)
+menu_show_title :: proc()
+{
+   g.title = g_gui["Title"]
+   gc := get_component(g.title, Cmp_Gui)
+   gc.alpha = 0.0
+   g.titleAnim = MenuAnimation{timer = 0.0, duration = 1.0}
+   gc.min = 0.0
+   gc.extents = 1.0
+}
+
+menu_show_main :: proc()
+{
+    g.main_menu = g_gui["MainMenu"]
+    gc := get_component(g.main_menu, Cmp_Gui)
+    gc.alpha = 0.0
+    g.main_menuAnim = MenuAnimation{timer = 0.0, duration = 1.0}
+    gc.min = 0.0
+    gc.extents = 1.0
+}
+
+ToggleMenuItem :: proc(entity : Entity, on : bool){
+    c := get_component(entity, Cmp_Gui)
+    c.alpha = on ? 1.0 : 0.0
+    c.update = on ? true : false
+}
+
+menu_run_title :: proc(dt : f32, state : ^AppState){
+    if is_key_just_pressed(glfw.KEY_ENTER){
+        state^ = .MainMenu
+    }
+}
+
+// menu_run_main :: proc(dt : f32, state : ^AppState)
+// {
+//     if is_key_just_pressed(glfw.KEY_ENTER) do state^ = .Game
+//     // Wait for player to press enter, if so then start the anim and go to GameState
+//     if game_started{
+//         if menu_run_anim(g.main_menu, &g.main_menuAnim, dt) == .Finished{
+//             battle_start()
+//             state^ = .Game
+//             return
+//         }
+//     }
+// }
+
+menu_run_anim_fade_in :: proc(entity : Entity, anim : ^MenuAnimation, dt : f32) -> MenuAnimStatus
+{
+    gc := get_component(entity, Cmp_Gui)
+    if anim.timer >= anim.duration
+    {
+        anim.timer = 0.0
+        gc.alpha = 1.0
+        return .Finished
+
+    }
+    anim.timer += dt
+    gc.alpha = math.smoothstep(f32(0.0), 1.0, anim.timer / anim.duration)
+    return .Running
+}
+
+menu_run_anim_fade_out :: proc(entity : Entity, anim : ^MenuAnimation, dt : f32) -> MenuAnimStatus
+{
+    gc := get_component(entity, Cmp_Gui)
+    if anim.timer >= anim.duration
+    {
+        anim.timer = 0.0
+        gc.alpha = 0.0
+        return .Finished
+    }
+    anim.timer += dt
+    gc.alpha = math.smoothstep(f32(1.0), 0.0, anim.timer / anim.duration)
+    return .Running
+}
+
+//----------------------------------------------------------------------------\\
+// /UI
+//----------------------------------------------------------------------------\\
+init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
+    g.ui_keys = make([dynamic]string, 0, len(g_ui_prefabs), alloc)
+    g_gui = make(map[string]Entity, alloc)
+    for key,ui in g_ui_prefabs{
+        cmp := map_gui(ui.gui)
+        cmp.alpha = 0.0
+        cmp.update = true
+        e := add_ui(cmp, key)
+
+        game_ui[key] = e
+        append(&g.ui_keys, key)
+    }
+}
+
+ToggleUI :: proc(name : string, on : bool)
+{
+    gc := get_component(g_gui[name], Cmp_Gui)
+    gc.alpha = on ? 1.0 : 0.0
+    gc.update = on
+    update_gui(gc)
+}
+
+ToggleMenuUI :: proc(state : ^AppState)
+{
+    switch state^
+    {
+    case .TitleScreen:
+        ToggleUI("Title", true)
+    case .MainMenu:
+        ToggleUI("Title", true)
+        // ToggleUI("BeeKillinsInn", true)
+        ToggleUI("Background", true)
+        ToggleUI("StartGame", true)
+        ToggleUI ("GameOver", false)
+        ToggleUI("Victory", false)
+        ToggleUI("Paused", false)
+    case .Game:
+        ToggleUI("Title", false)
+        ToggleUI("Background", false)
+        ToggleUI("StartGame", false)
+        ToggleUI("Paused", false)
+    case .Pause:
+        ToggleUI("Paused", true)
+    case .GameOver:
+        ToggleUI ("GameOver", true)
+    case .Victory:
+        ToggleUI("Victory", true)
+    }
 }
