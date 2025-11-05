@@ -30,17 +30,17 @@ InputState :: struct {
 }
 
 // Initialize the gameplay system
-gameplay_init :: proc() {
+app_init :: proc() {
     // Set up GLFW callbacks
     glfw.SetKeyCallback(g_renderbase.window, key_callback)
     glfw.SetCursorPosCallback(g_renderbase.window, mouse_callback)
     glfw.SetMouseButtonCallback(g_renderbase.window, mouse_button_callback)
     glfw.SetInputMode(g_renderbase.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
     //setup_physics()
-    gameplay_start()
+    app_start()
 }
 
-gameplay_start :: proc()
+app_start :: proc()
 {
     g.world = create_world()
 	load_scene(g.scene^, g.mem_game.alloc)
@@ -60,17 +60,17 @@ gameplay_start :: proc()
     face_left(g.player)
 
     ////////////////// actual bks init ////////////////
-    app_start()
+    battle_start()
 }
 
-gameplay_restart :: proc()
+app_restart :: proc()
 {
     g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
     restart_world()
-    gameplay_start()
+    app_start()
 }
 
-gameplay_post_init :: proc()
+app_post_init :: proc()
 {
     // chest := g.level.chests[0]
     // chest2 := g.level.chests[1]
@@ -95,7 +95,7 @@ find_camera_entity :: proc() {
 }
 
 // Update input state and camera
-gameplay_update :: proc(delta_time: f32) {
+app_update :: proc(delta_time: f32) {
     if !entity_exists(g.camera_entity) do find_camera_entity()
     if !entity_exists(g.player) do find_player_entity()
 
@@ -103,7 +103,7 @@ gameplay_update :: proc(delta_time: f32) {
     // handle_player_edit_mode()
     handle_destroy_mode()
     if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode{
-       app_run(delta_time, &g.app_state)
+       battle_run(delta_time, &g.app_state)
     }
     // Clear just pressed/released states
     for i in 0..<len(g.input.keys_just_pressed) {
@@ -118,47 +118,6 @@ gameplay_update :: proc(delta_time: f32) {
     //update_player_movement(delta_time)
     // update_movables(delta_time)
     // update_physics(delta_time)
-}
-
-find_player_entity :: proc() {
-    player_archetypes := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
-
-    for archetype in player_archetypes {
-        nodes := get_table(archetype, Cmp_Node)
-        for node, i in nodes {
-            if node.name == "Froku" {
-                g.player = archetype.entities[i]
-                fmt.println("Found Player")
-                return
-            }
-        }
-    }
-}
-
-find_floor_entities :: proc() {
-    arcs := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
-    for archetype in arcs {
-        nodes := get_table(archetype, Cmp_Node)
-        for node, i in nodes {
-            if node.name == "Floor" do g.floor = archetype.entities[i]
-        }
-    }
-}
-
-// Find the first light entity in the scene and cache it for orbit updates.
-// Looks for entities with Light, Transform, and Node components.
-find_light_entity :: proc() {
-    light_archetypes := query(has(Cmp_Light), has(Cmp_Transform), has(Cmp_Node))
-
-    for archetype in light_archetypes {
-       for entity in archetype.entities{
-           fmt.println("Light found")
-           g.light_entity = entity
-           return
-       }
-    }
-
-    // No light found -> leave g.light_entity as 0
 }
 
 init_light_entity :: proc() {
@@ -267,60 +226,39 @@ get_camera_right :: proc(transform: ^Cmp_Transform) -> vec3 {
 // /Input
 //----------------------------------------------------------------------------\\
 is_key_pressed :: proc(key: i32) -> bool {
-    if key < 0 || key > glfw.KEY_LAST {
-        return false
-    }
+    if key < 0 || key > glfw.KEY_LAST do return false
     return g.input.keys_pressed[key]
 }
-
 is_key_just_pressed :: proc(key: i32) -> bool {
-    if key < 0 || key > glfw.KEY_LAST {
-        return false
-    }
+    if key < 0 || key > glfw.KEY_LAST do return false
     return g.input.keys_just_pressed[key]
 }
-
 is_key_just_released :: proc(key: i32) -> bool {
-    if key < 0 || key > glfw.KEY_LAST {
-        return false
-    }
+    if key < 0 || key > glfw.KEY_LAST do return false
     return g.input.keys_just_released[key]
 }
-
 is_mouse_button_pressed :: proc(button: i32) -> bool {
-    if button < 0 || button > glfw.MOUSE_BUTTON_LAST {
-        return false
-    }
+    if button < 0 || button > glfw.MOUSE_BUTTON_LAST do return false
     return g.input.mouse_buttons[button]
 }
 
 // GLFW Callbacks
 key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods: i32) {
     context = g_renderbase.ctx
-
-    if key < 0 || key > glfw.KEY_LAST {
-        return
-    }
+    if key < 0 || key > glfw.KEY_LAST do return
 
     switch action {
     case glfw.PRESS:
-        if !g.input.keys_pressed[key] {
-            g.input.keys_just_pressed[key] = true
-        }
+        if !g.input.keys_pressed[key] do g.input.keys_just_pressed[key] = true
         g.input.keys_pressed[key] = true
-
     case glfw.RELEASE:
         g.input.keys_just_released[key] = true
         g.input.keys_pressed[key] = false
-
     case glfw.REPEAT:
-        // Keep key pressed state
+        //Repeat Timer ++
     }
-
     // Handle special keys
-    if key == glfw.KEY_ESCAPE && action == glfw.PRESS {
-        glfw.SetWindowShouldClose(window, true)
-    }
+    if key == glfw.KEY_ESCAPE && action == glfw.PRESS do glfw.SetWindowShouldClose(window, true)
 
     // Toggle mouse capture
     if key == glfw.KEY_TAB && action == glfw.PRESS {
@@ -368,7 +306,7 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
 }
 
 // Cleanup
-gameplay_destroy :: proc() {
+app_destroy :: proc() {
     defer destroy_world()
     // Reset callbacks
     glfw.SetKeyCallback(g_renderbase.window, nil)

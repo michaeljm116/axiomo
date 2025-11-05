@@ -6,8 +6,6 @@ So you need something that like... starts...  with like....
 * Room Scenes
 * Overworld scenes
 * Maybe make a world of like a few ... lol doors and be able to go inside blah blah
-*
-
 
 # Ultimately:
 * right now all the game is in the single bks.odin file
@@ -30,4 +28,8 @@ So you need something that like... starts...  with like....
 	* loading the level
 	* playing the battle 
 	* BKS basically
+* Main Should work every where
+* Overworld should call battle
+* Battle should update status and affect overworld in someway too
+* Both battle and overworld load a scene with an ecs
 * 

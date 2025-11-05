@@ -65,7 +65,6 @@ Game_Memory :: struct
     mem_scene : MemoryArena,                  // This holds the scene data from the json, should be reset upon scene change
     mem_game : MemoryArena,                   // This holds game data, reset upon restarting of a game, ecs goes here
     mem_frame : MemoryArena,                  // Mostly for BVH or anything that exist for a single frame
-
 }
 
 g: ^Game_Memory
@@ -149,7 +148,7 @@ game_init :: proc() {
 	g_bvh = bvh_system_create(g_mem_core.alloc)
 	start_up_raytracer(g_mem_area.alloc)
 
-	gameplay_init()
+	app_init()
 
 	// You need to have an ecs ready before you do the stuff below
 	sys_trans_process_ecs()
@@ -184,7 +183,7 @@ game_update :: proc(){
 		sys_visual_process_ecs(f32(g.frame.physics_time_step))
 		sys_anim_process_ecs(f32(g.frame.physics_time_step))
 		sys_trans_process_ecs()
-		gameplay_update(f32(g.frame.physics_time_step))
+		app_update(f32(g.frame.physics_time_step))
 		g.frame.physics_acc_time -= f32(g.frame.physics_time_step)
 	}
 	sys_bvh_process_ecs(g_bvh, g.mem_frame.alloc)
@@ -201,7 +200,7 @@ game_update :: proc(){
 @(export)
 game_shutdown :: proc(){
     cleanup()
-    gameplay_destroy()
+    app_destroy()
     bvh_system_destroy(g_bvh)
     destroy_all_arenas()
     free_all(context.temp_allocator)
@@ -226,7 +225,7 @@ game_memory_size :: proc() -> int{
 @(export)
 game_hot_reloaded :: proc(mem:rawptr){
     g = (^Game_Memory)(mem)
-    gameplay_restart()
+    app_restart()
 }
 @(export)
 game_force_reload :: proc() -> bool{

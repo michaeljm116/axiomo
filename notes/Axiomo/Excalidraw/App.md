@@ -1,0 +1,26 @@
+---
+
+excalidraw-plugin: parsed
+tags: [excalidraw]
+
+---
+==⚠  Switch to EXCALIDRAW VIEW in the MORE OPTIONS menu of this document. ⚠== You can decompress Drawing data with the command palette: 'Decompress current Excalidraw file'. For more info check in plugin settings under 'Saving'
+
+
+# Excalidraw Data
+
+## Text Elements
+%%
+## Drawing
+```compressed-json
+N4KAkARALgngDgUwgLgAQQQDwMYEMA2AlgCYBOuA7hADTgQBuCpAzoQPYB2KqATLZMzYBXUtiRoIACyhQ4zZAHoFAc0JRJQgEYA6bGwC2CgF7N6hbEcK4OCtptbErHALRY8RMpWdx8Q1TdIEfARcZgRmBShcZQUebQBGAFZtAGYaOiCEfQQOKGZuAG0AXX4IXDg4AGUoqHFUUDBIdSy6iGJcUgBrdMaGQgQKACFcbE7lUmEOYgBhNnw2Um4IAGIA
+
+M3WNnshsEUDcgEla/WqJzoRZ+cWJZfiEW9utiB3SPahDrOHR8cmZuYWlqDkDjMOAdHJQR7PV7vfQAMUI+Hw1RgwSWgg8kN24JhJzYZwA6iR1Nw+OBtliDkdcWdkaiJOiSJiXtijgAlYTKSQccL5NDxfjk5mUrIAeVB2DUMG48QADDKBU8KW8jrDOFBYbh9AipWhEgqoSysqrcpVCEY6jx5WTFULlVkACpYKAAQSIyi4EmCqwh+qVOKipBdLzYFEk
+
+IWI3A4QkRvttMIAolNncHQ+Glh0JlRY9CjsnM/b4K0JkIpkyc0byNl2XTUFGY9bmNgJoiABrcABsAE4rb1G838ABNDuJdvaEc8PXWoxsAzcBq9egEIR1eJkgC+2cN+nZJeI3OYvPQxdLCvGJFN5sj0fwp9I59qcG4k96Z+IAFk2MQEIncJpghG0FWAgwlvEgLn+NB50gQY5gAo9lE0XAAAoeHiAB2aheHQzDUIw1AZTHABKLZIFZBBlGjDollIBD
+
+kJ4FJ5V4BicOY/CiIgddNxNQE8QQMUoHYYEr3rXpVkrBAyKmJhCA4ZQ5zJSAcl/f9uEBZcBW2IhHzQNSEA0iAOE1OpdP04QoCIblVNIdSFIgfQOjOUgADkjKsmzGkgeyuiYH8/wQODdM4607AAKwQbA8kqQy4A/L9fJUwDgL060RgExh7RnfB5I86BCzRTIIsEkjFWYKADALRBhJvWz5lGfzuCA/AQNssSDEqAqBM4Bqkv0/BQhdQr0syqr13ADc
+
+6FWBFwjnNcQDXIA=
+```
+%%

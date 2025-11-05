@@ -106,7 +106,7 @@ destroy_visuals :: proc(visuals : ^Cmp_Visual) {
 }
 
 destroy_level1 :: proc() {
-    gameplay_restart()
+    app_restart()
     // destroy_world()
     // for b in g.level.bees {
     //     vc := get_component(b.entity, Cmp_Visual)
@@ -658,7 +658,6 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
     // if bee is hovering player, turn on alert
 }
 
-
 bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int){
     assert(target_dist > 0)
     dist := dist_grid(bee.pos, player.pos)
@@ -1133,6 +1132,47 @@ get_top_of_entity :: proc(e : Entity) -> f32
     return max_y
 }
 
+find_player_entity :: proc() {
+    player_archetypes := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
+
+    for archetype in player_archetypes {
+        nodes := get_table(archetype, Cmp_Node)
+        for node, i in nodes {
+            if node.name == "Froku" {
+                g.player = archetype.entities[i]
+                fmt.println("Found Player")
+                return
+            }
+        }
+    }
+}
+
+find_floor_entities :: proc() {
+    arcs := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
+    for archetype in arcs {
+        nodes := get_table(archetype, Cmp_Node)
+        for node, i in nodes {
+            if node.name == "Floor" do g.floor = archetype.entities[i]
+        }
+    }
+}
+
+// Find the first light entity in the scene and cache it for orbit updates.
+// Looks for entities with Light, Transform, and Node components.
+find_light_entity :: proc() {
+    light_archetypes := query(has(Cmp_Light), has(Cmp_Transform), has(Cmp_Node))
+
+    for archetype in light_archetypes {
+       for entity in archetype.entities{
+           fmt.println("Light found")
+           g.light_entity = entity
+           return
+       }
+    }
+
+    // No light found -> leave g.light_entity as 0
+}
+
 //----------------------------------------------------------------------------\\
 // /UI
 //----------------------------------------------------------------------------\\
@@ -1238,8 +1278,7 @@ MovementTimes :: struct{
 	jump_time : f32,
 }
 
-AttackTimes :: struct
-{
+AttackTimes :: struct{
     stab_time : f32,
 }
 
@@ -1275,8 +1314,7 @@ animate_chest :: proc(chest : Entity){
    sys_anim_add(chest)
 }
 
-add_animation :: proc(c : ^Character, prefab : string)
-{
+add_animation :: proc(c : ^Character, prefab : string){
     c.move_anim = MovementTimes{
         idle_time = 1.5,
         walk_time = 0.25,
@@ -1294,16 +1332,14 @@ add_animation :: proc(c : ^Character, prefab : string)
     // animate_idle(&ac, prefab, c.move_anim)
 }
 
-add_animations :: proc()
-{
+add_animations :: proc(){
     add_animation(&g.level.player.base, "Froku")
     add_animation(&g.level.bees[0].base, "AggressiveBee")
     add_animation(&g.level.bees[1].base, "Bee")
 }
 
 // Similar to move_entity_to_tile but just sets the vectors up
-set_up_character_anim :: proc(cha : ^Character)
-{
+set_up_character_anim :: proc(cha : ^Character){
     scale := g.level.grid_scale
     pt := get_component(cha.entity, Cmp_Transform)
     ft := get_component(g.floor, Cmp_Transform)
@@ -1339,8 +1375,7 @@ set_up_character_anim :: proc(cha : ^Character)
     }
 }
 
-slerp_character_to_tile :: proc(cha : ^Character, dt : f32)
-{
+slerp_character_to_tile :: proc(cha : ^Character, dt : f32){
     if dt < 1 do cha.anim.timer -= dt
     ct := get_component(cha.entity, Cmp_Transform)
     if ct == nil do return
@@ -1349,8 +1384,7 @@ slerp_character_to_tile :: proc(cha : ^Character, dt : f32)
     ct.local.pos = linalg.lerp(cha.anim.start, cha.anim.end, f32(eased_t))
 }
 
-slerp_character_angle :: proc(cha : ^Character, dt : f32)
-{
+slerp_character_angle :: proc(cha : ^Character, dt : f32){
     if cha.anim.rot_timer <= 0 do return
     cha.anim.rot_timer -= dt
 
@@ -1364,39 +1398,14 @@ slerp_character_angle :: proc(cha : ^Character, dt : f32)
 }
 
 
-//----------------------------------------------------------------------------\\
-// /Menu
-//----------------------------------------------------------------------------\\
-AppState :: enum
-{
-    TitleScreen,
-    MainMenu,
-    Game,
-    Pause,
-    GameOver,
-    Victory
-}
-
-MenuAnimation :: struct
-{
-    timer : f32,
-    duration : f32,
-}
-MenuAnimStatus :: enum{
-    Running,
-    Finished
-}
-
-app_start :: proc()
-{
+battle_start :: proc(){
     prestart()
     init_GameUI(&g_gui, g_mem_core.alloc)
     // start_game()
     ToggleUI("Title", true)
 }
 
-start_game :: proc()
-{
+start_game :: proc(){
     start_level1(g.mem_game.alloc)
     find_floor_entities()
     set_grid_scale(g.floor, &g.level)
@@ -1412,7 +1421,7 @@ start_game :: proc()
     add_animations()
 }
 
-app_run :: proc(dt: f32, state: ^AppState) {
+battle_run :: proc(dt: f32, state: ^AppState) {
 	// if glfw.WindowShouldClose() do return
 	switch state^ {
 	case .TitleScreen:
@@ -1476,81 +1485,14 @@ set_game_start :: proc(){
     start_game()
 }
 
-menu_show_title :: proc()
-{
-   g.title = g_gui["Title"]
-   gc := get_component(g.title, Cmp_Gui)
-   gc.alpha = 0.0
-   g.titleAnim = MenuAnimation{timer = 0.0, duration = 1.0}
-   gc.min = 0.0
-   gc.extents = 1.0
+AppState :: enum{
+    TitleScreen,
+    MainMenu,
+    Game,
+    Pause,
+    GameOver,
+    Victory
 }
-menu_show_main :: proc()
-{
-    g.main_menu = g_gui["MainMenu"]
-    gc := get_component(g.main_menu, Cmp_Gui)
-    gc.alpha = 0.0
-    g.main_menuAnim = MenuAnimation{timer = 0.0, duration = 1.0}
-    gc.min = 0.0
-    gc.extents = 1.0
-}
-ToggleMenuItem :: proc(entity : Entity, on : bool)
-{
-    c := get_component(entity, Cmp_Gui)
-    c.alpha = on ? 1.0 : 0.0
-    c.update = on ? true : false
-}
-
-menu_run_title :: proc(dt : f32, state : ^AppState)
-{
-    if is_key_just_pressed(glfw.KEY_ENTER){
-        state^ = .MainMenu
-    }
-}
-
-// menu_run_main :: proc(dt : f32, state : ^AppState)
-// {
-//     if is_key_just_pressed(glfw.KEY_ENTER) do state^ = .Game
-//     // Wait for player to press enter, if so then start the anim and go to GameState
-//     if game_started{
-//         if menu_run_anim(g.main_menu, &g.main_menuAnim, dt) == .Finished{
-//             start_game()
-//             state^ = .Game
-//             return
-//         }
-//     }
-// }
-
-menu_run_anim_fade_in :: proc(entity : Entity, anim : ^MenuAnimation, dt : f32) -> MenuAnimStatus
-{
-    gc := get_component(entity, Cmp_Gui)
-    if anim.timer >= anim.duration
-    {
-        anim.timer = 0.0
-        gc.alpha = 1.0
-        return .Finished
-
-    }
-    anim.timer += dt
-    gc.alpha = math.smoothstep(f32(0.0), 1.0, anim.timer / anim.duration)
-    return .Running
-}
-
-menu_run_anim_fade_out :: proc(entity : Entity, anim : ^MenuAnimation, dt : f32) -> MenuAnimStatus
-{
-    gc := get_component(entity, Cmp_Gui)
-    if anim.timer >= anim.duration
-    {
-        anim.timer = 0.0
-        gc.alpha = 0.0
-        return .Finished
-
-    }
-    anim.timer += dt
-    gc.alpha = math.smoothstep(f32(1.0), 0.0, anim.timer / anim.duration)
-    return .Running
-}
-
 
 //----------------------------------------------------------------------------\\
 // /Visulaization
@@ -1682,9 +1624,9 @@ hide_entity :: proc(entity : Entity)
 
 hide_visuals :: proc(visuals : ^Cmp_Visual, flags : VisualFlags)
 {
-    if .Alert in flags && visuals.alert != 0 do hide_entity(visuals.alert)
-    if .Focus in flags && visuals.focus != 0 do hide_entity(visuals.focus)
-    if .Dodge in flags && visuals.dodge != 0 do hide_entity(visuals.dodge)
+    if .Alert  in flags && visuals.alert  != 0 do hide_entity(visuals.alert)
+    if .Focus  in flags && visuals.focus  != 0 do hide_entity(visuals.focus)
+    if .Dodge  in flags && visuals.dodge  != 0 do hide_entity(visuals.dodge)
     if .Select in flags && visuals.select != 0 do hide_entity(visuals.select)
 
     // Remove the specified flags from the visual component
@@ -1713,6 +1655,7 @@ Dice :: struct {
     interval : cmu,
     entity : Entity,
 }
+
 ONE_SIXTH :: 1.0/6.0
 dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
     for &d in dice{
@@ -1742,7 +1685,6 @@ dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
         }
     }
 }
-
 
 //----------------------------------------------------------------------------\\
 // /ves VISUAL EVENT SYSTEM
@@ -1860,7 +1802,7 @@ ves_update_animations :: proc(lvl : ^Level, dt : f32)
        if .Animate in lvl.player.added{
            g.ves.anim_state = .Start
            ves_animate_player_start(&lvl.player)
-       }
+        }
        if .Animate in lvl.player.flags do if ves_animate_player(&lvl.player, dt){
            g.ves.anim_state = .Update
        }
