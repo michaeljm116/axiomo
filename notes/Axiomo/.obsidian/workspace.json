@@ -70,9 +70,29 @@
               "icon": "excalidraw-icon",
               "title": "Arenas"
             }
+          },
+          {
+            "id": "6402de7528c654e0",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          },
+          {
+            "id": "09b08670f87391bf",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
           }
         ],
-        "currentTab": 2
+        "currentTab": 6
       }
     ],
     "direction": "vertical"
@@ -222,8 +242,9 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "f88536f4a261db38",
+  "active": "09b08670f87391bf",
   "lastOpenFiles": [
+    "BeeKillingsInn/Architecture.md",
     "BeeKillingsInn/Bugs.md",
     "Excalidraw/App.md",
     "Excalidraw/Arenas.md",
@@ -236,7 +257,6 @@
     "Excalidraw/Drawing 2025-10-08 18.07.41.excalidraw.md",
     "Excalidraw/Drawing 2025-09-12 11.27.18.excalidraw.md",
     "Excalidraw/Drawing 2025-09-12 10.41.35.excalidraw.md",
-    "BeeKillingsInn/Architecture.md",
     "Excalidraw/ArenasDark.md",
     "Showcase Kanban.md",
     "BeeKillingsInn/Personal FeedBack.md",
