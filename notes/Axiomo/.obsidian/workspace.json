@@ -63,36 +63,18 @@
             "id": "f6f08cdc8d12a879",
             "type": "leaf",
             "state": {
-              "type": "excalidraw",
+              "type": "markdown",
               "state": {
-                "file": "Excalidraw/Arenas.md"
+                "file": "BeeKillingsInn/Inspo - Art.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "excalidraw-icon",
-              "title": "Arenas"
-            }
-          },
-          {
-            "id": "6402de7528c654e0",
-            "type": "leaf",
-            "state": {
-              "type": "empty",
-              "state": {},
               "icon": "lucide-file",
-              "title": "New tab"
-            }
-          },
-          {
-            "id": "09b08670f87391bf",
-            "type": "leaf",
-            "state": {
-              "type": "empty",
-              "state": {},
-              "icon": "lucide-file",
-              "title": "New tab"
+              "title": "Inspo - Art"
             }
           }
         ],
-        "currentTab": 6
+        "currentTab": 4
       }
     ],
     "direction": "vertical"
@@ -242,12 +224,25 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "09b08670f87391bf",
+  "active": "f6f08cdc8d12a879",
   "lastOpenFiles": [
+    "Pasted image 20251108060935.png",
+    "{08E3CA3B-E91C-4292-AC97-23066AB46B4B}.png",
+    "{80489E69-1C89-455B-ACD9-51B3CA0AFD47}.png",
+    "{0921DF1F-BCAF-4B33-8B35-87CF37C72AFB}.png",
+    "{D5BCC3A0-866C-4EC3-9F86-2010C8AECA4E}.png",
+    "{CFB84E8B-4DCA-47D5-AE91-93FEC7921C44}.png",
+    "{857A3D8B-F0CC-4965-AB43-BB397C62E2E2}.png",
+    "{EC33DE1D-6A47-42AA-B324-0E1936535917}.png",
+    "BeeKillingsInn/Inspo-TItle.md",
+    "BeeKillingsInn/Inspo - Art.md",
+    "Pasted image 20251108055025.png",
+    "Photos/patio-2-768.BAhOe6xB_Bgvky.webp",
+    "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",
+    "Excalidraw/Arenas.md",
     "BeeKillingsInn/Architecture.md",
     "BeeKillingsInn/Bugs.md",
     "Excalidraw/App.md",
-    "Excalidraw/Arenas.md",
     "BeeKillingsInn/Megastructification.md",
     "Excalidraw/Refactor.md",
     "Excalidraw/PlayersTUrn.excalidraw.md",
@@ -262,24 +257,11 @@
     "BeeKillingsInn/Personal FeedBack.md",
     "BeeKillingsInn/Menu system.md",
     "Kanban.md",
-    "Photos/{0DA3E792-94E9-46F5-B6DE-8EDBEA4E55CD}.png",
-    "Photos/Pasted image 20251011062648.png",
     "BeeKillingsInn/Refactor.md",
     "Excalidraw/Untitled.md",
     "BeeKillingsInn/Visualizations!.md",
     "BeeKillingsInn/Rules Engine.md",
     "BeeKillingsInn/ECS Notes.md",
-    "BeeKillingsInn/Animation - Again.md",
-    "BeeKillingsInn/Story.md",
-    "Photos/BKS_Title.png",
-    "BeeKillingsInn/Bee Ideas.md",
-    "Photos/533a3e3f-448d-4c5f-a028-29d6aa9a81bf.png",
-    "Photos/4df0d0eb27cc41c59577e0b96fc2c2d4.jpg",
-    "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",
-    "Photos/sanctuary-high-view-2-768.YJKVAsU3_CIe1o.webp",
-    "Photos/patio-2-768.BAhOe6xB_Bgvky.webp",
-    "Photos/Pasted image 20250912152018.jpg",
-    "Photos/Pasted image 20250912152008.jpg",
     "Photos",
     "Excalidraw",
     "Untitled.base",
