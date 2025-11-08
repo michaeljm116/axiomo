@@ -65,12 +65,24 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Inspo - Art.md",
+                "file": "BeeKillingsInn/Engineification.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Inspo - Art"
+              "title": "Engineification"
+            }
+          },
+          {
+            "id": "8928d672ec4b0d59",
+            "type": "leaf",
+            "state": {
+              "type": "excalidraw",
+              "state": {
+                "file": "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md"
+              },
+              "icon": "excalidraw-icon",
+              "title": "Drawing 2025-11-08 08.23.54.excalidraw"
             }
           }
         ],
@@ -226,6 +238,9 @@
   },
   "active": "f6f08cdc8d12a879",
   "lastOpenFiles": [
+    "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md",
+    "BeeKillingsInn/Engineification.md",
+    "BeeKillingsInn/Inspo - Art.md",
     "Pasted image 20251108060935.png",
     "{08E3CA3B-E91C-4292-AC97-23066AB46B4B}.png",
     "{80489E69-1C89-455B-ACD9-51B3CA0AFD47}.png",
@@ -235,10 +250,8 @@
     "{857A3D8B-F0CC-4965-AB43-BB397C62E2E2}.png",
     "{EC33DE1D-6A47-42AA-B324-0E1936535917}.png",
     "BeeKillingsInn/Inspo-TItle.md",
-    "BeeKillingsInn/Inspo - Art.md",
     "Pasted image 20251108055025.png",
     "Photos/patio-2-768.BAhOe6xB_Bgvky.webp",
-    "Photos/sanctuary-wide-right-768.BXwsZWYY_pBqdp.webp",
     "Excalidraw/Arenas.md",
     "BeeKillingsInn/Architecture.md",
     "BeeKillingsInn/Bugs.md",
@@ -261,7 +274,6 @@
     "Excalidraw/Untitled.md",
     "BeeKillingsInn/Visualizations!.md",
     "BeeKillingsInn/Rules Engine.md",
-    "BeeKillingsInn/ECS Notes.md",
     "Photos",
     "Excalidraw",
     "Untitled.base",

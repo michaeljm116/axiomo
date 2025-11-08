@@ -1,4 +1,4 @@
-package game
+package axiom
 import "core:fmt"
 import "core:math/linalg"
 import "external/ecs"

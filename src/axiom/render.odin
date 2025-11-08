@@ -1,4 +1,4 @@
-package game
+package axiom
 import vk "vendor:vulkan"
 import "vendor:glfw"
 import "base:runtime"
@@ -24,8 +24,8 @@ import sttt "vendor:stb/truetype"
 // /RENDERBASE /rb
 //----------------------------------------------------------------------------\\
 
-SHADER_VERT :: #load("../assets/shaders/texture.vert.spv")
-SHADER_FRAG :: #load("../assets/shaders/texture.frag.spv")
+SHADER_VERT :: #load("../../assets/shaders/texture.vert.spv")
+SHADER_FRAG :: #load("../../assets/shaders/texture.frag.spv")
 
 // Enables Vulkan debug logging and validation layers.
 ENABLE_VALIDATION_LAYERS :: #config(ENABLE_VALIDATION_LAYERS, ODIN_DEBUG)
@@ -1396,7 +1396,7 @@ create_texture_from_bitmap :: proc(bitmap: []u8, width, height: i32) -> Texture 
 }
 
 bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
-    // Load TTF (e.g., "assets/fonts/arial.ttf")
+    // Load TTF (e.g., "../assets/fonts/arial.ttf")
     ttf_data, ok := os.read_entire_file(font_path)
     if !ok { log.panic("Failed to load font") }
     defer delete(ttf_data)
@@ -2373,7 +2373,7 @@ start_up_raytracer :: proc(alloc: mem.Allocator)
     g_raytracer.texture_paths[0] =  "assets/textures/numbers.png"
    map_models_to_gpu(alloc)
    map_materials_to_gpu(alloc)
-   // bake_font_atlas("assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
+   // bake_font_atlas("../../assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
 }
 
 set_camera :: proc()
@@ -2386,8 +2386,8 @@ set_camera :: proc()
 
 map_materials_to_gpu :: proc(alloc : mem.Allocator)
 {
-	g_raytracer.materials = make([dynamic]gpu.Material, len(g_materials), alloc)
-	for &m, i in g_materials{
+	g_raytracer.materials = make([dynamic]gpu.Material, len(res.materials), alloc)
+	for &m, i in res.materials{
 	    gpu_mat : gpu.Material = {
 			diffuse = m.diffuse,
 			reflective = m.reflective,
@@ -2413,7 +2413,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
 
     g_raytracer.mesh_assigner = make(map[i32][2]int, alloc)
 
-    for mod in g_models
+    for mod in res.models
     {
         for mesh, i in mod.meshes
         {
@@ -2611,13 +2611,13 @@ update_camera_component :: proc(camera: ^Cmp_Camera) {
     gpu.vbuffer_apply_changes(&g_raytracer.compute.uniform_buffer, &g_renderbase.vma_allocator, &g_raytracer.compute.ubo)
 }
 
-update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity, root: BvhNode, num_nodes : i32)
+update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity, root: BvhNode, num_nodes : i32, alloc : mem.Allocator = context.temp_allocator)
 {
-    context.allocator = g.mem_frame.alloc
+    context.allocator = alloc
     num_prims := len(ordered_prims)
     if(num_prims == 0) do return
-    g_raytracer.primitives = make([dynamic]gpu.Primitive, 0, num_prims, g.mem_frame.alloc)
-    g_raytracer.ordered_prims_map = make([dynamic]int, num_prims, g.mem_frame.alloc)
+    g_raytracer.primitives = make([dynamic]gpu.Primitive, 0, num_prims, alloc)
+    g_raytracer.ordered_prims_map = make([dynamic]int, num_prims, alloc)
     // clear(&g_raytracer.primitives)
     // clear(&g_raytracer.ordered_prims_map)
     // reserve(&g_raytracer.primitives, num_prims)

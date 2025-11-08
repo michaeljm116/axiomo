@@ -17,6 +17,16 @@ import "../extensions/xml2"
 import path "core:path/filepath"
 import path2 "../extensions/filepath2"
 import xxh2 "../extensions/xxhash2"
+import "scene"
+//----------------------------------------------------------------------------\\
+// /Global Data
+//----------------------------------------------------------------------------\\
+materials : [dynamic]Material
+models : [dynamic]Model
+prefabs : map[string]scene.Node
+ui_prefabs : map[string]scene.Node
+animations : map[u32]Animation
+
 //----------------------------------------------------------------------------\\
 // /STRUCTS
 //----------------------------------------------------------------------------\\

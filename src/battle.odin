@@ -12,11 +12,12 @@ import "core:mem"
 import "base:intrinsics"
 import "vendor:glfw"
 import "core:hash/xxhash"
-import xxh2"extensions/xxhash2"
+import xxh2"axiom/extensions/xxhash2"
+import "axiom"
 
-vec2 :: [2]i16
 GRID_WIDTH :: 7
 GRID_HEIGHT :: 5
+grid_size := vec2i{GRID_WIDTH, GRID_HEIGHT}
 // g_saftey_bee : Bee
 Grid :: [][]Tile
 Level :: struct
@@ -37,7 +38,7 @@ prestart :: proc()
     g.app_state = .TitleScreen
     g.current_bee = 0
 
-    // g_saftey_bee = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
+    // g_saftey_bee = Bee{name = '🍯', pos = vec2i{6,3}, target = vec2i{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
     // tc := get_component(g_saftey_bee.entity, Cmp_Transform)
     // tc.global.pos.y = 100000000000000.0
     // add_component(g_saftey_bee.entity, Cmp_Visual{})
@@ -69,10 +70,10 @@ start_level1 :: proc(alloc : mem.Allocator = context.allocator)
     for i, w in db do weapons[w] = i
 
     // Initialize Player and Bee
-    player = {name = '🧔', pos = vec2{0,2}, health = 1, weapon = db[.Hand], abilities = {}}
+    player = {name = '🧔', pos = vec2i{0,2}, health = 1, weapon = db[.Hand], abilities = {}}
     bees = make([dynamic]Bee, 2)
-    bees[0] = Bee{name = '🐝', pos = vec2{6,2}, target = vec2{6,2}, health = 100, type = .Aggressive, flags = {}, entity = load_prefab("AggressiveBee")}
-    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 100, type = .Normal, flags = {}, entity = load_prefab("Bee")}
+    bees[0] = Bee{name = '🐝', pos = vec2i{6,2}, target = vec2i{6,2}, health = 100, type = .Aggressive, flags = {}, entity = load_prefab("AggressiveBee")}
+    bees[1] = Bee{name = '🍯', pos = vec2i{6,3}, target = vec2i{6,3}, health = 100, type = .Normal, flags = {}, entity = load_prefab("Bee")}
 
     player.abilities = make([dynamic]Ability, 2)
     player.abilities[0] = Ability{type = .Dodge, use_on = &bees[0], level = 1, uses = 1}
@@ -122,11 +123,11 @@ start_level2 :: proc(alloc : mem.Allocator = context.allocator)
     for i, w in db do weapons[w] = i
 
     // Initialize Player and Bee
-    player = {name = '🧔', pos = vec2{0,2}, health = 1, weapon = db[.Hand], abilities = {}}
+    player = {name = '🧔', pos = vec2i{0,2}, health = 1, weapon = db[.Hand], abilities = {}}
     bees = make([dynamic]Bee, 3)
-    bees[0] = Bee{name = '🐝', pos = vec2{6,2}, target = vec2{6,2}, health = 100, type = .Aggressive, flags = {}, entity = load_prefab("AggressiveBee")}
-    bees[1] = Bee{name = '🍯', pos = vec2{6,3}, target = vec2{6,3}, health = 100, type = .Normal, flags = {}, entity = load_prefab("Bee")}
-    bees[2] = Bee{name = '🐝', pos = vec2{6,4}, target = vec2{6,2}, health = 100, type = .Aggressive, flags = {}, entity = load_prefab("AggressiveBee")}
+    bees[0] = Bee{name = '🐝', pos = vec2i{6,2}, target = vec2i{6,2}, health = 100, type = .Aggressive, flags = {}, entity = load_prefab("AggressiveBee")}
+    bees[1] = Bee{name = '🍯', pos = vec2i{6,3}, target = vec2i{6,3}, health = 100, type = .Normal, flags = {}, entity = load_prefab("Bee")}
+    bees[2] = Bee{name = '🐝', pos = vec2i{6,4}, target = vec2i{6,2}, health = 100, type = .Aggressive, flags = {}, entity = load_prefab("AggressiveBee")}
 
     player.abilities = make([dynamic]Ability, 2)
     player.abilities[0] = Ability{type = .Dodge, use_on = &bees[0], level = 1, uses = 1}
@@ -152,11 +153,14 @@ start_level2 :: proc(alloc : mem.Allocator = context.allocator)
     }
 }
 
+//TODO: THIS IS SUS, NO MORE DELETES!!
+// these should be inactive and invisible
 destroy_visuals :: proc(visuals : ^Cmp_Visual) {
-    if entity_exists(visuals.alert) do delete_parent_node(visuals.alert)
-    if entity_exists(visuals.focus) do delete_parent_node(visuals.focus)
-    if entity_exists(visuals.dodge) do delete_parent_node(visuals.dodge)
-    if entity_exists(visuals.select) do delete_parent_node(visuals.select)
+     if axiom.entity_exists(visuals.alert) do axiom.delete_parent_node(visuals.alert)
+     if axiom.entity_exists(visuals.focus) do axiom.delete_parent_node(visuals.focus)
+     if axiom.entity_exists(visuals.dodge) do axiom.delete_parent_node(visuals.dodge)
+     if axiom.entity_exists(visuals.select) do axiom.delete_parent_node(visuals.select)
+
 }
 
 destroy_level1 :: proc() {
@@ -165,11 +169,11 @@ destroy_level1 :: proc() {
     // for b in g.level.bees {
     //     vc := get_component(b.entity, Cmp_Visual)
     //     if vc != nil do destroy_visuals(vc)
-    //     if(entity_exists(b.entity)) do delete_parent_node(b.entity)
+    //     if(axiom.entity_exists(b.entity)) do axiom.delete_parent_node(b.entity)
     // }
-    // for gw in g.level.grid_weapons do delete_parent_node(gw.chest)
+    // for gw in g.level.grid_weapons do axiom.delete_parent_node(gw.chest)
 
-    // assert(entity_exists(g.floor))
+    // assert(axiom.entity_exists(g.floor))
 }
 
 //----------------------------------------------------------------------------\\
@@ -489,9 +493,9 @@ CharacterFlags :: bit_set[CharacterFlag; u16]
 Character :: struct
 {
     name : rune,
-    pos : vec2,
+    pos : vec2i,
     health : i8,
-    target : vec2,
+    target : vec2i,
     entity : Entity,
     c_flags : CharacterFlags,
     anim : CharacterAnimation,
@@ -717,7 +721,7 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int)
     dist := dist_grid(bee.pos, player.pos)
     if dist > target_dist
     {
-        path := a_star_find_path(bee.pos, player.pos)
+        path := a_star_find_path(bee.pos, player.pos, grid_size)
         // TODO: possibly insecure and bug prone if there's no valid distance due to walls
         if len(path) > target_dist do bee.target = path[target_dist]
         else {if len(path) == target_dist do bee.target = path[target_dist - 1]}
@@ -729,7 +733,7 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int)
         bee.flags |= {.Alert}
 
         if dist == target_dist {
-            path := a_star_find_path(bee.pos, player.pos)
+            path := a_star_find_path(bee.pos, player.pos, grid_size)
             if len(path) > 1 do bee.target = path[1]
         }
     }
@@ -742,9 +746,9 @@ bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int){
     else{
        best := bee.pos
        bestd := dist_grid(bee.pos, player.pos)
-       dirs := [4]vec2{ vec2{1,0}, vec2{-1,0}, vec2{0,1}, vec2{0,-1} }
+       dirs := [4]vec2i{ vec2i{1,0}, vec2i{-1,0}, vec2i{0,1}, vec2i{0,-1} }
        for d in dirs {
-            n := vec2{ bee.pos[0] + d[0], bee.pos[1] + d[1] }
+            n := vec2i{ bee.pos[0] + d[0], bee.pos[1] + d[1] }
             if !in_bounds(n) { continue }
             if !is_walkable_internal(n, n, true) { continue }
             nd := dist_grid(n, player.pos)
@@ -815,7 +819,7 @@ Weapon :: struct
 }
 
 WeaponGrid :: struct{
-   pos : vec2,
+   pos : vec2i,
    chest : Entity,
 }
 
@@ -927,7 +931,7 @@ hide_dice :: proc() {
     }
 }
 
-place_chest_on_grid :: proc(pos : vec2, lvl : ^Level)
+place_chest_on_grid :: proc(pos : vec2i, lvl : ^Level)
 {
     chest := load_prefab("Chest")
     context.allocator = g.mem_game.alloc
@@ -960,7 +964,7 @@ GameFlags :: bit_set[GameFlag; u32]
 move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
 {
     // display_level(g.level)
-    dir : vec2
+    dir : vec2i
     switch (key)
     {
         case "w":
@@ -981,7 +985,7 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
     }
 }
 
-bounds_check :: proc(bounds : vec2, grid : Grid) -> bool
+bounds_check :: proc(bounds : vec2i, grid : Grid) -> bool
 {
     if(bounds.x < 0 || bounds.x >= i16(len(grid)) || bounds.y < 0 || bounds.y >= i16(len(grid[0]))) {
         return false
@@ -992,7 +996,7 @@ bounds_check :: proc(bounds : vec2, grid : Grid) -> bool
     return true
 }
 
-weap_check :: proc(p : vec2, grid : ^Grid) -> bool{
+weap_check :: proc(p : vec2i, grid : ^Grid) -> bool{
     if grid[p.x][p.y] == .Weapon{
         grid[p.x][p.y] = .Blank
         return true
@@ -1030,16 +1034,16 @@ GameState :: enum
     Pause,
 }
 
-find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allow_through_walls : bool) -> [dynamic]vec2
+find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allow_through_walls : bool) -> [dynamic]vec2i
 {
     // iterate all possible tiles, pick reachable tile with dist to player >= min_dist and shortest path length from bee
-    best_path := make([dynamic]vec2, context.temp_allocator)
+    best_path := make([dynamic]vec2i, context.temp_allocator)
     best_len := 999999
     for x in 0..<GRID_WIDTH do for y in 0..<GRID_HEIGHT{
-        p := vec2{i16(x), i16(y)}
+        p := vec2i{i16(x), i16(y)}
         if dist_grid(p, player.pos) < min_dist { continue }
         if !is_walkable_internal(p, p, allow_through_walls) { continue } // p must be a valid standable tile
-        path := a_star_find_path(bee.pos, p)
+        path := a_star_find_path(bee.pos, p, grid_size)
         if len(path) == 0 { continue }
         if len(path) < best_len {
             best_len = len(path)
@@ -1103,7 +1107,7 @@ set_entity_on_tile :: proc(floor : Entity, entity : Entity, lvl : Level, x, y : 
 }
 
 // Move pLayer to block
-move_entity_to_tile :: proc(entity : Entity, scale : vec2f, pos : vec2)
+move_entity_to_tile :: proc(entity : Entity, scale : vec2f, pos : vec2i)
 {
     pt := get_component(entity, Cmp_Transform)
     ft := get_component(g.floor, Cmp_Transform)
@@ -1137,7 +1141,7 @@ get_bottom_of_entity :: proc(e : Entity) -> f32
         curr := queue.pop_front(&stackq)
         pc := get_component(curr, Cmp_Primitive)
         if pc != nil {
-            center := primitive_get_center(pc^)
+            center := axiom.primitive_get_center(pc^)
             bottom_y := center.y - pc^.extents.y
             if bottom_y < min_y do min_y = bottom_y
         }
@@ -1148,7 +1152,7 @@ get_bottom_of_entity :: proc(e : Entity) -> f32
                 if bottom_y < min_y do min_y = bottom_y
             }
         }
-        children := get_children(curr)
+        children := axiom.get_children(curr)
         for c in children do queue.push_front(&stackq, c)
     }
     if min_y == 999999.0 do return -999999.0
@@ -1167,7 +1171,7 @@ get_top_of_entity :: proc(e : Entity) -> f32
         curr := queue.pop_front(&stackq)
         pc := get_component(curr, Cmp_Primitive)
         if pc != nil {
-            center := primitive_get_center(pc^)
+            center := axiom.primitive_get_center(pc^)
             top_y := center.y + pc^.extents.y
             if top_y > max_y do max_y = top_y
         } else {
@@ -1177,7 +1181,7 @@ get_top_of_entity :: proc(e : Entity) -> f32
                 if top_y > max_y do max_y = top_y
             }
         }
-        children := get_children(curr)
+        children := axiom.get_children(curr)
         for c in children {
             queue.push_front(&stackq, c)
         }
@@ -1187,10 +1191,10 @@ get_top_of_entity :: proc(e : Entity) -> f32
 }
 
 find_player_entity :: proc() {
-    player_archetypes := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
+    player_archetypes := axiom.query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
 
     for archetype in player_archetypes {
-        nodes := get_table(archetype, Cmp_Node)
+        nodes := axiom.get_table(archetype, Cmp_Node)
         for node, i in nodes {
             if node.name == "Froku" {
                 g.player = archetype.entities[i]
@@ -1202,9 +1206,9 @@ find_player_entity :: proc() {
 }
 
 find_floor_entities :: proc() {
-    arcs := query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
+    arcs := axiom.query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
     for archetype in arcs {
-        nodes := get_table(archetype, Cmp_Node)
+        nodes := axiom.get_table(archetype, Cmp_Node)
         for node, i in nodes {
             if node.name == "Floor" do g.floor = archetype.entities[i]
         }
@@ -1214,7 +1218,7 @@ find_floor_entities :: proc() {
 // Find the first light entity in the scene and cache it for orbit updates.
 // Looks for entities with Light, Transform, and Node components.
 find_light_entity :: proc() {
-    light_archetypes := query(has(Cmp_Light), has(Cmp_Transform), has(Cmp_Node))
+    light_archetypes := axiom.query(has(Cmp_Light), has(Cmp_Transform), has(Cmp_Node))
 
     for archetype in light_archetypes {
        for entity in archetype.entities{
@@ -1286,7 +1290,7 @@ AttackTimes :: struct{
     stab_time : f32,
 }
 
-set_animation :: proc(ac : ^Cmp_Animation, time : f32, name : string, start : string, end : string, flags : AnimFlags){
+set_animation :: proc(ac : ^Cmp_Animation, time : f32, name : string, start : string, end : string, flags : axiom.AnimFlags){
     if ac.state != .DEFAULT do return
     ac.trans = xxh2.str_to_u32(start)
     ac.trans_end = xxh2.str_to_u32(end)
@@ -1299,23 +1303,22 @@ set_animation :: proc(ac : ^Cmp_Animation, time : f32, name : string, start : st
 }
 
 animate_walk :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
-    set_animation(ac, m.walk_time, prefab_name, "walkStart", "walkEnd", AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, m.walk_time, prefab_name, "walkStart", "walkEnd", axiom.AnimFlags{loop = true, force_start = true, force_end = false});
 }
 animate_idle :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
-    set_animation(ac, m.idle_time, prefab_name, "idleStart", "idleEnd", AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, m.idle_time, prefab_name, "idleStart", "idleEnd", axiom.AnimFlags{loop = true, force_start = true, force_end = false});
 }
 animate_run :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
-    set_animation(ac, m.run_time, prefab_name, "runStart", "runEnd", AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, m.run_time, prefab_name, "runStart", "runEnd", axiom.AnimFlags{loop = true, force_start = true, force_end = false});
 }
 animate_attack :: proc(ac : ^Cmp_Animation, prefab_name : string, a : AttackTimes ){
-    set_animation(ac, a.stab_time, prefab_name, "stabStart", "stabEnd", AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, a.stab_time, prefab_name, "stabStart", "stabEnd", axiom.AnimFlags{loop = true, force_start = true, force_end = false});
 }
 animate_chest :: proc(chest : Entity){
-   flatten_entity(chest)
-   display_flattened_entity(chest)
-   ac := animation_component_with_names(1,"Chest","","Open", AnimFlags{active = 1, loop = false, force_start = true, force_end = true})
+   axiom.flatten_entity(chest)
+   ac := axiom.animation_component_with_names(1,"Chest","","Open", axiom.AnimFlags{active = 1, loop = false, force_start = true, force_end = true})
    add_component(chest, ac)
-   sys_anim_add(chest)
+   axiom.sys_anim_add(chest)
 }
 
 add_animation :: proc(c : ^Character, prefab : string){
@@ -1329,10 +1332,10 @@ add_animation :: proc(c : ^Character, prefab : string){
         stab_time =  0.125
     }
 
-    flatten_entity(c.entity)
-    ac := animation_component_with_names(2,prefab, "idleStart", "idleEnd", AnimFlags{ active = 1, loop = true, force_start = true, force_end = true})
+    axiom.flatten_entity(c.entity)
+    ac := axiom.animation_component_with_names(2,prefab, "idleStart", "idleEnd", axiom.AnimFlags{ active = 1, loop = true, force_start = true, force_end = true})
     add_component(c.entity, ac)
-    sys_anim_add(c.entity)
+    axiom.sys_anim_add(c.entity)
     // animate_idle(&ac, prefab, c.move_anim)
 }
 
@@ -1418,8 +1421,8 @@ start_game :: proc(){
         face_right(bee.entity)
     }
 
-    place_chest_on_grid(vec2{2,0}, &g.level)
-    place_chest_on_grid(vec2{4,3}, &g.level)
+    place_chest_on_grid(vec2i{2,0}, &g.level)
+    place_chest_on_grid(vec2i{4,3}, &g.level)
     g.level.player.entity = g.player
     add_animations()
 }
@@ -1506,10 +1509,10 @@ VisualFlags :: bit_set[VisualFlag;u8]
 
 sys_visual_process_ecs :: proc(dt : f32)
 {
-    archetypes := query(has(Cmp_Visual), has(Cmp_Transform))
+    archetypes := axiom.query(has(Cmp_Visual), has(Cmp_Transform))
     for archetype in archetypes {
-        visual := get_table(archetype, Cmp_Visual)
-        transf := get_table(archetype, Cmp_Transform)
+        visual := axiom.get_table(archetype, Cmp_Visual)
+        transf := axiom.get_table(archetype, Cmp_Transform)
         for entity, i in archetype.entities do sys_visual_update(&visual[i], transf[i], dt)
     }
 }
@@ -1539,34 +1542,34 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
 
     // First, handle creation and visibility (show/hide based on flags)
     if .Alert in vc.flags {
-        if !entity_exists(vc.alert) do vc.alert = load_prefab("IconAlert")
+        if !axiom.entity_exists(vc.alert) do vc.alert = load_prefab("IconAlert")
         at := get_component(vc.alert, Cmp_Transform)
         if at != nil do at.local.sca = 1 // Assume original scale is 1; adjust if needed
-    } else if entity_exists(vc.alert) {
+    } else if axiom.entity_exists(vc.alert) {
         hide_entity(vc.alert)
     }
 
     if .Focus in vc.flags {
-        if !entity_exists(vc.focus) do vc.focus = load_prefab("IconFocus")
+        if !axiom.entity_exists(vc.focus) do vc.focus = load_prefab("IconFocus")
         at := get_component(vc.focus, Cmp_Transform)
         if at != nil do at.local.sca = 1
-    } else if entity_exists(vc.focus) {
+    } else if axiom.entity_exists(vc.focus) {
         hide_entity(vc.focus)
     }
 
     if .Dodge in vc.flags {
-        if !entity_exists(vc.dodge) do vc.dodge = load_prefab("IconDodge")
+        if !axiom.entity_exists(vc.dodge) do vc.dodge = load_prefab("IconDodge")
         at := get_component(vc.dodge, Cmp_Transform)
         if at != nil do at.local.sca = 1
-    } else if entity_exists(vc.dodge) {
+    } else if axiom.entity_exists(vc.dodge) {
         hide_entity(vc.dodge)
     }
 
     if .Select in vc.flags {
-        if !entity_exists(vc.select) do vc.select = load_prefab("IconArrow")
+        if !axiom.entity_exists(vc.select) do vc.select = load_prefab("IconArrow")
         at := get_component(vc.select, Cmp_Transform)
         if at != nil do at.local.sca = 1
-    } else if entity_exists(vc.select) {
+    } else if axiom.entity_exists(vc.select) {
         hide_entity(vc.select)
     }
 
@@ -1582,7 +1585,7 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
         case .Dodge:  ent = vc.dodge
         case .Select: ent = vc.select
         }
-        if entity_exists(ent) do append(&visual_list, ent)
+        if axiom.entity_exists(ent) do append(&visual_list, ent)
     }
 
     // Position active visuals side by side if multiple

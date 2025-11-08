@@ -1,5 +1,4 @@
 package scene
-import res "../../resource"
 import math "core:math/linalg"
 import "core:os"
 import "core:io"
@@ -164,11 +163,11 @@ Node :: struct {
 
 load_new_scene :: proc(name : string, allocator := context.temp_allocator) -> ^SceneData {
     data, ok := os.read_entire_file_from_filename(name, allocator)
-    res.log_if_err(!ok, fmt.tprintf("Finding file(%s)",name))
+    log_if_err(!ok, fmt.tprintf("Finding file(%s)",name))
 
     scene := new(SceneData, allocator)
     json_err := json.unmarshal(data, scene, allocator = allocator);
-    res.log_if_err(json_err)
+    log_if_err(json_err)
 
     // Process scene and nodes
     // for node in scene.Node {
@@ -179,7 +178,7 @@ load_new_scene :: proc(name : string, allocator := context.temp_allocator) -> ^S
 
 load_prefab_node :: proc(name: string, alloc := context.allocator) -> (root: Node) {
     data, ok := os.read_entire_file_from_filename(name, alloc)
-    res.log_if_err(!ok, fmt.tprintf("Finding Prefab(%s)", name))
+    log_if_err(!ok, fmt.tprintf("Finding Prefab(%s)", name))
     json_err := json.unmarshal(data, &root, allocator = alloc)
     // If there's a JSON error, print helpful debug info: filename, data length and first bytes
     if json_err != nil {
@@ -197,7 +196,7 @@ load_prefab_node :: proc(name: string, alloc := context.allocator) -> (root: Nod
             fmt.printf("DEBUG: prefab '%s' has empty data buffer\n", name)
         }
     }
-    res.log_if_err(json_err)
+    log_if_err(json_err)
     return
 }
 
@@ -218,3 +217,18 @@ load_prefab_directory :: proc(directory : string, prefabs : ^map[string]Node, al
     }
     os.file_info_slice_delete(files)
 }
+
+log_if_err_os :: proc(e : os.Error,  loc := #caller_location){
+    if e != os.ERROR_NONE {
+        fmt.eprintln("Error: ", e, " at location : ", loc)
+    }
+}
+log_if_err_b :: proc(b : bool, msg : string, loc := #caller_location)
+{
+   if b do fmt.eprintln("Error: ", msg, " at location: ",  loc)
+}
+log_if_err_j :: proc(e : json.Unmarshal_Error, loc := #caller_location)
+{
+   if e != nil do fmt.eprintln("Error: ", e, " at location : ", loc)
+}
+log_if_err :: proc{log_if_err_os, log_if_err_b, log_if_err_j}

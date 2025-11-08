@@ -9,7 +9,7 @@ import vmem "core:mem/virtual"
 import "core:c"
 import "vendor:glfw"
 import b2"vendor:box2d"
-
+import "axiom"
 
 //----------------------------------------------------------------------------\\
 // /UI - Edit Mode
@@ -38,7 +38,7 @@ handle_ui_edit_mode :: proc() {
                 if gc != nil {
                     gc.alpha = 1.0
                     gc.update = true
-                    update_gui(gc)
+                    axiom.update_gui(gc)
                 }
             }
         } else {
@@ -50,7 +50,7 @@ handle_ui_edit_mode :: proc() {
                 if gc != nil {
                     gc.alpha = 0.0  // Or restore original
                     gc.update = false
-                    update_gui(gc)
+                    axiom.update_gui(gc)
                 }
             }
         }
@@ -78,7 +78,7 @@ handle_ui_edit_mode :: proc() {
         if gc != nil {
             gc.alpha = 1.0
             gc.update = true
-            update_gui(gc)
+            axiom.update_gui(gc)
         }
     }
 
@@ -88,7 +88,7 @@ handle_ui_edit_mode :: proc() {
             selected_key := g.ui_keys[selected_ui_index]
             selected_ent := g_gui[selected_key]
             filename := fmt.tprintf("assets/prefabs/ui/%s.json", selected_key)
-            save_ui_prefab(selected_ent, filename)
+            axiom.save_ui_prefab(selected_ent, filename)
             fmt.printf("Saved UI prefab: %s\n", filename)
         }
     }
@@ -140,7 +140,7 @@ tweak_game_UI :: proc(e : Entity) {
     }
 
     // Apply changes
-    update_gui(ui)
+    axiom.update_gui(ui)
 }
 
 

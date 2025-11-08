@@ -9,6 +9,8 @@ import vmem "core:mem/virtual"
 import "core:c"
 import "vendor:glfw"
 import b2"vendor:box2d"
+import ax"axiom"
+import "axiom/resource"
 
 //----------------------------------------------------------------------------\\
 // /APP - Things needed globally
@@ -25,20 +27,20 @@ AppState :: enum{
 // Initialize the gameplay system
 app_init :: proc() {
     // Set up GLFW callbacks
-    glfw.SetKeyCallback(g_renderbase.window, key_callback)
-    glfw.SetCursorPosCallback(g_renderbase.window, mouse_callback)
-    glfw.SetMouseButtonCallback(g_renderbase.window, mouse_button_callback)
-    glfw.SetInputMode(g_renderbase.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
+    glfw.SetKeyCallback(ax.g_renderbase.window, key_callback)
+    glfw.SetCursorPosCallback(ax.g_renderbase.window, mouse_callback)
+    glfw.SetMouseButtonCallback(ax.g_renderbase.window, mouse_button_callback)
+    glfw.SetInputMode(ax.g_renderbase.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
     //setup_physics()
     app_start()
 }
 
 app_start :: proc()
 {
-    g.world = create_world()
-	load_scene(g.scene^, g.mem_game.alloc)
-	added_entity(g.world_ent)
-	g.player = load_prefab("Froku")
+    ax.g_world = create_world()
+	ax.load_scene(g.scene^, g.mem_game.alloc)
+	ax.added_entity(ax.g_world_ent)
+	g.player = ax.load_prefab("Froku")
 	g.app_state = .TitleScreen
     g.input = InputState{
         mouse_sensitivity = 0.1,
@@ -67,14 +69,14 @@ app_restart :: proc()
 app_destroy :: proc() {
     defer destroy_world()
     // Reset callbacks
-    glfw.SetKeyCallback(g_renderbase.window, nil)
-    glfw.SetCursorPosCallback(g_renderbase.window, nil)
-    glfw.SetMouseButtonCallback(g_renderbase.window, nil)
+    glfw.SetKeyCallback(ax.g_renderbase.window, nil)
+    glfw.SetCursorPosCallback(ax.g_renderbase.window, nil)
+    glfw.SetMouseButtonCallback(ax.g_renderbase.window, nil)
 
     // Release mouse cursor
-    glfw.SetInputMode(g_renderbase.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
+    glfw.SetInputMode(ax.g_renderbase.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
 
-    reset_memory_arena(&g.mem_game)
+    ax.reset_memory_arena(&g.mem_game)
 }
 
 app_post_init :: proc()
@@ -87,8 +89,8 @@ app_post_init :: proc()
 
 // Update input state and camera
 app_update :: proc(delta_time: f32) {
-    if !entity_exists(g.camera_entity) do find_camera_entity()
-    if !entity_exists(g.player) do find_player_entity()
+    if !ax.entity_exists(g.camera_entity) do find_camera_entity()
+    if !ax.entity_exists(g.player) do find_player_entity()
 
     // handle_ui_edit_mode()
     // handle_player_edit_mode()
@@ -152,7 +154,7 @@ is_mouse_button_pressed :: proc(button: i32) -> bool {
 
 // GLFW Callbacks
 key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods: i32) {
-    context = g_renderbase.ctx
+    context = ax.g_renderbase.ctx
     if key < 0 || key > glfw.KEY_LAST do return
 
     switch action {
@@ -180,7 +182,7 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods
 }
 
 mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
-    context = g_renderbase.ctx
+    context = ax.g_renderbase.ctx
 
     if g.input.first_mouse {
         g.input.last_mouse_x = xpos
@@ -198,7 +200,7 @@ mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
 }
 
 mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mods: i32) {
-    context = g_renderbase.ctx
+    context = ax.g_renderbase.ctx
 
     if button < 0 || button > glfw.MOUSE_BUTTON_LAST {
         return
@@ -303,14 +305,15 @@ menu_run_anim_fade_out :: proc(entity : Entity, anim : ^MenuAnimation, dt : f32)
 //----------------------------------------------------------------------------\\
 // /UI
 //----------------------------------------------------------------------------\\
+g_gui  : map[string]Entity
 init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
-    g.ui_keys = make([dynamic]string, 0, len(g_ui_prefabs), alloc)
+    g.ui_keys = make([dynamic]string, 0, len(resource.ui_prefabs), alloc)
     g_gui = make(map[string]Entity, alloc)
-    for key,ui in g_ui_prefabs{
-        cmp := map_gui(ui.gui)
+    for key,ui in resource.ui_prefabs{
+        cmp := ax.map_gui(ui.gui)
         cmp.alpha = 0.0
         cmp.update = true
-        e := add_ui(cmp, key)
+        e := ax.add_ui(cmp, key)
 
         game_ui[key] = e
         append(&g.ui_keys, key)

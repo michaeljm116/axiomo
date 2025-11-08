@@ -1,4 +1,4 @@
-package game
+package axiom
 import math "core:math/linalg"
 import ecs "external/ecs"
 import embree "external/embree"
@@ -11,11 +11,13 @@ import "core:encoding/json"
 import "core:mem"
 import vmem"core:mem/virtual"
 import "base:runtime"
+
 // Helper types for vectors/matrices
 vec2f :: [2]f32
 vec3f :: [3]f32
 mat4f :: [4][4]f32
 vec4i :: [4]i32
+vec2i :: [2]i16
 
 quat :: math.Quaternionf32
 vec3 :: math.Vector3f32
@@ -27,52 +29,47 @@ Entity :: ecs.EntityID
 World :: ecs.World
 
 //----------------------------------------------------------------------------\\
+// /Globals for the engine
+//----------------------------------------------------------------------------\\
+g_renderbase : ^RenderBase
+g_raytracer : ^ComputeRaytracer
+g_bvh : ^Sys_Bvh
+g_texture_indexes : map[string]i32
+g_world : ^World
+g_world_ent : Entity
+//----------------------------------------------------------------------------\\
 // /ECS
 //----------------------------------------------------------------------------\\
-// Helper functions that assume g.world
-create_world :: #force_inline proc() -> ^World {
-    init_memory_arena(&g.mem_game, mem.Megabyte)
-    g.world = ecs.create_world(g.mem_game.alloc)// track_alloc.backing)
-    g.world_ent = add_entity()
-    return g.world
+// Helper functions that assume g_world
+create_world :: #force_inline proc(arena : ^MemoryArena) -> ^World {
+    init_memory_arena(arena, mem.Megabyte)
+    g_world = ecs.create_world(arena.alloc)// track_alloc.backing)
+    g_world_ent = add_entity()
+    return g_world
 }
-destroy_world :: #force_inline proc(){
-	//context.allocator = track_alloc.backing
-	// ecs.delete_world(g.world)
-	destroy_memory_arena(&g.mem_game)
-	// vmem.arena_free_all(&g.mem_game.arena)
+destroy_world :: #force_inline proc(arena : ^MemoryArena){
+	destroy_memory_arena(arena)
 }
-restart_world :: #force_inline proc(){
-    // destroy_memory_arena(&g.mem_game)
-    //
+restart_world :: #force_inline proc(arena : ^MemoryArena){
     render_clear_entities()
-    reset_memory_arena(&g.mem_game)
+    reset_memory_arena(arena)
 }
 // Entity management
 add_entity :: #force_inline proc() -> ecs.EntityID {
-	return ecs.add_entity(g.world)
+	return ecs.add_entity(g_world)
 }
 
 // Component management
 add_component :: #force_inline proc(entity: ecs.EntityID, component: $T) {
-    // prev_alloc := context.allocator
-    // defer context.allocator = prev_alloc
-    // context.allocator = g.mem_game.alloc
-
-    // context.allocator = track_alloc.backing
-	ecs.add_component(g.world, entity, component)
+	ecs.add_component(g_world, entity, component)
 }
 
 remove_component :: #force_inline proc(entity: ecs.EntityID, $T: typeid){
-    // prev_alloc := context.allocator
-    // defer context.allocator = prev_alloc
-    // context.allocator = track_alloc.backing
-    // context.allocator = g.mem_game.alloc
-    ecs.disable_component(g.world, entity, typeid)
+    ecs.disable_component(g_world, entity, typeid)
 }
 
 entity_exists :: #force_inline proc(entity: ecs.EntityID) -> bool {
-    return ecs.entity_exists(g.world, entity)
+    return ecs.entity_exists(g_world, entity)
 }
 
 // Query system
@@ -80,7 +77,7 @@ query :: #force_inline proc(terms: ..ecs.Term) -> []^ecs.Archetype {
     // prev_alloc := context.allocator
     // defer context.allocator = prev_alloc
     // context.allocator = track_alloc.backing
-	return ecs.query(g.world, ..terms)
+	return ecs.query(g_world, ..terms)
 }
 
 // Table access - overloaded procedure set
@@ -91,7 +88,7 @@ get_table :: proc {
 }
 
 get_table_same :: #force_inline proc(archetype: ^ecs.Archetype, $Component: typeid) -> []Component {
-	return ecs.get_table_same(g.world, archetype, Component)
+	return ecs.get_table_same(g_world, archetype, Component)
 }
 
 get_table_cast :: #force_inline proc(
@@ -99,11 +96,11 @@ get_table_cast :: #force_inline proc(
 	$Component: typeid,
 	$CastTo: typeid,
 ) -> []CastTo {
-	return ecs.get_table_cast(g.world, archetype, Component, CastTo)
+	return ecs.get_table_cast(g_world, archetype, Component, CastTo)
 }
 
 get_table_pair :: #force_inline proc(archetype: ^ecs.Archetype, pair: ecs.PairType($R, $T)) -> []R {
-	return ecs.get_table_pair(g.world, archetype, pair)
+	return ecs.get_table_pair(g_world, archetype, pair)
 }
 
 get_component :: proc {
@@ -113,15 +110,16 @@ get_component :: proc {
 }
 
 get_component_same :: #force_inline proc(entity: Entity, $Component: typeid) -> ^Component {
-	return ecs.get_component_same(g.world, entity, Component)
+	return ecs.get_component_same(g_world, entity, Component)
 }
 get_component_cast :: #force_inline proc(entity: Entity, $Component: typeid, $CastTo: typeid) -> ^CastTo {
-	return ecs.get_component_cast(g.world, entity, Component, CastTo)
+	return ecs.get_component_cast(g_world, entity, Component, CastTo)
 }
 get_component_pair :: #force_inline proc(entity: Entity, pair: ecs.PairType($R, $T)) -> ^R {
-	return ecs.get_component_pair(g.world, entity, pair)
+	return ecs.get_component_pair(g_world, entity, pair)
 }
 
+Term :: ecs.Term
 has :: proc {
 	has_typeid,
 	has_pair,
@@ -136,7 +134,7 @@ has_pair :: #force_inline proc(p: $P/ecs.PairType) -> ecs.Term {
 }
 
 end_ecs :: #force_inline proc() {
-	ecs.delete_world(g.world)
+	ecs.delete_world(g_world)
 }
 
 has_component :: proc {
@@ -145,11 +143,11 @@ has_component :: proc {
 }
 
 has_component_type :: #force_inline proc(entity: Entity, $T: typeid) -> bool {
-    return ecs.has_component_type(g.world, entity, T)
+    return ecs.has_component_type(g_world, entity, T)
 }
 
 has_component_instance :: #force_inline proc(entity: Entity, component: $T) -> bool {
-    return ecs.has_component_instance(g.world, entity, component)
+    return ecs.has_component_instance(g_world, entity, component)
 }
 
 //----------------------------------------------------------------------------\\
@@ -157,10 +155,10 @@ has_component_instance :: #force_inline proc(entity: Entity, component: $T) -> b
 //----------------------------------------------------------------------------\\
 
 get_material :: #force_inline proc(i: i32) -> ^resource.Material {
-	return &g_materials[i]
+	return &resource.materials[i]
 }
 get_material_index :: #force_inline proc(id: i32) -> i32 {
-	for m, i in g_materials {
+	for m, i in resource.materials {
 		if (m.unique_id == id) {
 			return i32(i)
 		}
@@ -237,9 +235,37 @@ save_ui_prefab :: #force_inline proc(entity: Entity, filename: string) {
     }
 }
 
-set_new_scene :: proc(name : string) -> ^scene.SceneData
+set_new_scene :: proc(name : string, arena : ^MemoryArena) -> ^scene.SceneData
 {
-    destroy_memory_arena(&g.mem_scene)
-    init_memory_arena(&g.mem_scene, mem.Megabyte)
-    return scene.load_new_scene(name, g.mem_scene.alloc)
+    destroy_memory_arena(arena)
+    init_memory_arena(arena, mem.Megabyte)
+    return scene.load_new_scene(name, arena.alloc)
+}
+
+//----------------------------------------------------------------------------\\
+// /Resource
+//----------------------------------------------------------------------------\\
+load_materials :: #force_inline proc(file : string, materials : ^[dynamic]resource.Material){
+    resource.load_materials(file,materials)
+}
+load_models :: #force_inline proc(directory: string, models: ^[dynamic]resource.Model) {
+    resource.load_models(directory, models)
+}
+load_anim_directory :: #force_inline proc(directory : string, poses : ^map[u32]resource.Animation, alloc : mem.Allocator){
+    resource.load_anim_directory(directory, poses, alloc)
+}
+
+//----------------------------------------------------------------------------\\
+// /Scene
+//----------------------------------------------------------------------------\\
+load_prefab_directory :: #force_inline proc(directory : string, prefabs : ^map[string]scene.Node, alloc := context.allocator){
+   scene.load_prefab_directory(directory, prefabs, alloc)
+}
+
+load_prefab_node :: #force_inline proc(name: string, alloc := context.allocator) -> (root: scene.Node) {
+    return scene.load_prefab_node(name,alloc)
+}
+
+load_new_scene :: #force_inline proc(name : string, allocator := context.temp_allocator) -> ^scene.SceneData {
+    return scene.load_new_scene(name, allocator)
 }
