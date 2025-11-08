@@ -1,14 +1,6 @@
 package game
 import "core:fmt"
-import "core:math/linalg"
-import "core:bufio"
-import "core:os"
-import "core:strings"
-import "core:slice"
-import "core:math/rand"
 import "core:container/queue"
-import "core:mem"
-import "base:intrinsics"
 import "axiom"
 display_player :: proc(p : Player)
 {

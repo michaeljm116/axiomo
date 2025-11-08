@@ -2,7 +2,6 @@ package axiom
 import "core:fmt"
 import "core:math/linalg"
 import "external/ecs"
-// import "core:hash/xxhash"
 import "core:strings"
 import "core:container/queue"
 import res "resource"

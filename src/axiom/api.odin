@@ -1,15 +1,12 @@
 package axiom
 import math "core:math/linalg"
 import ecs "external/ecs"
-import embree "external/embree"
 import "core:fmt"
-import vma "external/vma"
 import "resource"
 import "resource/scene"
 import "core:os"
 import "core:encoding/json"
 import "core:mem"
-import vmem"core:mem/virtual"
 import "base:runtime"
 
 // Helper types for vectors/matrices

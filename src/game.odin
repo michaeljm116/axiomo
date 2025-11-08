@@ -1,21 +1,10 @@
 package game
 
-import "base:intrinsics"
 import "base:runtime"
-
 import "core:sys/windows"
-import "core:fmt"
 import "core:log"
 import "core:mem"
-import "core:os"
-import "core:path/filepath"
-import "core:slice"
-import vmem "core:mem/virtual"
-import "core:strings"
-
 import "vendor:glfw"
-import vk "vendor:vulkan"
-
 import "axiom/external/ecs"
 import res "axiom/resource"
 import sc "axiom/resource/scene"

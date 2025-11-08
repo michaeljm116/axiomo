@@ -43,4 +43,5 @@ https://www.visitwestchesterny.com/listing/bedford-post-inn/502/
 * itd be so cool if i can get osmething like this going...
 * ![[Pasted image 20251108060935.png]]
 * I like the fire place
+* square stores
 * 

@@ -1,14 +1,9 @@
 package game
 
 import "core:fmt"
-import "core:mem"
 import "core:math"
-import "core:time"
 import "core:math/linalg"
-import vmem "core:mem/virtual"
-import "core:c"
 import "vendor:glfw"
-import b2"vendor:box2d"
 import "axiom"
 
 // Find the camera entity in the scene

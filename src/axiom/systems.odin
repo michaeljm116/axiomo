@@ -4,22 +4,15 @@ import "core:c"
 import "core:fmt"
 import "core:log"
 import "core:mem"
-import "core:slice"
 import "core:strings"
 import "core:math"
 import "core:math/linalg"
-import "core:container/queue"
 import "external/ecs"
 import "external/embree"
 
-import b2"vendor:box2d"
 import "resource/scene"
 import "gpu"
 import "resource"
-
-// these are sus V
-import "vendor:glfw"
-import vmem "core:mem/virtual"
 
 //----------------------------------------------------------------------------\\
 // /Transform System /ts
@@ -1129,8 +1122,6 @@ check_if_finished :: proc(curr: Sqt, ac: ^Cmp_Animate) -> bool {
 
     return anim_finished == 7
 }
-
-
 
 //----------------------------------------------------------------------------\\
 // /UI

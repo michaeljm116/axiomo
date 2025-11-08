@@ -1,7 +1,5 @@
 package scene
-import math "core:math/linalg"
 import "core:os"
-import "core:io"
 import "core:fmt"
 import "core:encoding/json"
 import path2 "../../extensions/filepath2"
