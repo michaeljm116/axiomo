@@ -44,7 +44,6 @@ FrameRate :: struct
     physics_time_step : f64
 }
 
-
 Sqt :: struct
 {
     rot : quat,
@@ -92,16 +91,6 @@ EngineFlags :: union
 {
     ComponentFlags,
     u32,
-}
-
-ObjectType :: enum i32 {
-    SPHERE = 1,
-    BOX = 2,
-    CYLINDER = 3,
-    PLANE = 4,
-    DISK = 5,
-    QUAD = 6,
-    CONE = 7,
 }
 
 Cmp_Node :: struct {
