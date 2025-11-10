@@ -35,14 +35,12 @@
             "id": "f88536f4a261db38",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "image",
               "state": {
-                "file": "BeeKillingsInn/Inspo - Art.md",
-                "mode": "source",
-                "source": false
+                "file": "Pasted image 20251108055025.png"
               },
-              "icon": "lucide-file",
-              "title": "Inspo - Art"
+              "icon": "lucide-image",
+              "title": "Pasted image 20251108055025"
             }
           },
           {
@@ -238,11 +236,11 @@
   },
   "active": "f88536f4a261db38",
   "lastOpenFiles": [
+    "Pasted image 20251108060935.png",
+    "BeeKillingsInn/Inspo - Art.md",
     "BeeKillingsInn/Architecture.md",
     "BeeKillingsInn/Engineification.md",
     "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md",
-    "BeeKillingsInn/Inspo - Art.md",
-    "Pasted image 20251108060935.png",
     "{08E3CA3B-E91C-4292-AC97-23066AB46B4B}.png",
     "{80489E69-1C89-455B-ACD9-51B3CA0AFD47}.png",
     "{0921DF1F-BCAF-4B33-8B35-87CF37C72AFB}.png",
@@ -273,7 +271,6 @@
     "BeeKillingsInn/Refactor.md",
     "Excalidraw/Untitled.md",
     "BeeKillingsInn/Visualizations!.md",
-    "BeeKillingsInn/Rules Engine.md",
     "Photos",
     "Excalidraw",
     "Untitled.base",

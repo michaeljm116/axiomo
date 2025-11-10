@@ -1,6 +1,6 @@
 package game
 
-import axiom "axiom"
+import "axiom"
 import "axiom/resource/scene"
 //----------------------------------------------------------------------------\\
 // /Interface - common things for easy interfacing with the engine

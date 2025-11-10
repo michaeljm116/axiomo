@@ -2,6 +2,12 @@ package game
 import "core:mem"
 import "axiom"
 
+// start_level_common :: proc()
+// {
+//     context.allocator = alloc
+//     using g.level
+
+// }
 start_level1 :: proc(alloc : mem.Allocator = context.allocator)
 {
     context.allocator = alloc

@@ -1,0 +1,182 @@
+{
+  "Node": [
+    {
+      "Material": {
+        "_ID": -235527168
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.0,
+          "_y": 10.0,
+          "_z": 1.0
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "WoodBody",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": -235527168
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": -10.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.5,
+          "_y": 1.5,
+          "_z": 1.5
+        }
+      },
+      "_Dynamic": false,
+      "_Name": "WoodBase",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": -235527168
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": 9.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.100000023841858,
+          "_y": 1.0,
+          "_z": 1.100000023841858
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "WoodTop",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": -235527168
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": 10.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.25,
+          "_y": 0.10000000149011612,
+          "_z": 1.25
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "WoodTipTop",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    },
+    {
+      "Material": {
+        "_ID": -235527168
+      },
+      "Object": {
+        "_ID": -2
+      },
+      "Transform": {
+        "Position": {
+          "_x": 0.0,
+          "_y": 8.0,
+          "_z": 0.0
+        },
+        "Rotation": {
+          "_w": 1.0,
+          "_x": 0.0,
+          "_y": 0.0,
+          "_z": 0.0
+        },
+        "Scale": {
+          "_x": 1.25,
+          "_y": 0.10000000149011612,
+          "_z": 1.25
+        }
+      },
+      "_Dynamic": true,
+      "_Name": "WoodTipBot",
+      "_eFlags": 32775,
+      "_gFlags": 0,
+      "_hasChildren": false
+    }
+  ],
+  "Transform": {
+    "Position": {
+      "_x": -7.40966796875,
+      "_y": 0.9307861328125,
+      "_z": 7.51953125
+    },
+    "Rotation": {
+      "_w": 1.0,
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Scale": {
+      "_x": 1.0,
+      "_y": 1.0,
+      "_z": 1.0
+    }
+  },
+  "_Dynamic": false,
+  "_Name": "WoodPillar",
+  "_eFlags": 3,
+  "_gFlags": 0,
+  "_hasChildren": true
+}

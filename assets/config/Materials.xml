@@ -20,4 +20,5 @@
     <Material Name="LighterBlack" DiffuseR="0.05882353" DiffuseG="0.05882353" DiffuseB="0.05882353" Reflective="0.103" Roughness="0" Transparency="0" Refractive="0" Texture=""/>
     <Material Name="ShinyBlocky" DiffuseR="1" DiffuseG="1" DiffuseB="1" Reflective="1" Roughness="1" Transparency="0" Refractive="0" Texture=""/>
     <Material Name="TitleScreen" DiffuseR="1" DiffuseG="1" DiffuseB="1" Reflective="0" Roughness="1" Transparency="0" Refractive="1" Texture="title.png"/>
+    <Material Name="Wood-Wall" DiffuseR="0" DiffuseG="0" DiffuseB="0" Reflective="0" Roughness="1" Transparency="0" Refractive="1" Texture="wood-wall.jpg"/>
 </Root>

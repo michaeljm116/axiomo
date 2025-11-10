@@ -121,7 +121,7 @@ game_init :: proc() {
        	locked            = true,
        	physics_acc_time  = 0,
        	physics_time_step = 1.0 / 60.0,}
-    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
+    g.scene = set_new_scene("assets/scenes/Entrance.json")
 	ax.g_bvh = ax.bvh_system_create(g_mem_core.alloc)
 	ax.start_up_raytracer(g_mem_area.alloc)
 
