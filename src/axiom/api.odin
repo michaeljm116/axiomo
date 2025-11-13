@@ -38,18 +38,18 @@ g_world_ent : Entity
 // /ECS
 //----------------------------------------------------------------------------\\
 // Helper functions that assume g_world
-create_world :: #force_inline proc(arena : ^MemoryArena) -> ^World {
-    init_memory_arena(arena, mem.Megabyte)
-    g_world = ecs.create_world(arena.alloc)// track_alloc.backing)
+create_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World {
+    init_memory(mem_stack, mem.Megabyte)
+    g_world = ecs.create_world(mem_stack.alloc)// track_alloc.backing)
     g_world_ent = add_entity()
     return g_world
 }
-destroy_world :: #force_inline proc(arena : ^MemoryArena){
-	destroy_memory_arena(arena)
+destroy_world :: #force_inline proc(mem_stack : ^MemoryStack){
+	destroy_memory_stack(mem_stack)
 }
-restart_world :: #force_inline proc(arena : ^MemoryArena){
+restart_world :: #force_inline proc(mem_stack : ^MemoryStack){
     render_clear_entities()
-    reset_memory_arena(arena)
+    destroy_memory_stack(mem_stack)
 }
 // Entity management
 add_entity :: #force_inline proc() -> ecs.EntityID {
@@ -234,8 +234,8 @@ save_ui_prefab :: #force_inline proc(entity: Entity, filename: string) {
 
 set_new_scene :: proc(name : string, arena : ^MemoryArena) -> ^scene.SceneData
 {
-    destroy_memory_arena(arena)
-    init_memory_arena(arena, mem.Megabyte)
+    destroy_memory(arena)
+    init_memory(arena, mem.Megabyte)
     return scene.load_new_scene(name, arena.alloc)
 }
 

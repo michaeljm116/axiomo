@@ -29,7 +29,6 @@ Level :: struct
 prestart :: proc()
 {
     g.state = .Start
-    g.app_state = .TitleScreen
     g.current_bee = 0
 
     // g_saftey_bee = Bee{name = '🍯', pos = vec2i{6,3}, target = vec2i{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
@@ -1317,7 +1316,7 @@ start_game :: proc(){
 
 battle_run :: proc(dt: f32, state: ^AppState) {
 	// if glfw.WindowShouldClose() do return
-	switch state^ {
+	#partial switch state^ {
 	case .TitleScreen:
     	if is_key_just_pressed(glfw.KEY_ENTER){
             state^ = .MainMenu

@@ -10,10 +10,19 @@ MemoryArena :: struct
 {
     arena: vmem.Arena,
     alloc : mem.Allocator,
+    name : string,
+}
+
+MemoryStack :: struct
+{
+    stack : mem.Rollback_Stack,
+    alloc : mem.Allocator,
+    buffer : []u8,
     name : string
 }
 
-init_memory_arena :: proc{init_memory_arena_growing, init_memory_arena_static}
+
+init_memory :: proc{init_memory_arena_growing, init_memory_arena_static, init_memory_stack}
 
 init_memory_arena_growing :: proc(ma : ^MemoryArena, min_block_size :uint= vmem.DEFAULT_ARENA_GROWING_MINIMUM_BLOCK_SIZE)
 {
@@ -45,6 +54,16 @@ print_arena_usage :: proc(ma: ^MemoryArena) {
     fmt.printfln("Memory Arena '%v' Usage: Total Used = %v bytes, Total Reserved = %v bytes", ma.name, ma.arena.total_used, ma.arena.total_reserved)
 }
 
+init_memory_stack :: proc(ms : ^MemoryStack, size : u64){
+   ms.buffer = make([]u8, size)
+   mem.rollback_stack_init_buffered(&ms.stack, ms.buffer)
+   ms.alloc = mem.rollback_stack_allocator(&ms.stack)
+}
+
+destroy_memory_stack :: proc(ms : ^MemoryStack){
+    mem.rollback_stack_destroy(&ms.stack)
+}
+destroy_memory :: proc{destroy_memory_arena, destroy_memory_stack}
 
 print_tracking_stats :: proc(ta: ^mem.Tracking_Allocator) {
     sync.lock(&ta.mutex)

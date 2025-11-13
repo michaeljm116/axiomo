@@ -50,7 +50,7 @@ Game_Memory :: struct
     game_started : bool,
     ves : VisualEventData,
     mem_scene : ax.MemoryArena,                  // This holds the scene data from the json, should be reset upon scene change
-    mem_game : ax.MemoryArena,                   // This holds game data, reset upon restarting of a game, ecs goes here
+    mem_game : ax.MemoryStack,                   // This holds game data, reset upon restarting of a game, ecs goes here
     mem_frame : ax.MemoryArena,                  // Mostly for BVH or anything that exist for a single frame
 }
 
@@ -121,7 +121,7 @@ game_init :: proc() {
        	locked            = true,
        	physics_acc_time  = 0,
        	physics_time_step = 1.0 / 60.0,}
-    g.scene = set_new_scene("assets/scenes/Entrance.json")
+    g.scene = set_new_scene("assets/scenes/Empty.json")
 	ax.g_bvh = ax.bvh_system_create(g_mem_core.alloc)
 	ax.start_up_raytracer(g_mem_area.alloc)
 
@@ -215,17 +215,17 @@ game_force_restart :: proc() -> bool{
 // 128 MB totals
 set_up_core_arenas :: proc()
 {
-    ax.init_memory_arena_growing(&g_mem_core, mem.Megabyte * 1)
-    ax.init_memory_arena_growing(&g_mem_area, mem.Megabyte * 1)
+    ax.init_memory(&g_mem_core, mem.Megabyte * 1)
+    ax.init_memory(&g_mem_area, mem.Megabyte * 1)
     g_mem_core.name = "core"
     g_mem_area.name = "area"
 }
 
 set_up_game_arenas :: proc()
 {
-    ax.init_memory_arena_growing(&g.mem_scene, mem.Megabyte * 1)
-    ax.init_memory_arena_growing(&g.mem_game, mem.Megabyte * 1)
-    ax.init_memory_arena_static(&g.mem_frame, mem.Kilobyte * 512, mem.Kilobyte * 4)
+    ax.init_memory(&g.mem_scene, mem.Megabyte * 1)
+    ax.init_memory(&g.mem_game, mem.Megabyte * 4)
+    ax.init_memory(&g.mem_frame, mem.Kilobyte * 512, mem.Kilobyte * 4)
     g.mem_scene.name = "scene"
     g.mem_game.name = "game"
     g.mem_frame.name = "frame"
@@ -233,17 +233,16 @@ set_up_game_arenas :: proc()
 
 destroy_all_arenas :: proc()
 {
-    ax.destroy_memory_arena(&g_mem_core)
-    ax.destroy_memory_arena(&g_mem_area)
-    ax.destroy_memory_arena(&g.mem_scene)
-    ax.destroy_memory_arena(&g.mem_game)
-    ax.destroy_memory_arena(&g.mem_frame)
+    ax.destroy_memory(&g_mem_core)
+    ax.destroy_memory(&g_mem_area)
+    ax.destroy_memory(&g.mem_scene)
+    ax.destroy_memory(&g.mem_frame)
+    ax.destroy_memory(&g.mem_game)
 }
 
 reset_game_arenas :: proc()
 {
     ax.reset_memory_arena(&g.mem_scene)
-    ax.reset_memory_arena(&g.mem_game)
     ax.reset_memory_arena(&g.mem_frame)
 }
 
@@ -252,6 +251,6 @@ print_all_arenas :: proc()
     ax.print_arena_usage(&g_mem_core)
 	ax.print_arena_usage(&g_mem_area)
 	ax.print_arena_usage(&g.mem_scene)
-	ax.print_arena_usage(&g.mem_game)
 	ax.print_arena_usage(&g.mem_frame)
+	// ax.print_arena_usage(&g.mem_game)
 }

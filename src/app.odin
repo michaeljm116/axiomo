@@ -16,7 +16,8 @@ AppState :: enum{
     Game,
     Pause,
     GameOver,
-    Victory
+    Victory,
+
 }
 
 // Initialize the gameplay system
@@ -33,10 +34,11 @@ app_init :: proc() {
 app_start :: proc()
 {
     ax.g_world = create_world()
+    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
 	ax.load_scene(g.scene^, g.mem_game.alloc)
 	ax.added_entity(ax.g_world_ent)
 	g.player = ax.load_prefab("Froku")
-	g.app_state = .TitleScreen
+	g.app_state = .MainMenu
     g.input = InputState{
         mouse_sensitivity = 0.1,
         movement_speed = 5.0,
@@ -55,7 +57,8 @@ app_start :: proc()
 
 app_restart :: proc()
 {
-    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
+    // g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
+    g.scene = set_new_scene("assets/scenes/Entrance.json")
     restart_world()
     app_start()
 }
@@ -71,7 +74,8 @@ app_destroy :: proc() {
     // Release mouse cursor
     glfw.SetInputMode(ax.g_renderbase.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
 
-    ax.reset_memory_arena(&g.mem_game)
+    ax.destroy_world(&g.mem_game)
+    // ax.reset_memory_arena(&g.mem_game)
 }
 
 app_post_init :: proc()
