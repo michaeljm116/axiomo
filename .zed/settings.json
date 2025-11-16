@@ -12,5 +12,18 @@
     "checks.json",
     "**.dll",
     "ols.json"
-  ]
+  ],
+  "lsp": {
+    "ols": {
+      "binary": {
+        "path": "c:/dev/ols/ols-x86_64-pc-windows-msvc.exe",
+        "arguments": []
+      }
+    },
+    "glsl_analyzer":{
+      "binary":{
+        "path":"c:/dev/glsl_analyzer/glsl_analyzer.exe"
+      }
+    }
+  }
 }

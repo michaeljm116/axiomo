@@ -63,12 +63,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Engineification.md",
+                "file": "BeeKillingsInn/_Travel.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Engineification"
+              "title": "_Travel"
             }
           },
           {
@@ -84,7 +84,7 @@
             }
           }
         ],
-        "currentTab": 2
+        "currentTab": 4
       }
     ],
     "direction": "vertical"
@@ -234,12 +234,15 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "f88536f4a261db38",
+  "active": "f6f08cdc8d12a879",
   "lastOpenFiles": [
+    "Pasted image 20251114095035.png",
+    "BeeKillingsInn/Architecture.md",
+    "BeeKillingsInn/_Travel.md",
+    "BeeKillingsInn/Engineification.md",
+    "Pasted image 20251108055025.png",
     "Pasted image 20251108060935.png",
     "BeeKillingsInn/Inspo - Art.md",
-    "BeeKillingsInn/Architecture.md",
-    "BeeKillingsInn/Engineification.md",
     "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md",
     "{08E3CA3B-E91C-4292-AC97-23066AB46B4B}.png",
     "{80489E69-1C89-455B-ACD9-51B3CA0AFD47}.png",
@@ -249,7 +252,6 @@
     "{857A3D8B-F0CC-4965-AB43-BB397C62E2E2}.png",
     "{EC33DE1D-6A47-42AA-B324-0E1936535917}.png",
     "BeeKillingsInn/Inspo-TItle.md",
-    "Pasted image 20251108055025.png",
     "Photos/patio-2-768.BAhOe6xB_Bgvky.webp",
     "Excalidraw/Arenas.md",
     "BeeKillingsInn/Bugs.md",
@@ -270,7 +272,6 @@
     "Kanban.md",
     "BeeKillingsInn/Refactor.md",
     "Excalidraw/Untitled.md",
-    "BeeKillingsInn/Visualizations!.md",
     "Photos",
     "Excalidraw",
     "Untitled.base",

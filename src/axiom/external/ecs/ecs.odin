@@ -283,7 +283,6 @@ add_component :: proc(world: ^World, entity: EntityID, component: $T) {
         }
 
         new_archetype = get_or_create_archetype(world, new_component_ids[:], new_tag_ids[:])
-
         move_entity(world, entity, info, nil, new_archetype)
     } else {
         new_archetype, ok = old_archetype.add_edges[cid]
@@ -351,7 +350,6 @@ add_component_data :: proc(
 	}
 
 	offset := index * size
-
 	mem.copy(&table^[offset], component, size)
 }
 
@@ -529,7 +527,7 @@ get_or_create_archetype :: proc(
 	}
 
 	// Create new archetype
-	archetype = new(Archetype)
+	archetype = new(Archetype, world.alloc)
 	archetype.id = archetype_id
 	archetype.component_ids = slice.clone(component_ids, world.alloc)
 	archetype.entities = make([dynamic]EntityID, world.alloc)
@@ -556,80 +554,80 @@ get_or_create_archetype :: proc(
 	return archetype
 }
 
-// delete_archetype :: proc(archetype: ^Archetype, cleanup_edges := true) {
-// 	if archetype == nil {
-// 		return
-// 	}
+delete_archetype :: proc(archetype: ^Archetype, cleanup_edges := true) {
+	if archetype == nil {
+		return
+	}
 
-// 	if cleanup_edges {
-// 		// Clean add_edges neighbors
-// 		for _, other_archetype in archetype.add_edges {
-// 			// Collect keys for add_edges
-// 			add_keys: [dynamic]ComponentID
-// 			defer delete(add_keys)
-// 			for key, a in other_archetype.add_edges {
-// 				if a.id == archetype.id {
-// 					append(&add_keys, key)
-// 				}
-// 			}
-// 			for key in add_keys {
-// 				delete_key(&other_archetype.add_edges, key)
-// 			}
+	if cleanup_edges {
+		// Clean add_edges neighbors
+		for _, other_archetype in archetype.add_edges {
+			// Collect keys for add_edges
+			add_keys: [dynamic]ComponentID
+			defer delete(add_keys)
+			for key, a in other_archetype.add_edges {
+				if a.id == archetype.id {
+					append(&add_keys, key)
+				}
+			}
+			for key in add_keys {
+				delete_key(&other_archetype.add_edges, key)
+			}
 
-// 			// Collect keys for remove_edges
-// 			remove_keys: [dynamic]ComponentID
-// 			defer delete(remove_keys)
-// 			for key, a in other_archetype.remove_edges {
-// 				if a.id == archetype.id {
-// 					append(&remove_keys, key)
-// 				}
-// 			}
-// 			for key in remove_keys {
-// 				delete_key(&other_archetype.remove_edges, key)
-// 			}
-// 		}
+			// Collect keys for remove_edges
+			remove_keys: [dynamic]ComponentID
+			defer delete(remove_keys)
+			for key, a in other_archetype.remove_edges {
+				if a.id == archetype.id {
+					append(&remove_keys, key)
+				}
+			}
+			for key in remove_keys {
+				delete_key(&other_archetype.remove_edges, key)
+			}
+		}
 
-// 		// Clean remove_edges neighbors
-// 		for _, other_archetype in archetype.remove_edges {
-// 			// Collect keys for add_edges
-// 			add_keys: [dynamic]ComponentID
-// 			defer delete(add_keys)
-// 			for key, a in other_archetype.add_edges {
-// 				if a.id == archetype.id {
-// 					append(&add_keys, key)
-// 				}
-// 			}
-// 			for key in add_keys {
-// 				delete_key(&other_archetype.add_edges, key)
-// 			}
+		// Clean remove_edges neighbors
+		for _, other_archetype in archetype.remove_edges {
+			// Collect keys for add_edges
+			add_keys: [dynamic]ComponentID
+			defer delete(add_keys)
+			for key, a in other_archetype.add_edges {
+				if a.id == archetype.id {
+					append(&add_keys, key)
+				}
+			}
+			for key in add_keys {
+				delete_key(&other_archetype.add_edges, key)
+			}
 
-// 			// Collect keys for remove_edges
-// 			remove_keys: [dynamic]ComponentID
-// 			defer delete(remove_keys)
-// 			for key, a in other_archetype.remove_edges {
-// 				if a.id == archetype.id {
-// 					append(&remove_keys, key)
-// 				}
-// 			}
-// 			for key in remove_keys {
-// 				delete_key(&other_archetype.remove_edges, key)
-// 			}
-// 		}
-// 	}
+			// Collect keys for remove_edges
+			remove_keys: [dynamic]ComponentID
+			defer delete(remove_keys)
+			for key, a in other_archetype.remove_edges {
+				if a.id == archetype.id {
+					append(&remove_keys, key)
+				}
+			}
+			for key in remove_keys {
+				delete_key(&other_archetype.remove_edges, key)
+			}
+		}
+	}
 
-// 	delete(archetype.component_ids)
-// 	delete(archetype.entities)
-// 	for _, array in archetype.tables {
-// 		delete(array)
-// 	}
-// 	delete(archetype.tables)
-// 	delete(archetype.component_types)
-// 	// if len(archetype.tag_ids) > 0 do delete(archetype.tag_ids)
-// 	delete(archetype.disabled_set)
-// 	delete(archetype.add_edges)
-// 	delete(archetype.remove_edges)
-// 	free(archetype)
-// }
+	delete(archetype.component_ids)
+	delete(archetype.entities)
+	for _, array in archetype.tables {
+		delete(array)
+	}
+	delete(archetype.tables)
+	delete(archetype.component_types)
+	// if len(archetype.tag_ids) > 0 do delete(archetype.tag_ids)
+	delete(archetype.disabled_set)
+	delete(archetype.add_edges)
+	delete(archetype.remove_edges)
+	free(archetype)
+}
 
 sort_component_ids :: proc(ids: []ComponentID) {
 	// Simple insertion sort for small arrays

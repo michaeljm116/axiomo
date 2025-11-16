@@ -34,7 +34,8 @@ app_init :: proc() {
 app_start :: proc()
 {
     ax.g_world = create_world()
-    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
+    // g.scene = set_new_scene("assets/scenes/Entrance.json")
+    g.scene = set_new_scene("assets/scenes/BeeKillingsInn2.json")
 	ax.load_scene(g.scene^, g.mem_game.alloc)
 	ax.added_entity(ax.g_world_ent)
 	g.player = ax.load_prefab("Froku")
