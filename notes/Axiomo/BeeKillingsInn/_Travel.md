@@ -138,4 +138,11 @@ These should make your renderer more robust, efficient, and visually appealing. 
 	* new_row = old size before append of entity
 	* ent gets appeneded
 	* world gets updated 
+
+* # ODE ECS
+	* So unfortunately, if i want to use this i need a new thing for each thing
+	* I guess, the fact that you have all your components as CMP makes things easier i suppose?
+	* So for every Cmp you'll need a corresponding Tbl_
+	* Then for queries you'd... do things, so like the ultimate way would be like *
+	* Views need to be init before... im thinking if you init the.... wait i think all views need to be initialized for verything
 	* 

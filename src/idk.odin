@@ -8,17 +8,11 @@ import "axiom"
 
 // Find the camera entity in the scene
 find_camera_entity :: proc() {
-    camera_archetypes := axiom.query(has(Cmp_Camera), has(Cmp_Transform), has(Cmp_Node))
-
-    for archetype in camera_archetypes {
-        entities := archetype.entities
-        if len(entities) > 0 {
-            g.camera_entity = entities[0]
-            ct := get_component(g.camera_entity, Cmp_Transform)
-            return
-        }
+    table_camera := get_table(Cmp_Camera)
+    for camera, i in table_camera.rows{
+        g.camera_entity = table_camera.rid_to_eid[i]
+        return
     }
-
     fmt.println("Warning: No camera entity found!")
 }
 
@@ -43,7 +37,7 @@ update_light_orbit :: proc(delta_time: f32) {
 
     // Determine orbit center: prefer player position if available
     center := vec3{0.0, 11.5, 0.0}
-    if g.player != 0 {
+    if g.player != Entity(0) {
         pc := get_component(g.player, Cmp_Transform)
         if pc != nil {
             center = pc.local.pos.xyz

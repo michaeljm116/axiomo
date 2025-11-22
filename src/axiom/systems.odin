@@ -7,7 +7,6 @@ import "core:mem"
 import "core:strings"
 import "core:math"
 import "core:math/linalg"
-import "external/ecs"
 import "external/embree"
 
 import "resource/scene"
@@ -17,34 +16,32 @@ import "resource"
 //----------------------------------------------------------------------------\\
 // /Transform System /ts
 //----------------------------------------------------------------------------\\
+v_transform : ^View
+sys_transform_init :: proc(alloc : mem.Allocator) {
+    v_transform = new(View, alloc)
+    view_init(v_transform, g_world, {get_table(Cmp_Transform), get_table(Cmp_Node), get_table(Cmp_Root)})
+}
+sys_transform_reset :: proc(){
+    view_rebuild(v_transform)
+}
 
 // Process all entities with Transform and Node components
-transform_sys_process :: proc() {
-    archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_Root))
-    for archetype in archetypes {
-        node_comps := get_table(archetype, Cmp_Node)
-        for &node in node_comps {
-            sqt_transform(&node)
-        }
-    }
-}
-
-
 sys_trans_process_ecs :: proc() {
-    archetypes := query(ecs.has(Cmp_Transform), ecs.has(Cmp_Node), ecs.has(Cmp_Root))
-    for archetype in archetypes {
-        for entity in archetype.entities do sqt_transform_e(entity)
-    }
+    it : Iterator
+    iterator_init(&it, v_transform)
+    for iterator_next(&it) do sqt_transform(get_entity(&it))
 }
 
-// SQT Transform procedure (main transformation logic)
-sqt_transform :: proc(nc: ^Cmp_Node) {
-    tc := get_component(nc.entity, Cmp_Transform)
+sqt_transform :: proc(entity: Entity) {
+    table_trans := get_table(Cmp_Transform)
+    table_node := get_table(Cmp_Node)
+    tc := get_component(table_trans,entity)
+    nc := get_component(table_node,entity)
     if tc == nil { return }
 
     parent_ent := nc.parent
     has_parent := parent_ent != Entity(0)
-    pc := get_component(parent_ent, Cmp_Node) if has_parent else nil
+    pc := get_component(table_node, parent_ent) if has_parent else nil
 
     // Local transform
     local := linalg.matrix4_translate_f32(tc.local.pos.xyz) * linalg.matrix4_from_quaternion_f32(tc.local.rot)
@@ -55,87 +52,7 @@ sqt_transform :: proc(nc: ^Cmp_Node) {
 
     // Combine with parent if exists
     if has_parent {
-        pt := get_component(parent_ent, Cmp_Transform)
-        tc.global.sca = pt.global.sca * tc.local.sca
-        tc.global.rot = pt.global.rot * tc.local.rot
-        tc.trm = pt.trm * local
-        local = local * scale_m
-        tc.world = pt.world * local
-    } else {
-        tc.global.sca = tc.local.sca
-        tc.global.rot = tc.local.rot
-        tc.trm = local
-        local = local * scale_m
-        tc.world = local
-    }
-
-    // Update specific components
-    if .PRIMITIVE in nc.engine_flags {
-        obj_comp := get_component(nc.entity, Cmp_Primitive)
-        if obj_comp != nil {
-            obj_comp.extents = tc.global.sca.xyz
-            rot_mat := linalg.Matrix3f32{
-                tc.world[0].x, tc.world[0].y, tc.world[0].z,
-                tc.world[1].x, tc.world[1].y, tc.world[1].z,
-                tc.world[2].x, tc.world[2].y, tc.world[2].z
-            }
-            obj_comp.aabb_extents = rotate_aabb(rot_mat)
-            obj_comp.world = obj_comp.id < 0 ? tc.trm : tc.world
-        }
-    } else if .CAMERA in nc.engine_flags {
-        c := get_component(nc.entity, Cmp_Camera)
-        if c != nil {
-            c.rot_matrix = tc.world
-            update_camera(c) // Call update_camera from raytracer.odin
-        }
-    } else if .LIGHT in nc.engine_flags {
-        l := get_component(nc.entity, Cmp_Light)
-        if l != nil {
-            // Update light in render system
-            g_raytracer.lights[0] = gpu.Light{
-                pos = tc.world[3].xyz,
-                color = l.color,
-                intensity = l.intensity,
-                id = l.id,
-            }
-        }
-    }
-    // Recurse for children
-    if nc.is_parent {
-        //fmt.println("Parent: ", nc.name)
-        curr_child := nc.child
-        for curr_child != Entity(0) {
-            child_nc := get_component(curr_child, Cmp_Node)
-            //fmt.println("--Child: ", child_nc.name)
-            if child_nc != nil {
-                sqt_transform(child_nc)
-                curr_child = child_nc.brotha
-            } else {
-                break
-            }
-        }
-    }
-}
-
-sqt_transform_e :: proc(entity: Entity) {
-    tc := get_component(entity, Cmp_Transform)
-    nc := get_component(entity, Cmp_Node)
-    if tc == nil { return }
-
-    parent_ent := nc.parent
-    has_parent := parent_ent != Entity(0)
-    pc := get_component(parent_ent, Cmp_Node) if has_parent else nil
-
-    // Local transform
-    local := linalg.matrix4_translate_f32(tc.local.pos.xyz) * linalg.matrix4_from_quaternion_f32(tc.local.rot)
-    scale_m := linalg.matrix4_scale_f32(tc.local.sca.xyz)
-
-    x,y,z := linalg.euler_angles_from_quaternion_f32(tc.local.rot, .XYZ)
-    tc.euler_rotation = linalg.to_degrees(vec3{x,y,z})
-
-    // Combine with parent if exists
-    if has_parent {
-        pt := get_component(parent_ent, Cmp_Transform)^
+        pt := get_component(table_trans, parent_ent)^
         tc.global.sca = tc.local.sca * pt.global.sca
         tc.global.rot = tc.local.rot * pt.global.rot
         tc.trm = pt.world * local
@@ -153,20 +70,20 @@ sqt_transform_e :: proc(entity: Entity) {
 
     // Update specific components
     if .PRIMITIVE in nc.engine_flags {
-        obj_comp := get_component(nc.entity, Cmp_Primitive)
+        obj_comp := get_component(get_table(Cmp_Primitive), nc.entity)
         if obj_comp != nil {
             obj_comp.extents = tc.global.sca.xyz
             obj_comp.aabb_extents = rotate_aabb(linalg.matrix3_from_matrix4_f32(tc.world))
             obj_comp.world = obj_comp.id < 0 ? tc.trm : tc.world
         }
     } else if .CAMERA in nc.engine_flags {
-        c := get_component(nc.entity, Cmp_Camera)
+        c := get_component(get_table(Cmp_Camera), nc.entity)
         if c != nil {
             c.rot_matrix = tc.world
             update_camera(c) // Call update_camera from raytracer.odin
         }
     } else if .LIGHT in nc.engine_flags {
-        l := get_component(nc.entity, Cmp_Light)
+        l := get_component(get_table(Cmp_Light), nc.entity)
         if l != nil {
             // Update light in render system
             g_raytracer.lights[0] = gpu.Light{
@@ -177,23 +94,10 @@ sqt_transform_e :: proc(entity: Entity) {
             }
         }
     }
-    if nc.brotha != Entity(0) do sqt_transform_e(nc.brotha)
-    if nc.child != Entity(0) do sqt_transform_e(nc.child)
-
-    // Recurse for children
-    // if nc.is_parent {
-    //     curr_child := nc.child
-    //     for curr_child != Entity(0) {
-    //         child_nc := get_component(curr_child, Cmp_Node)
-    //         if child_nc != nil {
-    //             sqt_transform_e(curr_child)
-    //             curr_child = child_nc.brotha
-    //         } else {
-    //             break
-    //         }
-    //     }
-    // }
+    if nc.brotha != Entity(0) do sqt_transform(nc.brotha)
+    if nc.child != Entity(0) do sqt_transform(nc.child)
 }
+
 // Rotate AABB procedure
 rotate_aabb :: proc(m: linalg.Matrix3f32) -> vec3 {
     extents := vec3{1, 1, 1}
@@ -244,6 +148,14 @@ geometry_transform_converter :: proc(nc: ^Cmp_Node) {
 //----------------------------------------------------------------------------\\
 // /BVH System
 //----------------------------------------------------------------------------\\
+v_bvh : ^View
+sys_bvh_init :: proc(alloc : mem.Allocator) {
+    v_bvh := new(View, alloc)
+    view_init(v_bvh, g_world, {get_table(Cmp_Primitive), get_table(Cmp_Node), get_table(Cmp_Transform)})
+}
+sys_bvh_reset :: proc(){
+    view_rebuild(v_bvh)
+}
 
 Sys_Bvh :: struct {
     device: embree.RTCDevice,
@@ -260,7 +172,6 @@ g_num_nodes: i32 = 0
 bvh_system_create :: proc(alloc: mem.Allocator) -> ^Sys_Bvh {
     system := new(Sys_Bvh, alloc)
     system.rebuild = true
-
     // Initialize Embree
     system.device = embree.rtcNewDevice(nil)
     if system.device == nil {
@@ -407,7 +318,6 @@ create_leaf :: proc "c" (
         lower = {prims.lower_x, prims.lower_y, prims.lower_z},
         upper = {prims.upper_x, prims.upper_y, prims.upper_z},
     }
-
     return ptr
 }
 
@@ -418,39 +328,36 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
     g_num_nodes = 0
 
     //Now Begin reseriving
-    archetypes := query(has(Cmp_Primitive), has(Cmp_Node), has(Cmp_Transform))
-    num_ents := 0
-    for a in archetypes do num_ents += len(a.entities)
-
+    table_prims := get_table(Cmp_Primitive)
+    num_ents := view_len(v_bvh)
     prims := make([dynamic]embree.RTCBuildPrimitive, 0, num_ents, alloc)
     entts := make([dynamic]Entity, 0, num_ents, alloc)
     pcmps := make([dynamic]^Cmp_Primitive, 0, num_ents, alloc)
 
     // Asemble!
     pid := 0
-    for a in archetypes
-    {
-       prim_comps := get_table(a, Cmp_Primitive)
-       for &pc, i in prim_comps
-       {
-            center := pc.world[3].xyz
-            lower := center - pc.aabb_extents
-            upper := center + pc.aabb_extents
-            build_prim := embree.RTCBuildPrimitive{
-                lower_x = lower.x,
-                lower_y = lower.y,
-                lower_z = lower.z,
-                geomID = 0,
-                upper_x = upper.x,
-                upper_y = upper.y,
-                upper_z = upper.z,
-                primID = u32(pid)
-            }
-            append(&pcmps, &pc)
-            append(&entts, a.entities[i])
-            append(&prims, build_prim)
-            pid += 1
-       }
+    it : Iterator
+    iterator_init(&it, v_bvh)
+    for iterator_next(&it) {
+        entity := get_entity(&it)
+        pc := get_component(table_prims, entity)
+        center := pc.world[3].xyz
+        lower := center - pc.aabb_extents
+        upper := center + pc.aabb_extents
+        build_prim := embree.RTCBuildPrimitive{
+            lower_x = lower.x,
+            lower_y = lower.y,
+            lower_z = lower.z,
+            geomID = 0,
+            upper_x = upper.x,
+            upper_y = upper.y,
+            upper_z = upper.z,
+            primID = u32(pid)
+        }
+        append(&pcmps, pc)
+        append(&entts, entity)
+        append(&prims, build_prim)
+        pid += 1
     }
 
     // Set up build arguments
@@ -795,7 +702,7 @@ load_prefab :: proc(name: string) -> (prefab : Entity)
     node, ok := resource.prefabs[name]
     if !ok{
         fmt.printf("[load_prefab] Prefab '%s' not found in g_prefabs map \n", name)
-        return 0
+        return Entity(0)
     }
     // Create the entity using the requested ECS allocator
     prefab = load_node(node)
@@ -812,24 +719,45 @@ load_prefab :: proc(name: string) -> (prefab : Entity)
 //----------------------------------------------------------------------------\\
 // /Animation System
 //----------------------------------------------------------------------------\\
+v_animation : ^View
+v_animate : ^View
+sys_anim_init :: proc(alloc : mem.Allocator) {
+    v_animation = new(View, alloc)
+    v_animate = new(View, alloc)
+    view_init(v_animation, g_world, {get_table(Cmp_Animation), get_table(Cmp_BFGraph)})
+    view_init(v_animate, g_world, {get_table(Cmp_Animate), get_table(Cmp_Transform)})
+}
+
+sys_anim_reset :: proc(){
+    view_rebuild(v_animation)
+    view_rebuild(v_animate)
+}
+
 sys_anim_process_ecs :: proc(dt : f32)
 {
-    archetypes := query(ecs.has(Cmp_Animation), ecs.has(Cmp_BFGraph))
-    for archetype in archetypes {
-        for entity in archetype.entities do sys_anim_update(entity, dt)
+    it : Iterator
+    anims := get_table(Cmp_Animation)
+    animates := get_table(Cmp_Animate)
+    transforms := get_table(Cmp_Transform)
+
+    iterator_init(&it, v_animation)
+    for iterator_next(&it){
+        entity := get_entity(&it)
+        sys_anim_update(entity, dt)
     }
 
-   animate_archetypes := query(ecs.has(Cmp_Animate), ecs.has(Cmp_Transform))
-   for anim in animate_archetypes {
-       anims := get_table(anim, Cmp_Animate)
-       trans := get_table(anim, Cmp_Transform)
-       for entity, i in anim.entities do sys_anim_process(entity, &anims[i], &trans[i], dt)
-   }
+    iterator_init(&it, v_animate)
+    for iterator_next(&it){
+        entity := get_entity(&it)
+        animate := get_component(animates, entity)
+        transform := get_component(transforms, entity)
+        sys_anim_process(entity, animate, transform, dt)
+    }
 }
 
 sys_anim_add :: proc(e : Entity){
-    ac := get_component(e, Cmp_Animation)
-    bfg := get_component(e, Cmp_BFGraph)
+    ac := get_component(e,Cmp_Animation)
+    bfg := get_component(e,Cmp_BFGraph)
     // node := get_component(e, Cmp_Node)
     assert(ac != nil && bfg != nil, "Animation, BFGraph, and Node components are required")
     animation := resource.animations[ac.prefab_name]
@@ -837,6 +765,7 @@ sys_anim_add :: proc(e : Entity){
 
     // If there's only 1 pose, then it'll only be the end pose
     // The start will just be where you're currently at
+    table_transform := get_table(Cmp_Transform)
     if ac.num_poses <= 1 {
         for pose in end_pose.pose {
             a := Cmp_Animate{
@@ -845,7 +774,7 @@ sys_anim_add :: proc(e : Entity){
                 end = map_sqt(pose.sqt_data),
                 parent_entity = e,}
             curr_node := bfg.nodes[pose.id]
-            a.start = get_component(curr_node, Cmp_Transform).local
+            a.start = get_component(table_transform,curr_node).local
             add_animate_component(curr_node, a)
         }
     }
@@ -887,7 +816,7 @@ sys_anim_add :: proc(e : Entity){
        // Now dispatch the components
        for key, &a in comps{
            bfg_ent := bfg.nodes[key]
-           bfg_sqt := get_component(bfg_ent, Cmp_Transform).local
+           bfg_sqt := get_component(table_transform, bfg_ent).local
 
            if !a.flags.start_set do a.start = bfg_sqt
            if !a.flags.end_set do a.end = bfg_sqt
@@ -902,12 +831,9 @@ sys_anim_add :: proc(e : Entity){
 // Transition takes the start and end from previous pose and transitions to the new pose
 // Start performs the animation
 // TransitionToStart/End times the animations
-sys_anim_update :: proc(entity: Entity, delta_time: f32)
+sys_anim_update :: proc(entity : Entity, delta_time: f32)
 {
     ac := get_component(entity, Cmp_Animation)
-    //display_animation_state(e, ac->state);
-    //display_animation_names(ac);
-
     switch ac.state {
     case .DEFAULT:
         break
@@ -1035,11 +961,13 @@ sys_anim_transition :: proc(entity: Entity)
 //Or just interpolate from where you're already at
 add_animate_component :: proc(ent: Entity, comp: Cmp_Animate)
 {
-    if(has_component(ent, Cmp_Animate)){
-        ac := get_component(ent, Cmp_Animate)
+    table_animate := get_table(Cmp_Animate)
+    table_transform := get_table(Cmp_Transform)
+    if(has(ent, Cmp_Animate)){
+        ac := get_component(table_animate, ent)
         ac^ = comp
         ac.flags.active = 1
-        tc := get_component(ent, Cmp_Transform)
+        tc := get_component(table_transform, ent)
         if ac == nil || tc == nil do return
 
         //This forces the animation to go to the start position
@@ -1048,8 +976,8 @@ add_animate_component :: proc(ent: Entity, comp: Cmp_Animate)
     }
     else {
         add_component(ent, comp)
-        ac := get_component(ent, Cmp_Animate)
-        tc := get_component(ent, Cmp_Transform)
+        ac := get_component(table_animate, ent)
+        tc := get_component(table_transform, ent)
         if ac == nil || tc == nil do return
         //This forces the animation to go to the start position
         if ac.flags.force_start do tc.local = ac.start
@@ -1060,20 +988,20 @@ add_animate_component :: proc(ent: Entity, comp: Cmp_Animate)
 
 deactivate_animate_component :: proc(e : Entity)
 {
-    ac := get_component(e, Cmp_Animate)
+    ac := get_component(get_table(Cmp_Animate),e)
     assert(ac != nil)
     ac.flags.active = 0
     if ac.flags.force_end == true{
-        tc := get_component(e, Cmp_Transform)
+        tc := get_component(get_table(Cmp_Transform),e)
         tc.local = ac.end
     }
     remove_component(e, Cmp_Animate)
 }
 
-sys_anim_deactivate_component :: proc(entity : Entity)
+sys_anim_deactivate_component :: proc(e : Entity)
 {
-    ac := get_component(entity, Cmp_Animation)
-    bfg := get_component(entity, Cmp_BFGraph)
+    ac := get_component(get_table(Cmp_Animation),e)
+    bfg := get_component(get_table(Cmp_BFGraph),e)
     assert(ac != nil && bfg != nil, "Animation and BFGraph components are required")
 
     animation := resource.animations[ac.prefab_name]

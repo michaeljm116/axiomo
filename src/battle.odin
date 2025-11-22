@@ -1,4 +1,5 @@
 package game
+import "core:mem"
 import "core:fmt"
 import "core:math/linalg"
 import "core:math"
@@ -8,7 +9,6 @@ import "base:intrinsics"
 import "vendor:glfw"
 import xxh2"axiom/extensions/xxhash2"
 import "axiom"
-
 GRID_WIDTH :: 7
 GRID_HEIGHT :: 5
 grid_size := vec2i{GRID_WIDTH, GRID_HEIGHT}
@@ -1078,44 +1078,31 @@ get_top_of_entity :: proc(e : Entity) -> f32
 }
 
 find_player_entity :: proc() {
-    player_archetypes := axiom.query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
-
-    for archetype in player_archetypes {
-        nodes := axiom.get_table(archetype, Cmp_Node)
-        for node, i in nodes {
-            if node.name == "Froku" {
-                g.player = archetype.entities[i]
-                fmt.println("Found Player")
-                return
-            }
+    table_nodes := get_table(Cmp_Node)
+    for node, i in table_nodes.rows{
+        if node.name == "Froku" {
+            g.player = table_nodes.rid_to_eid[i]
+            fmt.println("Found Player")
+            return
         }
     }
 }
 
 find_floor_entities :: proc() {
-    arcs := axiom.query(has(Cmp_Transform), has(Cmp_Node), has(Cmp_Root))
-    for archetype in arcs {
-        nodes := axiom.get_table(archetype, Cmp_Node)
-        for node, i in nodes {
-            if node.name == "Floor" do g.floor = archetype.entities[i]
-        }
+    table_nodes := get_table(Cmp_Node)
+    for node, i in table_nodes.rows{
+        if node.name == "Floor" do g.floor = table_nodes.rid_to_eid[i]
     }
 }
 
 // Find the first light entity in the scene and cache it for orbit updates.
 // Looks for entities with Light, Transform, and Node components.
 find_light_entity :: proc() {
-    light_archetypes := axiom.query(has(Cmp_Light), has(Cmp_Transform), has(Cmp_Node))
-
-    for archetype in light_archetypes {
-       for entity in archetype.entities{
-           fmt.println("Light found")
-           g.light_entity = entity
-           return
-       }
+    table_light := get_table(Cmp_Light)
+    for light, i in table_light.rows{
+        g.light_entity = table_light.rid_to_eid[i]
+        return
     }
-
-    // No light found -> leave g.light_entity as 0
 }
 
 //----------------------------------------------------------------------------\\
@@ -1393,14 +1380,21 @@ Cmp_Visual :: struct
 }
 VisualFlag :: enum{ Alert,Focus,Dodge,Select }
 VisualFlags :: bit_set[VisualFlag;u8]
+v_visual : ^axiom.View
+sys_visual_init :: #force_inline proc(alloc : mem.Allocator){v_visual = new(axiom.View, alloc)}
+sys_visual_reset :: #force_inline proc(){axiom.view_rebuild(v_visual)}
 
 sys_visual_process_ecs :: proc(dt : f32)
 {
-    archetypes := axiom.query(has(Cmp_Visual), has(Cmp_Transform))
-    for archetype in archetypes {
-        visual := axiom.get_table(archetype, Cmp_Visual)
-        transf := axiom.get_table(archetype, Cmp_Transform)
-        for entity, i in archetype.entities do sys_visual_update(&visual[i], transf[i], dt)
+    it : axiom.Iterator
+    table_visual := axiom.get_table(Cmp_Visual)
+    table_transform := axiom.get_table(Cmp_Transform)
+
+    for axiom.iterator_next(&it){
+        entity := axiom.get_entity(&it)
+        v := get_component(table_visual, entity)
+        t := get_component(table_transform, entity)
+        sys_visual_update(v, t^, dt)
     }
 }
 
@@ -1508,10 +1502,10 @@ hide_entity :: proc(entity : Entity)
 
 hide_visuals :: proc(visuals : ^Cmp_Visual, flags : VisualFlags)
 {
-    if .Alert  in flags && visuals.alert  != 0 do hide_entity(visuals.alert)
-    if .Focus  in flags && visuals.focus  != 0 do hide_entity(visuals.focus)
-    if .Dodge  in flags && visuals.dodge  != 0 do hide_entity(visuals.dodge)
-    if .Select in flags && visuals.select != 0 do hide_entity(visuals.select)
+    if .Alert  in flags && visuals.alert  != Entity(0) do hide_entity(visuals.alert)
+    if .Focus  in flags && visuals.focus  != Entity(0) do hide_entity(visuals.focus)
+    if .Dodge  in flags && visuals.dodge  != Entity(0) do hide_entity(visuals.dodge)
+    if .Select in flags && visuals.select != Entity(0) do hide_entity(visuals.select)
 
     // Remove the specified flags from the visual component
     visuals.flags -= flags

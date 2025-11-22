@@ -1,7 +1,6 @@
 package axiom
 import "core:fmt"
 import "core:math/linalg"
-import "external/ecs"
 import "core:strings"
 import "core:container/queue"
 import res "resource"
@@ -657,19 +656,6 @@ create_node_entity :: proc(name: string, flags: ComponentFlag, parent: Entity = 
     return entity
 }
 
-// Query helper to find all entities withCmp_Node
-query_nodes :: proc() -> []^ecs.Archetype {
-    return query(ecs.has(Cmp_Node))
-}
-
-// Query helper to find all head nodes
-query_head_nodes :: proc() -> []^ecs.Archetype {
-    return query(ecs.has(Cmp_Node), ecs.has(Cmp_Root))
-}
-
-mesh_component_default :: proc() -> Cmp_Mesh {
-    return Cmp_Mesh{}
-}
 
 mesh_component_with_index :: proc(index: i32) -> Cmp_Mesh {
     return Cmp_Mesh{
@@ -778,7 +764,6 @@ gui_number_component_with_alpha :: proc(min: vec2f, extents: vec2f, number: i32,
 
 // Constructor procedures with overloading
 mesh_component :: proc{
-    mesh_component_default,
     mesh_component_with_index,
     mesh_component_with_ids,
 }
@@ -1140,11 +1125,11 @@ flatten_entity :: proc(e : Entity)
 
         // Then put in their children and nephews
         n := get_component(curr, Cmp_Node)
-        if(n.child != 0){
+        if(n.child != Entity(0)){
             queue.push(&q,n.child)
             cn := get_component(n.child, Cmp_Node)
             bro := cn.brotha
-            for bro != 0{
+            for bro != Entity(0){
                 queue.push(&q, bro)
                 len += 1
                 bro = get_component(bro, Cmp_Node).brotha
