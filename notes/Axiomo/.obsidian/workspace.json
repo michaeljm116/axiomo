@@ -104,7 +104,7 @@
             }
           }
         ],
-        "currentTab": 6
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -254,15 +254,15 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "51d4da7e0c4b66ab",
+  "active": "f6f08cdc8d12a879",
   "lastOpenFiles": [
+    "Showcase Kanban.md",
     "QFJ.md",
     "BeeKillingsInn/NEW ecs NOTES.md",
     "2025-11-21.md",
     "Untitled Kanban.md",
     "Untitled 1.base",
     "Untitled.base",
-    "Showcase Kanban.md",
     "BeeKillingsInn/Next Steps.md",
     "BeeKillingsInn/Refactor.md",
     "BeeKillingsInn/Rules Engine.md",

@@ -644,7 +644,7 @@ load_node_components :: proc(scene_node: scene.Node, entity: Entity, e_flags :^C
     }
 }
 // Load a scene.Node into ECS Cmp_Node hierarchy
-load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc := context.temp_allocator) -> Entity {
+load_node :: proc(scene_node: scene.Node, parent: Entity, alloc : mem.Allocator) -> Entity {
     entity := add_entity()
     e_flags := transmute(ComponentFlags)scene_node.eFlags
     load_node_components(scene_node, entity, &e_flags)
@@ -695,11 +695,11 @@ load_node :: proc(scene_node: scene.Node, parent: Entity = Entity(0), alloc := c
 load_scene :: proc(scene_data: scene.SceneData, alloc: mem.Allocator) {
 	assert(len(scene_data.Node) != 0)
 	for node in scene_data.Node {
-		load_node(node, alloc = alloc)
+		load_node(node, parent = g_world.entity, alloc = alloc)
 	}
 }
 
-load_prefab :: proc(name: string) -> (prefab : Entity)
+load_prefab :: proc(name: string, alloc : mem.Allocator) -> (prefab : Entity)
 {
     node, ok := resource.prefabs[name]
     if !ok{
@@ -707,7 +707,7 @@ load_prefab :: proc(name: string) -> (prefab : Entity)
         return Entity(0)
     }
     // Create the entity using the requested ECS allocator
-    prefab = load_node(node)
+    prefab = load_node(node,g_world.entity, alloc)
     nc := get_component(prefab,Cmp_Node)
     children := get_children(nc.entity)
     for n in children{

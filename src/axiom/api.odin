@@ -53,13 +53,13 @@ create_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World {
     init_memory(mem_stack, mem.Megabyte)
     g_world.db = new(Database, mem_stack.alloc)
     ecs.init(g_world.db, entities_cap=10000, allocator = mem_stack.alloc)
+    ecs.tag_table__init(&is_root, g_world.db, 10000)
     g_world.entity = add_entity()
     g_world_mem = mem_stack.alloc
     return g_world
 }
 
 init_views :: proc(alloc : mem.Allocator){
-    ecs.tag_table__init(&is_root, g_world.db, 10000)
     sys_bvh_init(alloc)
     sys_transform_init(alloc)
     sys_anim_init(alloc)

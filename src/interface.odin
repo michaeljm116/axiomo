@@ -74,5 +74,5 @@ update_gui :: #force_inline proc(gui:^Cmp_Gui){
     axiom.update_gui(gui)
 }
 load_prefab :: #force_inline proc(name: string) -> (prefab : Entity){
-   return axiom.load_prefab(name)
+   return axiom.load_prefab(name, g.mem_game.alloc)
 }

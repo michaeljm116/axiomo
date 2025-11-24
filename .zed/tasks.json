@@ -11,7 +11,7 @@
   },
   {
     "label": "Run",
-    "command": "./build_debug.bat run",
+    "command": "build_debug.bat run",
     "args": ["rad"],
     "use_new_terminal": false,
     "allow_concurrent_runs": true,
@@ -21,13 +21,13 @@
   },
   {
     "label": "RadDebug",
-    "command": "./build_hot_reload.bat rad",
+    "command": "build_hot_reload.bat rad",
     "args": [],
     "use_new_terminal": false
   },
   {
     "label": "HotReload",
-    "command": "./build_hot_reload.bat",
+    "command": "build_hot_reload.bat",
     "args": [],
     "use_new_terminal": false
   }

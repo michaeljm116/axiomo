@@ -145,4 +145,5 @@ These should make your renderer more robust, efficient, and visually appealing. 
 	* So for every Cmp you'll need a corresponding Tbl_
 	* Then for queries you'd... do things, so like the ultimate way would be like *
 	* Views need to be init before... im thinking if you init the.... wait i think all views need to be initialized for verything
+	* ugh table creation must come before entity creation?!!?
 	* 
