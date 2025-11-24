@@ -24,7 +24,7 @@ mat4 :: math.Matrix4f32
 mat3 :: math.Matrix3f32
 // Import the ECS Entity type
 Entity :: ecs.entity_id
-World :: ecs.Database
+Database :: ecs.Database
 View :: ecs.View
 Iterator :: ecs.Iterator
 Table :: ecs.Table
@@ -36,25 +36,38 @@ g_raytracer : ^ComputeRaytracer
 g_bvh : ^Sys_Bvh
 g_texture_indexes : map[string]i32
 g_world : ^World
-g_world_ent : Entity
 g_world_mem : mem.Allocator
-g_table_map : map[typeid]rawptr
 
 //----------------------------------------------------------------------------\\
 // /ECS
 //----------------------------------------------------------------------------\\
+World :: struct{
+    db : ^Database,
+    tables : map[typeid]rawptr,
+    entity : Entity
+}
+
 // Helper functions that assume g_world
 create_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World {
-    init_memory(mem_stack, mem.Megabyte)
     g_world = new(World, mem_stack.alloc)
-    ecs.init(g_world, entities_cap=10000, allocator = mem_stack.alloc)
-    g_world_ent = add_entity()
+    init_memory(mem_stack, mem.Megabyte)
+    g_world.db = new(Database, mem_stack.alloc)
+    ecs.init(g_world.db, entities_cap=10000, allocator = mem_stack.alloc)
+    g_world.entity = add_entity()
     g_world_mem = mem_stack.alloc
     return g_world
 }
+
+init_views :: proc(alloc : mem.Allocator){
+    ecs.tag_table__init(&is_root, g_world.db, 10000)
+    sys_bvh_init(alloc)
+    sys_transform_init(alloc)
+    sys_anim_init(alloc)
+}
+
 destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {
     destroy_memory_stack(mem_stack)
-    g_table_map = {}
+    g_world.tables = {}
     g_world = nil
 }
 restart_world :: #force_inline proc(mem_stack : ^MemoryStack) {
@@ -65,8 +78,8 @@ restart_world :: #force_inline proc(mem_stack : ^MemoryStack) {
 
 // Entity management
 add_entity :: #force_inline proc() -> Entity {
-    entity, err := ecs.create_entity(g_world)
-    // if err != .None do panic(err)
+    entity, err := ecs.create_entity(g_world.db)
+    if err != ecs.API_Error.None do panic("Failed to add entity")
 	return entity
 }
 
@@ -82,11 +95,11 @@ add_component :: #force_inline proc(entity: Entity, component: $T) -> (^T) {
 
 add_component_typeid :: proc(entity: Entity, $T: typeid) -> (component: ^T, ok: ecs.Error) {
     tid := typeid_of(T)
-    table_ptr, found := g_table_map[tid]
+    table_ptr, found := g_world.tables[tid]
     if !found {
         new_table := new(Table(T), g_world_mem)
-        ecs.table_init(new_table, db=g_world, cap=1000)
-        g_table_map[tid] = rawptr(new_table)
+        ecs.table_init(new_table, db=g_world.db, cap=1000)
+        g_world.tables[tid] = rawptr(new_table)
         table_ptr = rawptr(new_table)
     }
     table := cast(^Table(T)) table_ptr
@@ -95,14 +108,17 @@ add_component_typeid :: proc(entity: Entity, $T: typeid) -> (component: ^T, ok: 
 
 remove_component :: #force_inline proc(entity: Entity, $T: typeid){
     // First find the table, then remove from table
-    table_ptr, found := g_table_map[typeid]
-    if !found {panic("Trying to remove component from non-existent table")}
+    table_ptr, found := g_world.tables[typeid_of(T)]
+    if !found {
+        fmt.println("Trying to remove component from non-existent table", entity, type_info_of(T))
+        return
+    }
     table := cast(^Table(T))table_ptr
     ecs.remove_component(table, entity)
 }
 
 entity_exists :: #force_inline proc(entity: Entity) -> bool {
-    return !ecs.is_entity_expired(g_world, entity)
+    return !ecs.is_entity_expired(g_world.db, entity)
 }
 
 // view_init_types :: #force_inline proc(view: ^View, types : []typeid){
@@ -136,7 +152,7 @@ get_component :: proc{get_component_type_id, get_component_table}
 
 get_table_ptr :: proc($T: typeid) -> rawptr {
     tid := typeid_of(T)
-    table_ptr, found := g_table_map[tid]
+    table_ptr, found := g_world.tables[tid]
     if !found {
         return nil  // Or panic("Table not found for type")
     }
@@ -148,11 +164,15 @@ get_table :: proc($T: typeid) -> ^Table(T) {
 }
 
 has :: proc {has_component_table,has_component_type_id,}
-has_component_table :: #force_inline proc(table: ^Table($T), entity: Entity){
-    ecs.has_component(table, entity)
+has_component_table :: #force_inline proc(table: ^Table($T), entity: Entity) -> bool{
+    return ecs.has_component(table, entity)
 }
 has_component_type_id :: #force_inline proc(entity: Entity, $T: typeid) -> bool{
     table_ptr := get_table_ptr(T)
+    if table_ptr == nil{
+        fmt.println("Component Table does not exist")
+        return false
+    }
     table := cast(^Table(T)) table_ptr
     return ecs.has_component(table, entity)
 }
@@ -160,6 +180,10 @@ has_component_type_id :: #force_inline proc(entity: Entity, $T: typeid) -> bool{
 end_ecs :: #force_inline proc() {
 	// ecs.delete_world(g_world)
 }
+
+is_root : ecs.Tag_Table
+tag :: ecs.tag
+untag :: ecs.untag
 
 //----------------------------------------------------------------------------\\
 // /Internal helpers

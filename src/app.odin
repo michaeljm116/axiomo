@@ -34,10 +34,10 @@ app_init :: proc() {
 app_start :: proc()
 {
     ax.g_world = create_world()
+
     // g.scene = set_new_scene("assets/scenes/Entrance.json")
     g.scene = set_new_scene("assets/scenes/BeeKillingsInn2.json")
 	ax.load_scene(g.scene^, g.mem_game.alloc)
-	ax.added_entity(ax.g_world_ent)
 	g.player = ax.load_prefab("Froku")
 	g.app_state = .MainMenu
     g.input = InputState{
@@ -46,6 +46,8 @@ app_start :: proc()
         rotation_speed = 20.0,
         first_mouse = true,
     }
+    ax.init_views(g.mem_game.alloc)
+
     // Find the camera entity
     find_camera_entity()
     find_light_entity()

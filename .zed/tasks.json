@@ -1,7 +1,7 @@
 [
   {
     "label": "Build",
-    "command": "./build_debug.bat ./build_hot_reload.bat",
+    "command": "build_debug.bat build_hot_reload.bat",
     "args": [],
     "use_new_terminal": false,
     "allow_concurrent_runs": false,

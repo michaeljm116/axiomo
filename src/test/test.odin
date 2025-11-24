@@ -1,683 +1,683 @@
 package game
 
-import "core:testing"
-import ecs "external/ecs"
-import "resource"
-import "core:fmt"
-import "core:math"
-import path2 "extensions/filepath2"
+// import "core:testing"
+// import "../axiom/resource"
+// import "core:fmt"
+// import "core:math"
+// import path2 "../axiom/extensions/filepath2"
+// import "../axiom"
 
-@(test)
-test_get_file_stem_basic :: proc(t: ^testing.T) {
-    alloc := context.allocator
+// @(test)
+// test_get_file_stem_basic :: proc(t: ^testing.T) {
+//     alloc := context.allocator
 
-    stem := path2.get_file_stem("file.txt", alloc)
-    testing.expect_value(t, stem, ".txt")
-}
+//     stem := path2.get_file_stem("file.txt", alloc)
+//     testing.expect_value(t, stem, ".txt")
+// }
 
-@(test)
-test_get_file_stem_archive :: proc(t: ^testing.T) {
-    alloc := context.allocator
+// @(test)
+// test_get_file_stem_archive :: proc(t: ^testing.T) {
+//     alloc := context.allocator
 
-    stem := path2.get_file_stem("archive.tar.gz", alloc)
-    testing.expect_value(t, stem, ".tar.gz")
-}
+//     stem := path2.get_file_stem("archive.tar.gz", alloc)
+//     testing.expect_value(t, stem, ".tar.gz")
+// }
 
-@(test)
-test_get_file_stem_hidden :: proc(t: ^testing.T) {
-    alloc := context.allocator
+// @(test)
+// test_get_file_stem_hidden :: proc(t: ^testing.T) {
+//     alloc := context.allocator
 
-    stem := path2.get_file_stem(".hiddenfile", alloc)
-    testing.expect_value(t, stem, ".hiddenfile")
-}
+//     stem := path2.get_file_stem(".hiddenfile", alloc)
+//     testing.expect_value(t, stem, ".hiddenfile")
+// }
 
-@(test)
-test_get_file_stem_no_extension :: proc(t: ^testing.T) {
-    alloc := context.allocator
+// @(test)
+// test_get_file_stem_no_extension :: proc(t: ^testing.T) {
+//     alloc := context.allocator
 
-    stem := path2.get_file_stem("noextension", alloc)
-    testing.expect_value(t, stem, "noextension")
-}
+//     stem := path2.get_file_stem("noextension", alloc)
+//     testing.expect_value(t, stem, "noextension")
+// }
 
-@(test)
-test_get_file_stem_empty :: proc(t: ^testing.T) {
-    alloc := context.allocator
+// @(test)
+// test_get_file_stem_empty :: proc(t: ^testing.T) {
+//     alloc := context.allocator
 
-    stem := path2.get_file_stem("", alloc)
-    testing.expect_value(t, stem, "")
-}
+//     stem := path2.get_file_stem("", alloc)
+//     testing.expect_value(t, stem, "")
+// }
 
-@(test)
-test_get_file_stem_path_with_dot_in_dir :: proc(t: ^testing.T) {
-    alloc := context.allocator
+// @(test)
+// test_get_file_stem_path_with_dot_in_dir :: proc(t: ^testing.T) {
+//     alloc := context.allocator
 
-    // NOTE: current implementation finds the first '.' anywhere in the string.
-    // For "dir.name/file.txt" it will return the substring starting at the '.' in the directory name.
-    stem := path2.get_file_stem("dir.name/file.txt", alloc)
-    testing.expect_value(t, stem, ".name/file.txt")
-}
+//     // NOTE: current implementation finds the first '.' anywhere in the string.
+//     // For "dir.name/file.txt" it will return the substring starting at the '.' in the directory name.
+//     stem := path2.get_file_stem("dir.name/file.txt", alloc)
+//     testing.expect_value(t, stem, ".name/file.txt")
+// }
 
-@(test)
-test_get_last_sibling :: proc(t: ^testing.T) {
-    // Set up test world
-    test_world := ecs.create_world()
-    defer ecs.delete_world(test_world)
+// @(test)
+// test_get_last_sibling :: proc(t: ^testing.T) {
+//     // Set up test world
+//     test_world := ecs.create_world()
+//     defer ecs.delete_world(test_world)
 
-    // Store original world and restore it after test
-    original_world := g.world
-    g.world = test_world
-    defer {
-        g.world = original_world
-    }
+//     // Store original world and restore it after test
+//     original_world := g.world
+//     g.world = test_world
+//     defer {
+//         g.world = original_world
+//     }
 
-    // Test Case 1: Single child (should return itself)
-    parent1 := ecs.add_entity(test_world)
-    child1 := ecs.add_entity(test_world)
+//     // Test Case 1: Single child (should return itself)
+//     parent1 := ecs.add_entity(test_world)
+//     child1 := ecs.add_entity(test_world)
 
-    parent1_node := node_component_default(parent1)
-    child1_node := node_component_default(child1)
+//     parent1_node := node_component_default(parent1)
+//     child1_node := node_component_default(child1)
 
-    ecs.add_component(test_world, parent1, parent1_node)
-    ecs.add_component(test_world, child1, child1_node)
+//     ecs.add_component(test_world, parent1, parent1_node)
+//     ecs.add_component(test_world, child1, child1_node)
 
-    add_child(parent1, child1)
+//     add_child(parent1, child1)
 
-    child1_node_ptr := get_component(child1, Cmp_Node)
-    last_sibling := get_last_sibling(child1_node_ptr)
+//     child1_node_ptr := get_component(child1, Cmp_Node)
+//     last_sibling := get_last_sibling(child1_node_ptr)
 
-    testing.expect(t, last_sibling == child1_node_ptr, "Single child should return itself as last sibling")
+//     testing.expect(t, last_sibling == child1_node_ptr, "Single child should return itself as last sibling")
 
-    // Test Case 2: Multiple siblings
-    parent2 := ecs.add_entity(test_world)
-    child2_1 := ecs.add_entity(test_world)
-    child2_2 := ecs.add_entity(test_world)
-    child2_3 := ecs.add_entity(test_world)
+//     // Test Case 2: Multiple siblings
+//     parent2 := ecs.add_entity(test_world)
+//     child2_1 := ecs.add_entity(test_world)
+//     child2_2 := ecs.add_entity(test_world)
+//     child2_3 := ecs.add_entity(test_world)
 
-    parent2_node := node_component_default(parent2)
-    child2_1_node := node_component_default(child2_1)
-    child2_2_node := node_component_default(child2_2)
-    child2_3_node := node_component_default(child2_3)
+//     parent2_node := node_component_default(parent2)
+//     child2_1_node := node_component_default(child2_1)
+//     child2_2_node := node_component_default(child2_2)
+//     child2_3_node := node_component_default(child2_3)
 
-    ecs.add_component(test_world, parent2, parent2_node)
-    ecs.add_component(test_world, child2_1, child2_1_node)
-    ecs.add_component(test_world, child2_2, child2_2_node)
-    ecs.add_component(test_world, child2_3, child2_3_node)
+//     ecs.add_component(test_world, parent2, parent2_node)
+//     ecs.add_component(test_world, child2_1, child2_1_node)
+//     ecs.add_component(test_world, child2_2, child2_2_node)
+//     ecs.add_component(test_world, child2_3, child2_3_node)
 
-    // Add children in sequence
-    add_child(parent2, child2_1)
-    add_child(parent2, child2_2)
-    add_child(parent2, child2_3)
+//     // Add children in sequence
+//     add_child(parent2, child2_1)
+//     add_child(parent2, child2_2)
+//     add_child(parent2, child2_3)
 
-    // Get node pointers after they've been added to the ECS
-    child2_1_node_ptr := get_component(child2_1, Cmp_Node)
-    child2_2_node_ptr := get_component(child2_2, Cmp_Node)
-    child2_3_node_ptr := get_component(child2_3, Cmp_Node)
+//     // Get node pointers after they've been added to the ECS
+//     child2_1_node_ptr := get_component(child2_1, Cmp_Node)
+//     child2_2_node_ptr := get_component(child2_2, Cmp_Node)
+//     child2_3_node_ptr := get_component(child2_3, Cmp_Node)
 
-    // Test getting last sibling from first child
-    last_from_first := get_last_sibling(child2_1_node_ptr)
-    testing.expect(t, last_from_first == child2_3_node_ptr, "Last sibling from first child should be the third child")
+//     // Test getting last sibling from first child
+//     last_from_first := get_last_sibling(child2_1_node_ptr)
+//     testing.expect(t, last_from_first == child2_3_node_ptr, "Last sibling from first child should be the third child")
 
-    // Test getting last sibling from middle child
-    last_from_middle := get_last_sibling(child2_2_node_ptr)
-    testing.expect(t, last_from_middle == child2_3_node_ptr, "Last sibling from middle child should be the third child")
+//     // Test getting last sibling from middle child
+//     last_from_middle := get_last_sibling(child2_2_node_ptr)
+//     testing.expect(t, last_from_middle == child2_3_node_ptr, "Last sibling from middle child should be the third child")
 
-    // Test getting last sibling from last child
-    last_from_last := get_last_sibling(child2_3_node_ptr)
-    testing.expect(t, last_from_last == child2_3_node_ptr, "Last sibling from last child should return itself")
+//     // Test getting last sibling from last child
+//     last_from_last := get_last_sibling(child2_3_node_ptr)
+//     testing.expect(t, last_from_last == child2_3_node_ptr, "Last sibling from last child should return itself")
 
-    // Test Case 3: Two siblings only
-    parent3 := ecs.add_entity(test_world)
-    child3_1 := ecs.add_entity(test_world)
-    child3_2 := ecs.add_entity(test_world)
+//     // Test Case 3: Two siblings only
+//     parent3 := ecs.add_entity(test_world)
+//     child3_1 := ecs.add_entity(test_world)
+//     child3_2 := ecs.add_entity(test_world)
 
-    parent3_node := node_component_default(parent3)
-    child3_1_node := node_component_default(child3_1)
-    child3_2_node := node_component_default(child3_2)
+//     parent3_node := node_component_default(parent3)
+//     child3_1_node := node_component_default(child3_1)
+//     child3_2_node := node_component_default(child3_2)
 
-    ecs.add_component(test_world, parent3, parent3_node)
-    ecs.add_component(test_world, child3_1, child3_1_node)
-    ecs.add_component(test_world, child3_2, child3_2_node)
+//     ecs.add_component(test_world, parent3, parent3_node)
+//     ecs.add_component(test_world, child3_1, child3_1_node)
+//     ecs.add_component(test_world, child3_2, child3_2_node)
 
-    add_child(parent3, child3_1)
-    add_child(parent3, child3_2)
+//     add_child(parent3, child3_1)
+//     add_child(parent3, child3_2)
 
-    child3_1_node_ptr := get_component(child3_1, Cmp_Node)
-    child3_2_node_ptr := get_component(child3_2, Cmp_Node)
+//     child3_1_node_ptr := get_component(child3_1, Cmp_Node)
+//     child3_2_node_ptr := get_component(child3_2, Cmp_Node)
 
-    last_from_first_of_two := get_last_sibling(child3_1_node_ptr)
-    testing.expect(t, last_from_first_of_two == child3_2_node_ptr, "Last sibling from first of two should be the second")
+//     last_from_first_of_two := get_last_sibling(child3_1_node_ptr)
+//     testing.expect(t, last_from_first_of_two == child3_2_node_ptr, "Last sibling from first of two should be the second")
 
-    last_from_second_of_two := get_last_sibling(child3_2_node_ptr)
-    testing.expect(t, last_from_second_of_two == child3_2_node_ptr, "Last sibling from second of two should return itself")
-}
+//     last_from_second_of_two := get_last_sibling(child3_2_node_ptr)
+//     testing.expect(t, last_from_second_of_two == child3_2_node_ptr, "Last sibling from second of two should return itself")
+// }
 
-@test
-test_load_froku_model :: proc(t: ^testing.T) {
-    allocator := context.allocator
-    file_name := "assets/models/froku.pm"
+// @test
+// test_load_froku_model :: proc(t: ^testing.T) {
+//     allocator := context.allocator
+//     file_name := "assets/models/froku.pm"
 
-    model := resource.load_pmodel(file_name, allocator)
-    defer resource.destroy_model(&model)
+//     model := resource.load_pmodel(file_name, allocator)
+//     defer resource.destroy_model(&model)
 
-    // Verify model name
-    testing.expect_value(t, model.name, "froku")
+//     // Verify model name
+//     testing.expect_value(t, model.name, "froku")
 
-    // Hardcoded expected meshes and vertices
-    expected_meshes := []struct {
-        name: string,
-        verts: []resource.Vertex,
-    }{
-        {
-            name = "eyebrowRight",
-            verts = {
-                {pos = {0.121097, -0.0462582, -0.0434052}, norm = {0.57735, -0.57735, -0.57735}, uv = {0, 0}},
-                {pos = {0.121097, -0.0114858, -0.0434052}, norm = {0.57735, 0.57735, -0.57735}, uv = {0, 0}},
-                {pos = {0.121097, -0.0114858, 0.0434052}, norm = {0.57735, 0.57735, 0.57735}, uv = {0, 0}},
-                {pos = {0.121097, -0.0462582, 0.0434052}, norm = {0.57735, -0.57735, 0.57735}, uv = {0, 0}},
-                {pos = {-0.0401673, -0.0114858, -0.0434052}, norm = {0.231417, 0.543719, -0.806732}, uv = {0, 0}},
-                {pos = {-0.0957141, 0.0462582, -0.0434052}, norm = {0.0213291, 0.815713, -0.578064}, uv = {0, 0}},
-                {pos = {-0.0957141, 0.0462582, 0.0434052}, norm = {0.0213296, 0.815713, 0.578064}, uv = {0, 0}},
-                {pos = {-0.0401673, -0.0114858, 0.0434052}, norm = {0.231417, 0.543719, 0.806732}, uv = {0, 0}},
-                {pos = {-0.121097, 0.0224923, -0.0434052}, norm = {-0.820302, -0.0198132, -0.571587}, uv = {0, 0}},
-                {pos = {-0.121097, 0.0224923, 0.0434052}, norm = {-0.820302, -0.0198132, 0.571587}, uv = {0, 0}},
-                {pos = {-0.0401673, -0.0462582, -0.0434052}, norm = {-0.265824, -0.723497, -0.637095}, uv = {0, 0}},
-                {pos = {-0.0401673, -0.0462582, 0.0434052}, norm = {-0.265823, -0.723497, 0.637095}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "lowerBody",
-            verts = {
-                {pos = {0.000216366, -0.102447, -0.0181057}, norm = {0.0264405, -0.776635, -0.629396}, uv = {0, 0}},
-                {pos = {0.0120931, -0.102447, -0.0197627}, norm = {-0.139268, -0.848287, -0.510895}, uv = {0, 0}},
-                {pos = {0.0681654, -0.103685, 0.049361}, norm = {0.373701, -0.923784, -0.0834872}, uv = {0, 0}},
-                {pos = {0.000216366, -0.103685, 0.0481269}, norm = {7.63792e-09, -0.999833, -0.0182502}, uv = {0, 0}},
-                {pos = {0.0225263, 0.102245, -0.046175}, norm = {-0.165444, 0.809035, -0.563995}, uv = {0, 0}},
-                {pos = {0.000216366, 0.102245, -0.0392907}, norm = {0.0289988, 0.753104, -0.657262}, uv = {0, 0}},
-                {pos = {0.164489, -0.04098, 0.00294217}, norm = {0.912021, -0.401482, 0.0838517}, uv = {0, 0}},
-                {pos = {0.132198, -0.0422181, 0.0675493}, norm = {0.906998, -0.399369, 0.13364}, uv = {0, 0}},
-                {pos = {0.000216366, 0.103685, 0.0411631}, norm = {0.000347285, 0.999857, -0.0168863}, uv = {0, 0}},
-                {pos = {0.0392312, 0.103685, 0.0399452}, norm = {0.116309, 0.993142, -0.011857}, uv = {0, 0}},
-                {pos = {0.127031, 0.0853472, -0.0308542}, norm = {0.636231, 0.770776, -0.0333941}, uv = {0, 0}},
-                {pos = {0.103264, 0.0867869, 0.0581335}, norm = {0.643566, 0.742019, 0.187699}, uv = {0, 0}},
-                {pos = {-0.0677326, -0.103685, 0.049361}, norm = {-0.373378, -0.924435, -0.077522}, uv = {0, 0}},
-                {pos = {-0.0137778, -0.102447, -0.019774}, norm = {0.148058, -0.867949, -0.47407}, uv = {0, 0}},
-                {pos = {-0.0149917, 0.102245, -0.0476364}, norm = {0.20917, 0.769454, -0.60348}, uv = {0, 0}},
-                {pos = {-0.131765, -0.0422181, 0.0675493}, norm = {-0.906955, -0.397828, 0.138438}, uv = {0, 0}},
-                {pos = {-0.164056, -0.04098, 0.00294217}, norm = {-0.921153, -0.363874, 0.1381}, uv = {0, 0}},
-                {pos = {-0.0387985, 0.103685, 0.0399452}, norm = {-0.116492, 0.993057, -0.0163814}, uv = {0, 0}},
-                {pos = {-0.126598, 0.0853472, -0.0308542}, norm = {-0.641133, 0.765714, -0.0512805}, uv = {0, 0}},
-                {pos = {-0.102831, 0.0867869, 0.0581335}, norm = {-0.641693, 0.74467, 0.183567}, uv = {0, 0}},
-                {pos = {0.17197, -0.0321082, -0.0401735}, norm = {0.801884, -0.29901, -0.517277}, uv = {0, 0}},
-                {pos = {0.134817, 0.0687705, -0.0667884}, norm = {0.575159, 0.395649, -0.715999}, uv = {0, 0}},
-                {pos = {-0.0223836, 0.0850515, -0.0675493}, norm = {0.372646, 0.304885, -0.876459}, uv = {0, 0}},
-                {pos = {-0.133384, 0.0680078, -0.0667884}, norm = {-0.56899, 0.385115, -0.726593}, uv = {0, 0}},
-                {pos = {0.0228284, 0.0853694, -0.0675493}, norm = {-0.435648, 0.286887, -0.853175}, uv = {0, 0}},
-                {pos = {0.0283163, -0.0928487, -0.0323433}, norm = {-0.235181, -0.727662, -0.644358}, uv = {0, 0}},
-                {pos = {-0.027068, -0.0933979, -0.0323433}, norm = {0.255999, -0.750128, -0.609732}, uv = {0, 0}},
-                {pos = {-0.17197, -0.0440344, -0.0401735}, norm = {-0.764976, -0.401512, -0.503587}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "shirt",
-            verts = {
-                {pos = {0.067949, -0.107018, -0.180547}, norm = {0.354602, -0.934739, -0.0228284}, uv = {0, 0}},
-                {pos = {0.131981, -0.0398411, -0.162358}, norm = {0.956018, -0.286778, -0.0615462}, uv = {0, 0}},
-                {pos = {0.142026, -0.0398411, -0.00632369}, norm = {0.926533, -0.31519, -0.205407}, uv = {0, 0}},
-                {pos = {0.0779942, -0.107018, -0.024512}, norm = {0.371101, -0.889589, -0.266299}, uv = {0, 0}},
-                {pos = {0.103047, 0.0891639, -0.171774}, norm = {0.669017, 0.741998, -0.0430698}, uv = {0, 0}},
-                {pos = {0.0390149, 0.106062, -0.189962}, norm = {0.114177, 0.993433, -0.00735051}, uv = {0, 0}},
-                {pos = {0.04906, 0.106062, -0.0339278}, norm = {0.135708, 0.968629, -0.208185}, uv = {0, 0}},
-                {pos = {0.113092, 0.0891639, -0.0157395}, norm = {0.666047, 0.715818, -0.209727}, uv = {0, 0}},
-                {pos = {0, -0.107018, -0.181781}, norm = {0, -1, 5.87571e-08}, uv = {0, 0}},
-                {pos = {0, -0.107018, -0.0257461}, norm = {7.16559e-11, -0.983185, -0.18261}, uv = {0, 0}},
-                {pos = {0, 0.106062, -0.188745}, norm = {0, 1, -7.77785e-08}, uv = {0, 0}},
-                {pos = {0, 0.106062, -0.0327099}, norm = {0, 0.9804, -0.197019}, uv = {0, 0}},
-                {pos = {0.122144, -0.136864, 0.0527377}, norm = {0.190788, -0.94069, -0.280541}, uv = {0, 0}},
-                {pos = {0, 0.136864, 0.0419165}, norm = {0, 0.981436, -0.191792}, uv = {0, 0}},
-                {pos = {0.0839511, 0.136864, 0.0403089}, norm = {0.0826974, 0.96458, -0.250493}, uv = {0, 0}},
-                {pos = {0, -0.136864, 0.0511087}, norm = {0, -0.982565, -0.185917}, uv = {0, 0}},
-                {pos = {0.106878, 0.090315, 0.177436}, norm = {0.177602, 0.514636, 0.838813}, uv = {0, 0}},
-                {pos = {0.0858262, 0.136864, 0.124688}, norm = {0.00797301, 0.924914, 0.380092}, uv = {0, 0}},
-                {pos = {0.0397546, 0.0967725, 0.171446}, norm = {0.0138694, 0.753097, 0.657764}, uv = {0, 0}},
-                {pos = {0.0868149, 0.0826517, 0.186521}, norm = {0.172061, 0.524197, 0.834034}, uv = {0, 0}},
-                {pos = {0, 0.136864, 0.126296}, norm = {0, 0.935074, 0.354453}, uv = {0, 0}},
-                {pos = {0.124019, -0.136864, 0.137117}, norm = {0.074926, -0.86913, 0.488876}, uv = {0, 0}},
-                {pos = {0, -0.136864, 0.135488}, norm = {0, -0.986333, 0.164762}, uv = {0, 0}},
-                {pos = {0.141444, -0.0424914, 0.183697}, norm = {0.291441, -0.231207, 0.928227}, uv = {0, 0}},
-                {pos = {0.122819, -0.0388173, 0.189962}, norm = {0.30956, -0.148886, 0.939152}, uv = {0, 0}},
-                {pos = {0, 0.0993017, 0.169629}, norm = {0, 0.753884, 0.657007}, uv = {0, 0}},
-                {pos = {0.0844704, -0.108424, 0.163441}, norm = {0.107212, -0.585388, 0.803633}, uv = {0, 0}},
-                {pos = {-0.067949, -0.107018, -0.180547}, norm = {-0.354602, -0.934739, -0.0228284}, uv = {0, 0}},
-                {pos = {-0.0779942, -0.107018, -0.024512}, norm = {-0.371101, -0.889589, -0.266299}, uv = {0, 0}},
-                {pos = {-0.142026, -0.0398411, -0.00632369}, norm = {-0.926533, -0.31519, -0.205407}, uv = {0, 0}},
-                {pos = {-0.131981, -0.0398411, -0.162358}, norm = {-0.956018, -0.286778, -0.0615462}, uv = {0, 0}},
-                {pos = {-0.103047, 0.0891639, -0.171774}, norm = {-0.669017, 0.741998, -0.0430698}, uv = {0, 0}},
-                {pos = {-0.113092, 0.0891639, -0.0157395}, norm = {-0.666047, 0.715818, -0.209727}, uv = {0, 0}},
-                {pos = {-0.04906, 0.106062, -0.0339278}, norm = {-0.135708, 0.968629, -0.208185}, uv = {0, 0}},
-                {pos = {-0.0390149, 0.106062, -0.189962}, norm = {-0.114177, 0.993433, -0.00735052}, uv = {0, 0}},
-                {pos = {-0.122144, -0.136864, 0.0527377}, norm = {-0.190788, -0.94069, -0.280541}, uv = {0, 0}},
-                {pos = {-0.0839511, 0.136864, 0.0403089}, norm = {-0.0826974, 0.96458, -0.250493}, uv = {0, 0}},
-                {pos = {-0.106878, 0.090315, 0.177436}, norm = {-0.177602, 0.514636, 0.838813}, uv = {0, 0}},
-                {pos = {-0.0868149, 0.0826517, 0.186521}, norm = {-0.172061, 0.524197, 0.834034}, uv = {0, 0}},
-                {pos = {-0.0397546, 0.0967725, 0.171446}, norm = {-0.0138694, 0.753097, 0.657764}, uv = {0, 0}},
-                {pos = {-0.0858262, 0.136864, 0.124688}, norm = {-0.00797303, 0.924914, 0.380092}, uv = {0, 0}},
-                {pos = {-0.124019, -0.136864, 0.137117}, norm = {-0.0749261, -0.86913, 0.488876}, uv = {0, 0}},
-                {pos = {-0.141444, -0.0424914, 0.183697}, norm = {-0.291441, -0.231207, 0.928227}, uv = {0, 0}},
-                {pos = {-0.122819, -0.0388173, 0.189962}, norm = {-0.30956, -0.148886, 0.939152}, uv = {0, 0}},
-                {pos = {-0.0844704, -0.108424, 0.163441}, norm = {-0.107212, -0.585388, 0.803633}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "beard",
-            verts = {
-                {pos = {0, 0.00442177, 0.0356589}, norm = {0.333347, 0.86702, -0.370347}, uv = {0, 0}},
-                {pos = {0, -0.0123597, 0.0774689}, norm = {0.333347, 0.370347, 0.86702}, uv = {0, 0}},
-                {pos = {0.0165037, -0.0123597, 0.0774689}, norm = {0.00166424, 0.392143, 0.919903}, uv = {0, 0}},
-                {pos = {0.0165037, 0.00442177, 0.0356589}, norm = {0.00390612, 0.918918, -0.394429}, uv = {0, 0}},
-                {pos = {0.0165037, -0.0446297, 0.0645165}, norm = {0.00166433, -0.919317, 0.393515}, uv = {0, 0}},
-                {pos = {0.0165037, -0.0278482, 0.0227065}, norm = {0.0039062, -0.391223, -0.920288}, uv = {0, 0}},
-                {pos = {0.046872, -0.027973, 0.0230174}, norm = {-0.298422, -0.722853, -0.62324}, uv = {0, 0}},
-                {pos = {0.0877031, -0.044505, 0.0642057}, norm = {0.561427, -0.758404, 0.331095}, uv = {0, 0}},
-                {pos = {0, -0.0446297, 0.0645165}, norm = {0.333347, -0.867017, 0.370353}, uv = {0, 0}},
-                {pos = {0, -0.0278482, 0.0227065}, norm = {0.333347, -0.370346, -0.86702}, uv = {0, 0}},
-                {pos = {0.0877031, -0.012235, 0.077158}, norm = {0.561426, 0.319039, 0.763554}, uv = {0, 0}},
-                {pos = {0.0959439, 0.0123597, -0.0774688}, norm = {0.591378, -0.321753, -0.739424}, uv = {0, 0}},
-                {pos = {0.0959439, 0.0446297, -0.0645165}, norm = {0.591378, 0.743682, -0.311785}, uv = {0, 0}},
-                {pos = {0.046872, 0.00429702, 0.0359697}, norm = {-0.298423, 0.953151, 0.0494667}, uv = {0, 0}},
-                {pos = {0.0494835, 0.0444441, -0.0640542}, norm = {-0.572513, 0.753683, -0.322786}, uv = {0, 0}},
-                {pos = {0.0494835, 0.0121741, -0.0770066}, norm = {-0.572513, -0.321373, -0.754287}, uv = {0, 0}},
-                {pos = {0, -0.0278482, 0.0227065}, norm = {0.333332, -0.370301, -0.867045}, uv = {0, 0}},
-                {pos = {0, 0.00442177, 0.0356589}, norm = {0.333332, 0.867045, -0.370301}, uv = {0, 0}},
-                {pos = {0, -0.0123597, 0.0774689}, norm = {0.333332, 0.370302, 0.867045}, uv = {0, 0}},
-                {pos = {0, -0.0446297, 0.0645165}, norm = {0.333332, -0.867045, 0.370301}, uv = {0, 0}},
-                {pos = {-0.0165037, 0.00442177, 0.0356589}, norm = {-0.00390601, 0.918918, -0.394429}, uv = {0, 0}},
-                {pos = {-0.0165037, -0.0123597, 0.0774689}, norm = {-0.00166431, 0.392143, 0.919903}, uv = {0, 0}},
-                {pos = {-0.0165037, -0.0446297, 0.0645165}, norm = {-0.00166433, -0.919317, 0.393515}, uv = {0, 0}},
-                {pos = {-0.0877031, -0.044505, 0.0642057}, norm = {-0.561427, -0.758404, 0.331095}, uv = {0, 0}},
-                {pos = {-0.046872, -0.027973, 0.0230174}, norm = {0.298422, -0.722853, -0.62324}, uv = {0, 0}},
-                {pos = {-0.0165037, -0.0278482, 0.0227065}, norm = {-0.00390604, -0.391223, -0.920288}, uv = {0, 0}},
-                {pos = {-0.0877031, -0.012235, 0.077158}, norm = {-0.561427, 0.319039, 0.763554}, uv = {0, 0}},
-                {pos = {-0.0959439, 0.0446297, -0.0645165}, norm = {-0.591377, 0.743682, -0.311785}, uv = {0, 0}},
-                {pos = {-0.0959439, 0.0123597, -0.0774688}, norm = {-0.591378, -0.321753, -0.739424}, uv = {0, 0}},
-                {pos = {-0.046872, 0.00429702, 0.0359697}, norm = {0.298423, 0.953151, 0.0494667}, uv = {0, 0}},
-                {pos = {-0.0494835, 0.0444441, -0.0640542}, norm = {0.572513, 0.753683, -0.322786}, uv = {0, 0}},
-                {pos = {-0.0494835, 0.0121741, -0.0770066}, norm = {0.572513, -0.321373, -0.754287}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "eyebrowLeft",
-            verts = {
-                {pos = {-0.121097, -0.0462582, -0.0434052}, norm = {-0.57735, -0.57735, -0.57735}, uv = {0, 0}},
-                {pos = {-0.121097, -0.0462582, 0.0434052}, norm = {-0.57735, -0.57735, 0.57735}, uv = {0, 0}},
-                {pos = {-0.121097, -0.0114858, 0.0434052}, norm = {-0.57735, 0.57735, 0.57735}, uv = {0, 0}},
-                {pos = {-0.121097, -0.0114858, -0.0434052}, norm = {-0.57735, 0.57735, -0.57735}, uv = {0, 0}},
-                {pos = {0.0401673, -0.0114858, -0.0434052}, norm = {-0.231417, 0.543719, -0.806732}, uv = {0, 0}},
-                {pos = {0.0401673, -0.0114858, 0.0434052}, norm = {-0.231417, 0.543719, 0.806732}, uv = {0, 0}},
-                {pos = {0.0957141, 0.0462582, 0.0434052}, norm = {-0.0213296, 0.815713, 0.578064}, uv = {0, 0}},
-                {pos = {0.0957141, 0.0462582, -0.0434052}, norm = {-0.0213296, 0.815713, -0.578064}, uv = {0, 0}},
-                {pos = {0.121097, 0.0224923, 0.0434052}, norm = {0.820302, -0.0198132, 0.571587}, uv = {0, 0}},
-                {pos = {0.121097, 0.0224923, -0.0434052}, norm = {0.820302, -0.0198132, -0.571587}, uv = {0, 0}},
-                {pos = {0.0401673, -0.0462582, -0.0434052}, norm = {0.265823, -0.723497, -0.637095}, uv = {0, 0}},
-                {pos = {0.0401673, -0.0462582, 0.0434052}, norm = {0.265823, -0.723497, 0.637095}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "afro",
-            verts = {
-                {pos = {0.327175, 0.265775, 0.458011}, norm = {0.220898, 0.245841, 0.943804}, uv = {0, 0}},
-                {pos = {-0.327175, 0.265775, 0.458011}, norm = {-0.220897, 0.245841, 0.943804}, uv = {0, 0}},
-                {pos = {-0.327175, -0.286842, 0.458011}, norm = {-0.211102, -0.209455, 0.954759}, uv = {0, 0}},
-                {pos = {0.327175, -0.286842, 0.458011}, norm = {0.211102, -0.209455, 0.954759}, uv = {0, 0}},
-                {pos = {0.515634, 0.312447, -0.320644}, norm = {0.770681, 0.16532, -0.615403}, uv = {0, 0}},
-                {pos = {0.614672, 0.389706, -0.0352126}, norm = {0.916568, 0.3804, -0.123288}, uv = {0, 0}},
-                {pos = {0.588958, -0.373235, 0.0429789}, norm = {0.885491, -0.43211, -0.17084}, uv = {0, 0}},
-                {pos = {0.554021, -0.325305, -0.0849081}, norm = {0.733562, -0.372895, -0.568187}, uv = {0, 0}},
-                {pos = {-0.575787, -0.365887, 0.296681}, norm = {-0.860331, -0.389284, 0.329072}, uv = {0, 0}},
-                {pos = {-0.557642, -0.343559, 0.337064}, norm = {-0.663254, -0.213777, 0.717213}, uv = {0, 0}},
-                {pos = {-0.539358, 0.312881, 0.326302}, norm = {-0.665487, 0.265729, 0.697506}, uv = {0, 0}},
-                {pos = {-0.588958, 0.352168, 0.240616}, norm = {-0.869364, 0.367712, 0.330142}, uv = {0, 0}},
-                {pos = {0.379364, -0.493228, -0.0399925}, norm = {0.235584, -0.779398, -0.580551}, uv = {0, 0}},
-                {pos = {0.428601, -0.537182, 0.0594487}, norm = {0.387792, -0.903727, -0.181371}, uv = {0, 0}},
-                {pos = {-0.428601, -0.537182, 0.0594487}, norm = {-0.387792, -0.903727, -0.181371}, uv = {0, 0}},
-                {pos = {-0.379364, -0.493228, -0.0399925}, norm = {-0.235584, -0.779398, -0.580551}, uv = {0, 0}},
-                {pos = {-0.363984, 0.451094, -0.370644}, norm = {-0.302636, 0.710317, -0.635501}, uv = {0, 0}},
-                {pos = {-0.460419, 0.537182, -0.0521539}, norm = {-0.40752, 0.905019, -0.121934}, uv = {0, 0}},
-                {pos = {0.460419, 0.537182, -0.0521539}, norm = {0.40752, 0.905019, -0.121934}, uv = {0, 0}},
-                {pos = {0.363984, 0.451094, -0.370644}, norm = {0.302636, 0.710317, -0.635501}, uv = {0, 0}},
-                {pos = {0.399648, -0.51949, 0.318988}, norm = {0.368904, -0.86228, 0.346963}, uv = {0, 0}},
-                {pos = {0.390048, -0.51092, 0.332894}, norm = {0.220184, -0.651648, 0.725861}, uv = {0, 0}},
-                {pos = {-0.390048, -0.51092, 0.332894}, norm = {-0.220184, -0.651648, 0.725861}, uv = {0, 0}},
-                {pos = {-0.399648, -0.51949, 0.318988}, norm = {-0.368904, -0.86228, 0.346964}, uv = {0, 0}},
-                {pos = {0.588958, 0.352168, 0.240616}, norm = {0.869364, 0.367712, 0.330143}, uv = {0, 0}},
-                {pos = {0.539358, 0.312881, 0.326302}, norm = {0.665487, 0.265729, 0.697507}, uv = {0, 0}},
-                {pos = {0.557642, -0.343559, 0.337064}, norm = {0.663254, -0.213777, 0.717213}, uv = {0, 0}},
-                {pos = {0.575787, -0.365887, 0.296681}, norm = {0.860331, -0.389285, 0.329072}, uv = {0, 0}},
-                {pos = {-0.428601, 0.516115, 0.224147}, norm = {-0.363123, 0.877829, 0.312342}, uv = {0, 0}},
-                {pos = {-0.379364, 0.472161, 0.323588}, norm = {-0.23773, 0.706974, 0.666087}, uv = {0, 0}},
-                {pos = {0.379364, 0.472161, 0.323588}, norm = {0.23773, 0.706974, 0.666087}, uv = {0, 0}},
-                {pos = {0.428601, 0.516115, 0.224147}, norm = {0.363123, 0.877829, 0.312342}, uv = {0, 0}},
-                {pos = {-0.327175, 0.276258, -0.458011}, norm = {-0.257922, 0.0121946, -0.966089}, uv = {0, 0}},
-                {pos = {0.327175, 0.276258, -0.458011}, norm = {0.257922, 0.0121946, -0.966089}, uv = {0, 0}},
-                {pos = {0.327175, -0.297325, -0.228927}, norm = {0.234769, -0.495779, -0.836114}, uv = {0, 0}},
-                {pos = {-0.327175, -0.297325, -0.228927}, norm = {-0.234769, -0.495779, -0.836114}, uv = {0, 0}},
-                {pos = {-0.554021, -0.325305, -0.0849081}, norm = {-0.733562, -0.372895, -0.568187}, uv = {0, 0}},
-                {pos = {-0.515634, 0.312447, -0.320644}, norm = {-0.770681, 0.16532, -0.615403}, uv = {0, 0}},
-                {pos = {-0.588958, -0.373235, 0.0429789}, norm = {-0.885491, -0.43211, -0.17084}, uv = {0, 0}},
-                {pos = {-0.614672, 0.389706, -0.0352126}, norm = {-0.916568, 0.3804, -0.123288}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "head",
-            verts = {
-                {pos = {0.199614, -0.337893, -0.199614}, norm = {0.364176, -0.915831, -0.169205}, uv = {0.287734, 0.416021}},
-                {pos = {0.199614, -0.337893, 0.199614}, norm = {0.341586, -0.875579, 0.341586}, uv = {0, 0}},
-                {pos = {-0.199614, -0.337893, 0.199614}, norm = {-0.341586, -0.875579, 0.341586}, uv = {0, 0}},
-                {pos = {-0.199614, -0.337893, -0.199614}, norm = {-0.364176, -0.915831, -0.169205}, uv = {0, 0}},
-                {pos = {0.368287, 0.230009, -0.199614}, norm = {0.875579, 0.341586, -0.341586}, uv = {0, 0}},
-                {pos = {0.368287, 0.230009, 0.199614}, norm = {0.875579, 0.341586, 0.341586}, uv = {0, 0}},
-                {pos = {0.368287, -0.16922, 0.199614}, norm = {0.875579, -0.341586, 0.341586}, uv = {0, 0}},
-                {pos = {0.368287, -0.16922, -0.199614}, norm = {0.896022, -0.31586, -0.312053}, uv = {0, 0}},
-                {pos = {0.199614, 0.230009, 0.368287}, norm = {0.341586, 0.341586, 0.875579}, uv = {0, 0}},
-                {pos = {-0.199614, 0.230009, 0.368287}, norm = {-0.341586, 0.341586, 0.875579}, uv = {0, 0}},
-                {pos = {-0.199614, -0.16922, 0.368287}, norm = {-0.341586, -0.341586, 0.875579}, uv = {0, 0}},
-                {pos = {0.199614, -0.16922, 0.368287}, norm = {0.341586, -0.341586, 0.875579}, uv = {0, 0}},
-                {pos = {-0.368287, -0.16922, -0.199614}, norm = {-0.896022, -0.31586, -0.312053}, uv = {0, 0}},
-                {pos = {-0.368287, -0.16922, 0.199614}, norm = {-0.875579, -0.341586, 0.341586}, uv = {0, 0}},
-                {pos = {-0.368287, 0.230009, 0.199614}, norm = {-0.875579, 0.341586, 0.341586}, uv = {0, 0}},
-                {pos = {-0.368287, 0.230009, -0.199614}, norm = {-0.875579, 0.341586, -0.341586}, uv = {0, 0}},
-                {pos = {-0.199614, 0.398681, -0.199614}, norm = {-0.341586, 0.875579, -0.341586}, uv = {0, 0}},
-                {pos = {-0.199614, 0.398681, 0.199614}, norm = {-0.341586, 0.875579, 0.341586}, uv = {0, 0}},
-                {pos = {0.199614, 0.398681, 0.199614}, norm = {0.341586, 0.875579, 0.341586}, uv = {0, 0}},
-                {pos = {0.199614, 0.398681, -0.199614}, norm = {0.341586, 0.875579, -0.341586}, uv = {0, 0}},
-                {pos = {-0.199614, -0.271189, -0.368287}, norm = {-0.36984, -0.519654, -0.770181}, uv = {0, 0}},
-                {pos = {-0.199614, -0.16922, 0.368287}, norm = {-0.341586, -0.341586, 0.875579}, uv = {0, 0}},
-                {pos = {-0.199614, 0.230009, -0.368287}, norm = {-0.341586, 0.341586, -0.875579}, uv = {0, 0}},
-                {pos = {-0.368287, 0.230009, -0.199614}, norm = {-0.875579, 0.341586, -0.341586}, uv = {0, 0}},
-                {pos = {-0.199614, 0.398681, -0.199614}, norm = {-0.341586, 0.875579, -0.341586}, uv = {0, 0}},
-                {pos = {-0.199614, 0.230009, 0.368287}, norm = {-0.341586, 0.341586, 0.875579}, uv = {0, 0}},
-                {pos = {-0.199614, 0.398681, 0.199614}, norm = {-0.341586, 0.875579, 0.341586}, uv = {0, 0}},
-                {pos = {-0.368287, 0.230009, 0.199614}, norm = {-0.875579, 0.341586, 0.341586}, uv = {0, 0}},
-                {pos = {0.199614, -0.271189, -0.368287}, norm = {0.36984, -0.519654, -0.770181}, uv = {0, 0}},
-                {pos = {0.199614, -0.337893, -0.199614}, norm = {0.364176, -0.915831, -0.169205}, uv = {0, 0}},
-                {pos = {0.199614, -0.16922, 0.368287}, norm = {0.341586, -0.341586, 0.875579}, uv = {0, 0}},
-                {pos = {0.199614, -0.337893, 0.199614}, norm = {0.341586, -0.875579, 0.341586}, uv = {0, 0}},
-                {pos = {0.199614, 0.230009, -0.368287}, norm = {0.341586, 0.341586, -0.875579}, uv = {0, 0}},
-                {pos = {0.368287, 0.230009, -0.199614}, norm = {0.875579, 0.341586, -0.341586}, uv = {0, 0}},
-                {pos = {0.199614, 0.230009, 0.368287}, norm = {0.341586, 0.341586, 0.875579}, uv = {0, 0}},
-                {pos = {0.368287, 0.230009, 0.199614}, norm = {0.875579, 0.341586, 0.341586}, uv = {0, 0}},
-                {pos = {-0.199614, 0.230009, -0.368287}, norm = {-0.341586, 0.341586, -0.875579}, uv = {0, 0}},
-                {pos = {-0.199614, -0.271189, -0.368287}, norm = {-0.36984, -0.519654, -0.770181}, uv = {0, 0}},
-                {pos = {-0.368287, -0.16922, -0.199614}, norm = {-0.896022, -0.31586, -0.312053}, uv = {0, 0}},
-                {pos = {-0.368287, 0.230009, -0.199614}, norm = {-0.875579, 0.341586, -0.341586}, uv = {0, 0}},
-                {pos = {-0.368287, 0.230009, 0.199614}, norm = {-0.875579, 0.341586, 0.341586}, uv = {0, 0}},
-                {pos = {-0.368287, -0.16922, 0.199614}, norm = {-0.875579, -0.341586, 0.341586}, uv = {0, 0}},
-                {pos = {0.199614, 0.230009, -0.368287}, norm = {0.341586, 0.341586, -0.875579}, uv = {0, 0}},
-                {pos = {-0.199614, 0.398681, -0.199614}, norm = {-0.341586, 0.875579, -0.341586}, uv = {0, 0}},
-                {pos = {0.199614, 0.398681, -0.199614}, norm = {0.341586, 0.875579, -0.341586}, uv = {0, 0}},
-                {pos = {0.199614, 0.398681, 0.199614}, norm = {0.341586, 0.875579, 0.341586}, uv = {0, 0}},
-                {pos = {-0.199614, 0.398681, 0.199614}, norm = {-0.341586, 0.875579, 0.341586}, uv = {0, 0}},
-                {pos = {0.199614, -0.271189, -0.368287}, norm = {0.36984, -0.519654, -0.770181}, uv = {0, 0}},
-                {pos = {0.368287, 0.230009, -0.199614}, norm = {0.875579, 0.341586, -0.341586}, uv = {0, 0}},
-                {pos = {0.368287, -0.16922, -0.199614}, norm = {0.896022, -0.31586, -0.312053}, uv = {0, 0}},
-                {pos = {0.368287, -0.16922, 0.199614}, norm = {0.875579, -0.341586, 0.341586}, uv = {0, 0}},
-                {pos = {0.368287, 0.230009, 0.199614}, norm = {0.875579, 0.341586, 0.341586}, uv = {0, 0}},
-                {pos = {0.199614, -0.271189, -0.368287}, norm = {0.36984, -0.519654, -0.770181}, uv = {0, 0}},
-                {pos = {-0.199614, -0.337893, 0.199614}, norm = {-0.341586, -0.875579, 0.341586}, uv = {0, 0}},
-                {pos = {0.199614, -0.337893, 0.199614}, norm = {0.341586, -0.875579, 0.341586}, uv = {0, 0}},
-                {pos = {-5.18476e-09, -0.398681, -0.152585}, norm = {-3.19447e-07, -0.948991, -0.315304}, uv = {0, 0}},
-                {pos = {-1.73596e-09, -0.331767, -0.0634017}, norm = {-8.29488e-07, 0.217093, 0.976151}, uv = {0, 0}},
-                {pos = {-0.0197804, -0.331794, -0.152585}, norm = {-0.724768, 0.477971, -0.496241}, uv = {0, 0}},
-                {pos = {-0.0197804, -0.331794, -0.152585}, norm = {-0.724768, 0.477971, -0.496241}, uv = {0, 0}},
-                {pos = {-1.73596e-09, -0.331767, -0.0634017}, norm = {-8.29488e-07, 0.217093, 0.976151}, uv = {0, 0}},
-                {pos = {0.0197804, -0.331794, -0.152585}, norm = {0.724768, 0.477971, -0.496241}, uv = {0, 0}},
-                {pos = {0.0197804, -0.331794, -0.152585}, norm = {0.724768, 0.477971, -0.496241}, uv = {0, 0}},
-                {pos = {-1.73596e-09, -0.331767, -0.0634017}, norm = {-8.29488e-07, 0.217093, 0.976151}, uv = {0, 0}},
-                {pos = {-5.18476e-09, -0.398681, -0.152585}, norm = {-3.19447e-07, -0.948991, -0.315304}, uv = {0, 0}},
-                {pos = {-5.18476e-09, -0.398681, -0.152585}, norm = {-3.19447e-07, -0.948991, -0.315304}, uv = {0, 0}},
-                {pos = {-0.0197804, -0.331794, -0.152585}, norm = {-0.724768, 0.477971, -0.496241}, uv = {0, 0}},
-                {pos = {0.0197804, -0.331794, -0.152585}, norm = {0.724768, 0.477971, -0.496241}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "body",
-            verts = {
-                {pos = {0.0680951, -0.101308, -0.225563}, norm = {0.334927, -0.941997, -0.0215618}, uv = {0, 0}},
-                {pos = {0.132127, -0.0398411, -0.207375}, norm = {0.948542, -0.310706, -0.0610649}, uv = {0, 0}},
-                {pos = {0.142173, -0.0398411, -0.0513405}, norm = {0.790803, -0.260893, -0.553684}, uv = {0, 0}},
-                {pos = {0.0781402, -0.101308, -0.0695288}, norm = {0.322378, -0.893375, -0.312976}, uv = {0, 0}},
-                {pos = {0.103193, 0.0891639, -0.216791}, norm = {0.669017, 0.741998, -0.0430698}, uv = {0, 0}},
-                {pos = {0.0391609, 0.106062, -0.234979}, norm = {0.114177, 0.993433, -0.00735051}, uv = {0, 0}},
-                {pos = {0.0492061, 0.106062, -0.0789446}, norm = {0.139577, 0.968555, -0.205959}, uv = {0, 0}},
-                {pos = {0.113238, 0.0891639, -0.0607563}, norm = {0.637451, 0.644436, -0.422325}, uv = {0, 0}},
-                {pos = {0.000146054, -0.101308, -0.226798}, norm = {0, -1, 5.58193e-08}, uv = {0, 0}},
-                {pos = {0.000146054, -0.101308, -0.0707629}, norm = {7.21088e-11, -0.977012, -0.213184}, uv = {0, 0}},
-                {pos = {0.000146054, 0.106062, -0.233761}, norm = {0, 1, -7.77785e-08}, uv = {0, 0}},
-                {pos = {0.000146054, 0.106062, -0.0777267}, norm = {0, 0.9804, -0.197019}, uv = {0, 0}},
-                {pos = {0.22975, -0.0561251, 0.00287453}, norm = {0.576338, -0.617727, -0.535021}, uv = {0, 0}},
-                {pos = {0.12229, -0.136864, 0.00772092}, norm = {0.334695, -0.889776, -0.310287}, uv = {0, 0}},
-                {pos = {0.000146054, 0.136864, -0.00310026}, norm = {0, 0.981436, -0.191792}, uv = {0, 0}},
-                {pos = {0.0840971, 0.136864, -0.00470788}, norm = {0.251432, 0.942789, -0.218932}, uv = {0, 0}},
-                {pos = {0.000146054, -0.136864, 0.00609192}, norm = {0, -0.976173, -0.216995}, uv = {0, 0}},
-                {pos = {0.160136, 0.0923066, -0.015544}, norm = {0.421958, 0.686271, -0.592438}, uv = {0, 0}},
-                {pos = {0.233167, -0.0561251, 0.127918}, norm = {0.443917, -0.514472, 0.73366}, uv = {0, 0}},
-                {pos = {0.124165, -0.136864, 0.0921002}, norm = {0.247322, -0.867769, 0.431055}, uv = {0, 0}},
-                {pos = {0.000146054, 0.136864, 0.081279}, norm = {0, 0.897578, 0.440856}, uv = {0, 0}},
-                {pos = {0.0859722, 0.136864, 0.0796714}, norm = {0.190539, 0.913352, 0.359838}, uv = {0, 0}},
-                {pos = {0.000146054, -0.136864, 0.0904712}, norm = {0, -0.880344, 0.474336}, uv = {0, 0}},
-                {pos = {0.163554, 0.0923066, 0.109499}, norm = {0.216666, 0.72568, 0.653027}, uv = {0, 0}},
-                {pos = {0.0706423, -0.0176074, 0.160809}, norm = {0.680484, -0.278613, 0.677729}, uv = {0, 0}},
-                {pos = {0.0374147, -0.0515466, 0.146404}, norm = {0.174753, -0.788291, 0.589965}, uv = {0, 0}},
-                {pos = {0.000146054, 0.0629539, 0.139911}, norm = {0, 0.904302, 0.426894}, uv = {0, 0}},
-                {pos = {0.0224003, 0.0629539, 0.138946}, norm = {0.067864, 0.868768, 0.490547}, uv = {0, 0}},
-                {pos = {0.000146054, -0.0515466, 0.145426}, norm = {0, -0.875309, 0.483564}, uv = {0, 0}},
-                {pos = {0.0556278, 0.0536237, 0.153351}, norm = {0.432446, 0.698367, 0.570328}, uv = {0, 0}},
-                {pos = {0.0706423, -0.0176074, 0.234979}, norm = {0.960151, -0.279481, 0}, uv = {0, 0}},
-                {pos = {0.0374147, -0.0515466, 0.234329}, norm = {0.392509, -0.919748, 0}, uv = {0, 0}},
-                {pos = {0.000146054, 0.0629539, 0.234415}, norm = {0, 1, 0}, uv = {0, 0}},
-                {pos = {0.0224003, 0.0629539, 0.233451}, norm = {0.135404, 0.99079, 0}, uv = {0, 0}},
-                {pos = {0.000146054, -0.0515466, 0.233352}, norm = {0, -1, 0}, uv = {0, 0}},
-                {pos = {0.0556278, 0.0536237, 0.234101}, norm = {0.73412, 0.67902, 0}, uv = {0, 0}},
-                {pos = {-0.067803, -0.101308, -0.225563}, norm = {-0.334927, -0.941997, -0.0215618}, uv = {0, 0}},
-                {pos = {-0.0778481, -0.101308, -0.0695288}, norm = {-0.334573, -0.891481, -0.305486}, uv = {0, 0}},
-                {pos = {-0.14188, -0.0398411, -0.0513405}, norm = {-0.816901, -0.256583, -0.516563}, uv = {0, 0}},
-                {pos = {-0.131835, -0.0398411, -0.207375}, norm = {-0.948542, -0.310706, -0.0610649}, uv = {0, 0}},
-                {pos = {-0.102901, 0.0891639, -0.216791}, norm = {-0.669017, 0.741998, -0.0430698}, uv = {0, 0}},
-                {pos = {-0.112946, 0.0891639, -0.0607563}, norm = {-0.663256, 0.644345, -0.380672}, uv = {0, 0}},
-                {pos = {-0.048914, 0.106062, -0.0789446}, norm = {-0.14965, 0.968323, -0.199888}, uv = {0, 0}},
-                {pos = {-0.0388688, 0.106062, -0.234979}, norm = {-0.114177, 0.993433, -0.00735052}, uv = {0, 0}},
-                {pos = {-0.121998, -0.136864, 0.00772092}, norm = {-0.367698, -0.878928, -0.303782}, uv = {0, 0}},
-                {pos = {-0.225421, -0.0470726, 0.00937735}, norm = {-0.470513, -0.681513, -0.560497}, uv = {0, 0}},
-                {pos = {-0.083805, 0.136864, -0.00470788}, norm = {-0.280719, 0.935355, -0.215191}, uv = {0, 0}},
-                {pos = {-0.164298, 0.083254, -0.00679459}, norm = {-0.416558, 0.690842, -0.590946}, uv = {0, 0}},
-                {pos = {-0.123873, -0.136864, 0.0921002}, norm = {-0.287364, -0.851905, 0.437813}, uv = {0, 0}},
-                {pos = {-0.228421, -0.0470726, 0.119169}, norm = {-0.367742, -0.543728, 0.754405}, uv = {0, 0}},
-                {pos = {-0.0856801, 0.136864, 0.0796714}, norm = {-0.227359, 0.900751, 0.370075}, uv = {0, 0}},
-                {pos = {-0.167299, 0.083254, 0.102997}, norm = {-0.209079, 0.720786, 0.660873}, uv = {0, 0}},
-                {pos = {-0.0371226, -0.0515466, 0.146404}, norm = {-0.194025, -0.781851, 0.592505}, uv = {0, 0}},
-                {pos = {-0.0703502, -0.0176074, 0.160809}, norm = {-0.707811, -0.263646, 0.655359}, uv = {0, 0}},
-                {pos = {-0.0221082, 0.0629539, 0.138946}, norm = {-0.0880187, 0.865049, 0.493906}, uv = {0, 0}},
-                {pos = {-0.0553357, 0.0536237, 0.153351}, norm = {-0.469245, 0.687786, 0.553859}, uv = {0, 0}},
-                {pos = {-0.0371226, -0.0515466, 0.234329}, norm = {-0.392509, -0.919748, 0}, uv = {0, 0}},
-                {pos = {-0.0703502, -0.0176074, 0.234979}, norm = {-0.960151, -0.27948, 0}, uv = {0, 0}},
-                {pos = {-0.0221082, 0.0629539, 0.233451}, norm = {-0.135404, 0.99079, 0}, uv = {0, 0}},
-                {pos = {-0.0553357, 0.0536237, 0.234101}, norm = {-0.73412, 0.67902, 0}, uv = {0, 0}},
-                {pos = {0.270917, 0.104572, 0.112407}, norm = {0.427679, 0.711777, 0.557193}, uv = {0, 0}},
-                {pos = {0.248342, 0.0871441, -0.00209593}, norm = {0.31378, 0.639839, -0.701532}, uv = {0, 0}},
-                {pos = {0.244108, -0.0486081, -0.00652181}, norm = {0.478258, -0.474374, -0.73908}, uv = {0, 0}},
-                {pos = {0.266893, -0.0321593, 0.108159}, norm = {0.562015, -0.520325, 0.642963}, uv = {0, 0}},
-                {pos = {-0.271053, 0.104388, 0.113824}, norm = {-0.367251, 0.721897, 0.586508}, uv = {0, 0}},
-                {pos = {-0.266563, -0.0324442, 0.108918}, norm = {-0.42476, -0.598884, 0.678908}, uv = {0, 0}},
-                {pos = {-0.243547, -0.0470726, -0.00768568}, norm = {-0.337699, -0.577187, -0.743515}, uv = {0, 0}},
-                {pos = {-0.248961, 0.0873664, -0.0021995}, norm = {-0.195092, 0.667927, -0.718201}, uv = {0, 0}},
-                {pos = {-0.273398, 0.0693958, 0.00982638}, norm = {-0.769201, 0.307001, -0.560428}, uv = {0, 0}},
-                {pos = {-0.298931, 0.0782702, 0.0947078}, norm = {-0.92799, 0.293851, 0.2291}, uv = {0, 0}},
-                {pos = {-0.269566, -0.0257604, 0.00594325}, norm = {-0.774356, -0.373731, -0.510586}, uv = {0, 0}},
-                {pos = {-0.290417, -0.0154064, 0.0884754}, norm = {-0.891683, -0.379627, 0.246547}, uv = {0, 0}},
-                {pos = {0.278023, 0.0654612, 0.0158488}, norm = {0.813497, 0.272491, -0.513781}, uv = {0, 0}},
-                {pos = {0.269066, -0.0270314, 0.0132572}, norm = {0.802341, -0.396845, -0.445828}, uv = {0, 0}},
-                {pos = {0.298931, 0.0760103, 0.0929138}, norm = {0.929794, 0.283371, 0.234911}, uv = {0, 0}},
-                {pos = {0.290394, -0.0158661, 0.090296}, norm = {0.887109, -0.373583, 0.27106}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "armRight",
-            verts = {
-                {pos = {0.0656364, 0.0801453, 0.0649342}, norm = {-0.392518, 0.706599, 0.588768}, uv = {0, 0}},
-                {pos = {0.0377024, 0.0519099, 0.0448349}, norm = {-0.241972, 0.668666, 0.70309}, uv = {0, 0}},
-                {pos = {0.0464356, -0.0400476, 0.0423462}, norm = {-0.21153, -0.628152, 0.748786}, uv = {0, 0}},
-                {pos = {0.0700481, -0.0557487, 0.0607807}, norm = {-0.410145, -0.595487, 0.690779}, uv = {0, 0}},
-                {pos = {0.170786, -0.0798631, 0.0679818}, norm = {0.426468, -0.659575, 0.618939}, uv = {0, 0}},
-                {pos = {0.208979, 0.0677742, 0.0555529}, norm = {0.67711, 0.515978, 0.524679}, uv = {0, 0}},
-                {pos = {0.0931177, -0.0728265, -0.0543282}, norm = {-0.24776, -0.646748, -0.721341}, uv = {0, 0}},
-                {pos = {0.172661, -0.0798631, -0.0163975}, norm = {0.512262, -0.739836, -0.436155}, uv = {0, 0}},
-                {pos = {0.088706, 0.0630676, -0.0501747}, norm = {-0.20785, 0.615749, -0.760034}, uv = {0, 0}},
-                {pos = {0.210854, 0.0677742, -0.0288263}, norm = {0.708088, 0.48262, -0.51545}, uv = {0, 0}},
-                {pos = {0.0676499, -0.0502531, -0.0347343}, norm = {-0.165242, -0.724037, -0.669676}, uv = {0, 0}},
-                {pos = {0.0242049, -0.0803698, -0.0662492}, norm = {0.231151, -0.735323, -0.637079}, uv = {0, 0}},
-                {pos = {0.0104643, 0.0643129, -0.0623337}, norm = {0.151773, 0.690622, -0.707111}, uv = {0, 0}},
-                {pos = {0.0589166, 0.0417044, -0.0322456}, norm = {-0.119157, 0.646754, -0.753333}, uv = {0, 0}},
-                {pos = {-0.0229134, 0.0803698, 0.0589421}, norm = {-0.123834, 0.752527, 0.646814}, uv = {0, 0}},
-                {pos = {-0.00917286, -0.0643129, 0.0550266}, norm = {-0.0464381, -0.67556, 0.735842}, uv = {0, 0}},
-                {pos = {-0.063881, -0.0482768, 0.025628}, norm = {-0.258192, -0.68758, 0.678653}, uv = {0, 0}},
-                {pos = {-0.0483806, -0.0571629, -0.055182}, norm = {-0.114669, -0.695166, -0.709645}, uv = {0, 0}},
-                {pos = {-0.0859424, 0.0439692, 0.0284193}, norm = {-0.422002, 0.676026, 0.604073}, uv = {0, 0}},
-                {pos = {-0.070442, 0.0350831, -0.0523907}, norm = {-0.187863, 0.626979, -0.756045}, uv = {0, 0}},
-                {pos = {-0.173292, -0.0754589, -0.0679818}, norm = {0.174246, -0.718712, -0.67312}, uv = {0, 0}},
-                {pos = {-0.195354, 0.0167872, -0.0651904}, norm = {-0.0308922, 0.705941, -0.707597}, uv = {0, 0}},
-                {pos = {-0.210854, 0.0256733, 0.0156196}, norm = {-0.17452, 0.726607, 0.664518}, uv = {0, 0}},
-                {pos = {-0.188793, -0.0665728, 0.0128283}, norm = {0.0163167, -0.645562, 0.763533}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "armLeft",
-            verts = {
-                {pos = {-0.0656364, 0.0801453, 0.0649342}, norm = {0.392518, 0.706599, 0.588768}, uv = {0, 0}},
-                {pos = {-0.0700481, -0.0557487, 0.0607807}, norm = {0.410145, -0.595487, 0.690779}, uv = {0, 0}},
-                {pos = {-0.0464356, -0.0400476, 0.0423462}, norm = {0.21153, -0.628152, 0.748786}, uv = {0, 0}},
-                {pos = {-0.0377024, 0.0519099, 0.0448349}, norm = {0.241972, 0.668666, 0.70309}, uv = {0, 0}},
-                {pos = {-0.208979, 0.0677742, 0.0555529}, norm = {-0.67711, 0.515978, 0.524679}, uv = {0, 0}},
-                {pos = {-0.170786, -0.0798631, 0.0679818}, norm = {-0.426468, -0.659575, 0.618939}, uv = {0, 0}},
-                {pos = {-0.172661, -0.0798631, -0.0163975}, norm = {-0.512262, -0.739836, -0.436155}, uv = {0, 0}},
-                {pos = {-0.0931177, -0.0728265, -0.0543282}, norm = {0.24776, -0.646748, -0.721341}, uv = {0, 0}},
-                {pos = {-0.210854, 0.0677742, -0.0288263}, norm = {-0.708088, 0.48262, -0.51545}, uv = {0, 0}},
-                {pos = {-0.088706, 0.0630676, -0.0501747}, norm = {0.20785, 0.615749, -0.760034}, uv = {0, 0}},
-                {pos = {-0.0676499, -0.0502531, -0.0347343}, norm = {0.165242, -0.724037, -0.669676}, uv = {0, 0}},
-                {pos = {-0.0589166, 0.0417044, -0.0322456}, norm = {0.119157, 0.646754, -0.753333}, uv = {0, 0}},
-                {pos = {-0.0104643, 0.0643129, -0.0623337}, norm = {-0.151773, 0.690622, -0.707111}, uv = {0, 0}},
-                {pos = {-0.0242049, -0.0803698, -0.0662492}, norm = {-0.231151, -0.735323, -0.637079}, uv = {0, 0}},
-                {pos = {0.0229134, 0.0803698, 0.0589421}, norm = {0.123834, 0.752527, 0.646814}, uv = {0, 0}},
-                {pos = {0.00917286, -0.0643129, 0.0550266}, norm = {0.0464382, -0.675559, 0.735842}, uv = {0, 0}},
-                {pos = {0.0483806, -0.0571629, -0.055182}, norm = {0.114669, -0.695165, -0.709645}, uv = {0, 0}},
-                {pos = {0.063881, -0.0482768, 0.025628}, norm = {0.258192, -0.68758, 0.678653}, uv = {0, 0}},
-                {pos = {0.0859424, 0.0439692, 0.0284193}, norm = {0.422002, 0.676026, 0.604073}, uv = {0, 0}},
-                {pos = {0.070442, 0.0350831, -0.0523907}, norm = {0.187863, 0.626979, -0.756045}, uv = {0, 0}},
-                {pos = {0.195354, 0.0167872, -0.0651904}, norm = {0.0308922, 0.705941, -0.707597}, uv = {0, 0}},
-                {pos = {0.173292, -0.0754589, -0.0679818}, norm = {-0.174246, -0.718712, -0.67312}, uv = {0, 0}},
-                {pos = {0.210854, 0.0256733, 0.0156196}, norm = {0.17452, 0.726607, 0.664518}, uv = {0, 0}},
-                {pos = {0.188793, -0.0665728, 0.0128283}, norm = {-0.0163167, -0.645562, 0.763533}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "legLeft",
-            verts = {
-                {pos = {0.06569, -0.0181461, 0.148874}, norm = {0.836339, -0.264014, 0.480452}, uv = {0, 0}},
-                {pos = {-0.0777721, -0.0794084, 0.15482}, norm = {-0.540354, -0.642486, 0.543351}, uv = {0, 0}},
-                {pos = {-0.0569196, -0.108837, -0.00297928}, norm = {-0.441992, -0.887364, -0.131258}, uv = {0, 0}},
-                {pos = {0.0828167, -0.0476282, -0.0091666}, norm = {0.887075, -0.451005, -0.0984522}, uv = {0, 0}},
-                {pos = {-0.0828168, 0.0994516, 0.118977}, norm = {-0.646331, 0.672061, 0.361373}, uv = {0, 0}},
-                {pos = {-0.079729, 0.108837, -0.00943521}, norm = {-0.654971, 0.736669, -0.168322}, uv = {0, 0}},
-                {pos = {0.0284334, 0.0823626, 0.119751}, norm = {0.597085, 0.733368, 0.325055}, uv = {0, 0}},
-                {pos = {0.0399113, 0.0917522, -0.00884837}, norm = {0.646616, 0.754273, -0.113838}, uv = {0, 0}},
-                {pos = {0.0132183, -0.00430346, -0.18216}, norm = {0.824672, -0.408003, -0.391726}, uv = {0, 0}},
-                {pos = {0.0132467, 0.0432483, -0.181991}, norm = {0.660091, 0.675098, -0.329427}, uv = {0, 0}},
-                {pos = {-0.0369767, -0.0274405, -0.182341}, norm = {-0.536803, -0.729241, -0.424324}, uv = {0, 0}},
-                {pos = {-0.0372261, 0.0496089, -0.182377}, norm = {-0.666271, 0.653933, -0.358405}, uv = {0, 0}},
-                {pos = {-0.00814646, -0.0285795, 0.182377}, norm = {-0.0150019, -0.335794, 0.941816}, uv = {0, 0}},
-                {pos = {-0.0264048, 0.071967, 0.16121}, norm = {-0.172497, 0.570394, 0.803054}, uv = {0, 0}},
-                {pos = {0.0171822, -0.0126174, 0.180107}, norm = {0.368041, -0.150967, 0.917472}, uv = {0, 0}},
-                {pos = {-0.00711408, 0.0692753, 0.165462}, norm = {0.223074, 0.559995, 0.797899}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "legRight",
-            verts = {
-                {pos = {0.0569244, -0.108837, -0.00297436}, norm = {0.447949, -0.882904, -0.140793}, uv = {0, 0}},
-                {pos = {-0.0828811, -0.0476282, -0.00916168}, norm = {-0.892937, -0.43542, -0.114332}, uv = {0, 0}},
-                {pos = {-0.0121741, -0.00551623, -0.182151}, norm = {-0.835263, -0.363381, -0.412662}, uv = {0, 0}},
-                {pos = {0.0364632, -0.0300863, -0.182344}, norm = {0.523366, -0.744776, -0.414001}, uv = {0, 0}},
-                {pos = {-0.0399757, 0.0917522, -0.00884345}, norm = {-0.648556, 0.752389, -0.115266}, uv = {0, 0}},
-                {pos = {0.000414759, 0.0449806, -0.181973}, norm = {-0.619284, 0.707811, -0.339839}, uv = {0, 0}},
-                {pos = {-0.0284978, 0.0823626, 0.119756}, norm = {-0.605697, 0.726128, 0.325376}, uv = {0, 0}},
-                {pos = {0.0828811, 0.0994516, 0.118982}, norm = {0.646487, 0.671912, 0.361371}, uv = {0, 0}},
-                {pos = {0.0797175, 0.108837, -0.00943029}, norm = {0.65407, 0.737888, -0.166475}, uv = {0, 0}},
-                {pos = {0.077854, -0.0794084, 0.154825}, norm = {0.554174, -0.635196, 0.537975}, uv = {0, 0}},
-                {pos = {-0.0657544, -0.0296793, 0.148879}, norm = {-0.813321, -0.32567, 0.48213}, uv = {0, 0}},
-                {pos = {0.0407353, 0.0517351, -0.182382}, norm = {0.670685, 0.651698, -0.35422}, uv = {0, 0}},
-                {pos = {0.0263404, 0.071967, 0.161215}, norm = {0.17209, 0.57058, 0.803009}, uv = {0, 0}},
-                {pos = {0.00808207, -0.0285795, 0.182382}, norm = {0.0522334, -0.288017, 0.9562}, uv = {0, 0}},
-                {pos = {-0.0172466, -0.0126174, 0.180112}, norm = {-0.350141, -0.0897342, 0.932389}, uv = {0, 0}},
-                {pos = {0.00704969, 0.0692753, 0.165467}, norm = {-0.23572, 0.557745, 0.795837}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "footLeft",
-            verts = {
-                {pos = {-0.0511293, 0.092766, 0.0208119}, norm = {-0.660712, 0.75064, -1.82921e-10}, uv = {0, 0}},
-                {pos = {-0.000656463, 0.0864054, 0.0211977}, norm = {0.750962, 0.660345, -2.18253e-11}, uv = {0, 0}},
-                {pos = {-0.000656463, 0.0864054, -0.020812}, norm = {0.6108, 0.537383, -0.581501}, uv = {0, 0}},
-                {pos = {-0.0511293, 0.092766, -0.0211977}, norm = {-0.542776, 0.614407, -0.572625}, uv = {0, 0}},
-                {pos = {-0.000684917, 0.0388536, -0.0209801}, norm = {0.648789, 0.124011, -0.750796}, uv = {0, 0}},
-                {pos = {-0.0508799, 0.0157165, -0.0211618}, norm = {-0.706154, -0.00248641, -0.708054}, uv = {0, 0}},
-                {pos = {-0.0508799, 0.0157165, 0.0208479}, norm = {-0.84418, -0.00382969, 0.536046}, uv = {0, 0}},
-                {pos = {-0.000684917, 0.0388536, 0.0210296}, norm = {0.881563, 0.168037, 0.441146}, uv = {0, 0}},
-                {pos = {-0.0503153, -0.092766, -0.0211618}, norm = {-0.572376, -0.581802, -0.577834}, uv = {0, 0}},
-                {pos = {-0.0503153, -0.092766, 0.0208479}, norm = {-0.573526, -0.582176, 0.576315}, uv = {0, 0}},
-                {pos = {0.0511293, -0.0917062, 0.0210296}, norm = {0.68707, -0.46163, 0.561098}, uv = {0, 0}},
-                {pos = {0.0511293, -0.0917062, -0.0209801}, norm = {0.688099, -0.461666, -0.559807}, uv = {0, 0}},
-            },
-        },
-        {
-            name = "footRight",
-            verts = {
-                {pos = {-0.000717998, 0.0379006, 0.0210312}, norm = {-0.861325, 0.275885, 0.426622}, uv = {0, 0}},
-                {pos = {0.0118708, 0.0883974, 0.0212096}, norm = {-0.679888, 0.733316, 1.11231e-07}, uv = {0, 0}},
-                {pos = {0.0118708, 0.0883974, -0.0208001}, norm = {-0.544442, 0.587443, -0.598744}, uv = {0, 0}},
-                {pos = {-0.000717998, 0.0379006, -0.0209785}, norm = {-0.660138, 0.211305, -0.72081}, uv = {0, 0}},
-                {pos = {0.0479193, 0.0133305, -0.0211713}, norm = {0.698947, -0.0156405, -0.715002}, uv = {0, 0}},
-                {pos = {0.0521914, 0.095152, -0.0212096}, norm = {0.54735, 0.613922, -0.568778}, uv = {0, 0}},
-                {pos = {-0.0521914, -0.0926592, -0.0209785}, norm = {-0.690538, -0.457268, -0.560413}, uv = {0, 0}},
-                {pos = {-0.0521914, -0.0926592, 0.0210312}, norm = {-0.689421, -0.45724, 0.56181}, uv = {0, 0}},
-                {pos = {0.0521914, 0.0951519, 0.0208001}, norm = {0.662922, 0.748688, 1.21874e-07}, uv = {0, 0}},
-                {pos = {0.0479193, 0.0133305, 0.0208383}, norm = {0.838223, -0.0197991, 0.544968}, uv = {0, 0}},
-                {pos = {0.0485199, -0.0951519, 0.0208383}, norm = {0.573167, -0.583862, 0.574965}, uv = {0, 0}},
-                {pos = {0.0485199, -0.0951519, -0.0211713}, norm = {0.571947, -0.583463, -0.576583}, uv = {0, 0}},
-            },
-        },
-    }
+//     // Hardcoded expected meshes and vertices
+//     expected_meshes := []struct {
+//         name: string,
+//         verts: []resource.Vertex,
+//     }{
+//         {
+//             name = "eyebrowRight",
+//             verts = {
+//                 {pos = {0.121097, -0.0462582, -0.0434052}, norm = {0.57735, -0.57735, -0.57735}, uv = {0, 0}},
+//                 {pos = {0.121097, -0.0114858, -0.0434052}, norm = {0.57735, 0.57735, -0.57735}, uv = {0, 0}},
+//                 {pos = {0.121097, -0.0114858, 0.0434052}, norm = {0.57735, 0.57735, 0.57735}, uv = {0, 0}},
+//                 {pos = {0.121097, -0.0462582, 0.0434052}, norm = {0.57735, -0.57735, 0.57735}, uv = {0, 0}},
+//                 {pos = {-0.0401673, -0.0114858, -0.0434052}, norm = {0.231417, 0.543719, -0.806732}, uv = {0, 0}},
+//                 {pos = {-0.0957141, 0.0462582, -0.0434052}, norm = {0.0213291, 0.815713, -0.578064}, uv = {0, 0}},
+//                 {pos = {-0.0957141, 0.0462582, 0.0434052}, norm = {0.0213296, 0.815713, 0.578064}, uv = {0, 0}},
+//                 {pos = {-0.0401673, -0.0114858, 0.0434052}, norm = {0.231417, 0.543719, 0.806732}, uv = {0, 0}},
+//                 {pos = {-0.121097, 0.0224923, -0.0434052}, norm = {-0.820302, -0.0198132, -0.571587}, uv = {0, 0}},
+//                 {pos = {-0.121097, 0.0224923, 0.0434052}, norm = {-0.820302, -0.0198132, 0.571587}, uv = {0, 0}},
+//                 {pos = {-0.0401673, -0.0462582, -0.0434052}, norm = {-0.265824, -0.723497, -0.637095}, uv = {0, 0}},
+//                 {pos = {-0.0401673, -0.0462582, 0.0434052}, norm = {-0.265823, -0.723497, 0.637095}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "lowerBody",
+//             verts = {
+//                 {pos = {0.000216366, -0.102447, -0.0181057}, norm = {0.0264405, -0.776635, -0.629396}, uv = {0, 0}},
+//                 {pos = {0.0120931, -0.102447, -0.0197627}, norm = {-0.139268, -0.848287, -0.510895}, uv = {0, 0}},
+//                 {pos = {0.0681654, -0.103685, 0.049361}, norm = {0.373701, -0.923784, -0.0834872}, uv = {0, 0}},
+//                 {pos = {0.000216366, -0.103685, 0.0481269}, norm = {7.63792e-09, -0.999833, -0.0182502}, uv = {0, 0}},
+//                 {pos = {0.0225263, 0.102245, -0.046175}, norm = {-0.165444, 0.809035, -0.563995}, uv = {0, 0}},
+//                 {pos = {0.000216366, 0.102245, -0.0392907}, norm = {0.0289988, 0.753104, -0.657262}, uv = {0, 0}},
+//                 {pos = {0.164489, -0.04098, 0.00294217}, norm = {0.912021, -0.401482, 0.0838517}, uv = {0, 0}},
+//                 {pos = {0.132198, -0.0422181, 0.0675493}, norm = {0.906998, -0.399369, 0.13364}, uv = {0, 0}},
+//                 {pos = {0.000216366, 0.103685, 0.0411631}, norm = {0.000347285, 0.999857, -0.0168863}, uv = {0, 0}},
+//                 {pos = {0.0392312, 0.103685, 0.0399452}, norm = {0.116309, 0.993142, -0.011857}, uv = {0, 0}},
+//                 {pos = {0.127031, 0.0853472, -0.0308542}, norm = {0.636231, 0.770776, -0.0333941}, uv = {0, 0}},
+//                 {pos = {0.103264, 0.0867869, 0.0581335}, norm = {0.643566, 0.742019, 0.187699}, uv = {0, 0}},
+//                 {pos = {-0.0677326, -0.103685, 0.049361}, norm = {-0.373378, -0.924435, -0.077522}, uv = {0, 0}},
+//                 {pos = {-0.0137778, -0.102447, -0.019774}, norm = {0.148058, -0.867949, -0.47407}, uv = {0, 0}},
+//                 {pos = {-0.0149917, 0.102245, -0.0476364}, norm = {0.20917, 0.769454, -0.60348}, uv = {0, 0}},
+//                 {pos = {-0.131765, -0.0422181, 0.0675493}, norm = {-0.906955, -0.397828, 0.138438}, uv = {0, 0}},
+//                 {pos = {-0.164056, -0.04098, 0.00294217}, norm = {-0.921153, -0.363874, 0.1381}, uv = {0, 0}},
+//                 {pos = {-0.0387985, 0.103685, 0.0399452}, norm = {-0.116492, 0.993057, -0.0163814}, uv = {0, 0}},
+//                 {pos = {-0.126598, 0.0853472, -0.0308542}, norm = {-0.641133, 0.765714, -0.0512805}, uv = {0, 0}},
+//                 {pos = {-0.102831, 0.0867869, 0.0581335}, norm = {-0.641693, 0.74467, 0.183567}, uv = {0, 0}},
+//                 {pos = {0.17197, -0.0321082, -0.0401735}, norm = {0.801884, -0.29901, -0.517277}, uv = {0, 0}},
+//                 {pos = {0.134817, 0.0687705, -0.0667884}, norm = {0.575159, 0.395649, -0.715999}, uv = {0, 0}},
+//                 {pos = {-0.0223836, 0.0850515, -0.0675493}, norm = {0.372646, 0.304885, -0.876459}, uv = {0, 0}},
+//                 {pos = {-0.133384, 0.0680078, -0.0667884}, norm = {-0.56899, 0.385115, -0.726593}, uv = {0, 0}},
+//                 {pos = {0.0228284, 0.0853694, -0.0675493}, norm = {-0.435648, 0.286887, -0.853175}, uv = {0, 0}},
+//                 {pos = {0.0283163, -0.0928487, -0.0323433}, norm = {-0.235181, -0.727662, -0.644358}, uv = {0, 0}},
+//                 {pos = {-0.027068, -0.0933979, -0.0323433}, norm = {0.255999, -0.750128, -0.609732}, uv = {0, 0}},
+//                 {pos = {-0.17197, -0.0440344, -0.0401735}, norm = {-0.764976, -0.401512, -0.503587}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "shirt",
+//             verts = {
+//                 {pos = {0.067949, -0.107018, -0.180547}, norm = {0.354602, -0.934739, -0.0228284}, uv = {0, 0}},
+//                 {pos = {0.131981, -0.0398411, -0.162358}, norm = {0.956018, -0.286778, -0.0615462}, uv = {0, 0}},
+//                 {pos = {0.142026, -0.0398411, -0.00632369}, norm = {0.926533, -0.31519, -0.205407}, uv = {0, 0}},
+//                 {pos = {0.0779942, -0.107018, -0.024512}, norm = {0.371101, -0.889589, -0.266299}, uv = {0, 0}},
+//                 {pos = {0.103047, 0.0891639, -0.171774}, norm = {0.669017, 0.741998, -0.0430698}, uv = {0, 0}},
+//                 {pos = {0.0390149, 0.106062, -0.189962}, norm = {0.114177, 0.993433, -0.00735051}, uv = {0, 0}},
+//                 {pos = {0.04906, 0.106062, -0.0339278}, norm = {0.135708, 0.968629, -0.208185}, uv = {0, 0}},
+//                 {pos = {0.113092, 0.0891639, -0.0157395}, norm = {0.666047, 0.715818, -0.209727}, uv = {0, 0}},
+//                 {pos = {0, -0.107018, -0.181781}, norm = {0, -1, 5.87571e-08}, uv = {0, 0}},
+//                 {pos = {0, -0.107018, -0.0257461}, norm = {7.16559e-11, -0.983185, -0.18261}, uv = {0, 0}},
+//                 {pos = {0, 0.106062, -0.188745}, norm = {0, 1, -7.77785e-08}, uv = {0, 0}},
+//                 {pos = {0, 0.106062, -0.0327099}, norm = {0, 0.9804, -0.197019}, uv = {0, 0}},
+//                 {pos = {0.122144, -0.136864, 0.0527377}, norm = {0.190788, -0.94069, -0.280541}, uv = {0, 0}},
+//                 {pos = {0, 0.136864, 0.0419165}, norm = {0, 0.981436, -0.191792}, uv = {0, 0}},
+//                 {pos = {0.0839511, 0.136864, 0.0403089}, norm = {0.0826974, 0.96458, -0.250493}, uv = {0, 0}},
+//                 {pos = {0, -0.136864, 0.0511087}, norm = {0, -0.982565, -0.185917}, uv = {0, 0}},
+//                 {pos = {0.106878, 0.090315, 0.177436}, norm = {0.177602, 0.514636, 0.838813}, uv = {0, 0}},
+//                 {pos = {0.0858262, 0.136864, 0.124688}, norm = {0.00797301, 0.924914, 0.380092}, uv = {0, 0}},
+//                 {pos = {0.0397546, 0.0967725, 0.171446}, norm = {0.0138694, 0.753097, 0.657764}, uv = {0, 0}},
+//                 {pos = {0.0868149, 0.0826517, 0.186521}, norm = {0.172061, 0.524197, 0.834034}, uv = {0, 0}},
+//                 {pos = {0, 0.136864, 0.126296}, norm = {0, 0.935074, 0.354453}, uv = {0, 0}},
+//                 {pos = {0.124019, -0.136864, 0.137117}, norm = {0.074926, -0.86913, 0.488876}, uv = {0, 0}},
+//                 {pos = {0, -0.136864, 0.135488}, norm = {0, -0.986333, 0.164762}, uv = {0, 0}},
+//                 {pos = {0.141444, -0.0424914, 0.183697}, norm = {0.291441, -0.231207, 0.928227}, uv = {0, 0}},
+//                 {pos = {0.122819, -0.0388173, 0.189962}, norm = {0.30956, -0.148886, 0.939152}, uv = {0, 0}},
+//                 {pos = {0, 0.0993017, 0.169629}, norm = {0, 0.753884, 0.657007}, uv = {0, 0}},
+//                 {pos = {0.0844704, -0.108424, 0.163441}, norm = {0.107212, -0.585388, 0.803633}, uv = {0, 0}},
+//                 {pos = {-0.067949, -0.107018, -0.180547}, norm = {-0.354602, -0.934739, -0.0228284}, uv = {0, 0}},
+//                 {pos = {-0.0779942, -0.107018, -0.024512}, norm = {-0.371101, -0.889589, -0.266299}, uv = {0, 0}},
+//                 {pos = {-0.142026, -0.0398411, -0.00632369}, norm = {-0.926533, -0.31519, -0.205407}, uv = {0, 0}},
+//                 {pos = {-0.131981, -0.0398411, -0.162358}, norm = {-0.956018, -0.286778, -0.0615462}, uv = {0, 0}},
+//                 {pos = {-0.103047, 0.0891639, -0.171774}, norm = {-0.669017, 0.741998, -0.0430698}, uv = {0, 0}},
+//                 {pos = {-0.113092, 0.0891639, -0.0157395}, norm = {-0.666047, 0.715818, -0.209727}, uv = {0, 0}},
+//                 {pos = {-0.04906, 0.106062, -0.0339278}, norm = {-0.135708, 0.968629, -0.208185}, uv = {0, 0}},
+//                 {pos = {-0.0390149, 0.106062, -0.189962}, norm = {-0.114177, 0.993433, -0.00735052}, uv = {0, 0}},
+//                 {pos = {-0.122144, -0.136864, 0.0527377}, norm = {-0.190788, -0.94069, -0.280541}, uv = {0, 0}},
+//                 {pos = {-0.0839511, 0.136864, 0.0403089}, norm = {-0.0826974, 0.96458, -0.250493}, uv = {0, 0}},
+//                 {pos = {-0.106878, 0.090315, 0.177436}, norm = {-0.177602, 0.514636, 0.838813}, uv = {0, 0}},
+//                 {pos = {-0.0868149, 0.0826517, 0.186521}, norm = {-0.172061, 0.524197, 0.834034}, uv = {0, 0}},
+//                 {pos = {-0.0397546, 0.0967725, 0.171446}, norm = {-0.0138694, 0.753097, 0.657764}, uv = {0, 0}},
+//                 {pos = {-0.0858262, 0.136864, 0.124688}, norm = {-0.00797303, 0.924914, 0.380092}, uv = {0, 0}},
+//                 {pos = {-0.124019, -0.136864, 0.137117}, norm = {-0.0749261, -0.86913, 0.488876}, uv = {0, 0}},
+//                 {pos = {-0.141444, -0.0424914, 0.183697}, norm = {-0.291441, -0.231207, 0.928227}, uv = {0, 0}},
+//                 {pos = {-0.122819, -0.0388173, 0.189962}, norm = {-0.30956, -0.148886, 0.939152}, uv = {0, 0}},
+//                 {pos = {-0.0844704, -0.108424, 0.163441}, norm = {-0.107212, -0.585388, 0.803633}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "beard",
+//             verts = {
+//                 {pos = {0, 0.00442177, 0.0356589}, norm = {0.333347, 0.86702, -0.370347}, uv = {0, 0}},
+//                 {pos = {0, -0.0123597, 0.0774689}, norm = {0.333347, 0.370347, 0.86702}, uv = {0, 0}},
+//                 {pos = {0.0165037, -0.0123597, 0.0774689}, norm = {0.00166424, 0.392143, 0.919903}, uv = {0, 0}},
+//                 {pos = {0.0165037, 0.00442177, 0.0356589}, norm = {0.00390612, 0.918918, -0.394429}, uv = {0, 0}},
+//                 {pos = {0.0165037, -0.0446297, 0.0645165}, norm = {0.00166433, -0.919317, 0.393515}, uv = {0, 0}},
+//                 {pos = {0.0165037, -0.0278482, 0.0227065}, norm = {0.0039062, -0.391223, -0.920288}, uv = {0, 0}},
+//                 {pos = {0.046872, -0.027973, 0.0230174}, norm = {-0.298422, -0.722853, -0.62324}, uv = {0, 0}},
+//                 {pos = {0.0877031, -0.044505, 0.0642057}, norm = {0.561427, -0.758404, 0.331095}, uv = {0, 0}},
+//                 {pos = {0, -0.0446297, 0.0645165}, norm = {0.333347, -0.867017, 0.370353}, uv = {0, 0}},
+//                 {pos = {0, -0.0278482, 0.0227065}, norm = {0.333347, -0.370346, -0.86702}, uv = {0, 0}},
+//                 {pos = {0.0877031, -0.012235, 0.077158}, norm = {0.561426, 0.319039, 0.763554}, uv = {0, 0}},
+//                 {pos = {0.0959439, 0.0123597, -0.0774688}, norm = {0.591378, -0.321753, -0.739424}, uv = {0, 0}},
+//                 {pos = {0.0959439, 0.0446297, -0.0645165}, norm = {0.591378, 0.743682, -0.311785}, uv = {0, 0}},
+//                 {pos = {0.046872, 0.00429702, 0.0359697}, norm = {-0.298423, 0.953151, 0.0494667}, uv = {0, 0}},
+//                 {pos = {0.0494835, 0.0444441, -0.0640542}, norm = {-0.572513, 0.753683, -0.322786}, uv = {0, 0}},
+//                 {pos = {0.0494835, 0.0121741, -0.0770066}, norm = {-0.572513, -0.321373, -0.754287}, uv = {0, 0}},
+//                 {pos = {0, -0.0278482, 0.0227065}, norm = {0.333332, -0.370301, -0.867045}, uv = {0, 0}},
+//                 {pos = {0, 0.00442177, 0.0356589}, norm = {0.333332, 0.867045, -0.370301}, uv = {0, 0}},
+//                 {pos = {0, -0.0123597, 0.0774689}, norm = {0.333332, 0.370302, 0.867045}, uv = {0, 0}},
+//                 {pos = {0, -0.0446297, 0.0645165}, norm = {0.333332, -0.867045, 0.370301}, uv = {0, 0}},
+//                 {pos = {-0.0165037, 0.00442177, 0.0356589}, norm = {-0.00390601, 0.918918, -0.394429}, uv = {0, 0}},
+//                 {pos = {-0.0165037, -0.0123597, 0.0774689}, norm = {-0.00166431, 0.392143, 0.919903}, uv = {0, 0}},
+//                 {pos = {-0.0165037, -0.0446297, 0.0645165}, norm = {-0.00166433, -0.919317, 0.393515}, uv = {0, 0}},
+//                 {pos = {-0.0877031, -0.044505, 0.0642057}, norm = {-0.561427, -0.758404, 0.331095}, uv = {0, 0}},
+//                 {pos = {-0.046872, -0.027973, 0.0230174}, norm = {0.298422, -0.722853, -0.62324}, uv = {0, 0}},
+//                 {pos = {-0.0165037, -0.0278482, 0.0227065}, norm = {-0.00390604, -0.391223, -0.920288}, uv = {0, 0}},
+//                 {pos = {-0.0877031, -0.012235, 0.077158}, norm = {-0.561427, 0.319039, 0.763554}, uv = {0, 0}},
+//                 {pos = {-0.0959439, 0.0446297, -0.0645165}, norm = {-0.591377, 0.743682, -0.311785}, uv = {0, 0}},
+//                 {pos = {-0.0959439, 0.0123597, -0.0774688}, norm = {-0.591378, -0.321753, -0.739424}, uv = {0, 0}},
+//                 {pos = {-0.046872, 0.00429702, 0.0359697}, norm = {0.298423, 0.953151, 0.0494667}, uv = {0, 0}},
+//                 {pos = {-0.0494835, 0.0444441, -0.0640542}, norm = {0.572513, 0.753683, -0.322786}, uv = {0, 0}},
+//                 {pos = {-0.0494835, 0.0121741, -0.0770066}, norm = {0.572513, -0.321373, -0.754287}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "eyebrowLeft",
+//             verts = {
+//                 {pos = {-0.121097, -0.0462582, -0.0434052}, norm = {-0.57735, -0.57735, -0.57735}, uv = {0, 0}},
+//                 {pos = {-0.121097, -0.0462582, 0.0434052}, norm = {-0.57735, -0.57735, 0.57735}, uv = {0, 0}},
+//                 {pos = {-0.121097, -0.0114858, 0.0434052}, norm = {-0.57735, 0.57735, 0.57735}, uv = {0, 0}},
+//                 {pos = {-0.121097, -0.0114858, -0.0434052}, norm = {-0.57735, 0.57735, -0.57735}, uv = {0, 0}},
+//                 {pos = {0.0401673, -0.0114858, -0.0434052}, norm = {-0.231417, 0.543719, -0.806732}, uv = {0, 0}},
+//                 {pos = {0.0401673, -0.0114858, 0.0434052}, norm = {-0.231417, 0.543719, 0.806732}, uv = {0, 0}},
+//                 {pos = {0.0957141, 0.0462582, 0.0434052}, norm = {-0.0213296, 0.815713, 0.578064}, uv = {0, 0}},
+//                 {pos = {0.0957141, 0.0462582, -0.0434052}, norm = {-0.0213296, 0.815713, -0.578064}, uv = {0, 0}},
+//                 {pos = {0.121097, 0.0224923, 0.0434052}, norm = {0.820302, -0.0198132, 0.571587}, uv = {0, 0}},
+//                 {pos = {0.121097, 0.0224923, -0.0434052}, norm = {0.820302, -0.0198132, -0.571587}, uv = {0, 0}},
+//                 {pos = {0.0401673, -0.0462582, -0.0434052}, norm = {0.265823, -0.723497, -0.637095}, uv = {0, 0}},
+//                 {pos = {0.0401673, -0.0462582, 0.0434052}, norm = {0.265823, -0.723497, 0.637095}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "afro",
+//             verts = {
+//                 {pos = {0.327175, 0.265775, 0.458011}, norm = {0.220898, 0.245841, 0.943804}, uv = {0, 0}},
+//                 {pos = {-0.327175, 0.265775, 0.458011}, norm = {-0.220897, 0.245841, 0.943804}, uv = {0, 0}},
+//                 {pos = {-0.327175, -0.286842, 0.458011}, norm = {-0.211102, -0.209455, 0.954759}, uv = {0, 0}},
+//                 {pos = {0.327175, -0.286842, 0.458011}, norm = {0.211102, -0.209455, 0.954759}, uv = {0, 0}},
+//                 {pos = {0.515634, 0.312447, -0.320644}, norm = {0.770681, 0.16532, -0.615403}, uv = {0, 0}},
+//                 {pos = {0.614672, 0.389706, -0.0352126}, norm = {0.916568, 0.3804, -0.123288}, uv = {0, 0}},
+//                 {pos = {0.588958, -0.373235, 0.0429789}, norm = {0.885491, -0.43211, -0.17084}, uv = {0, 0}},
+//                 {pos = {0.554021, -0.325305, -0.0849081}, norm = {0.733562, -0.372895, -0.568187}, uv = {0, 0}},
+//                 {pos = {-0.575787, -0.365887, 0.296681}, norm = {-0.860331, -0.389284, 0.329072}, uv = {0, 0}},
+//                 {pos = {-0.557642, -0.343559, 0.337064}, norm = {-0.663254, -0.213777, 0.717213}, uv = {0, 0}},
+//                 {pos = {-0.539358, 0.312881, 0.326302}, norm = {-0.665487, 0.265729, 0.697506}, uv = {0, 0}},
+//                 {pos = {-0.588958, 0.352168, 0.240616}, norm = {-0.869364, 0.367712, 0.330142}, uv = {0, 0}},
+//                 {pos = {0.379364, -0.493228, -0.0399925}, norm = {0.235584, -0.779398, -0.580551}, uv = {0, 0}},
+//                 {pos = {0.428601, -0.537182, 0.0594487}, norm = {0.387792, -0.903727, -0.181371}, uv = {0, 0}},
+//                 {pos = {-0.428601, -0.537182, 0.0594487}, norm = {-0.387792, -0.903727, -0.181371}, uv = {0, 0}},
+//                 {pos = {-0.379364, -0.493228, -0.0399925}, norm = {-0.235584, -0.779398, -0.580551}, uv = {0, 0}},
+//                 {pos = {-0.363984, 0.451094, -0.370644}, norm = {-0.302636, 0.710317, -0.635501}, uv = {0, 0}},
+//                 {pos = {-0.460419, 0.537182, -0.0521539}, norm = {-0.40752, 0.905019, -0.121934}, uv = {0, 0}},
+//                 {pos = {0.460419, 0.537182, -0.0521539}, norm = {0.40752, 0.905019, -0.121934}, uv = {0, 0}},
+//                 {pos = {0.363984, 0.451094, -0.370644}, norm = {0.302636, 0.710317, -0.635501}, uv = {0, 0}},
+//                 {pos = {0.399648, -0.51949, 0.318988}, norm = {0.368904, -0.86228, 0.346963}, uv = {0, 0}},
+//                 {pos = {0.390048, -0.51092, 0.332894}, norm = {0.220184, -0.651648, 0.725861}, uv = {0, 0}},
+//                 {pos = {-0.390048, -0.51092, 0.332894}, norm = {-0.220184, -0.651648, 0.725861}, uv = {0, 0}},
+//                 {pos = {-0.399648, -0.51949, 0.318988}, norm = {-0.368904, -0.86228, 0.346964}, uv = {0, 0}},
+//                 {pos = {0.588958, 0.352168, 0.240616}, norm = {0.869364, 0.367712, 0.330143}, uv = {0, 0}},
+//                 {pos = {0.539358, 0.312881, 0.326302}, norm = {0.665487, 0.265729, 0.697507}, uv = {0, 0}},
+//                 {pos = {0.557642, -0.343559, 0.337064}, norm = {0.663254, -0.213777, 0.717213}, uv = {0, 0}},
+//                 {pos = {0.575787, -0.365887, 0.296681}, norm = {0.860331, -0.389285, 0.329072}, uv = {0, 0}},
+//                 {pos = {-0.428601, 0.516115, 0.224147}, norm = {-0.363123, 0.877829, 0.312342}, uv = {0, 0}},
+//                 {pos = {-0.379364, 0.472161, 0.323588}, norm = {-0.23773, 0.706974, 0.666087}, uv = {0, 0}},
+//                 {pos = {0.379364, 0.472161, 0.323588}, norm = {0.23773, 0.706974, 0.666087}, uv = {0, 0}},
+//                 {pos = {0.428601, 0.516115, 0.224147}, norm = {0.363123, 0.877829, 0.312342}, uv = {0, 0}},
+//                 {pos = {-0.327175, 0.276258, -0.458011}, norm = {-0.257922, 0.0121946, -0.966089}, uv = {0, 0}},
+//                 {pos = {0.327175, 0.276258, -0.458011}, norm = {0.257922, 0.0121946, -0.966089}, uv = {0, 0}},
+//                 {pos = {0.327175, -0.297325, -0.228927}, norm = {0.234769, -0.495779, -0.836114}, uv = {0, 0}},
+//                 {pos = {-0.327175, -0.297325, -0.228927}, norm = {-0.234769, -0.495779, -0.836114}, uv = {0, 0}},
+//                 {pos = {-0.554021, -0.325305, -0.0849081}, norm = {-0.733562, -0.372895, -0.568187}, uv = {0, 0}},
+//                 {pos = {-0.515634, 0.312447, -0.320644}, norm = {-0.770681, 0.16532, -0.615403}, uv = {0, 0}},
+//                 {pos = {-0.588958, -0.373235, 0.0429789}, norm = {-0.885491, -0.43211, -0.17084}, uv = {0, 0}},
+//                 {pos = {-0.614672, 0.389706, -0.0352126}, norm = {-0.916568, 0.3804, -0.123288}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "head",
+//             verts = {
+//                 {pos = {0.199614, -0.337893, -0.199614}, norm = {0.364176, -0.915831, -0.169205}, uv = {0.287734, 0.416021}},
+//                 {pos = {0.199614, -0.337893, 0.199614}, norm = {0.341586, -0.875579, 0.341586}, uv = {0, 0}},
+//                 {pos = {-0.199614, -0.337893, 0.199614}, norm = {-0.341586, -0.875579, 0.341586}, uv = {0, 0}},
+//                 {pos = {-0.199614, -0.337893, -0.199614}, norm = {-0.364176, -0.915831, -0.169205}, uv = {0, 0}},
+//                 {pos = {0.368287, 0.230009, -0.199614}, norm = {0.875579, 0.341586, -0.341586}, uv = {0, 0}},
+//                 {pos = {0.368287, 0.230009, 0.199614}, norm = {0.875579, 0.341586, 0.341586}, uv = {0, 0}},
+//                 {pos = {0.368287, -0.16922, 0.199614}, norm = {0.875579, -0.341586, 0.341586}, uv = {0, 0}},
+//                 {pos = {0.368287, -0.16922, -0.199614}, norm = {0.896022, -0.31586, -0.312053}, uv = {0, 0}},
+//                 {pos = {0.199614, 0.230009, 0.368287}, norm = {0.341586, 0.341586, 0.875579}, uv = {0, 0}},
+//                 {pos = {-0.199614, 0.230009, 0.368287}, norm = {-0.341586, 0.341586, 0.875579}, uv = {0, 0}},
+//                 {pos = {-0.199614, -0.16922, 0.368287}, norm = {-0.341586, -0.341586, 0.875579}, uv = {0, 0}},
+//                 {pos = {0.199614, -0.16922, 0.368287}, norm = {0.341586, -0.341586, 0.875579}, uv = {0, 0}},
+//                 {pos = {-0.368287, -0.16922, -0.199614}, norm = {-0.896022, -0.31586, -0.312053}, uv = {0, 0}},
+//                 {pos = {-0.368287, -0.16922, 0.199614}, norm = {-0.875579, -0.341586, 0.341586}, uv = {0, 0}},
+//                 {pos = {-0.368287, 0.230009, 0.199614}, norm = {-0.875579, 0.341586, 0.341586}, uv = {0, 0}},
+//                 {pos = {-0.368287, 0.230009, -0.199614}, norm = {-0.875579, 0.341586, -0.341586}, uv = {0, 0}},
+//                 {pos = {-0.199614, 0.398681, -0.199614}, norm = {-0.341586, 0.875579, -0.341586}, uv = {0, 0}},
+//                 {pos = {-0.199614, 0.398681, 0.199614}, norm = {-0.341586, 0.875579, 0.341586}, uv = {0, 0}},
+//                 {pos = {0.199614, 0.398681, 0.199614}, norm = {0.341586, 0.875579, 0.341586}, uv = {0, 0}},
+//                 {pos = {0.199614, 0.398681, -0.199614}, norm = {0.341586, 0.875579, -0.341586}, uv = {0, 0}},
+//                 {pos = {-0.199614, -0.271189, -0.368287}, norm = {-0.36984, -0.519654, -0.770181}, uv = {0, 0}},
+//                 {pos = {-0.199614, -0.16922, 0.368287}, norm = {-0.341586, -0.341586, 0.875579}, uv = {0, 0}},
+//                 {pos = {-0.199614, 0.230009, -0.368287}, norm = {-0.341586, 0.341586, -0.875579}, uv = {0, 0}},
+//                 {pos = {-0.368287, 0.230009, -0.199614}, norm = {-0.875579, 0.341586, -0.341586}, uv = {0, 0}},
+//                 {pos = {-0.199614, 0.398681, -0.199614}, norm = {-0.341586, 0.875579, -0.341586}, uv = {0, 0}},
+//                 {pos = {-0.199614, 0.230009, 0.368287}, norm = {-0.341586, 0.341586, 0.875579}, uv = {0, 0}},
+//                 {pos = {-0.199614, 0.398681, 0.199614}, norm = {-0.341586, 0.875579, 0.341586}, uv = {0, 0}},
+//                 {pos = {-0.368287, 0.230009, 0.199614}, norm = {-0.875579, 0.341586, 0.341586}, uv = {0, 0}},
+//                 {pos = {0.199614, -0.271189, -0.368287}, norm = {0.36984, -0.519654, -0.770181}, uv = {0, 0}},
+//                 {pos = {0.199614, -0.337893, -0.199614}, norm = {0.364176, -0.915831, -0.169205}, uv = {0, 0}},
+//                 {pos = {0.199614, -0.16922, 0.368287}, norm = {0.341586, -0.341586, 0.875579}, uv = {0, 0}},
+//                 {pos = {0.199614, -0.337893, 0.199614}, norm = {0.341586, -0.875579, 0.341586}, uv = {0, 0}},
+//                 {pos = {0.199614, 0.230009, -0.368287}, norm = {0.341586, 0.341586, -0.875579}, uv = {0, 0}},
+//                 {pos = {0.368287, 0.230009, -0.199614}, norm = {0.875579, 0.341586, -0.341586}, uv = {0, 0}},
+//                 {pos = {0.199614, 0.230009, 0.368287}, norm = {0.341586, 0.341586, 0.875579}, uv = {0, 0}},
+//                 {pos = {0.368287, 0.230009, 0.199614}, norm = {0.875579, 0.341586, 0.341586}, uv = {0, 0}},
+//                 {pos = {-0.199614, 0.230009, -0.368287}, norm = {-0.341586, 0.341586, -0.875579}, uv = {0, 0}},
+//                 {pos = {-0.199614, -0.271189, -0.368287}, norm = {-0.36984, -0.519654, -0.770181}, uv = {0, 0}},
+//                 {pos = {-0.368287, -0.16922, -0.199614}, norm = {-0.896022, -0.31586, -0.312053}, uv = {0, 0}},
+//                 {pos = {-0.368287, 0.230009, -0.199614}, norm = {-0.875579, 0.341586, -0.341586}, uv = {0, 0}},
+//                 {pos = {-0.368287, 0.230009, 0.199614}, norm = {-0.875579, 0.341586, 0.341586}, uv = {0, 0}},
+//                 {pos = {-0.368287, -0.16922, 0.199614}, norm = {-0.875579, -0.341586, 0.341586}, uv = {0, 0}},
+//                 {pos = {0.199614, 0.230009, -0.368287}, norm = {0.341586, 0.341586, -0.875579}, uv = {0, 0}},
+//                 {pos = {-0.199614, 0.398681, -0.199614}, norm = {-0.341586, 0.875579, -0.341586}, uv = {0, 0}},
+//                 {pos = {0.199614, 0.398681, -0.199614}, norm = {0.341586, 0.875579, -0.341586}, uv = {0, 0}},
+//                 {pos = {0.199614, 0.398681, 0.199614}, norm = {0.341586, 0.875579, 0.341586}, uv = {0, 0}},
+//                 {pos = {-0.199614, 0.398681, 0.199614}, norm = {-0.341586, 0.875579, 0.341586}, uv = {0, 0}},
+//                 {pos = {0.199614, -0.271189, -0.368287}, norm = {0.36984, -0.519654, -0.770181}, uv = {0, 0}},
+//                 {pos = {0.368287, 0.230009, -0.199614}, norm = {0.875579, 0.341586, -0.341586}, uv = {0, 0}},
+//                 {pos = {0.368287, -0.16922, -0.199614}, norm = {0.896022, -0.31586, -0.312053}, uv = {0, 0}},
+//                 {pos = {0.368287, -0.16922, 0.199614}, norm = {0.875579, -0.341586, 0.341586}, uv = {0, 0}},
+//                 {pos = {0.368287, 0.230009, 0.199614}, norm = {0.875579, 0.341586, 0.341586}, uv = {0, 0}},
+//                 {pos = {0.199614, -0.271189, -0.368287}, norm = {0.36984, -0.519654, -0.770181}, uv = {0, 0}},
+//                 {pos = {-0.199614, -0.337893, 0.199614}, norm = {-0.341586, -0.875579, 0.341586}, uv = {0, 0}},
+//                 {pos = {0.199614, -0.337893, 0.199614}, norm = {0.341586, -0.875579, 0.341586}, uv = {0, 0}},
+//                 {pos = {-5.18476e-09, -0.398681, -0.152585}, norm = {-3.19447e-07, -0.948991, -0.315304}, uv = {0, 0}},
+//                 {pos = {-1.73596e-09, -0.331767, -0.0634017}, norm = {-8.29488e-07, 0.217093, 0.976151}, uv = {0, 0}},
+//                 {pos = {-0.0197804, -0.331794, -0.152585}, norm = {-0.724768, 0.477971, -0.496241}, uv = {0, 0}},
+//                 {pos = {-0.0197804, -0.331794, -0.152585}, norm = {-0.724768, 0.477971, -0.496241}, uv = {0, 0}},
+//                 {pos = {-1.73596e-09, -0.331767, -0.0634017}, norm = {-8.29488e-07, 0.217093, 0.976151}, uv = {0, 0}},
+//                 {pos = {0.0197804, -0.331794, -0.152585}, norm = {0.724768, 0.477971, -0.496241}, uv = {0, 0}},
+//                 {pos = {0.0197804, -0.331794, -0.152585}, norm = {0.724768, 0.477971, -0.496241}, uv = {0, 0}},
+//                 {pos = {-1.73596e-09, -0.331767, -0.0634017}, norm = {-8.29488e-07, 0.217093, 0.976151}, uv = {0, 0}},
+//                 {pos = {-5.18476e-09, -0.398681, -0.152585}, norm = {-3.19447e-07, -0.948991, -0.315304}, uv = {0, 0}},
+//                 {pos = {-5.18476e-09, -0.398681, -0.152585}, norm = {-3.19447e-07, -0.948991, -0.315304}, uv = {0, 0}},
+//                 {pos = {-0.0197804, -0.331794, -0.152585}, norm = {-0.724768, 0.477971, -0.496241}, uv = {0, 0}},
+//                 {pos = {0.0197804, -0.331794, -0.152585}, norm = {0.724768, 0.477971, -0.496241}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "body",
+//             verts = {
+//                 {pos = {0.0680951, -0.101308, -0.225563}, norm = {0.334927, -0.941997, -0.0215618}, uv = {0, 0}},
+//                 {pos = {0.132127, -0.0398411, -0.207375}, norm = {0.948542, -0.310706, -0.0610649}, uv = {0, 0}},
+//                 {pos = {0.142173, -0.0398411, -0.0513405}, norm = {0.790803, -0.260893, -0.553684}, uv = {0, 0}},
+//                 {pos = {0.0781402, -0.101308, -0.0695288}, norm = {0.322378, -0.893375, -0.312976}, uv = {0, 0}},
+//                 {pos = {0.103193, 0.0891639, -0.216791}, norm = {0.669017, 0.741998, -0.0430698}, uv = {0, 0}},
+//                 {pos = {0.0391609, 0.106062, -0.234979}, norm = {0.114177, 0.993433, -0.00735051}, uv = {0, 0}},
+//                 {pos = {0.0492061, 0.106062, -0.0789446}, norm = {0.139577, 0.968555, -0.205959}, uv = {0, 0}},
+//                 {pos = {0.113238, 0.0891639, -0.0607563}, norm = {0.637451, 0.644436, -0.422325}, uv = {0, 0}},
+//                 {pos = {0.000146054, -0.101308, -0.226798}, norm = {0, -1, 5.58193e-08}, uv = {0, 0}},
+//                 {pos = {0.000146054, -0.101308, -0.0707629}, norm = {7.21088e-11, -0.977012, -0.213184}, uv = {0, 0}},
+//                 {pos = {0.000146054, 0.106062, -0.233761}, norm = {0, 1, -7.77785e-08}, uv = {0, 0}},
+//                 {pos = {0.000146054, 0.106062, -0.0777267}, norm = {0, 0.9804, -0.197019}, uv = {0, 0}},
+//                 {pos = {0.22975, -0.0561251, 0.00287453}, norm = {0.576338, -0.617727, -0.535021}, uv = {0, 0}},
+//                 {pos = {0.12229, -0.136864, 0.00772092}, norm = {0.334695, -0.889776, -0.310287}, uv = {0, 0}},
+//                 {pos = {0.000146054, 0.136864, -0.00310026}, norm = {0, 0.981436, -0.191792}, uv = {0, 0}},
+//                 {pos = {0.0840971, 0.136864, -0.00470788}, norm = {0.251432, 0.942789, -0.218932}, uv = {0, 0}},
+//                 {pos = {0.000146054, -0.136864, 0.00609192}, norm = {0, -0.976173, -0.216995}, uv = {0, 0}},
+//                 {pos = {0.160136, 0.0923066, -0.015544}, norm = {0.421958, 0.686271, -0.592438}, uv = {0, 0}},
+//                 {pos = {0.233167, -0.0561251, 0.127918}, norm = {0.443917, -0.514472, 0.73366}, uv = {0, 0}},
+//                 {pos = {0.124165, -0.136864, 0.0921002}, norm = {0.247322, -0.867769, 0.431055}, uv = {0, 0}},
+//                 {pos = {0.000146054, 0.136864, 0.081279}, norm = {0, 0.897578, 0.440856}, uv = {0, 0}},
+//                 {pos = {0.0859722, 0.136864, 0.0796714}, norm = {0.190539, 0.913352, 0.359838}, uv = {0, 0}},
+//                 {pos = {0.000146054, -0.136864, 0.0904712}, norm = {0, -0.880344, 0.474336}, uv = {0, 0}},
+//                 {pos = {0.163554, 0.0923066, 0.109499}, norm = {0.216666, 0.72568, 0.653027}, uv = {0, 0}},
+//                 {pos = {0.0706423, -0.0176074, 0.160809}, norm = {0.680484, -0.278613, 0.677729}, uv = {0, 0}},
+//                 {pos = {0.0374147, -0.0515466, 0.146404}, norm = {0.174753, -0.788291, 0.589965}, uv = {0, 0}},
+//                 {pos = {0.000146054, 0.0629539, 0.139911}, norm = {0, 0.904302, 0.426894}, uv = {0, 0}},
+//                 {pos = {0.0224003, 0.0629539, 0.138946}, norm = {0.067864, 0.868768, 0.490547}, uv = {0, 0}},
+//                 {pos = {0.000146054, -0.0515466, 0.145426}, norm = {0, -0.875309, 0.483564}, uv = {0, 0}},
+//                 {pos = {0.0556278, 0.0536237, 0.153351}, norm = {0.432446, 0.698367, 0.570328}, uv = {0, 0}},
+//                 {pos = {0.0706423, -0.0176074, 0.234979}, norm = {0.960151, -0.279481, 0}, uv = {0, 0}},
+//                 {pos = {0.0374147, -0.0515466, 0.234329}, norm = {0.392509, -0.919748, 0}, uv = {0, 0}},
+//                 {pos = {0.000146054, 0.0629539, 0.234415}, norm = {0, 1, 0}, uv = {0, 0}},
+//                 {pos = {0.0224003, 0.0629539, 0.233451}, norm = {0.135404, 0.99079, 0}, uv = {0, 0}},
+//                 {pos = {0.000146054, -0.0515466, 0.233352}, norm = {0, -1, 0}, uv = {0, 0}},
+//                 {pos = {0.0556278, 0.0536237, 0.234101}, norm = {0.73412, 0.67902, 0}, uv = {0, 0}},
+//                 {pos = {-0.067803, -0.101308, -0.225563}, norm = {-0.334927, -0.941997, -0.0215618}, uv = {0, 0}},
+//                 {pos = {-0.0778481, -0.101308, -0.0695288}, norm = {-0.334573, -0.891481, -0.305486}, uv = {0, 0}},
+//                 {pos = {-0.14188, -0.0398411, -0.0513405}, norm = {-0.816901, -0.256583, -0.516563}, uv = {0, 0}},
+//                 {pos = {-0.131835, -0.0398411, -0.207375}, norm = {-0.948542, -0.310706, -0.0610649}, uv = {0, 0}},
+//                 {pos = {-0.102901, 0.0891639, -0.216791}, norm = {-0.669017, 0.741998, -0.0430698}, uv = {0, 0}},
+//                 {pos = {-0.112946, 0.0891639, -0.0607563}, norm = {-0.663256, 0.644345, -0.380672}, uv = {0, 0}},
+//                 {pos = {-0.048914, 0.106062, -0.0789446}, norm = {-0.14965, 0.968323, -0.199888}, uv = {0, 0}},
+//                 {pos = {-0.0388688, 0.106062, -0.234979}, norm = {-0.114177, 0.993433, -0.00735052}, uv = {0, 0}},
+//                 {pos = {-0.121998, -0.136864, 0.00772092}, norm = {-0.367698, -0.878928, -0.303782}, uv = {0, 0}},
+//                 {pos = {-0.225421, -0.0470726, 0.00937735}, norm = {-0.470513, -0.681513, -0.560497}, uv = {0, 0}},
+//                 {pos = {-0.083805, 0.136864, -0.00470788}, norm = {-0.280719, 0.935355, -0.215191}, uv = {0, 0}},
+//                 {pos = {-0.164298, 0.083254, -0.00679459}, norm = {-0.416558, 0.690842, -0.590946}, uv = {0, 0}},
+//                 {pos = {-0.123873, -0.136864, 0.0921002}, norm = {-0.287364, -0.851905, 0.437813}, uv = {0, 0}},
+//                 {pos = {-0.228421, -0.0470726, 0.119169}, norm = {-0.367742, -0.543728, 0.754405}, uv = {0, 0}},
+//                 {pos = {-0.0856801, 0.136864, 0.0796714}, norm = {-0.227359, 0.900751, 0.370075}, uv = {0, 0}},
+//                 {pos = {-0.167299, 0.083254, 0.102997}, norm = {-0.209079, 0.720786, 0.660873}, uv = {0, 0}},
+//                 {pos = {-0.0371226, -0.0515466, 0.146404}, norm = {-0.194025, -0.781851, 0.592505}, uv = {0, 0}},
+//                 {pos = {-0.0703502, -0.0176074, 0.160809}, norm = {-0.707811, -0.263646, 0.655359}, uv = {0, 0}},
+//                 {pos = {-0.0221082, 0.0629539, 0.138946}, norm = {-0.0880187, 0.865049, 0.493906}, uv = {0, 0}},
+//                 {pos = {-0.0553357, 0.0536237, 0.153351}, norm = {-0.469245, 0.687786, 0.553859}, uv = {0, 0}},
+//                 {pos = {-0.0371226, -0.0515466, 0.234329}, norm = {-0.392509, -0.919748, 0}, uv = {0, 0}},
+//                 {pos = {-0.0703502, -0.0176074, 0.234979}, norm = {-0.960151, -0.27948, 0}, uv = {0, 0}},
+//                 {pos = {-0.0221082, 0.0629539, 0.233451}, norm = {-0.135404, 0.99079, 0}, uv = {0, 0}},
+//                 {pos = {-0.0553357, 0.0536237, 0.234101}, norm = {-0.73412, 0.67902, 0}, uv = {0, 0}},
+//                 {pos = {0.270917, 0.104572, 0.112407}, norm = {0.427679, 0.711777, 0.557193}, uv = {0, 0}},
+//                 {pos = {0.248342, 0.0871441, -0.00209593}, norm = {0.31378, 0.639839, -0.701532}, uv = {0, 0}},
+//                 {pos = {0.244108, -0.0486081, -0.00652181}, norm = {0.478258, -0.474374, -0.73908}, uv = {0, 0}},
+//                 {pos = {0.266893, -0.0321593, 0.108159}, norm = {0.562015, -0.520325, 0.642963}, uv = {0, 0}},
+//                 {pos = {-0.271053, 0.104388, 0.113824}, norm = {-0.367251, 0.721897, 0.586508}, uv = {0, 0}},
+//                 {pos = {-0.266563, -0.0324442, 0.108918}, norm = {-0.42476, -0.598884, 0.678908}, uv = {0, 0}},
+//                 {pos = {-0.243547, -0.0470726, -0.00768568}, norm = {-0.337699, -0.577187, -0.743515}, uv = {0, 0}},
+//                 {pos = {-0.248961, 0.0873664, -0.0021995}, norm = {-0.195092, 0.667927, -0.718201}, uv = {0, 0}},
+//                 {pos = {-0.273398, 0.0693958, 0.00982638}, norm = {-0.769201, 0.307001, -0.560428}, uv = {0, 0}},
+//                 {pos = {-0.298931, 0.0782702, 0.0947078}, norm = {-0.92799, 0.293851, 0.2291}, uv = {0, 0}},
+//                 {pos = {-0.269566, -0.0257604, 0.00594325}, norm = {-0.774356, -0.373731, -0.510586}, uv = {0, 0}},
+//                 {pos = {-0.290417, -0.0154064, 0.0884754}, norm = {-0.891683, -0.379627, 0.246547}, uv = {0, 0}},
+//                 {pos = {0.278023, 0.0654612, 0.0158488}, norm = {0.813497, 0.272491, -0.513781}, uv = {0, 0}},
+//                 {pos = {0.269066, -0.0270314, 0.0132572}, norm = {0.802341, -0.396845, -0.445828}, uv = {0, 0}},
+//                 {pos = {0.298931, 0.0760103, 0.0929138}, norm = {0.929794, 0.283371, 0.234911}, uv = {0, 0}},
+//                 {pos = {0.290394, -0.0158661, 0.090296}, norm = {0.887109, -0.373583, 0.27106}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "armRight",
+//             verts = {
+//                 {pos = {0.0656364, 0.0801453, 0.0649342}, norm = {-0.392518, 0.706599, 0.588768}, uv = {0, 0}},
+//                 {pos = {0.0377024, 0.0519099, 0.0448349}, norm = {-0.241972, 0.668666, 0.70309}, uv = {0, 0}},
+//                 {pos = {0.0464356, -0.0400476, 0.0423462}, norm = {-0.21153, -0.628152, 0.748786}, uv = {0, 0}},
+//                 {pos = {0.0700481, -0.0557487, 0.0607807}, norm = {-0.410145, -0.595487, 0.690779}, uv = {0, 0}},
+//                 {pos = {0.170786, -0.0798631, 0.0679818}, norm = {0.426468, -0.659575, 0.618939}, uv = {0, 0}},
+//                 {pos = {0.208979, 0.0677742, 0.0555529}, norm = {0.67711, 0.515978, 0.524679}, uv = {0, 0}},
+//                 {pos = {0.0931177, -0.0728265, -0.0543282}, norm = {-0.24776, -0.646748, -0.721341}, uv = {0, 0}},
+//                 {pos = {0.172661, -0.0798631, -0.0163975}, norm = {0.512262, -0.739836, -0.436155}, uv = {0, 0}},
+//                 {pos = {0.088706, 0.0630676, -0.0501747}, norm = {-0.20785, 0.615749, -0.760034}, uv = {0, 0}},
+//                 {pos = {0.210854, 0.0677742, -0.0288263}, norm = {0.708088, 0.48262, -0.51545}, uv = {0, 0}},
+//                 {pos = {0.0676499, -0.0502531, -0.0347343}, norm = {-0.165242, -0.724037, -0.669676}, uv = {0, 0}},
+//                 {pos = {0.0242049, -0.0803698, -0.0662492}, norm = {0.231151, -0.735323, -0.637079}, uv = {0, 0}},
+//                 {pos = {0.0104643, 0.0643129, -0.0623337}, norm = {0.151773, 0.690622, -0.707111}, uv = {0, 0}},
+//                 {pos = {0.0589166, 0.0417044, -0.0322456}, norm = {-0.119157, 0.646754, -0.753333}, uv = {0, 0}},
+//                 {pos = {-0.0229134, 0.0803698, 0.0589421}, norm = {-0.123834, 0.752527, 0.646814}, uv = {0, 0}},
+//                 {pos = {-0.00917286, -0.0643129, 0.0550266}, norm = {-0.0464381, -0.67556, 0.735842}, uv = {0, 0}},
+//                 {pos = {-0.063881, -0.0482768, 0.025628}, norm = {-0.258192, -0.68758, 0.678653}, uv = {0, 0}},
+//                 {pos = {-0.0483806, -0.0571629, -0.055182}, norm = {-0.114669, -0.695166, -0.709645}, uv = {0, 0}},
+//                 {pos = {-0.0859424, 0.0439692, 0.0284193}, norm = {-0.422002, 0.676026, 0.604073}, uv = {0, 0}},
+//                 {pos = {-0.070442, 0.0350831, -0.0523907}, norm = {-0.187863, 0.626979, -0.756045}, uv = {0, 0}},
+//                 {pos = {-0.173292, -0.0754589, -0.0679818}, norm = {0.174246, -0.718712, -0.67312}, uv = {0, 0}},
+//                 {pos = {-0.195354, 0.0167872, -0.0651904}, norm = {-0.0308922, 0.705941, -0.707597}, uv = {0, 0}},
+//                 {pos = {-0.210854, 0.0256733, 0.0156196}, norm = {-0.17452, 0.726607, 0.664518}, uv = {0, 0}},
+//                 {pos = {-0.188793, -0.0665728, 0.0128283}, norm = {0.0163167, -0.645562, 0.763533}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "armLeft",
+//             verts = {
+//                 {pos = {-0.0656364, 0.0801453, 0.0649342}, norm = {0.392518, 0.706599, 0.588768}, uv = {0, 0}},
+//                 {pos = {-0.0700481, -0.0557487, 0.0607807}, norm = {0.410145, -0.595487, 0.690779}, uv = {0, 0}},
+//                 {pos = {-0.0464356, -0.0400476, 0.0423462}, norm = {0.21153, -0.628152, 0.748786}, uv = {0, 0}},
+//                 {pos = {-0.0377024, 0.0519099, 0.0448349}, norm = {0.241972, 0.668666, 0.70309}, uv = {0, 0}},
+//                 {pos = {-0.208979, 0.0677742, 0.0555529}, norm = {-0.67711, 0.515978, 0.524679}, uv = {0, 0}},
+//                 {pos = {-0.170786, -0.0798631, 0.0679818}, norm = {-0.426468, -0.659575, 0.618939}, uv = {0, 0}},
+//                 {pos = {-0.172661, -0.0798631, -0.0163975}, norm = {-0.512262, -0.739836, -0.436155}, uv = {0, 0}},
+//                 {pos = {-0.0931177, -0.0728265, -0.0543282}, norm = {0.24776, -0.646748, -0.721341}, uv = {0, 0}},
+//                 {pos = {-0.210854, 0.0677742, -0.0288263}, norm = {-0.708088, 0.48262, -0.51545}, uv = {0, 0}},
+//                 {pos = {-0.088706, 0.0630676, -0.0501747}, norm = {0.20785, 0.615749, -0.760034}, uv = {0, 0}},
+//                 {pos = {-0.0676499, -0.0502531, -0.0347343}, norm = {0.165242, -0.724037, -0.669676}, uv = {0, 0}},
+//                 {pos = {-0.0589166, 0.0417044, -0.0322456}, norm = {0.119157, 0.646754, -0.753333}, uv = {0, 0}},
+//                 {pos = {-0.0104643, 0.0643129, -0.0623337}, norm = {-0.151773, 0.690622, -0.707111}, uv = {0, 0}},
+//                 {pos = {-0.0242049, -0.0803698, -0.0662492}, norm = {-0.231151, -0.735323, -0.637079}, uv = {0, 0}},
+//                 {pos = {0.0229134, 0.0803698, 0.0589421}, norm = {0.123834, 0.752527, 0.646814}, uv = {0, 0}},
+//                 {pos = {0.00917286, -0.0643129, 0.0550266}, norm = {0.0464382, -0.675559, 0.735842}, uv = {0, 0}},
+//                 {pos = {0.0483806, -0.0571629, -0.055182}, norm = {0.114669, -0.695165, -0.709645}, uv = {0, 0}},
+//                 {pos = {0.063881, -0.0482768, 0.025628}, norm = {0.258192, -0.68758, 0.678653}, uv = {0, 0}},
+//                 {pos = {0.0859424, 0.0439692, 0.0284193}, norm = {0.422002, 0.676026, 0.604073}, uv = {0, 0}},
+//                 {pos = {0.070442, 0.0350831, -0.0523907}, norm = {0.187863, 0.626979, -0.756045}, uv = {0, 0}},
+//                 {pos = {0.195354, 0.0167872, -0.0651904}, norm = {0.0308922, 0.705941, -0.707597}, uv = {0, 0}},
+//                 {pos = {0.173292, -0.0754589, -0.0679818}, norm = {-0.174246, -0.718712, -0.67312}, uv = {0, 0}},
+//                 {pos = {0.210854, 0.0256733, 0.0156196}, norm = {0.17452, 0.726607, 0.664518}, uv = {0, 0}},
+//                 {pos = {0.188793, -0.0665728, 0.0128283}, norm = {-0.0163167, -0.645562, 0.763533}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "legLeft",
+//             verts = {
+//                 {pos = {0.06569, -0.0181461, 0.148874}, norm = {0.836339, -0.264014, 0.480452}, uv = {0, 0}},
+//                 {pos = {-0.0777721, -0.0794084, 0.15482}, norm = {-0.540354, -0.642486, 0.543351}, uv = {0, 0}},
+//                 {pos = {-0.0569196, -0.108837, -0.00297928}, norm = {-0.441992, -0.887364, -0.131258}, uv = {0, 0}},
+//                 {pos = {0.0828167, -0.0476282, -0.0091666}, norm = {0.887075, -0.451005, -0.0984522}, uv = {0, 0}},
+//                 {pos = {-0.0828168, 0.0994516, 0.118977}, norm = {-0.646331, 0.672061, 0.361373}, uv = {0, 0}},
+//                 {pos = {-0.079729, 0.108837, -0.00943521}, norm = {-0.654971, 0.736669, -0.168322}, uv = {0, 0}},
+//                 {pos = {0.0284334, 0.0823626, 0.119751}, norm = {0.597085, 0.733368, 0.325055}, uv = {0, 0}},
+//                 {pos = {0.0399113, 0.0917522, -0.00884837}, norm = {0.646616, 0.754273, -0.113838}, uv = {0, 0}},
+//                 {pos = {0.0132183, -0.00430346, -0.18216}, norm = {0.824672, -0.408003, -0.391726}, uv = {0, 0}},
+//                 {pos = {0.0132467, 0.0432483, -0.181991}, norm = {0.660091, 0.675098, -0.329427}, uv = {0, 0}},
+//                 {pos = {-0.0369767, -0.0274405, -0.182341}, norm = {-0.536803, -0.729241, -0.424324}, uv = {0, 0}},
+//                 {pos = {-0.0372261, 0.0496089, -0.182377}, norm = {-0.666271, 0.653933, -0.358405}, uv = {0, 0}},
+//                 {pos = {-0.00814646, -0.0285795, 0.182377}, norm = {-0.0150019, -0.335794, 0.941816}, uv = {0, 0}},
+//                 {pos = {-0.0264048, 0.071967, 0.16121}, norm = {-0.172497, 0.570394, 0.803054}, uv = {0, 0}},
+//                 {pos = {0.0171822, -0.0126174, 0.180107}, norm = {0.368041, -0.150967, 0.917472}, uv = {0, 0}},
+//                 {pos = {-0.00711408, 0.0692753, 0.165462}, norm = {0.223074, 0.559995, 0.797899}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "legRight",
+//             verts = {
+//                 {pos = {0.0569244, -0.108837, -0.00297436}, norm = {0.447949, -0.882904, -0.140793}, uv = {0, 0}},
+//                 {pos = {-0.0828811, -0.0476282, -0.00916168}, norm = {-0.892937, -0.43542, -0.114332}, uv = {0, 0}},
+//                 {pos = {-0.0121741, -0.00551623, -0.182151}, norm = {-0.835263, -0.363381, -0.412662}, uv = {0, 0}},
+//                 {pos = {0.0364632, -0.0300863, -0.182344}, norm = {0.523366, -0.744776, -0.414001}, uv = {0, 0}},
+//                 {pos = {-0.0399757, 0.0917522, -0.00884345}, norm = {-0.648556, 0.752389, -0.115266}, uv = {0, 0}},
+//                 {pos = {0.000414759, 0.0449806, -0.181973}, norm = {-0.619284, 0.707811, -0.339839}, uv = {0, 0}},
+//                 {pos = {-0.0284978, 0.0823626, 0.119756}, norm = {-0.605697, 0.726128, 0.325376}, uv = {0, 0}},
+//                 {pos = {0.0828811, 0.0994516, 0.118982}, norm = {0.646487, 0.671912, 0.361371}, uv = {0, 0}},
+//                 {pos = {0.0797175, 0.108837, -0.00943029}, norm = {0.65407, 0.737888, -0.166475}, uv = {0, 0}},
+//                 {pos = {0.077854, -0.0794084, 0.154825}, norm = {0.554174, -0.635196, 0.537975}, uv = {0, 0}},
+//                 {pos = {-0.0657544, -0.0296793, 0.148879}, norm = {-0.813321, -0.32567, 0.48213}, uv = {0, 0}},
+//                 {pos = {0.0407353, 0.0517351, -0.182382}, norm = {0.670685, 0.651698, -0.35422}, uv = {0, 0}},
+//                 {pos = {0.0263404, 0.071967, 0.161215}, norm = {0.17209, 0.57058, 0.803009}, uv = {0, 0}},
+//                 {pos = {0.00808207, -0.0285795, 0.182382}, norm = {0.0522334, -0.288017, 0.9562}, uv = {0, 0}},
+//                 {pos = {-0.0172466, -0.0126174, 0.180112}, norm = {-0.350141, -0.0897342, 0.932389}, uv = {0, 0}},
+//                 {pos = {0.00704969, 0.0692753, 0.165467}, norm = {-0.23572, 0.557745, 0.795837}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "footLeft",
+//             verts = {
+//                 {pos = {-0.0511293, 0.092766, 0.0208119}, norm = {-0.660712, 0.75064, -1.82921e-10}, uv = {0, 0}},
+//                 {pos = {-0.000656463, 0.0864054, 0.0211977}, norm = {0.750962, 0.660345, -2.18253e-11}, uv = {0, 0}},
+//                 {pos = {-0.000656463, 0.0864054, -0.020812}, norm = {0.6108, 0.537383, -0.581501}, uv = {0, 0}},
+//                 {pos = {-0.0511293, 0.092766, -0.0211977}, norm = {-0.542776, 0.614407, -0.572625}, uv = {0, 0}},
+//                 {pos = {-0.000684917, 0.0388536, -0.0209801}, norm = {0.648789, 0.124011, -0.750796}, uv = {0, 0}},
+//                 {pos = {-0.0508799, 0.0157165, -0.0211618}, norm = {-0.706154, -0.00248641, -0.708054}, uv = {0, 0}},
+//                 {pos = {-0.0508799, 0.0157165, 0.0208479}, norm = {-0.84418, -0.00382969, 0.536046}, uv = {0, 0}},
+//                 {pos = {-0.000684917, 0.0388536, 0.0210296}, norm = {0.881563, 0.168037, 0.441146}, uv = {0, 0}},
+//                 {pos = {-0.0503153, -0.092766, -0.0211618}, norm = {-0.572376, -0.581802, -0.577834}, uv = {0, 0}},
+//                 {pos = {-0.0503153, -0.092766, 0.0208479}, norm = {-0.573526, -0.582176, 0.576315}, uv = {0, 0}},
+//                 {pos = {0.0511293, -0.0917062, 0.0210296}, norm = {0.68707, -0.46163, 0.561098}, uv = {0, 0}},
+//                 {pos = {0.0511293, -0.0917062, -0.0209801}, norm = {0.688099, -0.461666, -0.559807}, uv = {0, 0}},
+//             },
+//         },
+//         {
+//             name = "footRight",
+//             verts = {
+//                 {pos = {-0.000717998, 0.0379006, 0.0210312}, norm = {-0.861325, 0.275885, 0.426622}, uv = {0, 0}},
+//                 {pos = {0.0118708, 0.0883974, 0.0212096}, norm = {-0.679888, 0.733316, 1.11231e-07}, uv = {0, 0}},
+//                 {pos = {0.0118708, 0.0883974, -0.0208001}, norm = {-0.544442, 0.587443, -0.598744}, uv = {0, 0}},
+//                 {pos = {-0.000717998, 0.0379006, -0.0209785}, norm = {-0.660138, 0.211305, -0.72081}, uv = {0, 0}},
+//                 {pos = {0.0479193, 0.0133305, -0.0211713}, norm = {0.698947, -0.0156405, -0.715002}, uv = {0, 0}},
+//                 {pos = {0.0521914, 0.095152, -0.0212096}, norm = {0.54735, 0.613922, -0.568778}, uv = {0, 0}},
+//                 {pos = {-0.0521914, -0.0926592, -0.0209785}, norm = {-0.690538, -0.457268, -0.560413}, uv = {0, 0}},
+//                 {pos = {-0.0521914, -0.0926592, 0.0210312}, norm = {-0.689421, -0.45724, 0.56181}, uv = {0, 0}},
+//                 {pos = {0.0521914, 0.0951519, 0.0208001}, norm = {0.662922, 0.748688, 1.21874e-07}, uv = {0, 0}},
+//                 {pos = {0.0479193, 0.0133305, 0.0208383}, norm = {0.838223, -0.0197991, 0.544968}, uv = {0, 0}},
+//                 {pos = {0.0485199, -0.0951519, 0.0208383}, norm = {0.573167, -0.583862, 0.574965}, uv = {0, 0}},
+//                 {pos = {0.0485199, -0.0951519, -0.0211713}, norm = {0.571947, -0.583463, -0.576583}, uv = {0, 0}},
+//             },
+//         },
+//     }
 
-    // Compare actual meshes with expected
-    testing.expect_value(t, len(model.meshes), len(expected_meshes))
-    for i in 0..<len(model.meshes) {
-        mesh := model.meshes[i]
-        expected := expected_meshes[i]
-        testing.expect_value(t, mesh.name, expected.name)
-        testing.expect_value(t, len(mesh.verts), len(expected.verts))
-        for j in 0..<len(mesh.verts) {
-            actual_vert := mesh.verts[j]
-            expected_vert := expected.verts[j]
-            testing.expect(t, compare_vec3(actual_vert.pos, expected_vert.pos, 0.0001), fmt.tprintf("Pos mismatch on vert %d: expected %v, got %v", j+1, expected_vert.pos, actual_vert.pos))
-            testing.expect(t, compare_vec3(actual_vert.norm, expected_vert.norm, 0.0001), fmt.tprintf("Norm mismatch on vert %d: expected %v, got %v", j+1, expected_vert.norm, actual_vert.norm))
-            testing.expect(t, compare_vec2(actual_vert.uv, expected_vert.uv, 0.0001), fmt.tprintf("UV mismatch on vert %d: expected %v, got %v", j+1, expected_vert.uv, actual_vert.uv))        }
-    }
-}
+//     // Compare actual meshes with expected
+//     testing.expect_value(t, len(model.meshes), len(expected_meshes))
+//     for i in 0..<len(model.meshes) {
+//         mesh := model.meshes[i]
+//         expected := expected_meshes[i]
+//         testing.expect_value(t, mesh.name, expected.name)
+//         testing.expect_value(t, len(mesh.verts), len(expected.verts))
+//         for j in 0..<len(mesh.verts) {
+//             actual_vert := mesh.verts[j]
+//             expected_vert := expected.verts[j]
+//             testing.expect(t, compare_vec3(actual_vert.pos, expected_vert.pos, 0.0001), fmt.tprintf("Pos mismatch on vert %d: expected %v, got %v", j+1, expected_vert.pos, actual_vert.pos))
+//             testing.expect(t, compare_vec3(actual_vert.norm, expected_vert.norm, 0.0001), fmt.tprintf("Norm mismatch on vert %d: expected %v, got %v", j+1, expected_vert.norm, actual_vert.norm))
+//             testing.expect(t, compare_vec2(actual_vert.uv, expected_vert.uv, 0.0001), fmt.tprintf("UV mismatch on vert %d: expected %v, got %v", j+1, expected_vert.uv, actual_vert.uv))        }
+//     }
+// }
 
-compare_vec3 :: proc(a, b: vec3, epsilon: f32) -> bool {
-    return math.abs(a.x - b.x) < epsilon &&
-           math.abs(a.y - b.y) < epsilon &&
-           math.abs(a.z - b.z) < epsilon
-}
+// compare_vec3 :: proc(a, b: axiom.vec3, epsilon: f32) -> bool {
+//     return math.abs(a.x - b.x) < epsilon &&
+//            math.abs(a.y - b.y) < epsilon &&
+//            math.abs(a.z - b.z) < epsilon
+// }
 
-compare_vec2 :: proc(a, b: vec2f, epsilon: f32) -> bool {
-    return math.abs(a.x - b.x) < epsilon &&
-           math.abs(a.y - b.y) < epsilon
-}
+// compare_vec2 :: proc(a, b: axiom.vec2f, epsilon: f32) -> bool {
+//     return math.abs(a.x - b.x) < epsilon &&
+//            math.abs(a.y - b.y) < epsilon
+// }

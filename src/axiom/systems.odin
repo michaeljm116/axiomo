@@ -19,8 +19,9 @@ import "resource"
 v_transform : ^View
 sys_transform_init :: proc(alloc : mem.Allocator) {
     v_transform = new(View, alloc)
-    view_init(v_transform, g_world, {get_table(Cmp_Transform), get_table(Cmp_Node), get_table(Cmp_Root)})
+    view_init(v_transform, g_world.db, {get_table(Cmp_Transform), get_table(Cmp_Node), &is_root})
 }
+
 sys_transform_reset :: proc(){
     view_rebuild(v_transform)
 }
@@ -151,7 +152,7 @@ geometry_transform_converter :: proc(nc: ^Cmp_Node) {
 v_bvh : ^View
 sys_bvh_init :: proc(alloc : mem.Allocator) {
     v_bvh := new(View, alloc)
-    view_init(v_bvh, g_world, {get_table(Cmp_Primitive), get_table(Cmp_Node), get_table(Cmp_Transform)})
+    view_init(v_bvh, g_world.db, {get_table(Cmp_Primitive), get_table(Cmp_Node), get_table(Cmp_Transform)})
 }
 sys_bvh_reset :: proc(){
     view_rebuild(v_bvh)
@@ -638,7 +639,8 @@ load_node_components :: proc(scene_node: scene.Node, entity: Entity, e_flags :^C
 
     // If root
     if .ROOT in e_flags {
-        add_component(entity, Cmp_Root{})
+        // add_component(entity, Cmp_Root{true})
+        tag(&is_root, entity)
     }
 }
 // Load a scene.Node into ECS Cmp_Node hierarchy
@@ -724,8 +726,8 @@ v_animate : ^View
 sys_anim_init :: proc(alloc : mem.Allocator) {
     v_animation = new(View, alloc)
     v_animate = new(View, alloc)
-    view_init(v_animation, g_world, {get_table(Cmp_Animation), get_table(Cmp_BFGraph)})
-    view_init(v_animate, g_world, {get_table(Cmp_Animate), get_table(Cmp_Transform)})
+    view_init(v_animation, g_world.db, {get_table(Cmp_Animation), get_table(Cmp_BFGraph)})
+    view_init(v_animate, g_world.db, {get_table(Cmp_Animate), get_table(Cmp_Transform)})
 }
 
 sys_anim_reset :: proc(){
