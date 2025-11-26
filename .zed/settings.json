@@ -16,7 +16,7 @@
   "lsp": {
     "ols": {
       "binary": {
-        "path": "c:/dev/ols/ols-x86_64-pc-windows-msvc.exe",
+        "path": "c:/dev/ols/ols.exe",
         "arguments": []
       }
     },
