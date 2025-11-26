@@ -30,5 +30,11 @@
     "command": "build_hot_reload.bat",
     "args": [],
     "use_new_terminal": false
-  }
+  },
+  {
+      "label": "Test",
+      "command": "odin test src/test -debug -define:ODIN_TEST_THREADS=1",
+      "args": [],
+      "use_new_terminal": true
+    }
 ]

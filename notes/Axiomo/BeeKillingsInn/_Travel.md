@@ -146,4 +146,28 @@ These should make your renderer more robust, efficient, and visually appealing. 
 	* Then for queries you'd... do things, so like the ultimate way would be like *
 	* Views need to be init before... im thinking if you init the.... wait i think all views need to be initialized for verything
 	* ugh table creation must come before entity creation?!!?
-	* 
+	*
+
+# List of components with strings/dynamic:
+* Cmp_Node
+* Cmp_Gui
+* Cmp_GuiNumber
+* Cmp_Text
+* Cmp_Pose
+* Cmp_Debug
+* Cmp_Audio
+Out of all tehse... Cmp_Node,  Gui are actually used
+Gui is just a texture ref
+technically, the memory of that texture frenerence should be permanent... cause of g_texture blalh blahs
+actually same for text
+actually... so long as you never modify the so urces of any of these...  they're all just like... in mem db refs...
+what if... when you create a node... you create a string db thing as well?
+so like there'a n array of node names... that's like global in mem for program's length
+and then the string name is j ust the index
+cmp_gui also has index i think you dont actually need the blahblah
+okay sure you need to do this
+# Design your engine to not have strings in components
+
+but first fix the actual issues
+
+ 

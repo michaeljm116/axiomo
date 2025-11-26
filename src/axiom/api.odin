@@ -28,6 +28,7 @@ Database :: ecs.Database
 View :: ecs.View
 Iterator :: ecs.Iterator
 Table :: ecs.Table
+Error :: ecs.Error
 //----------------------------------------------------------------------------\\
 // /Globals for the engine
 //----------------------------------------------------------------------------\\
@@ -86,14 +87,14 @@ add_entity :: #force_inline proc() -> Entity {
 // Component management
 add_component :: #force_inline proc(entity: Entity, component: $T) -> (^T) {
     c, ok := add_component_typeid(entity, T)
-    if !(ok == ecs.API_Error.None) { panic("Failed to add component") }
+    if ok != ecs.API_Error.None do panic("Failed to add component")
 
     // NOTE: this is a shallow copy, doesn't handle pointers/dynamic data
     c^ = component
     return c
 }
 
-add_component_typeid :: proc(entity: Entity, $T: typeid) -> (component: ^T, ok: ecs.Error) {
+add_component_typeid :: proc(entity: Entity, $T: typeid) -> (component: ^T, ok: Error) {
     tid := typeid_of(T)
     table_ptr, found := g_world.tables[tid]
     if !found {

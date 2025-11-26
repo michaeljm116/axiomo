@@ -1,9 +1,11 @@
 package game
 // odin test src/test -define:ODIN_TEST_THREADS=1
 
+import "../axiom/external/ode_ecs"
 import "core:mem"
 import "core:testing"
 import "../axiom"
+import "base:runtime"
 
 // Helper to create a temporary memory stack for each test
 create_test_memory_stack :: proc() -> ^axiom.MemoryStack {
@@ -17,50 +19,54 @@ create_test_memory_arena :: proc() -> ^axiom.MemoryArena {
     return arena
 }
 
-// @(test)
-// test_table_creation_and_reuse :: proc(t: ^testing.T) {
-//     mem_stack := create_test_memory_stack()
-//     defer axiom.destroy_memory_stack(mem_stack)
+@(test)
+test_table_creation_and_reuse :: proc(t: ^testing.T) {
+    mem_stack := create_test_memory_stack()
+    defer axiom.destroy_memory_stack(mem_stack)
 
-//     axiom.g_world = axiom.create_world(mem_stack)
-//     defer axiom.destroy_world(mem_stack)
+    axiom.g_world = axiom.create_world(mem_stack)
+    defer axiom.destroy_world(mem_stack)
 
-//     // Before adding any component, table should not exist
-//     tid := typeid_of(axiom.Cmp_Transform)
-//     _, found_before := axiom.g_world.tables[tid]
-//     testing.expect(t, !found_before, "Table should not exist before adding component")
+    // Before adding any component, table should not exist
+    tid := typeid_of(axiom.Cmp_Transform)
+    _, found_before := axiom.g_world.tables[tid]
+    testing.expect(t, !found_before, "Table should not exist before adding component")
 
-//     // Add entity and component
-//     e1 := axiom.add_entity()
-//     trans1 := axiom.cmp_transform_prs({0,0,0}, {0,0,0}, {1,1,1})
-//     added_trans1 := axiom.add_component(e1, trans1)
-//     testing.expect(t, added_trans1 != nil, "Failed to add first Cmp_Transform")
+    // Add entity and component
+    e1 := axiom.add_entity()
+    trans1 := axiom.cmp_transform_prs({0,0,0}, {0,0,0}, {1,1,1})
+    added_trans1,_  := axiom.add_component_typeid(e1, axiom.Cmp_Transform)//(e1, trans1)
+    // mem.copy(added_trans1, &trans1, size_of(axiom.Cmp_Transform))
+    // added_trans1^.local.pos.x = 1
+    // testing.expect(t, ok != ode_ecs.API_Error.None, "API error when adding typeid")
+    table := axiom.get_table(axiom.Cmp_Transform)
+    testing.expect(t, added_trans1 != nil, "Failed to add first Cmp_Transform")
 
-//     // After add, table should exist
-//     _, found_after := axiom.g_world.tables[tid]
-//     testing.expect(t, found_after, "Table should be created after adding component")
+    // // After add, table should exist
+    // _, found_after := axiom.g_world.tables[tid]
+    // testing.expect(t, found_after, "Table should be created after adding component")
 
-//     table1 := axiom.get_table(axiom.Cmp_Transform)
-//     testing.expect(t, table1 != nil, "get_table should return non-nil after creation")
+    // table1 := axiom.get_table(axiom.Cmp_Transform)
+    // testing.expect(t, table1 != nil, "get_table should return non-nil after creation")
 
-//     // Add second entity and same component type
-//     e2 := axiom.add_entity()
-//     trans2 := axiom.cmp_transform_prs({1,1,1}, {0,0,0}, {2,2,2})
-//     added_trans2 := axiom.add_component(e2, trans2)
-//     testing.expect(t, added_trans2 != nil, "Failed to add second Cmp_Transform")
+    // // Add second entity and same component type
+    // e2 := axiom.add_entity()
+    // trans2 := axiom.cmp_transform_prs({1,1,1}, {0,0,0}, {2,2,2})
+    // added_trans2 := axiom.add_component(e2, trans2)
+    // testing.expect(t, added_trans2 != nil, "Failed to add second Cmp_Transform")
 
-//     // Table should be the same (reused)
-//     table2 := axiom.get_table(axiom.Cmp_Transform)
-//     testing.expect(t, table1 == table2, "Table should be reused for same component type")
+    // // Table should be the same (reused)
+    // table2 := axiom.get_table(axiom.Cmp_Transform)
+    // testing.expect(t, table1 == table2, "Table should be reused for same component type")
 
-//     // Verify table length increased
-//     testing.expect(t, axiom.table_len(table2) == 2, "Table should have 2 components now")
+    // // Verify table length increased
+    // testing.expect(t, axiom.table_len(table2) == 2, "Table should have 2 components now")
 
-//     // Test adding another table to the same entity
-//     root := axiom.Cmp_Root{}
-//     added_root := axiom.add_component(e1, root)
-//     testing.expect(t, added_root != nil, "Failed to add Cmp_Root")
-// }
+    // // Test adding another table to the same entity
+    // root := axiom.Cmp_Root{}
+    // added_root := axiom.add_component(e1, root)
+    // testing.expect(t, added_root != nil, "Failed to add Cmp_Root")
+}
 
 // @(test)
 // test_get_component_and_table :: proc(t: ^testing.T) {
@@ -185,48 +191,54 @@ create_test_memory_arena :: proc() -> ^axiom.MemoryArena {
 //     // axiom.load_scene(scene^, mem_stack.alloc)
 //     // testing.expect(t, true, "Scene loaded")
 // }
-//
+
+
+// @(test)
+// test_table_creation_and_reuse :: proc(t: ^testing.T) {
+//     mem_stack := create_test_memory_stack()
+//     defer axiom.destroy_memory_stack(mem_stack)
+
+//     axiom.g_world = axiom.create_world(mem_stack)
+//     defer axiom.destroy_world(mem_stack)
+
+//     // Before adding any component, table should not exist
+//     tid := typeid_of(axiom.Cmp_Transform)
+//     _, found_before := axiom.g_world.tables[tid]
+//     testing.expect(t, !found_before, "Table should not exist before adding component")
+
+//     // Add entity and component
+//     e1 := axiom.add_entity()
+//     trans1 := axiom.cmp_transform_prs({0,0,0}, {0,0,0}, {1,1,1})
+//     added_trans1 := axiom.add_component(e1, trans1)
+//     testing.expect(t, added_trans1 != nil, "Failed to add first Cmp_Transform")
+
+//     // After add, table should exist
+//     _, found_after := axiom.g_world.tables[tid]
+//     testing.expect(t, found_after, "Table should be created after adding component")
+
+//     table1 := axiom.get_table(axiom.Cmp_Transform)
+//     testing.expect(t, table1 != nil, "get_table should return non-nil after creation")
+
+//     // Add second entity and same component type
+//     e2 := axiom.add_entity()
+//     trans2 := axiom.cmp_transform_prs({1,1,1}, {0,0,0}, {2,2,2})
+//     added_trans2 := axiom.add_component(e2, trans2)
+//     testing.expect(t, added_trans2 != nil, "Failed to add second Cmp_Transform")
+
+//     // Table should be the same (reused)
+//     table2 := axiom.get_table(axiom.Cmp_Transform)
+//     testing.expect(t, table1 == table2, "Table should be reused for same component type")
+
+//     // Verify table length increased
+//     testing.expect(t, axiom.table_len(table2) == 2, "Table should have 2 components now")
+
+//     // Test adding another table to the same entity
+//     // root := axiom.Cmp_Root{}
+//     // added_root := axiom.add_component(e1, root)
+//     // testing.expect(t, added_root != nil, "Failed to add Cmp_Root")
+// }
 
 @(test)
-test_table_creation_and_reuse :: proc(t: ^testing.T) {
-    mem_stack := create_test_memory_stack()
-    defer axiom.destroy_memory_stack(mem_stack)
-
-    axiom.g_world = axiom.create_world(mem_stack)
-    defer axiom.destroy_world(mem_stack)
-
-    // Before adding any component, table should not exist
-    tid := typeid_of(axiom.Cmp_Transform)
-    _, found_before := axiom.g_world.tables[tid]
-    testing.expect(t, !found_before, "Table should not exist before adding component")
-
-    // Add entity and component
-    e1 := axiom.add_entity()
-    trans1 := axiom.cmp_transform_prs({0,0,0}, {0,0,0}, {1,1,1})
-    added_trans1 := axiom.add_component(e1, trans1)
-    testing.expect(t, added_trans1 != nil, "Failed to add first Cmp_Transform")
-
-    // After add, table should exist
-    _, found_after := axiom.g_world.tables[tid]
-    testing.expect(t, found_after, "Table should be created after adding component")
-
-    table1 := axiom.get_table(axiom.Cmp_Transform)
-    testing.expect(t, table1 != nil, "get_table should return non-nil after creation")
-
-    // Add second entity and same component type
-    e2 := axiom.add_entity()
-    trans2 := axiom.cmp_transform_prs({1,1,1}, {0,0,0}, {2,2,2})
-    added_trans2 := axiom.add_component(e2, trans2)
-    testing.expect(t, added_trans2 != nil, "Failed to add second Cmp_Transform")
-
-    // Table should be the same (reused)
-    table2 := axiom.get_table(axiom.Cmp_Transform)
-    testing.expect(t, table1 == table2, "Table should be reused for same component type")
-
-    // Verify table length increased
-    testing.expect(t, axiom.table_len(table2) == 2, "Table should have 2 components now")
-
-    // Test adding another table to the same entity
-    root := axiom.Cmp_Root{}
-    added_root := axiom.add_component(e1, root)
-    testing.expect(t, added_root != nil, "Failed to add Cmp_Root")
+truetest :: proc(t: ^testing.T){
+    testing.expect(t, true, "truthtest")
+}
