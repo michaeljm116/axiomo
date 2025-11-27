@@ -37,6 +37,8 @@ g_raytracer : ^ComputeRaytracer
 g_bvh : ^Sys_Bvh
 g_texture_indexes : map[string]i32
 g_world : ^World
+g_cap :: 10000
+g_table_cap :: 2000
 g_world_mem : mem.Allocator
 
 //----------------------------------------------------------------------------\\
@@ -51,12 +53,14 @@ World :: struct{
 // Helper functions that assume g_world
 create_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World {
     g_world = new(World, mem_stack.alloc)
+    tag_root = new(ecs.Tag_Table, mem_stack.alloc)
+
     init_memory(mem_stack, mem.Megabyte)
     g_world.db = new(Database, mem_stack.alloc)
-    ecs.init(g_world.db, entities_cap=10000, allocator = mem_stack.alloc)
-    ecs.tag_table__init(&is_root, g_world.db, 10000)
+    ecs.init(g_world.db, entities_cap=g_cap, allocator = mem_stack.alloc)
     g_world.entity = add_entity()
     g_world_mem = mem_stack.alloc
+    ecs.tag_table__init(tag_root, g_world.db, g_table_cap)
     return g_world
 }
 
@@ -86,10 +90,12 @@ add_entity :: #force_inline proc() -> Entity {
 
 // Component management
 add_component :: #force_inline proc(entity: Entity, component: $T) -> (^T) {
+    // copy := component
     c, ok := add_component_typeid(entity, T)
     if ok != ecs.API_Error.None do panic("Failed to add component")
 
     // NOTE: this is a shallow copy, doesn't handle pointers/dynamic data
+    // mem.copy(c, &copy, size_of(T))
     c^ = component
     return c
 }
@@ -99,13 +105,15 @@ add_component_typeid :: proc(entity: Entity, $T: typeid) -> (component: ^T, ok: 
     table_ptr, found := g_world.tables[tid]
     if !found {
         new_table := new(Table(T), g_world_mem)
-        ecs.table_init(new_table, db=g_world.db, cap=1000)
+        ecs.table_init(new_table, db=g_world.db, cap=g_table_cap)
         g_world.tables[tid] = rawptr(new_table)
         table_ptr = rawptr(new_table)
     }
     table := cast(^Table(T)) table_ptr
     return ecs.add_component(table, entity)
 }
+init_table :: ecs.table_init
+add_component_table :: ecs.add_component
 
 remove_component :: #force_inline proc(entity: Entity, $T: typeid){
     // First find the table, then remove from table
@@ -182,7 +190,7 @@ end_ecs :: #force_inline proc() {
 	// ecs.delete_world(g_world)
 }
 
-is_root : ecs.Tag_Table
+tag_root : ^ecs.Tag_Table
 tag :: ecs.tag
 untag :: ecs.untag
 

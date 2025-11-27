@@ -1,0 +1,3 @@
+[submodule "src/axiom/external/ode_ecs"]
+	path = src/axiom/external/ode_ecs
+	url = https://github.com/odin-engine/ode_ecs

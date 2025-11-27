@@ -35,7 +35,7 @@ app_start :: proc()
 {
     ax.g_world = create_world()
     add_component(ax.g_world.entity, Cmp_Node{name = "Singleton"})
-    ax.tag(&ax.is_root, ax.g_world.entity)
+    ax.tag(ax.tag_root, ax.g_world.entity)
     // g.scene = set_new_scene("assets/scenes/Entrance.json")
     g.scene = set_new_scene("assets/scenes/BeeKillingsInn2.json")
 	ax.load_scene(g.scene^, g.mem_game.alloc)

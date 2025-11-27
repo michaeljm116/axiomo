@@ -19,7 +19,7 @@ import "resource"
 v_transform : ^View
 sys_transform_init :: proc(alloc : mem.Allocator) {
     v_transform = new(View, alloc)
-    view_init(v_transform, g_world.db, {get_table(Cmp_Transform), get_table(Cmp_Node), &is_root})
+    view_init(v_transform, g_world.db, {get_table(Cmp_Transform), get_table(Cmp_Node), tag_root})
 }
 
 sys_transform_reset :: proc(){
@@ -640,7 +640,7 @@ load_node_components :: proc(scene_node: scene.Node, entity: Entity, e_flags :^C
     // If root
     if .ROOT in e_flags {
         // add_component(entity, Cmp_Root{true})
-        tag(&is_root, entity)
+        tag(tag_root, entity)
     }
 }
 // Load a scene.Node into ECS Cmp_Node hierarchy

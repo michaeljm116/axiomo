@@ -108,7 +108,7 @@ Cmp_Node :: struct {
 }
 
 Cmp_Root :: struct {
-    is_root : bool
+    tag_is_root : bool
     // Empty component marker for head nodes
 }
 
