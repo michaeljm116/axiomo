@@ -21,7 +21,7 @@
   },
   {
     "label": "RadDebug",
-    "command": "build_hot_reload.bat rad",
+    "command": "./build_hot_reload.bat rad",
     "args": [],
     "use_new_terminal": false
   },
@@ -35,6 +35,6 @@
       "label": "Test",
       "command": "odin test src/test -debug -define:ODIN_TEST_THREADS=1",
       "args": [],
-      "use_new_terminal": true
+      "use_new_terminal": false
     }
 ]

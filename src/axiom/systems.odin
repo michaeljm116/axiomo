@@ -19,7 +19,8 @@ import "resource"
 v_transform : ^View
 sys_transform_init :: proc(alloc : mem.Allocator) {
     v_transform = new(View, alloc)
-    view_init(v_transform, g_world.db, {get_table(Cmp_Transform), get_table(Cmp_Node), tag_root})
+    err := view_init(v_transform, g_world.db, {get_table(Cmp_Transform), get_table(Cmp_Node), tag_root})
+    if err != nil do panic("Failed to initialize view")
 }
 
 sys_transform_reset :: proc(){
@@ -28,6 +29,7 @@ sys_transform_reset :: proc(){
 
 // Process all entities with Transform and Node components
 sys_trans_process_ecs :: proc() {
+    sys_transform_reset()
     it : Iterator
     iterator_init(&it, v_transform)
     for iterator_next(&it) do sqt_transform(get_entity(&it))
@@ -149,13 +151,15 @@ geometry_transform_converter :: proc(nc: ^Cmp_Node) {
 //----------------------------------------------------------------------------\\
 // /BVH System
 //----------------------------------------------------------------------------\\
-v_bvh : ^View
+v_bvh : View
 sys_bvh_init :: proc(alloc : mem.Allocator) {
-    v_bvh := new(View, alloc)
-    view_init(v_bvh, g_world.db, {get_table(Cmp_Primitive), get_table(Cmp_Node), get_table(Cmp_Transform)})
+    // v_bvh := new(View, alloc)
+    err := view_init(&v_bvh, g_world.db, {get_table(Cmp_Primitive), get_table(Cmp_Node), get_table(Cmp_Transform)})
+    if err != nil do panic("Failed to initialize view")
 }
+
 sys_bvh_reset :: proc(){
-    view_rebuild(v_bvh)
+    view_rebuild(&v_bvh)
 }
 
 Sys_Bvh :: struct {
@@ -330,7 +334,8 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
 
     //Now Begin reseriving
     table_prims := get_table(Cmp_Primitive)
-    num_ents := view_len(v_bvh)
+    sys_bvh_reset()
+    num_ents := view_len(&v_bvh)
     prims := make([dynamic]embree.RTCBuildPrimitive, 0, num_ents, alloc)
     entts := make([dynamic]Entity, 0, num_ents, alloc)
     pcmps := make([dynamic]^Cmp_Primitive, 0, num_ents, alloc)
@@ -338,7 +343,7 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
     // Asemble!
     pid := 0
     it : Iterator
-    iterator_init(&it, v_bvh)
+    iterator_init(&it, &v_bvh)
     for iterator_next(&it) {
         entity := get_entity(&it)
         pc := get_component(table_prims, entity)
@@ -400,7 +405,6 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
 //----------------------------------------------------------------------------\\
 // /SERIALIZE /SZ
 //----------------------------------------------------------------------------\\
-
 // Save a node hierarchy to scene.Node struct (for JSON marshalling)
 save_node :: proc(entity: Entity) -> scene.Node {
     cmp_node := get_component(entity, Cmp_Node)
@@ -723,11 +727,15 @@ load_prefab :: proc(name: string, alloc : mem.Allocator) -> (prefab : Entity)
 //----------------------------------------------------------------------------\\
 v_animation : ^View
 v_animate : ^View
+anim_initialized := false
 sys_anim_init :: proc(alloc : mem.Allocator) {
     v_animation = new(View, alloc)
     v_animate = new(View, alloc)
-    view_init(v_animation, g_world.db, {get_table(Cmp_Animation), get_table(Cmp_BFGraph)})
-    view_init(v_animate, g_world.db, {get_table(Cmp_Animate), get_table(Cmp_Transform)})
+    err := view_init(v_animation, g_world.db, {get_table(Cmp_Animation), get_table(Cmp_BFGraph)})
+    if err != nil do panic("Failed to initialize view")
+    err2 := view_init(v_animate, g_world.db, {get_table(Cmp_Animate), get_table(Cmp_Transform)})
+    if err2 != nil do panic("Failed to initialize view")
+    anim_initialized = true
 }
 
 sys_anim_reset :: proc(){
@@ -737,6 +745,8 @@ sys_anim_reset :: proc(){
 
 sys_anim_process_ecs :: proc(dt : f32)
 {
+    if !anim_initialized do return
+    sys_anim_reset()
     it : Iterator
     anims := get_table(Cmp_Animation)
     animates := get_table(Cmp_Animate)

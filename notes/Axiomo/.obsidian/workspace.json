@@ -11,12 +11,14 @@
             "id": "b47c04f3ca1234e3",
             "type": "leaf",
             "state": {
-              "type": "excalidraw",
+              "type": "markdown",
               "state": {
-                "file": "Excalidraw/AnimationStates.excalidraw.md"
+                "file": "BeeKillingsInn/NEW ecs NOTES.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "excalidraw-icon",
-              "title": "AnimationStates.excalidraw"
+              "icon": "lucide-file",
+              "title": "NEW ecs NOTES"
             }
           },
           {
@@ -35,12 +37,10 @@
             "id": "f88536f4a261db38",
             "type": "leaf",
             "state": {
-              "type": "image",
-              "state": {
-                "file": "Pasted image 20251108055025.png"
-              },
-              "icon": "lucide-image",
-              "title": "Pasted image 20251108055025"
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
             }
           },
           {
@@ -104,8 +104,7 @@
               "title": "Theft of compassion"
             }
           }
-        ],
-        "currentTab": 6
+        ]
       }
     ],
     "direction": "vertical"
@@ -255,14 +254,16 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "27ba4edd53cdba6f",
+  "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
+    "Excalidraw/AnimationStates.excalidraw.md",
     "Theft of compassion.md",
     "QFJ.md",
-    "BeeKillingsInn/_Travel.md",
-    "Showcase Kanban.md",
     "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md",
     "Kanban.md",
+    "Excalidraw/App.md",
+    "BeeKillingsInn/_Travel.md",
+    "Showcase Kanban.md",
     "2025-11-21.md",
     "Photos/Pasted image 20251108055025.png",
     "Photos/{08E3CA3B-E91C-4292-AC97-23066AB46B4B}.png",
@@ -280,8 +281,6 @@
     "BeeKillingsInn/Story.md",
     "BeeKillingsInn/Visualizations!.md",
     "Excalidraw/Arenas.md",
-    "Excalidraw/AnimationStates.excalidraw.md",
-    "Excalidraw/App.md",
     "BeeKillingsInn/Menu system.md",
     "BeeKillingsInn/Megastructification.md",
     "BeeKillingsInn/KillerBee prototype.md",

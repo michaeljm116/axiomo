@@ -31,8 +31,7 @@ app_init :: proc() {
     app_start()
 }
 
-app_start :: proc()
-{
+app_start :: proc() {
     ax.g_world = create_world()
     add_component(ax.g_world.entity, Cmp_Node{name = "Singleton"})
     ax.tag(ax.tag_root, ax.g_world.entity)
@@ -59,8 +58,7 @@ app_start :: proc()
     battle_start()
 }
 
-app_restart :: proc()
-{
+app_restart :: proc(){
     // g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
     g.scene = set_new_scene("assets/scenes/Entrance.json")
     restart_world()
@@ -82,8 +80,7 @@ app_destroy :: proc() {
     // ax.reset_memory_arena(&g.mem_game)
 }
 
-app_post_init :: proc()
-{
+app_post_init :: proc(){
     // chest := g.level.chests[0]
     // chest2 := g.level.chests[1]
     // move_entity_to_tile(chest, g.level.grid_scale, vec2{2,0})

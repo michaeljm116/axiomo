@@ -38,8 +38,6 @@ g_bvh : ^Sys_Bvh
 g_texture_indexes : map[string]i32
 g_world : ^World
 g_cap :: 10000
-g_table_cap :: 2000
-g_world_mem : mem.Allocator
 
 //----------------------------------------------------------------------------\\
 // /ECS
@@ -47,7 +45,8 @@ g_world_mem : mem.Allocator
 World :: struct{
     db : ^Database,
     tables : map[typeid]rawptr,
-    entity : Entity
+    entity : Entity,
+    alloc : mem.Allocator
 }
 
 // Helper functions that assume g_world
@@ -55,19 +54,19 @@ create_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World {
     g_world = new(World, mem_stack.alloc)
     tag_root = new(ecs.Tag_Table, mem_stack.alloc)
 
-    init_memory(mem_stack, mem.Megabyte)
+    init_memory(mem_stack, mem.Megabyte * 1000)
     g_world.db = new(Database, mem_stack.alloc)
     ecs.init(g_world.db, entities_cap=g_cap, allocator = mem_stack.alloc)
     g_world.entity = add_entity()
-    g_world_mem = mem_stack.alloc
-    ecs.tag_table__init(tag_root, g_world.db, g_table_cap)
+    g_world.alloc = mem_stack.alloc
+    ecs.tag_table__init(tag_root, g_world.db, g_cap)
     return g_world
 }
 
 init_views :: proc(alloc : mem.Allocator){
-    sys_bvh_init(alloc)
     sys_transform_init(alloc)
-    sys_anim_init(alloc)
+    sys_bvh_init(alloc)
+    // sys_anim_init(alloc)
 }
 
 destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {
@@ -92,7 +91,7 @@ add_entity :: #force_inline proc() -> Entity {
 add_component :: #force_inline proc(entity: Entity, component: $T) -> (^T) {
     // copy := component
     c, ok := add_component_typeid(entity, T)
-    if ok != ecs.API_Error.None do panic("Failed to add component")
+    if ok != nil do panic("Failed to add component")
 
     // NOTE: this is a shallow copy, doesn't handle pointers/dynamic data
     // mem.copy(c, &copy, size_of(T))
@@ -104,13 +103,15 @@ add_component_typeid :: proc(entity: Entity, $T: typeid) -> (component: ^T, ok: 
     tid := typeid_of(T)
     table_ptr, found := g_world.tables[tid]
     if !found {
-        new_table := new(Table(T), g_world_mem)
-        ecs.table_init(new_table, db=g_world.db, cap=g_table_cap)
+        new_table := new(Table(T), g_world.alloc)
+        table_err := ecs.table_init(new_table, db=g_world.db, cap=g_cap)
+        if table_err != nil do panic("failed to add table")
         g_world.tables[tid] = rawptr(new_table)
         table_ptr = rawptr(new_table)
     }
-    table := cast(^Table(T)) table_ptr
-    return ecs.add_component(table, entity)
+    table := transmute(^Table(T)) table_ptr
+    ret, err := ecs.add_component(table, entity)
+    return ret,err
 }
 init_table :: ecs.table_init
 add_component_table :: ecs.add_component
