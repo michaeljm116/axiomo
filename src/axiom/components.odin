@@ -521,7 +521,7 @@ add_child :: proc(parent_entity, child_entity: Entity) {
     parent_node.is_parent = true
     child_node.parent = parent_entity
     // if (!entity_exists(parent_node.child)) do parent_node.child = child_entity
-    if (parent_node.child == Entity(0)) do parent_node.child = child_entity
+    if (parent_node.child == Entity(0) || !entity_exists(parent_node.child)) do parent_node.child = child_entity
     else{
        first_child := get_component(parent_node.child, Cmp_Node)
         last_bro := get_last_sibling(first_child)

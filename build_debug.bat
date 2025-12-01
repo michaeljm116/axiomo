@@ -22,4 +22,12 @@ if "%~1"=="run" (
     exit /b 0
 )
 
+if "%~1"=="rad" (
+    set "RADDBG=c:dev/raddbg/raddbg.exe"
+    echo Launching new RAD Debugger session for axiomo_reload.exe...
 
+    "c:/dev/raddbg/raddbg.exe" "%OUT_DIR%\axiomo_debug.exe"
+
+    popd
+    exit /b 0
+)

@@ -92,8 +92,8 @@ init_views :: proc(alloc : mem.Allocator){
 
 destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {
     destroy_memory_stack(mem_stack)
-    g_world.tables = {}
-    g_world = nil
+    // g_world.tables = {}
+    // g_world = nil
 }
 restart_world :: #force_inline proc(mem_stack : ^MemoryStack) {
     render_clear_entities()

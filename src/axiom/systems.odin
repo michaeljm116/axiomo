@@ -335,7 +335,6 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
 
     //Now Begin reseriving
     table_prims := get_table(Cmp_Primitive)
-    sys_bvh_reset()
     num_ents := view_len(v_bvh)
     prims := make([dynamic]embree.RTCBuildPrimitive, 0, num_ents, alloc)
     entts := make([dynamic]Entity, 0, num_ents, alloc)
@@ -717,8 +716,6 @@ load_prefab :: proc(name: string, alloc : mem.Allocator) -> (prefab : Entity)
         cc := get_component(n, Cmp_Node)
         cc.parent = prefab
     }
-    print_hierarchy(prefab, 3)
-	print_hierarchy_kimi(prefab, 3)
     return prefab
 }
 

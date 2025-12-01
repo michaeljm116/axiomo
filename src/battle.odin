@@ -1381,7 +1381,12 @@ Cmp_Visual :: struct
 VisualFlag :: enum{ Alert,Focus,Dodge,Select }
 VisualFlags :: bit_set[VisualFlag;u8]
 v_visual : ^axiom.View
-sys_visual_init :: #force_inline proc(alloc : mem.Allocator){v_visual = new(axiom.View, alloc)}
+sys_visual_init :: #force_inline proc(alloc : mem.Allocator){
+    axiom.create_table(Cmp_Visual, axiom.g_world)
+    v_visual = new(axiom.View, alloc)
+    err := axiom.view_init(v_visual, axiom.g_world.db, {get_table(Cmp_Visual), get_table(Cmp_Transform)})
+    if err != nil do panic("Failed to initialize visuals view")
+}
 sys_visual_reset :: #force_inline proc(){axiom.view_rebuild(v_visual)}
 
 sys_visual_process_ecs :: proc(dt : f32)

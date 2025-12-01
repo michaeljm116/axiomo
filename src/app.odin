@@ -30,20 +30,17 @@ app_init :: proc() {
     glfw.SetInputMode(ax.g_renderbase.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
     //setup_physics()
     app_start()
+    sys_visual_init(g.mem_game.alloc)
 }
 
 app_start :: proc() {
     ax.g_world = create_world()
     add_component(ax.g_world.entity, Cmp_Node{name = "Singleton"})
     ax.tag(ax.tag_root, ax.g_world.entity)
-    // g.scene = set_new_scene("assets/scenes/Entrance.json")
-    g.scene = set_new_scene("assets/scenes/BeeKillingsInn2.json")
+    g.scene = set_new_scene("assets/scenes/Entrance.json")
+    // g.scene = set_new_scene("assets/scenes/BeeKillingsInn2.json")
 	ax.load_scene(g.scene^, g.mem_game.alloc)
 	g.player = ax.load_prefab("Froku", g.mem_game.alloc)
-	ax.print_hierarchy(g.player, 3)
-	ax.find_entity_by_name("Froku")
-	ax.print_hierarchy_kimi(g.player, 3)
-	ax.print_node_hierarchy_by_name("Froku")
 	g.app_state = .MainMenu
     g.input = InputState{
         mouse_sensitivity = 0.1,
@@ -79,9 +76,6 @@ app_destroy :: proc() {
 
     // Release mouse cursor
     glfw.SetInputMode(ax.g_renderbase.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
-
-    ax.destroy_world(&g.mem_game)
-    // ax.reset_memory_arena(&g.mem_game)
 }
 
 app_post_init :: proc(){

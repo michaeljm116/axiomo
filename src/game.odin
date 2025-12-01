@@ -184,7 +184,7 @@ game_shutdown :: proc(){
 
 @(export)
 game_shutdown_window :: proc(){
-    glfw.DestroyWindow(ax.g_renderbase.window)
+    // glfw.DestroyWindow(ax.g_renderbase.window)
 }
 
 //--------------------------------------------------------------------------------\\
