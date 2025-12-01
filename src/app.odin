@@ -40,6 +40,10 @@ app_start :: proc() {
     g.scene = set_new_scene("assets/scenes/BeeKillingsInn2.json")
 	ax.load_scene(g.scene^, g.mem_game.alloc)
 	g.player = ax.load_prefab("Froku", g.mem_game.alloc)
+	ax.print_hierarchy(g.player, 3)
+	ax.find_entity_by_name("Froku")
+	ax.print_hierarchy_kimi(g.player, 3)
+	ax.print_node_hierarchy_by_name("Froku")
 	g.app_state = .MainMenu
     g.input = InputState{
         mouse_sensitivity = 0.1,
@@ -47,7 +51,6 @@ app_start :: proc() {
         rotation_speed = 20.0,
         first_mouse = true,
     }
-    // ax.init_views(g.mem_game.alloc)
 
     // Find the camera entity
     find_camera_entity()

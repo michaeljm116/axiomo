@@ -156,7 +156,6 @@ sys_bvh_init :: proc(alloc : mem.Allocator) {
     v_bvh = new(View, alloc)
     err := view_init(v_bvh, g_world.db, {get_table(Cmp_Primitive), get_table(Cmp_Node), get_table(Cmp_Transform)})
     if err != nil do panic("Failed to initialize view")
-    log.info("BVH VIEW LEN: ", view_len(v_bvh))
 }
 
 sys_bvh_reset :: proc()
@@ -653,10 +652,11 @@ load_node :: proc(scene_node: scene.Node, parent: Entity, alloc : mem.Allocator)
     entity := add_entity()
     e_flags := transmute(ComponentFlags)scene_node.eFlags
     load_node_components(scene_node, entity, &e_flags)
+
     // Now add Cmp_Node with final flags
     cmp_node_local := Cmp_Node {
         entity       = entity,
-        parent       = parent,  // Set parent Entity ID here
+        parent       = parent,
         child        = Entity(0),  // Will be set when loading children
         brotha       = Entity(0),  // Will be set by parent when adding as child
         name         = strings.clone(scene_node.Name, alloc),
@@ -710,17 +710,15 @@ load_prefab :: proc(name: string, alloc : mem.Allocator) -> (prefab : Entity)
         return Entity(0)
     }
     // Create the entity using the requested ECS allocator
-    prefab = load_node(node,g_world.entity, alloc)
-    if prefab == Entity(0) do log.error("Node Failed to load")
+    prefab = load_node(node, g_world.entity, alloc)
     nc := get_component(prefab,Cmp_Node)
-    if nc == nil do log.error("Failed to get component")
     children := get_children(nc.entity)
     for n in children{
         cc := get_component(n, Cmp_Node)
         cc.parent = prefab
     }
-    //append(&g.scene, prefab)
-    if prefab == Entity(0) do log.error("Node Failed to load")
+    print_hierarchy(prefab, 3)
+	print_hierarchy_kimi(prefab, 3)
     return prefab
 }
 

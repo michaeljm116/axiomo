@@ -1,4 +1,5 @@
 package axiom
+import "core:log"
 import "core:fmt"
 import "core:math/linalg"
 import "core:strings"
@@ -519,9 +520,8 @@ add_child :: proc(parent_entity, child_entity: Entity) {
 
     parent_node.is_parent = true
     child_node.parent = parent_entity
-    if (!entity_exists(parent_node.child)){
-        parent_node.child = child_entity
-    }
+    // if (!entity_exists(parent_node.child)) do parent_node.child = child_entity
+    if (parent_node.child == Entity(0)) do parent_node.child = child_entity
     else{
        first_child := get_component(parent_node.child, Cmp_Node)
         last_bro := get_last_sibling(first_child)
@@ -613,6 +613,7 @@ get_parent :: proc(entity: Entity) -> Entity {
 get_children :: proc(entity: Entity) -> []Entity {
     node := get_component(entity, Cmp_Node)
     if node == nil {
+        log.error("ERROR trying to get childen of empty component", entity)
         return nil
     }
 
@@ -1150,6 +1151,76 @@ display_flattened_entity :: proc(e : Entity){
         tc := get_component(e, Cmp_Transform)
         if(nc != nil) do fmt.println(i, ": ", nc.name, " - ", tc.local.pos, " - ", tc.local.rot)
     }
+}
+
+// print_node_hierarchy :: proc(name: string) {
+//     table_node := get_table(Cmp_Node)
+//     found_ent: Entity = Entity(0)
+//     for i in 0..<table_node.num_entities {
+//         ent := table_node.entities[i]
+//         nc := table_node.components[i]
+//         if nc.name == name {
+//             found_ent = ent
+//             break
+//         }
+//     }
+//     if found_ent == Entity(0) {
+//         fmt.println("No entity found with name:", name)
+//         return
+//     }
+//     print_hierarchy(found_ent)
+// }
+
+print_hierarchy :: proc(ent: Entity, indent: int = 0) {
+    nc := get_component(ent, Cmp_Node)
+    if nc == nil { return }
+    indent_str := strings.repeat("  ", indent, context.temp_allocator)
+    fmt.printf("%s%s\n", indent_str, nc.name)
+    child := nc.child
+    for child != Entity(0) {
+        print_hierarchy(child, indent + 1)
+        child_nc := get_component(child, Cmp_Node)
+        if child_nc == nil { break }
+        child = child_nc.brotha
+    }
+}
+
+find_entity_by_name :: proc(name: string) -> Entity {
+    table := get_table(Cmp_Node)
+    for i := 0; i < table_len(table); i += 1 {
+        e := get_entity(table, i)
+        if n := get_component(table, e); n != nil && n.name == name {
+            return e
+        }
+    }
+    return Entity(0)
+}
+
+print_hierarchy_kimi :: proc(entity: Entity, indent := 0) {
+    n := get_component(entity, Cmp_Node)
+    if n == nil { return }
+
+    prefix := strings.repeat("  ", indent, context.temp_allocator)
+    fmt.println(prefix, n.name, " (", entity, ")")
+
+    child := n.child
+    for child != Entity(0) {
+        print_hierarchy_kimi(child, indent + 1)
+        if c := get_component(child, Cmp_Node); c != nil {
+            child = c.brotha
+        } else {
+            break
+        }
+    }
+}
+
+print_node_hierarchy_by_name :: proc(name: string) {
+    e := find_entity_by_name(name)
+    if e == Entity(0) {
+        fmt.println("Entity '", name, "' not found.")
+        return
+    }
+    print_hierarchy_kimi(e)
 }
 
 // Set pose from animation data
