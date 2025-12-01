@@ -46,27 +46,47 @@ World :: struct{
     db : ^Database,
     tables : map[typeid]rawptr,
     entity : Entity,
-    alloc : mem.Allocator
+    alloc : mem.Allocator,
+    cap : int
 }
 
 // Helper functions that assume g_world
 create_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World {
+    init_memory(mem_stack, mem.Megabyte * 100)
     g_world = new(World, mem_stack.alloc)
+    g_world.cap = g_cap
     tag_root = new(ecs.Tag_Table, mem_stack.alloc)
-
-    init_memory(mem_stack, mem.Megabyte * 1000)
     g_world.db = new(Database, mem_stack.alloc)
     ecs.init(g_world.db, entities_cap=g_cap, allocator = mem_stack.alloc)
     g_world.entity = add_entity()
     g_world.alloc = mem_stack.alloc
-    ecs.tag_table__init(tag_root, g_world.db, g_cap)
+    create_main_tables(g_world)
+    init_views(g_world.alloc)
     return g_world
+}
+
+create_main_tables :: proc(world : ^World)
+{
+    //Tables needed for views
+    create_table(Cmp_Transform, world)
+    create_table(Cmp_Node, world)
+    create_table(Cmp_Primitive, world)
+    create_table(Cmp_Animation, world)
+    create_table(Cmp_Animate, world)
+    create_table(Cmp_BFGraph, world)
+    ecs.tag_table__init(tag_root, world.db, g_cap)
+
+    // Misc tables
+    create_table(Cmp_Gui, world)
+    create_table(Cmp_Camera, world)
+    create_table(Cmp_Light, world)
+    create_table(Cmp_Render, world)
 }
 
 init_views :: proc(alloc : mem.Allocator){
     sys_transform_init(alloc)
     sys_bvh_init(alloc)
-    // sys_anim_init(alloc)
+    sys_anim_init(alloc)
 }
 
 destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {
@@ -88,7 +108,7 @@ add_entity :: #force_inline proc() -> Entity {
 }
 
 // Component management
-add_component :: #force_inline proc(entity: Entity, component: $T) -> (^T) {
+add_component_type :: #force_inline proc(entity: Entity, component: $T) -> (^T) {
     // copy := component
     c, ok := add_component_typeid(entity, T)
     if ok != nil do panic("Failed to add component")
@@ -99,7 +119,7 @@ add_component :: #force_inline proc(entity: Entity, component: $T) -> (^T) {
     return c
 }
 
-add_component_typeid :: proc(entity: Entity, $T: typeid) -> (component: ^T, ok: Error) {
+add_component_typeid :: proc(entity: Entity, $T: typeid) -> (^T, Error) {
     tid := typeid_of(T)
     table_ptr, found := g_world.tables[tid]
     if !found {
@@ -114,7 +134,33 @@ add_component_typeid :: proc(entity: Entity, $T: typeid) -> (component: ^T, ok: 
     return ret,err
 }
 init_table :: ecs.table_init
+
+get_or_create_table :: proc($T: typeid) -> (^Table(T)){
+    tid := typeid_of(T)
+    table_ptr, found := g_world.tables[tid]
+    if !found {
+        new_table := new(Table(T), g_world.alloc)
+        table_err := ecs.table_init(new_table, db=g_world.db, cap=g_cap)
+        if table_err != nil do panic("failed to add table")
+        g_world.tables[tid] = rawptr(new_table)
+        table_ptr = rawptr(new_table)
+    }
+    return transmute(^Table(T))table_ptr
+}
+
+create_table :: proc($T: typeid, world : ^World) -> ^Table(T){
+    tid := typeid_of(T)
+    new_table := new(Table(T), world.alloc)
+    table_err := ecs.table_init(new_table, db=world.db, cap=world.cap)
+    if table_err != nil do panic("failed to add table")
+    world.tables[tid] = rawptr(new_table)
+    table_ptr := rawptr(new_table)
+    return transmute(^Table(T))table_ptr
+}
+
 add_component_table :: ecs.add_component
+
+add_component :: proc{add_component_type, add_component_typeid}
 
 remove_component :: #force_inline proc(entity: Entity, $T: typeid){
     // First find the table, then remove from table
@@ -164,13 +210,18 @@ get_table_ptr :: proc($T: typeid) -> rawptr {
     tid := typeid_of(T)
     table_ptr, found := g_world.tables[tid]
     if !found {
-        return nil  // Or panic("Table not found for type")
+        // return nil  // Or panic("Table not found for type") or just make the table
+        new_table := new(Table(T), g_world.alloc)
+        table_err := ecs.table_init(new_table, db=g_world.db, cap=g_cap)
+        if table_err != nil do panic("failed to add table")
+        g_world.tables[tid] = rawptr(new_table)
+        table_ptr = rawptr(new_table)
     }
     return table_ptr
 }
 get_table :: proc($T: typeid) -> ^Table(T) {
     table_ptr := get_table_ptr(T)
-    return cast(^Table(T)) table_ptr
+    return transmute(^Table(T)) table_ptr
 }
 
 has :: proc {has_component_table,has_component_type_id,}

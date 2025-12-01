@@ -151,15 +151,16 @@ geometry_transform_converter :: proc(nc: ^Cmp_Node) {
 //----------------------------------------------------------------------------\\
 // /BVH System
 //----------------------------------------------------------------------------\\
-v_bvh : View
+v_bvh : ^View
 sys_bvh_init :: proc(alloc : mem.Allocator) {
-    // v_bvh := new(View, alloc)
-    err := view_init(&v_bvh, g_world.db, {get_table(Cmp_Primitive), get_table(Cmp_Node), get_table(Cmp_Transform)})
+    v_bvh := new(View, alloc)
+    err := view_init(v_bvh, g_world.db, {get_table(Cmp_Primitive), get_table(Cmp_Node), get_table(Cmp_Transform)})
     if err != nil do panic("Failed to initialize view")
 }
 
-sys_bvh_reset :: proc(){
-    view_rebuild(&v_bvh)
+sys_bvh_reset :: proc()
+{
+    view_rebuild(v_bvh)
 }
 
 Sys_Bvh :: struct {
@@ -335,7 +336,7 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
     //Now Begin reseriving
     table_prims := get_table(Cmp_Primitive)
     sys_bvh_reset()
-    num_ents := view_len(&v_bvh)
+    num_ents := view_len(v_bvh)
     prims := make([dynamic]embree.RTCBuildPrimitive, 0, num_ents, alloc)
     entts := make([dynamic]Entity, 0, num_ents, alloc)
     pcmps := make([dynamic]^Cmp_Primitive, 0, num_ents, alloc)
@@ -343,7 +344,7 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
     // Asemble!
     pid := 0
     it : Iterator
-    iterator_init(&it, &v_bvh)
+    iterator_init(&it, v_bvh)
     for iterator_next(&it) {
         entity := get_entity(&it)
         pc := get_component(table_prims, entity)
@@ -580,7 +581,7 @@ load_node_components :: proc(scene_node: scene.Node, entity: Entity, e_flags :^C
         trans_comp := cmp_transform_prs_q(pos, rot, sca)
             add_component(entity, trans_comp)
     } else {
-        add_component(entity, Cmp_Transform{}) // Default
+        add_component(entity, Cmp_Transform) // Default
         e_flags^ += {.TRANSFORM}
     }
 
@@ -613,7 +614,6 @@ load_node_components :: proc(scene_node: scene.Node, entity: Entity, e_flags :^C
                 id = i32(obj_id)})
         add_component(entity, Cmp_Render{type = {.PRIMITIVE}})
         added_entity(entity)
-
         // Rigid
         if scene_node.rigid.Rigid {
             e_flags^ += {.RIGIDBODY}
@@ -652,7 +652,6 @@ load_node :: proc(scene_node: scene.Node, parent: Entity, alloc : mem.Allocator)
     entity := add_entity()
     e_flags := transmute(ComponentFlags)scene_node.eFlags
     load_node_components(scene_node, entity, &e_flags)
-
     // Now add Cmp_Node with final flags
     cmp_node_local := Cmp_Node {
         entity       = entity,
@@ -665,9 +664,8 @@ load_node :: proc(scene_node: scene.Node, parent: Entity, alloc : mem.Allocator)
         engine_flags = e_flags,
         game_flags   = scene_node.gFlags,
     }
-    add_component(entity, cmp_node_local)
-
-    cmp_node := get_component(entity, Cmp_Node)
+    cmp_node := add_component(entity, cmp_node_local)
+    cmp_node.name = strings.clone(cmp_node_local.name, alloc)
     if cmp_node == nil {
         fmt.println("[load_node] ERROR: missing Cmp_Node after add")
         return Entity(0)
@@ -707,18 +705,21 @@ load_prefab :: proc(name: string, alloc : mem.Allocator) -> (prefab : Entity)
 {
     node, ok := resource.prefabs[name]
     if !ok{
-        fmt.printf("[load_prefab] Prefab '%s' not found in g_prefabs map \n", name)
+        log.error("[load_prefab] Prefab '%s' not found in g_prefabs map \n", name)
         return Entity(0)
     }
     // Create the entity using the requested ECS allocator
     prefab = load_node(node,g_world.entity, alloc)
+    if prefab == Entity(0) do log.error("Node Failed to load")
     nc := get_component(prefab,Cmp_Node)
+    if nc == nil do log.error("Failed to get component")
     children := get_children(nc.entity)
     for n in children{
         cc := get_component(n, Cmp_Node)
         cc.parent = prefab
     }
     //append(&g.scene, prefab)
+    if prefab == Entity(0) do log.error("Node Failed to load")
     return prefab
 }
 

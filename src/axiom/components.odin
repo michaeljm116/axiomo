@@ -1121,7 +1121,8 @@ flatten_entity :: proc(e : Entity)
         curr := queue.pop_front(&q)
         bfg.nodes[index] = curr
         len += 1
-        bfg.transforms[index] = get_component(curr, Cmp_Transform).local
+        trans := get_component(curr, Cmp_Transform)
+        bfg.transforms[index] = trans.local
         index += 1
 
         // Then put in their children and nephews

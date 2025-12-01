@@ -1217,7 +1217,6 @@ add_animations :: proc(){
     add_animation(&g.level.player.base, "Froku")
     add_animation(&g.level.bees[0].base, "AggressiveBee")
     add_animation(&g.level.bees[1].base, "Bee")
-    axiom.sys_anim_init(g.mem_game.alloc)
 }
 
 // Similar to move_entity_to_tile but just sets the vectors up
