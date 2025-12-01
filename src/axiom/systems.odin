@@ -21,6 +21,7 @@ sys_transform_init :: proc(alloc : mem.Allocator) {
     v_transform = new(View, alloc)
     err := view_init(v_transform, g_world.db, {get_table(Cmp_Transform), get_table(Cmp_Node), tag_root})
     if err != nil do panic("Failed to initialize view")
+    log.info("Transform system initialized")
 }
 
 sys_transform_reset :: proc(){
