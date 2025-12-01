@@ -153,9 +153,10 @@ geometry_transform_converter :: proc(nc: ^Cmp_Node) {
 //----------------------------------------------------------------------------\\
 v_bvh : ^View
 sys_bvh_init :: proc(alloc : mem.Allocator) {
-    v_bvh := new(View, alloc)
+    v_bvh = new(View, alloc)
     err := view_init(v_bvh, g_world.db, {get_table(Cmp_Primitive), get_table(Cmp_Node), get_table(Cmp_Transform)})
     if err != nil do panic("Failed to initialize view")
+    log.info("BVH VIEW LEN: ", view_len(v_bvh))
 }
 
 sys_bvh_reset :: proc()

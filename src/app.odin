@@ -6,6 +6,7 @@ import "core:math"
 import "vendor:glfw"
 import ax"axiom"
 import "axiom/resource"
+import "core:log"
 
 //----------------------------------------------------------------------------\\
 // /APP - Things needed globally
@@ -46,7 +47,7 @@ app_start :: proc() {
         rotation_speed = 20.0,
         first_mouse = true,
     }
-    ax.init_views(g.mem_game.alloc)
+    // ax.init_views(g.mem_game.alloc)
 
     // Find the camera entity
     find_camera_entity()

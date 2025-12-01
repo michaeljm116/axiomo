@@ -9,6 +9,7 @@ import "core:os"
 import "core:encoding/json"
 import "core:mem"
 import "base:runtime"
+import "core:log"
 
 // Helper types for vectors/matrices
 vec2f :: [2]f32
