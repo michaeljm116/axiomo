@@ -743,7 +743,7 @@ sys_anim_reset :: proc(){
 sys_anim_process_ecs :: proc(dt : f32)
 {
     if !anim_initialized do return
-    sys_anim_reset()
+    // sys_anim_reset()
     it : Iterator
     anims := get_table(Cmp_Animation)
     animates := get_table(Cmp_Animate)

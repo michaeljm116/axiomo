@@ -30,15 +30,15 @@ app_init :: proc() {
     glfw.SetInputMode(ax.g_renderbase.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
     //setup_physics()
     app_start()
-    sys_visual_init(g.mem_game.alloc)
 }
 
 app_start :: proc() {
     ax.g_world = create_world()
+    sys_visual_init(g.mem_game.alloc)
     add_component(ax.g_world.entity, Cmp_Node{name = "Singleton"})
     ax.tag(ax.tag_root, ax.g_world.entity)
-    g.scene = set_new_scene("assets/scenes/Entrance.json")
-    // g.scene = set_new_scene("assets/scenes/BeeKillingsInn2.json")
+    // g.scene = set_new_scene("assets/scenes/Entrance.json")
+    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
 	ax.load_scene(g.scene^, g.mem_game.alloc)
 	g.player = ax.load_prefab("Froku", g.mem_game.alloc)
 	g.app_state = .MainMenu
@@ -60,8 +60,8 @@ app_start :: proc() {
 }
 
 app_restart :: proc(){
-    // g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
-    g.scene = set_new_scene("assets/scenes/Entrance.json")
+    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
+    // g.scene = set_new_scene("assets/scenes/Entrance.json")
     restart_world()
     app_start()
 }

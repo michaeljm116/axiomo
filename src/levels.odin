@@ -45,7 +45,7 @@ start_level1 :: proc(alloc : mem.Allocator = context.allocator)
     deck_init(&g.level.deck, 36)
 
     //Set up visuals over bee
-    for b in bees do add_component(b.entity, Cmp_Visual{})
+    for b in bees do add_component(b.entity, Cmp_Visual)
     for &dice, i in g.dice{
         dice = Dice{num = i8(i)}//, entity = g_gui["Dice"]}
         dice.time.max = 1.0
@@ -99,7 +99,7 @@ start_level2 :: proc(alloc : mem.Allocator = context.allocator)
     deck_init(&g.level.deck, 36)
 
     //Set up visuals over bee
-    for b in bees do add_component(b.entity, Cmp_Visual{})
+    for b in bees do add_component(b.entity, Cmp_Visual)
     for &dice, i in g.dice{
         dice = Dice{num = i8(i)}//, entity = g_gui["Dice"]}
         dice.time.max = 1.0

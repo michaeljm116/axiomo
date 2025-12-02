@@ -112,7 +112,10 @@ add_entity :: #force_inline proc() -> Entity {
 add_component_type :: #force_inline proc(entity: Entity, component: $T) -> (^T) {
     // copy := component
     c, ok := add_component_typeid(entity, T)
-    if ok != nil do panic("Failed to add component")
+    if ok != nil{
+        log.error("Failed to loadd Add Compoennt", entity, component)
+        // panic("Failed to add component")
+    }
 
     // NOTE: this is a shallow copy, doesn't handle pointers/dynamic data
     // mem.copy(c, &copy, size_of(T))
@@ -175,7 +178,7 @@ remove_component :: #force_inline proc(entity: Entity, $T: typeid){
 }
 
 entity_exists :: #force_inline proc(entity: Entity) -> bool {
-    return !ecs.is_entity_expired(g_world.db, entity)
+    return !ecs.is_entity_expired(g_world.db, entity) && (entity != Entity(0))
 }
 
 // view_init_types :: #force_inline proc(view: ^View, types : []typeid){

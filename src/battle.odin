@@ -1,6 +1,7 @@
 package game
 import "core:mem"
 import "core:fmt"
+import "core:log"
 import "core:math/linalg"
 import "core:math"
 import "core:math/rand"
@@ -1395,6 +1396,7 @@ sys_visual_process_ecs :: proc(dt : f32)
     table_visual := axiom.get_table(Cmp_Visual)
     table_transform := axiom.get_table(Cmp_Transform)
 
+    axiom.iterator_init(&it, v_visual)
     for axiom.iterator_next(&it){
         entity := axiom.get_entity(&it)
         v := get_component(table_visual, entity)
