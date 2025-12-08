@@ -75,6 +75,7 @@ create_main_tables :: proc(world : ^World)
     create_table(Cmp_Animation, world)
     create_table(Cmp_Animate, world)
     create_table(Cmp_BFGraph, world)
+    create_table(Cmp_Collision2D, world)
     ecs.tag_table__init(tag_root, world.db, g_cap)
 
     // Misc tables
@@ -180,18 +181,6 @@ remove_component :: #force_inline proc(entity: Entity, $T: typeid){
 entity_exists :: #force_inline proc(entity: Entity) -> bool {
     return !ecs.is_entity_expired(g_world.db, entity) && (entity != Entity(0))
 }
-
-// view_init_types :: #force_inline proc(view: ^View, types : []typeid){
-//     tables := make([]rawptr, len(types), context.temp_allocator)
-//     for type, i in types{
-//         tables[i] = get_table_ptr(type_of(type))
-//     }
-//     ecs.view_init(view, g_world, cast([]tables)
-// }
-
-// view_init :: #force_inline proc(view: ^View, includes: []^Table){
-//    ecs.view_init(view, g_world, includes)
-// }
 
 table_len     :: ecs.table_len
 view_len      :: ecs.view_len

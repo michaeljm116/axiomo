@@ -32,4 +32,13 @@ So you need something that like... starts...  with like....
 * Overworld should call battle
 * Battle should update status and affect overworld in someway too
 * Both battle and overworld load a scene with an ecs
-* 
+
+Major question to answer:
+* Perfect the battle system before doing the overworld?!?
+* I think there should be a scaffolding of basic overworlding features since:
+	* You already discovered the lack of scalabliity via ecs
+	* You want from  the start to design a begin, middle, end of a battle
+* But if you do the other way... 
+	* it keeps you gameplay focused
+	* you..... idk
+	* i think the scaffold is the 

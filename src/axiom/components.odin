@@ -392,18 +392,6 @@ ShapeType :: enum{
     Box
 }
 
-CollisionCategory :: enum
-{
-    Player,
-    Enemy,
-    Projectile,
-    EnemyProjectile,
-    Environment,
-    MovingEnvironment,
-    MovingFloor
-}
-CollisionCategories :: bit_set[CollisionCategory; u64]
-
 CollisionFlag :: enum
 {
     Player,
