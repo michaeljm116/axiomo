@@ -24,10 +24,10 @@ AppState :: enum{
 // Initialize the gameplay system
 app_init :: proc() {
     // Set up GLFW callbacks
-    glfw.SetKeyCallback(ax.g_renderbase.window, key_callback)
-    glfw.SetCursorPosCallback(ax.g_renderbase.window, mouse_callback)
-    glfw.SetMouseButtonCallback(ax.g_renderbase.window, mouse_button_callback)
-    glfw.SetInputMode(ax.g_renderbase.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
+    glfw.SetKeyCallback(ax.g_window.handle, key_callback)
+    glfw.SetCursorPosCallback(ax.g_window.handle, mouse_callback)
+    glfw.SetMouseButtonCallback(ax.g_window.handle, mouse_button_callback)
+    glfw.SetInputMode(ax.g_window.handle, glfw.CURSOR, glfw.CURSOR_DISABLED)
     //setup_physics()
     app_start()
 }
@@ -74,12 +74,12 @@ app_restart :: proc(){
 app_destroy :: proc() {
     defer destroy_world()
     // Reset callbacks
-    glfw.SetKeyCallback(ax.g_renderbase.window, nil)
-    glfw.SetCursorPosCallback(ax.g_renderbase.window, nil)
-    glfw.SetMouseButtonCallback(ax.g_renderbase.window, nil)
+    glfw.SetKeyCallback(ax.g_window.handle, nil)
+    glfw.SetCursorPosCallback(ax.g_window.handle, nil)
+    glfw.SetMouseButtonCallback(ax.g_window.handle, nil)
 
     // Release mouse cursor
-    glfw.SetInputMode(ax.g_renderbase.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
+    glfw.SetInputMode(ax.g_window.handle, glfw.CURSOR, glfw.CURSOR_NORMAL)
 }
 
 app_post_init :: proc(){

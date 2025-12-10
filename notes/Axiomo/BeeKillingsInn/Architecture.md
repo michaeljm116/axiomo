@@ -42,3 +42,8 @@ Major question to answer:
 	* it keeps you gameplay focused
 	* you..... idk
 	* i think the scaffold is the 
+
+
+
+
+

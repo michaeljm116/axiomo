@@ -34,6 +34,7 @@ Error :: ecs.Error
 //----------------------------------------------------------------------------\\
 g_renderbase : ^RenderBase
 g_raytracer : ^ComputeRaytracer
+g_window : Window
 g_bvh : ^Sys_Bvh
 g_texture_indexes : map[string]i32
 g_world : ^World

@@ -19,10 +19,10 @@ import "external/embree"
 import stbi "vendor:stb/image"
 import path2 "extensions/filepath2"
 import sttt "vendor:stb/truetype"
+
 //----------------------------------------------------------------------------\\
 // /RENDERBASE /rb
 //----------------------------------------------------------------------------\\
-
 SHADER_VERT :: #load("../../assets/shaders/texture.vert.spv")
 SHADER_FRAG :: #load("../../assets/shaders/texture.frag.spv")
 
@@ -30,10 +30,18 @@ SHADER_FRAG :: #load("../../assets/shaders/texture.frag.spv")
 ENABLE_VALIDATION_LAYERS :: #config(ENABLE_VALIDATION_LAYERS, ODIN_DEBUG)
 MAX_FRAMES_IN_FLIGHT :: 1
 MAX_SWAPCHAIN_IMAGES := 3
+
+Window :: struct{
+    handle : glfw.WindowHandle,
+    primary_monitor : glfw.MonitorHandle,
+    mode : ^glfw.VidMode,
+    width : c.int,
+    height : c.int,
+}
+
 RenderBase :: struct{
     dbg_messenger: vk.DebugUtilsMessengerEXT,
 	ctx: runtime.Context,
-	window: glfw.WindowHandle,
 
 	framebuffer_resized: bool,
 
@@ -76,16 +84,11 @@ RenderBase :: struct{
 	depth_view: vk.ImageView,
 
 	submit_info: vk.SubmitInfo,
-
-	monitor_width :c.int,
-    monitor_height :c.int,
-
 	current_frame: int,
 	image_index: u32,
 }
 
 // KHR_PORTABILITY_SUBSET_EXTENSION_NAME :: "VK_KHR_portability_subset"
-
 DEVICE_EXTENSIONS := []cstring {
 	vk.KHR_SWAPCHAIN_EXTENSION_NAME,
 	// KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
@@ -162,7 +165,7 @@ init_vulkan :: proc()
 	//----------------------------------------------------------------------------\\
     // /Create Surface and Devices /cs
     //----------------------------------------------------------------------------\\
-	must(glfw.CreateWindowSurface(g_renderbase.instance, g_renderbase.window, nil, &g_renderbase.surface))
+	must(glfw.CreateWindowSurface(g_renderbase.instance, g_window.handle, nil, &g_renderbase.surface))
 
 	// Pick a suitable GPU.
 	must(pick_physical_device())
@@ -593,7 +596,7 @@ choose_swapchain_extent :: proc(capabilities: vk.SurfaceCapabilitiesKHR) -> vk.E
 		return capabilities.currentExtent
 	}
 
-	width, height := glfw.GetFramebufferSize(g_renderbase.window)
+	width, height := glfw.GetFramebufferSize(g_window.handle)
 	return(
 		vk.Extent2D {
 			width = clamp(u32(width), capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
@@ -866,9 +869,9 @@ destroy_framebuffers :: proc() {
 
 recreate_swapchain :: proc() {
     // Don't do anything when minimized.
-    for w, h := glfw.GetFramebufferSize(g_renderbase.window); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(g_renderbase.window) {
+    for w, h := glfw.GetFramebufferSize(g_window.handle); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(g_window.handle) {
         glfw.WaitEvents()
-        if glfw.WindowShouldClose(g_renderbase.window) { break }
+        if glfw.WindowShouldClose(g_window.handle) { break }
     }
 
     vk.DeviceWaitIdle(g_renderbase.device)
@@ -1473,7 +1476,7 @@ destroy_vulkan :: proc()
     // Final cleanup after device is destroyed - only instance-level resources
     vk.DestroyDebugUtilsMessengerEXT(g_renderbase.instance, g_renderbase.dbg_messenger, nil)
     vk.DestroyInstance(g_renderbase.instance, nil)
-    glfw.DestroyWindow(g_renderbase.window)
+    glfw.DestroyWindow(g_window.handle)
     glfw.Terminate()
 }
 
@@ -1584,7 +1587,7 @@ initialize_raytracer :: proc()
 {
     prepare_storage_buffers()
     create_uniform_buffers()
-    prepare_texture_target(&g_raytracer.compute_texture, u32(g_renderbase.monitor_width), u32(g_renderbase.monitor_height), .R8G8B8A8_UNORM)
+    prepare_texture_target(&g_raytracer.compute_texture, u32(g_window.width), u32(g_window.height), .R8G8B8A8_UNORM)
     create_descriptor_set_layout() // multiple
     create_graphics_pipeline() // multiple
     create_descriptor_pool()
@@ -3100,7 +3103,7 @@ process_entity :: proc(e: Entity) {
 end :: proc() {
     update_buffers()
     update_descriptors()
-    if glfw.WindowShouldClose(g_renderbase.window) {
+    if glfw.WindowShouldClose(g_window.handle) {
         end_ecs()
         vk.DeviceWaitIdle(g_renderbase.device)
     }
@@ -3152,9 +3155,9 @@ cleanup_swapchain_vulkan :: proc() {
 // Recreate swap chain
 recreate_swapchain_vulkan :: proc() {
     // Don't do anything when minimized.
-    for w, h := glfw.GetFramebufferSize(g_renderbase.window); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(g_renderbase.window) {
+    for w, h := glfw.GetFramebufferSize(g_window.handle); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(g_window.handle) {
         glfw.WaitEvents()
-        if glfw.WindowShouldClose(g_renderbase.window) { break }
+        if glfw.WindowShouldClose(g_window.handle) { break }
     }
 
     vk.DeviceWaitIdle(g_renderbase.device)

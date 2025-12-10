@@ -11,12 +11,14 @@
             "id": "b47c04f3ca1234e3",
             "type": "leaf",
             "state": {
-              "type": "excalidraw",
+              "type": "markdown",
               "state": {
-                "file": "Excalidraw/App.md"
+                "file": "BeeKillingsInn/High Level Arcitecture.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "excalidraw-icon",
-              "title": "App"
+              "icon": "lucide-file",
+              "title": "High Level Arcitecture"
             }
           },
           {
@@ -254,11 +256,12 @@
   },
   "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
+    "BeeKillingsInn/Architecture.md",
+    "BeeKillingsInn/High Level Arcitecture.md",
+    "Excalidraw/Architecture.md",
     "Excalidraw/AnimationStates.excalidraw.md",
-    "Excalidraw/App.md",
     "Excalidraw/Arenas.md",
     "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md",
-    "BeeKillingsInn/Architecture.md",
     "BeeKillingsInn/_Travel.md",
     "BeeKillingsInn/NEW ecs NOTES.md",
     "Theft of compassion.md",
@@ -287,7 +290,6 @@
     "BeeKillingsInn/Grok.md",
     "BeeKillingsInn/Epics.md",
     "BeeKillingsInn/Engineification.md",
-    "BeeKillingsInn/Engine Improvements.md",
     "Photos/{80489E69-1C89-455B-ACD9-51B3CA0AFD47}.png",
     "Photos/{0921DF1F-BCAF-4B33-8B35-87CF37C72AFB}.png",
     "Photos/{D5BCC3A0-866C-4EC3-9F86-2010C8AECA4E}.png",

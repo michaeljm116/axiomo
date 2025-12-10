@@ -62,9 +62,6 @@ g_mem_area : ax.MemoryArena                   // Main memory for loading of reso
 //--------------------------------------------------------------------------------\\
 @(export)
 game_init_window :: proc(){
-    set_up_core_arenas()
-    ax.g_renderbase = new(ax.RenderBase, g_mem_core.alloc)
-    ax.g_raytracer = new(ax.ComputeRaytracer, g_mem_area.alloc)
     glfw.SetErrorCallback(ax.glfw_error_callback)
     if !glfw.Init() {log.panic("glfw: could not be initialized")}
 
@@ -73,20 +70,24 @@ game_init_window :: proc(){
     glfw.WindowHint(glfw.DECORATED, glfw.TRUE)
 
     // Get monitor and set to full screen
-    primary_monitor := glfw.GetPrimaryMonitor()
-    mode := glfw.GetVideoMode(primary_monitor)
-    ax.g_renderbase.monitor_width = c.int(f64(mode.width) * 0.5)
-    ax.g_renderbase.monitor_height =  c.int(f64(mode.height) * 0.5)
-    ax.g_renderbase.window = glfw.CreateWindow(ax.g_renderbase.monitor_width, ax.g_renderbase.monitor_height, "Bee Killins Inn", nil, nil)
-    glfw.SetFramebufferSizeCallback(ax.g_renderbase.window, proc "c" (_: glfw.WindowHandle, _, _: i32) {
-        ax.g_renderbase.framebuffer_resized = true
-    })
-    ax.init_vulkan()
-    ax.set_camera()
+    ax.g_window.primary_monitor = glfw.GetPrimaryMonitor()
+    ax.g_window.mode = glfw.GetVideoMode(ax.g_window.primary_monitor)
+    ax.g_window.width = c.int(f64(ax.g_window.mode.width) * 0.5)
+    ax.g_window.height =  c.int(f64(ax.g_window.mode.height) * 0.5)
+    ax.g_window.handle = glfw.CreateWindow(ax.g_window.width, ax.g_window.height, "Bee Killins Inn", nil, nil)
 }
 
 @(export)
 game_init :: proc() {
+    set_up_core_arenas()
+    ax.g_renderbase = new(ax.RenderBase, g_mem_core.alloc)
+    ax.g_raytracer = new(ax.ComputeRaytracer, g_mem_area.alloc)
+    glfw.SetFramebufferSizeCallback(ax.g_window.handle, proc "c" (_: glfw.WindowHandle, _, _: i32) {
+        ax.g_renderbase.framebuffer_resized = true
+    })
+    ax.init_vulkan()
+    ax.set_camera()
+
     g = new(Game_Memory)
     set_up_game_arenas()
 	ax.g_renderbase.ctx = context
@@ -142,7 +143,7 @@ game_init :: proc() {
 //--------------------------------------------------------------------------------\\
 @(export)
 game_should_run :: proc() -> bool{
-    if glfw.WindowShouldClose(ax.g_renderbase.window) do return false
+    if glfw.WindowShouldClose(ax.g_window.handle) do return false
     return true
 }
 @(export)
@@ -184,7 +185,7 @@ game_shutdown :: proc(){
 
 @(export)
 game_shutdown_window :: proc(){
-    // glfw.DestroyWindow(ax.g_renderbase.window)
+    // glfw.DestroyWindow(ax.g_window.handle)
 }
 
 //--------------------------------------------------------------------------------\\
