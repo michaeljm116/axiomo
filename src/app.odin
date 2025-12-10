@@ -18,7 +18,7 @@ AppState :: enum{
     Pause,
     GameOver,
     Victory,
-
+    Overworld
 }
 
 // Initialize the gameplay system
@@ -38,9 +38,11 @@ app_start :: proc() {
     add_component(ax.g_world.entity, Cmp_Node{name = "Singleton"})
     ax.tag(ax.tag_root, ax.g_world.entity)
     // g.scene = set_new_scene("assets/scenes/Entrance.json")
-    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
-	ax.load_scene(g.scene^, g.mem_game.alloc)
+
+    // g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
+	// ax.load_scene(g.scene^, g.mem_game.alloc)
 	g.player = ax.load_prefab("Froku", g.mem_game.alloc)
+
 	g.app_state = .MainMenu
     g.input = InputState{
         mouse_sensitivity = 0.1,
@@ -57,10 +59,12 @@ app_start :: proc() {
 
     ////////////////// actual bks init ////////////////
     battle_start()
+    init_GameUI(&g_gui, g_mem_core.alloc)
+    ToggleUI("Title", true)
 }
 
 app_restart :: proc(){
-    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
+    // g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
     // g.scene = set_new_scene("assets/scenes/Entrance.json")
     restart_world()
     app_start()
@@ -94,7 +98,7 @@ app_update :: proc(delta_time: f32) {
     // handle_player_edit_mode()
     handle_destroy_mode()
     if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode{
-       battle_run(delta_time, &g.app_state)
+       app_run(delta_time, &g.app_state)
     }
     // Clear just pressed/released states
     for i in 0..<len(g.input.keys_just_pressed) {
@@ -109,6 +113,63 @@ app_update :: proc(delta_time: f32) {
     //update_player_movement(delta_time)
     // update_movables(delta_time)
     // update_physics(delta_time)
+}
+
+app_run :: proc(dt: f32, state: ^AppState) {
+	// if glfw.WindowShouldClose() do return
+	switch state^ {
+	case .TitleScreen:
+    	if is_key_just_pressed(glfw.KEY_ENTER){
+            state^ = .MainMenu
+            ToggleMenuUI(state)
+        }
+	case .MainMenu:
+    	if is_key_just_pressed(glfw.KEY_ENTER){
+            state^ = .Game
+            ToggleMenuUI(state)
+            start_game()
+        }
+        else if is_key_just_pressed(glfw.KEY_SPACE){
+            state^ = .Overworld
+            ToggleMenuUI(state)
+            overworld_start()
+        }
+	case .Game:
+		run_battle(&g.state, &g.level.player, &g.level.bees, &g.level.deck)
+		ves_update_all(dt)
+		if (g.level.player.health <= 0){
+			state^ = .GameOver
+            destroy_level1()
+			ToggleMenuUI(state)
+		}
+	    else if (len(g.level.bees) <= 0){
+    		state^ = .Victory
+            destroy_level1()
+            ToggleMenuUI(state)
+		}
+        else if (is_key_just_pressed(glfw.KEY_P)){
+            state^ = .Pause
+            ToggleMenuUI(state)
+        }
+        ves_cleanup(&g.level)
+	case .Pause:
+        if is_key_just_pressed(glfw.KEY_ENTER){
+            state^ = .Game
+            ToggleMenuUI(state)
+        }
+	case .GameOver:
+    	if is_key_just_pressed(glfw.KEY_ENTER){
+            state^ = .MainMenu
+            ToggleMenuUI(state)
+        }
+	case .Victory:
+	    if is_key_just_pressed(glfw.KEY_ENTER){
+			state^ = .MainMenu
+			ToggleMenuUI(state)
+		}
+	case .Overworld:
+	   overworld_update()
+	}
 }
 
 //----------------------------------------------------------------------------\\
@@ -340,7 +401,7 @@ ToggleMenuUI :: proc(state : ^AppState)
         ToggleUI ("GameOver", false)
         ToggleUI("Victory", false)
         ToggleUI("Paused", false)
-    case .Game:
+    case .Game, .Overworld:
         ToggleUI("Title", false)
         ToggleUI("Background", false)
         ToggleUI("StartGame", false)

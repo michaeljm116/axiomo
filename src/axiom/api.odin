@@ -1,6 +1,5 @@
 package axiom
 import math "core:math/linalg"
-import "core:../../2025-10-30/core/text/table"
 import ecs "external/ode_ecs"
 import "core:fmt"
 import "resource"

@@ -27,16 +27,6 @@ Level :: struct
     grid_weapons : [dynamic]WeaponGrid,
 }
 
-prestart :: proc()
-{
-    g.state = .Start
-    g.current_bee = 0
-
-    // g_saftey_bee = Bee{name = '🍯', pos = vec2i{6,3}, target = vec2i{6,3}, health = 2, type = .Normal, flags = {}, entity = load_prefab("Bee")}
-    // tc := get_component(g_saftey_bee.entity, Cmp_Transform)
-    // tc.global.pos.y = 100000000000000.0
-    // add_component(g_saftey_bee.entity, Cmp_Visual{})
-}
 //----------------------------------------------------------------------------\\
 // /Start UP
 //----------------------------------------------------------------------------\\
@@ -67,7 +57,7 @@ destroy_level1 :: proc() {
 //----------------------------------------------------------------------------\\
 // /Run Game
 //----------------------------------------------------------------------------\\
-run_game :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, deck : ^BeeDeck)
+run_battle :: proc(state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, deck : ^BeeDeck)
 {
     switch state^
     {
@@ -1280,10 +1270,12 @@ slerp_character_angle :: proc(cha : ^Character, dt : f32){
 }
 
 battle_start :: proc(){
-    prestart()
-    init_GameUI(&g_gui, g_mem_core.alloc)
-    // start_game()
-    ToggleUI("Title", true)
+    g.state = .Start
+    g.current_bee = 0
+    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
+	axiom.load_scene(g.scene^, g.mem_game.alloc)
+	g.player = axiom.load_prefab("Froku", g.mem_game.alloc)
+
 }
 
 start_game :: proc(){
@@ -1300,56 +1292,6 @@ start_game :: proc(){
     place_chest_on_grid(vec2i{4,3}, &g.level)
     g.level.player.entity = g.player
     add_animations()
-}
-
-battle_run :: proc(dt: f32, state: ^AppState) {
-	// if glfw.WindowShouldClose() do return
-	#partial switch state^ {
-	case .TitleScreen:
-    	if is_key_just_pressed(glfw.KEY_ENTER){
-            state^ = .MainMenu
-            ToggleMenuUI(state)
-        }
-	case .MainMenu:
-    	if is_key_just_pressed(glfw.KEY_ENTER){
-            state^ = .Game
-            ToggleMenuUI(state)
-            start_game()
-        }
-	case .Game:
-		run_game(&g.state, &g.level.player, &g.level.bees, &g.level.deck)
-		ves_update_all(dt)
-		if (g.level.player.health <= 0){
-			state^ = .GameOver
-            destroy_level1()
-			ToggleMenuUI(state)
-		}
-	    else if (len(g.level.bees) <= 0){
-    		state^ = .Victory
-            destroy_level1()
-            ToggleMenuUI(state)
-		}
-        else if (is_key_just_pressed(glfw.KEY_P)){
-            state^ = .Pause
-            ToggleMenuUI(state)
-        }
-        ves_cleanup(&g.level)
-	case .Pause:
-        if is_key_just_pressed(glfw.KEY_ENTER){
-            state^ = .Game
-            ToggleMenuUI(state)
-        }
-	case .GameOver:
-    	if is_key_just_pressed(glfw.KEY_ENTER){
-            state^ = .MainMenu
-            ToggleMenuUI(state)
-        }
-	case .Victory:
-	    if is_key_just_pressed(glfw.KEY_ENTER){
-			state^ = .MainMenu
-			ToggleMenuUI(state)
-		}
-	}
 }
 
 set_game_over :: proc(){
