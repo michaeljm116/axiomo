@@ -59,20 +59,21 @@ restart_world :: #force_inline proc(){
 set_new_scene :: #force_inline proc(name:string) -> ^scene.SceneData{
     return axiom.set_new_scene(name, &g.mem_scene)
 }
+
 get_entity :: axiom.get_entity
 get_table :: axiom.get_table
 get_component :: axiom.get_component
 add_component :: axiom.add_component
-// add_component :: #force_inline proc(entity: Entity, component: $T) {
-//     axiom.add_component(entity, component)
-// }
 has :: axiom.has
-// has :: #force_inline proc(component: typeid) -> axiom.Term {
-// 	return axiom.has(component)
-// }
+
 update_gui :: #force_inline proc(gui:^Cmp_Gui){
     axiom.update_gui(gui)
 }
 load_prefab :: #force_inline proc(name: string) -> (prefab : Entity){
    return axiom.load_prefab(name, g.mem_game.alloc)
 }
+
+is_mouse_button_pressed :: axiom.is_mouse_button_pressed
+is_key_just_released :: axiom.is_key_just_released
+is_key_just_pressed :: axiom.is_key_just_pressed
+is_key_pressed :: axiom.is_key_pressed

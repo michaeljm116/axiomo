@@ -23,11 +23,6 @@ AppState :: enum{
 
 // Initialize the gameplay system
 app_init :: proc() {
-    // Set up GLFW callbacks
-    glfw.SetKeyCallback(ax.g_window.handle, key_callback)
-    glfw.SetCursorPosCallback(ax.g_window.handle, mouse_callback)
-    glfw.SetMouseButtonCallback(ax.g_window.handle, mouse_button_callback)
-    glfw.SetInputMode(ax.g_window.handle, glfw.CURSOR, glfw.CURSOR_DISABLED)
     //setup_physics()
     app_start()
 }
@@ -44,7 +39,7 @@ app_start :: proc() {
 	g.player = ax.load_prefab("Froku", g.mem_game.alloc)
 
 	g.app_state = .MainMenu
-    g.input = InputState{
+    ax.g_input = ax.InputState{
         mouse_sensitivity = 0.1,
         movement_speed = 5.0,
         rotation_speed = 20.0,
@@ -101,9 +96,9 @@ app_update :: proc(delta_time: f32) {
        app_run(delta_time, &g.app_state)
     }
     // Clear just pressed/released states
-    for i in 0..<len(g.input.keys_just_pressed) {
-        g.input.keys_just_pressed[i] = false
-        g.input.keys_just_released[i] = false
+    for i in 0..<len(ax.g_input.keys_just_pressed) {
+        ax.g_input.keys_just_pressed[i] = false
+        ax.g_input.keys_just_released[i] = false
     }
 
         // Update light orbit (if a light entity was found)
@@ -172,107 +167,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
 	}
 }
 
-//----------------------------------------------------------------------------\\
-// /Input
-//----------------------------------------------------------------------------\\
-// Input state tracking
-InputState :: struct {
-    keys_pressed: [glfw.KEY_LAST + 1]bool,
-    keys_just_pressed: [glfw.KEY_LAST + 1]bool,
-    keys_just_released: [glfw.KEY_LAST + 1]bool,
 
-    mouse_x, mouse_y: f64,
-    last_mouse_x, last_mouse_y: f64,
-    mouse_delta_x, mouse_delta_y: f64,
-    first_mouse: bool,
-
-    mouse_buttons: [glfw.MOUSE_BUTTON_LAST + 1]bool,
-    mouse_sensitivity: f32,
-
-    // Camera control settings
-    movement_speed: f32,
-    rotation_speed: f32,
-}
-
-is_key_pressed :: proc(key: i32) -> bool {
-    if key < 0 || key > glfw.KEY_LAST do return false
-    return g.input.keys_pressed[key]
-}
-is_key_just_pressed :: proc(key: i32) -> bool {
-    if key < 0 || key > glfw.KEY_LAST do return false
-    return g.input.keys_just_pressed[key]
-}
-is_key_just_released :: proc(key: i32) -> bool {
-    if key < 0 || key > glfw.KEY_LAST do return false
-    return g.input.keys_just_released[key]
-}
-is_mouse_button_pressed :: proc(button: i32) -> bool {
-    if button < 0 || button > glfw.MOUSE_BUTTON_LAST do return false
-    return g.input.mouse_buttons[button]
-}
-
-// GLFW Callbacks
-key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods: i32) {
-    context = ax.g_renderbase.ctx
-    if key < 0 || key > glfw.KEY_LAST do return
-
-    switch action {
-    case glfw.PRESS:
-        if !g.input.keys_pressed[key] do g.input.keys_just_pressed[key] = true
-        g.input.keys_pressed[key] = true
-    case glfw.RELEASE:
-        g.input.keys_just_released[key] = true
-        g.input.keys_pressed[key] = false
-    case glfw.REPEAT:
-        //Repeat Timer ++
-    }
-    // Handle special keys
-    if key == glfw.KEY_ESCAPE && action == glfw.PRESS do glfw.SetWindowShouldClose(window, true)
-
-    // Toggle mouse capture
-    if key == glfw.KEY_TAB && action == glfw.PRESS {
-        if glfw.GetInputMode(window, glfw.CURSOR) == glfw.CURSOR_DISABLED {
-            glfw.SetInputMode(window, glfw.CURSOR, glfw.CURSOR_NORMAL)
-        } else {
-            glfw.SetInputMode(window, glfw.CURSOR, glfw.CURSOR_DISABLED)
-            g.input.first_mouse = true
-        }
-    }
-}
-
-mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
-    context = ax.g_renderbase.ctx
-
-    if g.input.first_mouse {
-        g.input.last_mouse_x = xpos
-        g.input.last_mouse_y = ypos
-        g.input.first_mouse = false
-    }
-
-    g.input.mouse_delta_x = xpos - g.input.last_mouse_x
-    g.input.mouse_delta_y = ypos - g.input.last_mouse_y
-
-    g.input.last_mouse_x = xpos
-    g.input.last_mouse_y = ypos
-    g.input.mouse_x = xpos
-    g.input.mouse_y = ypos
-}
-
-mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mods: i32) {
-    context = ax.g_renderbase.ctx
-
-    if button < 0 || button > glfw.MOUSE_BUTTON_LAST {
-        return
-    }
-
-    switch action {
-    case glfw.PRESS:
-        g.input.mouse_buttons[button] = true
-
-    case glfw.RELEASE:
-        g.input.mouse_buttons[button] = false
-    }
-}
 
 //----------------------------------------------------------------------------\\
 // /Menu

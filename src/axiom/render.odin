@@ -37,6 +37,7 @@ Window :: struct{
     mode : ^glfw.VidMode,
     width : c.int,
     height : c.int,
+    ctx : runtime.Context,
 }
 
 RenderBase :: struct{

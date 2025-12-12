@@ -8,13 +8,13 @@ package game
 
 // // Helper to clear input state between tests
 // clear_input :: proc() {
-//     for i in 0..<len(g.input.keys_just_pressed) {
-//         g.input.keys_just_pressed[i] = false
-//         g.input.keys_pressed[i] = false
-//         g.input.keys_just_released[i] = false
+//     for i in 0..<len(ax.g_input.keys_just_pressed) {
+//         ax.g_input.keys_just_pressed[i] = false
+//         ax.g_input.keys_pressed[i] = false
+//         ax.g_input.keys_just_released[i] = false
 //     }
-//     for i in 0..<len(g.input.mouse_buttons) {
-//         g.input.mouse_buttons[i] = false
+//     for i in 0..<len(ax.g_input.mouse_buttons) {
+//         ax.g_input.mouse_buttons[i] = false
 //     }
 // }
 
@@ -43,13 +43,13 @@ package game
 
 //     // Press '1' to enter Movement state
 //     clear_input()
-//     g.input.keys_just_pressed[glfw.KEY_1] = true
+//     ax.g_input.keys_just_pressed[glfw.KEY_1] = true
 //     run_players_turn(&pt, &gs, &g.level.player, &g.level.bees, &bee_sel, &bee_near_local)
 //     testing.expect(t, pt == .Movement, "Pressing KEY_1 from SelectAction should transition to Movement")
 
 //     // Now simulate a movement input (D) to move player to the right
 //     clear_input()
-//     g.input.keys_just_pressed[glfw.KEY_D] = true
+//     ax.g_input.keys_just_pressed[glfw.KEY_D] = true
 
 //     prev_pos := g.level.player.pos
 //     run_players_turn(&pt, &gs, &g.level.player, &g.level.bees, &bee_sel, &bee_near_local)
@@ -72,7 +72,7 @@ package game
 
 //     // Press '2' to enter SelectEnemy
 //     clear_input()
-//     g.input.keys_just_pressed[glfw.KEY_2] = true
+//     ax.g_input.keys_just_pressed[glfw.KEY_2] = true
 //     run_players_turn(&pt, &gs, &g.level.player, &g.level.bees, &bee_sel, &bee_near_local)
 
 //     testing.expect(t, pt == .SelectEnemy, "Pressing KEY_2 should transition to SelectEnemy")
@@ -81,7 +81,7 @@ package game
 
 //     // Press SPACE to attempt action selection (player not near the bee in start_level1)
 //     clear_input()
-//     g.input.keys_just_pressed[glfw.KEY_SPACE] = true
+//     ax.g_input.keys_just_pressed[glfw.KEY_SPACE] = true
 //     run_players_turn(&pt, &gs, &g.level.player, &g.level.bees, &bee_sel, &bee_near_local)
 
 //     testing.expect(t, pt == .Action, "Pressing SPACE in SelectEnemy should transition to Action")
@@ -89,7 +89,7 @@ package game
 
 //     // Press 'F' to apply Focus ability/flag to the selected bee
 //     clear_input()
-//     g.input.keys_just_pressed[glfw.KEY_F] = true
+//     ax.g_input.keys_just_pressed[glfw.KEY_F] = true
 //     run_players_turn(&pt, &gs, &g.level.player, &g.level.bees, &bee_sel, &bee_near_local)
 
 //     // After focusing: selected bee should have PlayerFocused flag, state returns to SelectAction and game state -> BeesTurn
@@ -103,21 +103,21 @@ package game
 //     // Movement -> back should go to SelectAction
 //     st := PlayerTurnState.Movement
 //     clear_input()
-//     g.input.keys_just_pressed[glfw.KEY_B] = true
+//     ax.g_input.keys_just_pressed[glfw.KEY_B] = true
 //     handle_back_button(&st)
 //     testing.expect(t, st == .SelectAction, "B from Movement should go back to SelectAction")
 
 //     // SelectEnemy -> back should go to SelectAction
 //     st = PlayerTurnState.SelectEnemy
 //     clear_input()
-//     g.input.keys_just_pressed[glfw.KEY_B] = true
+//     ax.g_input.keys_just_pressed[glfw.KEY_B] = true
 //     handle_back_button(&st)
 //     testing.expect(t, st == .SelectAction, "B from SelectEnemy should go back to SelectAction")
 
 //     // Action -> back should go to SelectEnemy
 //     st = PlayerTurnState.Action
 //     clear_input()
-//     g.input.keys_just_pressed[glfw.KEY_B] = true
+//     ax.g_input.keys_just_pressed[glfw.KEY_B] = true
 //     handle_back_button(&st)
 //     testing.expect(t, st == .SelectEnemy, "B from Action should go back to SelectEnemy")
 // }

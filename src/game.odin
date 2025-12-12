@@ -19,7 +19,6 @@ Game_Memory :: struct
     player : Entity,
 
     // gameplay
-    input: InputState,
     camera_entity: Entity,
     light_entity: Entity,
     light_orbit_radius : f32,
@@ -62,19 +61,8 @@ g_mem_area : ax.MemoryArena                   // Main memory for loading of reso
 //--------------------------------------------------------------------------------\\
 @(export)
 game_init_window :: proc(){
-    glfw.SetErrorCallback(ax.glfw_error_callback)
-    if !glfw.Init() {log.panic("glfw: could not be initialized")}
-
-    glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
-    glfw.WindowHint(glfw.RESIZABLE, glfw.FALSE)
-    glfw.WindowHint(glfw.DECORATED, glfw.TRUE)
-
-    // Get monitor and set to full screen
-    ax.g_window.primary_monitor = glfw.GetPrimaryMonitor()
-    ax.g_window.mode = glfw.GetVideoMode(ax.g_window.primary_monitor)
-    ax.g_window.width = c.int(f64(ax.g_window.mode.width) * 0.5)
-    ax.g_window.height =  c.int(f64(ax.g_window.mode.height) * 0.5)
-    ax.g_window.handle = glfw.CreateWindow(ax.g_window.width, ax.g_window.height, "Bee Killins Inn", nil, nil)
+   ax.window_init(context)
+   ax.window_input_init()
 }
 
 @(export)
@@ -82,9 +70,7 @@ game_init :: proc() {
     set_up_core_arenas()
     ax.g_renderbase = new(ax.RenderBase, g_mem_core.alloc)
     ax.g_raytracer = new(ax.ComputeRaytracer, g_mem_area.alloc)
-    glfw.SetFramebufferSizeCallback(ax.g_window.handle, proc "c" (_: glfw.WindowHandle, _, _: i32) {
-        ax.g_renderbase.framebuffer_resized = true
-    })
+    ax.window_renderer_init()
     ax.init_vulkan()
     ax.set_camera()
 
