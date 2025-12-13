@@ -21,12 +21,6 @@ AppState :: enum{
     Overworld
 }
 
-// Initialize the gameplay system
-app_init :: proc() {
-    //setup_physics()
-    app_start()
-}
-
 app_start :: proc() {
     ax.g_world = create_world()
     sys_visual_init(g.mem_game.alloc)
@@ -37,14 +31,7 @@ app_start :: proc() {
     // g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
 	// ax.load_scene(g.scene^, g.mem_game.alloc)
 	g.player = ax.load_prefab("Froku", g.mem_game.alloc)
-
 	g.app_state = .MainMenu
-    ax.g_input = ax.InputState{
-        mouse_sensitivity = 0.1,
-        movement_speed = 5.0,
-        rotation_speed = 20.0,
-        first_mouse = true,
-    }
 
     // Find the camera entity
     find_camera_entity()

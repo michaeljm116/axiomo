@@ -57,6 +57,13 @@ window_input_init :: proc(){
     glfw.SetCursorPosCallback(g_window.handle, mouse_callback)
     glfw.SetMouseButtonCallback(g_window.handle, mouse_button_callback)
     glfw.SetInputMode(g_window.handle, glfw.CURSOR, glfw.CURSOR_DISABLED)
+
+    g_input = InputState{
+        mouse_sensitivity = 0.1,
+        movement_speed = 5.0,
+        rotation_speed = 20.0,
+        first_mouse = true,
+    }
 }
 
 is_key_pressed :: proc(key: i32) -> bool {

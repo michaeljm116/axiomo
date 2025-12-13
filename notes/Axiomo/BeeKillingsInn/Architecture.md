@@ -46,4 +46,13 @@ Major question to answer:
 
 
 
-
+### App:
+* There are certain assets that should exist game-wide at all times like menu's and... just menus
+* But it must all be in a loop and the bvh and transform sys possibly need to be running at all times
+* So one fix is to just have that empty scene used as like the base scene for errthang
+* So StartScene("empty.json")
+	* then start menu etc
+### Scene:
+* anytime you  switch between battle or overworld or whatever... 
+* a scene must be deleted and a new created
+* 

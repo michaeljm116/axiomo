@@ -112,7 +112,7 @@ game_init :: proc() {
 	ax.g_bvh = ax.bvh_system_create(g_mem_core.alloc)
 	ax.start_up_raytracer(g_mem_area.alloc)
 
-	app_init()
+	app_start()
 
 	// You need to have an ecs ready before you do the stuff below
 	ax.sys_trans_process_ecs()
