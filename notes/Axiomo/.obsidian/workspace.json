@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Architecture.md",
+                "file": "BeeKillingsInn/Physics.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Architecture"
+              "title": "Physics"
             }
           },
           {
@@ -256,8 +256,9 @@
   },
   "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
-    "Excalidraw/Architecture.md",
     "BeeKillingsInn/Architecture.md",
+    "BeeKillingsInn/Physics.md",
+    "Excalidraw/Architecture.md",
     "BeeKillingsInn/Merge Bee with Axiomo.md",
     "BeeKillingsInn/Menu system.md",
     "Theft of compassion.md",
@@ -281,7 +282,6 @@
     "BeeKillingsInn/Bugs.md",
     "BeeKillingsInn/bg.md",
     "BeeKillingsInn/Bee Ideas.md",
-    "BeeKillingsInn/Animation - Again.md",
     "Photos/Pasted image 20251108055025.png",
     "Photos/{08E3CA3B-E91C-4292-AC97-23066AB46B4B}.png",
     "Photos/{857A3D8B-F0CC-4965-AB43-BB397C62E2E2}.png",

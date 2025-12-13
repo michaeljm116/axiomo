@@ -116,6 +116,8 @@ game_init :: proc() {
     // g.scene = set_new_scene("assets/scenes/Empty.json")
     // ax.load_scene("Empty", g.mem_game.alloc)
 	ax.g_bvh = ax.bvh_system_create(g_mem_core.alloc)
+	ax.g_physics = ax.sys_physics_create(g_mem_core.alloc)
+
 	ax.start_up_raytracer(g_mem_area.alloc)
 
 	app_start()
@@ -144,11 +146,13 @@ game_update :: proc(){
 	// Poll and free: Move to main loop if overlapping better
 	glfw.PollEvents()
 	g.frame.curr_time = glfw.GetTime()
+
 	frame_time := g.frame.curr_time - g.frame.prev_time
 	g.frame.prev_time = g.frame.curr_time
 	if frame_time > 0.25 {frame_time = 0.25}
 	g.frame.delta_time = f32(frame_time)
 	g.frame.physics_acc_time += f32(frame_time)
+
 	for g.frame.physics_acc_time >= f32(g.frame.physics_time_step) {
     	app_update(f32(g.frame.physics_time_step))
 		sys_visual_process_ecs(f32(g.frame.physics_time_step))
@@ -156,7 +160,10 @@ game_update :: proc(){
 		ax.sys_trans_process_ecs()
 		g.frame.physics_acc_time -= f32(g.frame.physics_time_step)
 	}
+
+	ax.sys_physics_update(ax.g_physics, f32(g.frame.physics_acc_time))
 	ax.sys_bvh_process_ecs(ax.g_bvh, g.mem_frame.alloc)
+
 	ax.update_buffers()
 	ax.update_descriptors()
 	ax.end_frame(&ax.g_renderbase.image_index)

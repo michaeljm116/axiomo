@@ -38,6 +38,8 @@ g_raytracer : ^ComputeRaytracer
 g_window : Window
 g_input : InputState
 g_bvh : ^Sys_Bvh
+g_physics : ^Sys_Physics
+
 g_texture_indexes : map[string]i32
 g_world : ^World
 g_cap :: 10000
@@ -91,6 +93,7 @@ init_views :: proc(alloc : mem.Allocator){
     sys_transform_init(alloc)
     sys_bvh_init(alloc)
     sys_anim_init(alloc)
+    sys_physics_init(alloc)
 }
 
 destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {

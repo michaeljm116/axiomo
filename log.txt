@@ -1,2 +1,3 @@
-[INFO ] --- [2025-12-13 13:53:24] [render.odin:379:score_physical_device()] vulkan: device "NVIDIA GeForce RTX 3080 Laptop GPU" scored 332768
-[INFO ] --- [2025-12-13 13:53:24] [render.odin:227:init_vulkan()] vulkan: bindless descriptor indexing supported
+[INFO ] --- [2025-12-13 16:55:08] [render.odin:379:score_physical_device()] vulkan: device "NVIDIA GeForce RTX 3050 Laptop GPU" scored 332768
+[INFO ] --- [2025-12-13 16:55:08] [render.odin:379:score_physical_device()] vulkan: device "Intel(R) Iris(R) Xe Graphics" scored 216384
+[INFO ] --- [2025-12-13 16:55:08] [render.odin:227:init_vulkan()] vulkan: bindless descriptor indexing supported

@@ -1086,33 +1086,42 @@ add_ui :: proc (gui : Cmp_Gui, name : string) -> Entity
 //----------------------------------------------------------------------------\\
 Sys_Physics :: struct
 {
-    view : ^View,
     max_objects : int,
     world_def : b2.WorldDef,
     world_id : b2.WorldId,
     scale : f32,
 }
 
-sys_physics_init :: proc(alloc : mem.Allocator) -> ^Sys_Physics
+sys_physics_create :: proc(alloc : mem.Allocator) -> ^Sys_Physics
 {
-    // Initialize physics create world
+    // First Allocate memory
     physics, merr := new(Sys_Physics, alloc)
     if merr != nil do panic("Failed to allocate physics mem")
-    physics^ = Sys_Physics{max_objects = 1000, world_def = b2.DefaultWorldDef(), scale = 1}
+
+    // Set the data
+    physics^ = Sys_Physics{
+        max_objects = 1000,
+        world_def = b2.DefaultWorldDef(),
+        scale = 1
+    }
+
+    // Set up box2d  defaults
     b2.SetLengthUnitsPerMeter(physics.scale)
     physics.world_id = b2.CreateWorld(physics.world_def)
     if !b2.World_IsValid(physics.world_id) do panic("Failed to create Physics world")
-
-    //Optional set gravity
-    // b2.World_SetGravity(g_world_id, b2.Vec2{0,-9.8})
-
-    //Initialize views
-    physics.view, merr = new(View, alloc)
-    if merr != nil do panic("Failed to allocate physics view mem")
-    err := view_init(physics.view, g_world.db, {get_table(Cmp_Collision2D), get_table(Cmp_Transform)})
-    if err != nil do panic("Failed to initialize physics view")
-
     return physics
+}
+
+v_physics : ^View
+sys_physics_init :: proc(alloc : mem.Allocator)
+{
+    v_physics, _ = new(View, alloc)
+    err := view_init(v_physics, g_world.db, {get_table(Cmp_Collision2D), get_table(Cmp_Transform)})
+    if err != nil do panic("Failed to initialize physics view")
+}
+
+sys_physics_reset :: proc(){
+    view_rebuild(v_physics)
 }
 
 sys_physics_destroy :: proc(physics : ^Sys_Physics){
@@ -1125,16 +1134,16 @@ sys_physics_update :: proc(physics : ^Sys_Physics, dt: f32)
     b2.World_Step(physics.world_id, timeStep = dt, subStepCount = 4)
 
     //Then update the ecs
-    sys_physics_process_ecs(physics, dt)
+    sys_physics_process_ecs(dt)
 }
 
-sys_physics_process_ecs :: proc(physics : ^Sys_Physics, dt: f32)
+sys_physics_process_ecs :: proc(dt: f32)
 {
     // Set up iterator
     it : Iterator
     colis := get_table(Cmp_Collision2D)
     trans := get_table(Cmp_Transform)
-    err := iterator_init(&it, physics.view)
+    err := iterator_init(&it, v_physics)
     if err != nil do panic("Failed to init physics iterator")
 
     // Update the entity to match the physics simulation
