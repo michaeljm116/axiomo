@@ -53,11 +53,12 @@ create_world :: #force_inline proc() -> ^World{
 destroy_world :: #force_inline proc(){
    axiom.destroy_world(&g.mem_game)
 }
-restart_world :: #force_inline proc(){
-    axiom.restart_world(&g.mem_game)
+restart_world :: #force_inline proc() -> ^World{
+    return axiom.restart_world(&g.mem_game)
 }
-set_new_scene :: #force_inline proc(name:string) -> ^scene.SceneData{
-    return axiom.set_new_scene(name, &g.mem_scene)
+
+load_scene :: #force_inline proc(name:string){
+    axiom.load_scene(name, g.mem_game.alloc)
 }
 
 get_entity :: axiom.get_entity

@@ -41,10 +41,10 @@ g_contact_identifier := ContactDensities {
 
 
 overworld_start :: proc() {
-    g.scene = set_new_scene("assets/scenes/Overworld.json")
-	axiom.load_scene(g.scene^, g.mem_game.alloc)
+	load_scene("Overworld")
 	g.player = axiom.load_prefab("Froku", g.mem_game.alloc)
 
+	axiom.sys_trans_process_ecs()
 }
 
 overworld_update :: proc(){

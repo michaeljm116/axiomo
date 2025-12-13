@@ -1082,8 +1082,12 @@ find_player_entity :: proc() {
 find_floor_entities :: proc() {
     table_nodes := get_table(Cmp_Node)
     for node, i in table_nodes.rows{
-        if node.name == "Floor" do g.floor = table_nodes.rid_to_eid[i]
+        if node.name == "Floor"{
+            g.floor = table_nodes.rid_to_eid[i]
+            return
+        }
     }
+    log.error("No floor found")
 }
 
 // Find the first light entity in the scene and cache it for orbit updates.
@@ -1094,6 +1098,7 @@ find_light_entity :: proc() {
         g.light_entity = table_light.rid_to_eid[i]
         return
     }
+    log.error("No light found")
 }
 
 //----------------------------------------------------------------------------\\
@@ -1272,10 +1277,14 @@ slerp_character_angle :: proc(cha : ^Character, dt : f32){
 battle_start :: proc(){
     g.state = .Start
     g.current_bee = 0
-    g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
-	axiom.load_scene(g.scene^, g.mem_game.alloc)
+	load_scene("BeeKillingsInn")
 	g.player = axiom.load_prefab("Froku", g.mem_game.alloc)
+	find_camera_entity()
+    find_light_entity()
+    find_player_entity()
+    face_left(g.player)
 
+    axiom.sys_trans_process_ecs()
 }
 
 start_game :: proc(){
@@ -1335,6 +1344,7 @@ sys_visual_reset :: #force_inline proc(){axiom.view_rebuild(v_visual)}
 
 sys_visual_process_ecs :: proc(dt : f32)
 {
+    sys_visual_reset()
     it : axiom.Iterator
     table_visual := axiom.get_table(Cmp_Visual)
     table_transform := axiom.get_table(Cmp_Transform)

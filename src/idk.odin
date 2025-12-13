@@ -91,6 +91,7 @@ face_left :: proc(entity : Entity)
 {
     tc := get_component(entity, Cmp_Transform)
     tc.local.rot = linalg.quaternion_angle_axis_f32(89.5, {0,1,0})
+    fmt.println("Player facing left")
 }
 
 face_180 :: proc(entity : Entity)

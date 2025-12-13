@@ -9,6 +9,8 @@ import res "axiom/resource"
 import sc "axiom/resource/scene"
 import "core:c"
 import ax"axiom"
+import "core:fmt"
+
 //--------------------------------------------------------------------------------\\
 // /Globals
 //--------------------------------------------------------------------------------\\
@@ -47,7 +49,6 @@ Game_Memory :: struct
 
     game_started : bool,
     ves : VisualEventData,
-    mem_scene : ax.MemoryArena,                  // This holds the scene data from the json, should be reset upon scene change
     mem_game : ax.MemoryStack,                   // This holds game data, reset upon restarting of a game, ecs goes here
     mem_frame : ax.MemoryArena,                  // Mostly for BVH or anything that exist for a single frame
 }
@@ -61,6 +62,7 @@ g_mem_area : ax.MemoryArena                   // Main memory for loading of reso
 //--------------------------------------------------------------------------------\\
 @(export)
 game_init_window :: proc(){
+   windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
    ax.window_init(context)
    ax.window_input_init()
 }
@@ -81,16 +83,19 @@ game_init :: proc() {
 	//----------------------------------------------------------------------------\\
     // /Asset Loading
     //----------------------------------------------------------------------------\\
-    windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
 	res.materials = make([dynamic]res.Material, 0, g_mem_area.alloc)
 	res.models = make([dynamic]res.Model, 0, g_mem_area.alloc)
 	res.animations = make(map[u32]res.Animation, 0, g_mem_area.alloc)
+
+	res.scenes = make(map[string]^sc.SceneData, 0, g_mem_area.alloc)
 	res.prefabs = make(map[string]sc.Node, 0, g_mem_area.alloc)
 	res.ui_prefabs = make(map[string]sc.Node, 0, g_mem_area.alloc)
 
 	res.load_materials("assets/config/Materials.xml", &res.materials)
 	res.load_models("assets/models/", &res.models)
 	res.load_anim_directory("assets/animations/", &res.animations, g_mem_area.alloc)
+
+	sc.load_scene_directory("assets/scenes", &res.scenes, g_mem_area.alloc)
 	sc.load_prefab_directory("assets/prefabs", &res.prefabs, g_mem_area.alloc)
 	sc.load_prefab_directory("assets/prefabs/ui", &res.ui_prefabs, g_mem_core.alloc)
 
@@ -108,7 +113,8 @@ game_init :: proc() {
        	physics_acc_time  = 0,
        	physics_time_step = 1.0 / 60.0,}
 
-    g.scene = set_new_scene("assets/scenes/Empty.json")
+    // g.scene = set_new_scene("assets/scenes/Empty.json")
+    // ax.load_scene("Empty", g.mem_game.alloc)
 	ax.g_bvh = ax.bvh_system_create(g_mem_core.alloc)
 	ax.start_up_raytracer(g_mem_area.alloc)
 
@@ -118,7 +124,7 @@ game_init :: proc() {
 	ax.sys_trans_process_ecs()
 	ax.sys_bvh_process_ecs(ax.g_bvh, g.mem_frame.alloc)
 
-	// you need to have trannsformed and constructed a bh before stuff below
+	// you need to have trannsformed and constructed a bvh before stuff below
 	ax.initialize_raytracer()
 	glfw.PollEvents()
 	g.frame.prev_time = glfw.GetTime()
@@ -144,10 +150,10 @@ game_update :: proc(){
 	g.frame.delta_time = f32(frame_time)
 	g.frame.physics_acc_time += f32(frame_time)
 	for g.frame.physics_acc_time >= f32(g.frame.physics_time_step) {
+    	app_update(f32(g.frame.physics_time_step))
 		sys_visual_process_ecs(f32(g.frame.physics_time_step))
 		ax.sys_anim_process_ecs(f32(g.frame.physics_time_step))
 		ax.sys_trans_process_ecs()
-		app_update(f32(g.frame.physics_time_step))
 		g.frame.physics_acc_time -= f32(g.frame.physics_time_step)
 	}
 	ax.sys_bvh_process_ecs(ax.g_bvh, g.mem_frame.alloc)
@@ -210,10 +216,8 @@ set_up_core_arenas :: proc()
 
 set_up_game_arenas :: proc()
 {
-    ax.init_memory(&g.mem_scene, mem.Megabyte * 1)
     ax.init_memory(&g.mem_game, mem.Megabyte * 4)
     ax.init_memory(&g.mem_frame, mem.Kilobyte * 512, mem.Kilobyte * 4)
-    g.mem_scene.name = "scene"
     g.mem_game.name = "game"
     g.mem_frame.name = "frame"
 }
@@ -222,14 +226,12 @@ destroy_all_arenas :: proc()
 {
     ax.destroy_memory(&g_mem_core)
     ax.destroy_memory(&g_mem_area)
-    ax.destroy_memory(&g.mem_scene)
     ax.destroy_memory(&g.mem_frame)
     ax.destroy_memory(&g.mem_game)
 }
 
 reset_game_arenas :: proc()
 {
-    ax.reset_memory_arena(&g.mem_scene)
     ax.reset_memory_arena(&g.mem_frame)
 }
 
@@ -237,7 +239,6 @@ print_all_arenas :: proc()
 {
     ax.print_arena_usage(&g_mem_core)
 	ax.print_arena_usage(&g_mem_area)
-	ax.print_arena_usage(&g.mem_scene)
 	ax.print_arena_usage(&g.mem_frame)
 	// ax.print_arena_usage(&g.mem_game)
 }

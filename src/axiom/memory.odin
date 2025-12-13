@@ -5,7 +5,6 @@ import "core:mem"
 import "core:sync"
 import vmem "core:mem/virtual"
 
-
 MemoryArena :: struct
 {
     arena: vmem.Arena,
@@ -20,7 +19,6 @@ MemoryStack :: struct
     buffer : []u8,
     name : string
 }
-
 
 init_memory :: proc{init_memory_arena_growing, init_memory_arena_static, init_memory_stack}
 

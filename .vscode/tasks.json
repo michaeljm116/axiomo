@@ -9,13 +9,13 @@
             "command": "cmd",
             "args": [
                 "/C",
-                "if not exist .\\build mkdir .\\build"
+                "if not exist .\\build\\debug mkdir .\\build\\debug"
             ]
         },
         {
             "label": "build",
             "type": "shell",
-            "command": "odin build src/. -debug -out:build/debug.exe",
+            "command": "./build_debug.bat",
             "group": "build"
         },
         {

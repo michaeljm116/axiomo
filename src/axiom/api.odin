@@ -98,10 +98,10 @@ destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {
     // g_world.tables = {}
     // g_world = nil
 }
-restart_world :: #force_inline proc(mem_stack : ^MemoryStack) {
+restart_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World{
     render_clear_entities()
     destroy_world(mem_stack)
-    create_world(mem_stack)
+    return create_world(mem_stack)
 }
 
 // Entity management

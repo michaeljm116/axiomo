@@ -694,12 +694,18 @@ load_node :: proc(scene_node: scene.Node, parent: Entity, alloc : mem.Allocator)
 }
 
 // Load entire scene
-load_scene :: proc(scene_data: scene.SceneData, alloc: mem.Allocator) {
+load_scene_data :: proc(scene_data: scene.SceneData, alloc: mem.Allocator) {
 	assert(len(scene_data.Node) != 0)
 	for node in scene_data.Node {
 		load_node(node, parent = g_world.entity, alloc = alloc)
 	}
 }
+load_scene_name :: proc(name : string, alloc: mem.Allocator){
+   scene_data, ok := resource.scenes[name]
+   if !ok do log.error("Could not find scene: ", name)
+   load_scene_data(scene_data^, alloc)
+}
+load_scene :: proc{load_scene_data, load_scene_name}
 
 load_prefab :: proc(name: string, alloc : mem.Allocator) -> (prefab : Entity)
 {
@@ -743,6 +749,7 @@ sys_anim_reset :: proc(){
 
 sys_anim_process_ecs :: proc(dt : f32)
 {
+    sys_anim_reset()
     if !anim_initialized do return
     // sys_anim_reset()
     it : Iterator

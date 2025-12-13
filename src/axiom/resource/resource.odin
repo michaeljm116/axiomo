@@ -12,6 +12,7 @@ import "../extensions/xml2"
 import path2 "../extensions/filepath2"
 import xxh2 "../extensions/xxhash2"
 import "scene"
+
 //----------------------------------------------------------------------------\\
 // /Global Data
 //----------------------------------------------------------------------------\\
@@ -20,6 +21,7 @@ models : [dynamic]Model
 prefabs : map[string]scene.Node
 ui_prefabs : map[string]scene.Node
 animations : map[u32]Animation
+scenes : map[string]^scene.SceneData
 
 //----------------------------------------------------------------------------\\
 // /STRUCTS
@@ -91,7 +93,7 @@ Config :: struct {
 
 Pose :: struct{
    name : string,
-   pose : [dynamic]PoseSqt, // Changed from tuple[int, Sqt]
+   pose : [dynamic]PoseSqt,
 }
 
 Animation :: struct{
@@ -100,8 +102,7 @@ Animation :: struct{
     hash_val : i32
 }
 
-Sqt :: struct
-{
+Sqt :: struct{
     rot : quat,
     pos : vec4,
     sca : vec4
@@ -111,6 +112,7 @@ PoseSqt :: struct {
     id: i32,
     sqt_data: Sqt,
 }
+
 BVHNode :: struct {
     upper: vec3,
     offset: i32,
@@ -121,9 +123,7 @@ BVHNode :: struct {
 //----------------------------------------------------------------------------\\
 // /PROCSs
 //----------------------------------------------------------------------------\\
-//----------------------------------------------------------------------------\\
-// /LoadOthers /lo
-//----------------------------------------------------------------------------\\
+
 load_models :: proc(directory: string, models: ^[dynamic]Model) {
     files := path2.get_dir_files(directory)
     for f in files{

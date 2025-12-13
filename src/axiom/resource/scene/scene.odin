@@ -167,12 +167,24 @@ load_new_scene :: proc(name : string, allocator := context.temp_allocator) -> ^S
     json_err := json.unmarshal(data, scene, allocator = allocator);
     log_if_err(json_err)
 
-    // Process scene and nodes
-    // for node in scene.Node {
-    //     load_node(node)
-    // }
     return scene
 }
+
+load_scene_directory :: proc(directory : string, scenes : ^map[string]^SceneData, alloc := context.allocator){
+    context.allocator = alloc
+    files := path2.get_dir_files(directory)
+    // For each file... Make sure only .json files are loaded
+    for f in files{
+        stem := path2.get_file_stem(f.name, context.temp_allocator)
+        if strings.compare(".json", stem) == 0{
+            //Load scene and append map
+            name := path2.get_file_name(f, alloc)
+            scene := load_new_scene(f.fullpath, alloc)
+            scenes[name] = scene
+        }
+    }
+}
+
 
 load_prefab_node :: proc(name: string, alloc := context.allocator) -> (root: Node) {
     data, ok := os.read_entire_file_from_filename(name, alloc)
@@ -183,16 +195,11 @@ load_prefab_node :: proc(name: string, alloc := context.allocator) -> (root: Nod
         fmt.printf("DEBUG: JSON unmarshal error loading prefab '%s': %v\n", name, json_err)
         if data != nil && len(data) > 0 {
             maxb := len(data)
-            if maxb > 64 { maxb = 64 } // print up to first 64 bytes
+            if maxb > 64 do maxb = 64 // print up to first 64 bytes
             fmt.printf("DEBUG: prefab '%s' data length=%d first_%d_bytes= ", name, len(data), maxb)
-            for i in 0..<maxb {
-                // Print hex bytes for easier inspection of corrupted/incorrect data
-                fmt.printf("%02X ", int(data[i]))
-            }
+            for i in 0..<maxb do fmt.printf("%02X ", int(data[i]))
             fmt.printf("\n")
-        } else {
-            fmt.printf("DEBUG: prefab '%s' has empty data buffer\n", name)
-        }
+        } else do fmt.printf("DEBUG: prefab '%s' has empty data buffer\n", name)
     }
     log_if_err(json_err)
     return
@@ -216,15 +223,16 @@ load_prefab_directory :: proc(directory : string, prefabs : ^map[string]Node, al
     os.file_info_slice_delete(files)
 }
 
-log_if_err_os :: proc(e : os.Error,  loc := #caller_location){
-    if e != os.ERROR_NONE {
-        fmt.eprintln("Error: ", e, " at location : ", loc)
-    }
+log_if_err_os :: proc(e : os.Error,  loc := #caller_location)
+{
+    if e != os.ERROR_NONE do fmt.eprintln("Error: ", e, " at location : ", loc)
 }
+
 log_if_err_b :: proc(b : bool, msg : string, loc := #caller_location)
 {
    if b do fmt.eprintln("Error: ", msg, " at location: ",  loc)
 }
+
 log_if_err_j :: proc(e : json.Unmarshal_Error, loc := #caller_location)
 {
    if e != nil do fmt.eprintln("Error: ", e, " at location : ", loc)

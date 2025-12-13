@@ -24,32 +24,17 @@ AppState :: enum{
 app_start :: proc() {
     ax.g_world = create_world()
     sys_visual_init(g.mem_game.alloc)
-    add_component(ax.g_world.entity, Cmp_Node{name = "Singleton"})
-    ax.tag(ax.tag_root, ax.g_world.entity)
-    // g.scene = set_new_scene("assets/scenes/Entrance.json")
+    load_scene("Empty")
 
-    // g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
-	// ax.load_scene(g.scene^, g.mem_game.alloc)
-	g.player = ax.load_prefab("Froku", g.mem_game.alloc)
-	g.app_state = .MainMenu
-
-    // Find the camera entity
-    find_camera_entity()
-    find_light_entity()
-    find_player_entity()
-    face_left(g.player)
-
-    ////////////////// actual bks init ////////////////
-    battle_start()
-    init_GameUI(&g_gui, g_mem_core.alloc)
+    g.app_state = .TitleScreen
+    init_game_ui(&g_gui, g_mem_core.alloc)
     ToggleUI("Title", true)
 }
 
 app_restart :: proc(){
-    // g.scene = set_new_scene("assets/scenes/BeeKillingsInn.json")
-    // g.scene = set_new_scene("assets/scenes/Entrance.json")
-    restart_world()
-    app_start()
+    ax.g_world = restart_world()
+    sys_visual_init(g.mem_game.alloc)
+    init_game_ui(&g_gui, g_mem_core.alloc)
 }
 
 // Cleanup
@@ -107,11 +92,14 @@ app_run :: proc(dt: f32, state: ^AppState) {
         }
 	case .MainMenu:
     	if is_key_just_pressed(glfw.KEY_ENTER){
+            app_restart()
             state^ = .Game
             ToggleMenuUI(state)
+            battle_start()
             start_game()
         }
         else if is_key_just_pressed(glfw.KEY_SPACE){
+            app_restart()
             state^ = .Overworld
             ToggleMenuUI(state)
             overworld_start()
@@ -139,16 +127,11 @@ app_run :: proc(dt: f32, state: ^AppState) {
             state^ = .Game
             ToggleMenuUI(state)
         }
-	case .GameOver:
+	case .GameOver, .Victory:
     	if is_key_just_pressed(glfw.KEY_ENTER){
             state^ = .MainMenu
             ToggleMenuUI(state)
         }
-	case .Victory:
-	    if is_key_just_pressed(glfw.KEY_ENTER){
-			state^ = .MainMenu
-			ToggleMenuUI(state)
-		}
 	case .Overworld:
 	   overworld_update()
 	}
@@ -247,7 +230,7 @@ menu_run_anim_fade_out :: proc(entity : Entity, anim : ^MenuAnimation, dt : f32)
 // /UI
 //----------------------------------------------------------------------------\\
 g_gui  : map[string]Entity
-init_GameUI :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
+init_game_ui :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
     g.ui_keys = make([dynamic]string, 0, len(resource.ui_prefabs), alloc)
     g_gui = make(map[string]Entity, alloc)
     for key,ui in resource.ui_prefabs{
