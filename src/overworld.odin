@@ -3,6 +3,7 @@ package game
 import "core:fmt"
 import "core:mem"
 import "core:math"
+import "core:math/linalg"
 import "vendor:glfw"
 import "axiom"
 import "axiom/resource"
@@ -43,13 +44,60 @@ g_contact_identifier := ContactDensities {
 overworld_start :: proc() {
 	load_scene("Overworld")
 	g.player = axiom.load_prefab("Froku", g.mem_game.alloc)
-
+	find_camera_entity()
+	find_floor_entities()
+	overworld_place_entity_on_floor(g.player, g.floor)
 	axiom.sys_trans_process_ecs()
 }
 
-overworld_update :: proc(){
-
+overworld_update :: proc(dt : f32){
+    // overworld_update_player_movement(g.player, dt)
+    overworld_point_camera_at(g.player)
 }
+
+overworld_point_camera_at :: proc(entity: Entity){
+    if !entity_exists(g.camera_entity) do find_camera_entity()
+    if !entity_exists(entity) do find_player_entity()
+
+    pt := get_component(entity, Cmp_Transform)
+    ct := get_component(g.camera_entity, Cmp_Transform)
+    if pt == nil || ct == nil{
+        log.error("transform not found")
+        return
+    }
+
+    ct^ = pt^
+    ct^.local.pos.y += 18.0
+    ct^.local.pos.z -= 8.0
+
+    // // Compute look-at rotation to face the player
+    target := pt.local.pos.xyz
+    dir := linalg.normalize(target - ct.local.pos.xyz)
+
+    horiz_len := math.sqrt_f32(dir.x * dir.x + dir.z * dir.z)
+    pitch_rad := math.atan2_f32(dir.y, horiz_len)
+    yaw_rad := math.atan2_f32(dir.x, dir.z)
+
+    ct^.local.rot = linalg.quaternion_from_euler_angles_f32(pitch_rad, 0, yaw_rad, .XYZ)
+}
+
+overworld_place_entity_on_floor :: proc(entity: Entity, floor : Entity){
+    // First get their transforms
+    ft := get_component(floor, Cmp_Transform)
+    pt := get_component(entity, Cmp_Transform)
+    if ft == nil || pt == nil do return
+
+    //The find the top of floor and bottom of entity:
+    floor_top := get_top_of_entity(floor)
+    entity_bottom := get_bottom_of_entity(entity)
+
+    if entity_bottom == -999999.0 { return }
+
+    dy := floor_top - entity_bottom
+    pt.local.pos.y += dy
+}
+
+
 
 overworld_update_player_movement :: proc(player : Entity, delta_time: f32){
     cc := get_component(player, Cmp_Collision2D)

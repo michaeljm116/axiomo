@@ -133,7 +133,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
             ToggleMenuUI(state)
         }
 	case .Overworld:
-	   overworld_update()
+	   overworld_update(dt)
 	}
 }
 
