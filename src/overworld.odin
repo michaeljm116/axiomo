@@ -22,7 +22,6 @@ CollisionCategory :: enum
 }
 CollisionCategories :: bit_set[CollisionCategory; u64]
 
-
 ContactDensities :: struct
 {
     Player : f32,
@@ -40,18 +39,21 @@ g_contact_identifier := ContactDensities {
 	Wall        = 800.0
 }
 
-
 overworld_start :: proc() {
 	load_scene("Overworld")
 	g.player = axiom.load_prefab("Froku", g.mem_game.alloc)
 	find_camera_entity()
 	find_floor_entities()
+
 	overworld_place_entity_on_floor(g.player, g.floor)
+	overworld_setup_col_player(axiom.g_physics)
+	overworld_setup_col_floor(axiom.g_physics)
+
 	axiom.sys_trans_process_ecs()
 }
 
 overworld_update :: proc(dt : f32){
-    // overworld_update_player_movement(g.player, dt)
+    overworld_update_player_movement(g.player, dt)
     overworld_point_camera_at(g.player)
 }
 
@@ -67,7 +69,7 @@ overworld_point_camera_at :: proc(entity: Entity){
     }
 
     ct^ = pt^
-    ct^.local.pos.y += 18.0
+    ct^.local.pos.y += 12.0
     ct^.local.pos.z -= 8.0
 
     // // Compute look-at rotation to face the player
@@ -97,20 +99,39 @@ overworld_place_entity_on_floor :: proc(entity: Entity, floor : Entity){
     pt.local.pos.y += dy
 }
 
-
-
-overworld_update_player_movement :: proc(player : Entity, delta_time: f32){
+overworld_update_player_movement :: proc(player: Entity, dt: f32) {
     cc := get_component(player, Cmp_Collision2D)
     if cc == nil do return
-    vel := b2.Body_GetLinearVelocity(cc.bodyid).y
-    move_speed :f32= 0.40
-    if is_key_pressed(glfw.KEY_SPACE) do vel += move_speed
-    b2.Body_SetLinearVelocity(cc.bodyid, {0,vel})
-    // b2.Body_ApplyForceToCenter(cc.bodyid, {0,100}, true)
-    // fmt.println("Entity ",g.player, " | Force : ", b2.Body_GetLinearVelocity(cc.bodyid), " | ")
-    // fmt.println("Entity ",g.player, " | Position : ", b2.Body_GetPosition(cc.bodyid), " | ")
-}
 
+    body := cc.bodyid
+    vel := b2.Body_GetLinearVelocity(body)
+
+    move_speed :: f32(12.0)
+
+    input_x: f32 = 0
+    input_z: f32 = 0
+
+    if is_key_pressed(glfw.KEY_A) do input_x -= 1.0
+    if is_key_pressed(glfw.KEY_D) do input_x += 1.0
+    if is_key_pressed(glfw.KEY_W) do input_z -= 1.0
+    if is_key_pressed(glfw.KEY_S) do input_z += 1.0
+
+    // Normalize diagonal movement
+    mag_sq := input_x*input_x + input_z*input_z
+    if mag_sq > 0.0 {
+        mag := math.sqrt_f32(mag_sq)
+        input_x = (input_x / mag) * move_speed
+        input_z = (input_z / mag) * move_speed
+    } else {
+        input_x = 0
+        input_z = 0
+    }
+
+    // Set velocity directly (simple top-down control, physics handles collisions)
+    vel.x = input_x
+    vel.y = input_z
+    b2.Body_SetLinearVelocity(body, vel)
+}
 overworld_setup_col_player :: proc(physics : ^axiom.Sys_Physics){
     find_player_entity()
     pt := get_component(g.player, Cmp_Transform)

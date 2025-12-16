@@ -22,18 +22,6 @@
             }
           },
           {
-            "id": "34eeff7ef88d689e",
-            "type": "leaf",
-            "state": {
-              "type": "excalidraw",
-              "state": {
-                "file": "Excalidraw/App.md"
-              },
-              "icon": "excalidraw-icon",
-              "title": "App"
-            }
-          },
-          {
             "id": "f88536f4a261db38",
             "type": "leaf",
             "state": {
@@ -256,8 +244,8 @@
   },
   "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
-    "BeeKillingsInn/Architecture.md",
     "BeeKillingsInn/Physics.md",
+    "BeeKillingsInn/Architecture.md",
     "Excalidraw/Architecture.md",
     "BeeKillingsInn/Merge Bee with Axiomo.md",
     "BeeKillingsInn/Menu system.md",
