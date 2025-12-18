@@ -10,18 +10,13 @@ import "base:intrinsics"
 import "vendor:glfw"
 import xxh2"axiom/extensions/xxhash2"
 import "axiom"
-GRID_WIDTH :: 7
-GRID_HEIGHT :: 5
-grid_size := vec2i{GRID_WIDTH, GRID_HEIGHT}
-// g_saftey_bee : Bee
-Grid :: [][]Tile
 Level :: struct
 {
     player : Player,
     bees : [dynamic]Bee,
     deck : BeeDeck,
     weapons : []Weapon,
-    grid : Grid,
+    grid : ^Grid,
     grid_data : []Tile,
     grid_scale : vec2f,
     grid_weapons : [dynamic]WeaponGrid,
@@ -129,7 +124,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
 
-                if weap_check(player.target, &g.level.grid) {
+                if weap_check(player.target, g.level.grid) {
                     pick_up_weapon(player, g.level.weapons)
 
                     //check for chest
@@ -855,7 +850,7 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
             dir.x = 1
     }
     bounds := p.pos + dir
-    if bounds_check(bounds, g.level.grid) {
+    if bounds_check(bounds, g.level.grid^) {
         //Animate Player
         p.target = bounds
         p.c_flags = {.Walk}
@@ -865,18 +860,18 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
 
 bounds_check :: proc(bounds : vec2i, grid : Grid) -> bool
 {
-    if(bounds.x < 0 || bounds.x >= i16(len(grid)) || bounds.y < 0 || bounds.y >= i16(len(grid[0]))) {
+    if(bounds.x < 0 || bounds.x >= i16(grid.width) || bounds.y < 0 || bounds.y >= i16(grid.height)) {
         return false
     }
-    if grid[bounds.x][bounds.y] != .Blank && grid[bounds.x][bounds.y] != .Weapon {
+    if grid_get(grid,bounds) != .Blank && grid_get(grid,bounds) != .Weapon {
         return false
     }
     return true
 }
 
 weap_check :: proc(p : vec2i, grid : ^Grid) -> bool{
-    if grid[p.x][p.y] == .Weapon{
-        grid[p.x][p.y] = .Blank
+    if grid_get(grid,p) == .Weapon{
+        grid_set(grid,p,.Blank)
         return true
     }
     return false
@@ -940,14 +935,12 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
 //So lets say you have a 3 x 3 grid but a 90 x 90 level, 1 grid block is 30
 set_grid_scale :: proc(floor : Entity, lvl : ^Level)
 {
-    assert(len(lvl.grid) > 0)
-    assert(len(lvl.grid[0]) > 0)
-
+    assert(lvl.grid.width > 0 && lvl.grid.height > 0)
     tc := get_component(floor, Cmp_Transform)
     if tc == nil do return
 
-    lvl.grid_scale.x = tc.global.sca.x / f32(len(lvl.grid))
-    lvl.grid_scale.y = tc.global.sca.z / f32(len(lvl.grid[0]))
+    lvl.grid_scale.x = tc.global.sca.x / f32(lvl.grid.width)
+    lvl.grid_scale.y = tc.global.sca.z / f32(lvl.grid.height)
 }
 
 // Sets a player on a tile in the level so that they are...
@@ -1288,7 +1281,9 @@ battle_start :: proc(){
 }
 
 start_game :: proc(){
-    start_level1(g.mem_game.alloc)
+    g.state = .PlayerTurn
+    g.ves.curr_screen = .SelectAction
+    start_level2(&g.level,g.mem_game.alloc)
     find_floor_entities()
     set_grid_scale(g.floor, &g.level)
     set_entity_on_tile(g.floor, g.player, g.level, g.level.player.pos.x, g.level.player.pos.y)

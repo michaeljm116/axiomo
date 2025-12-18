@@ -50,7 +50,7 @@ display_level :: proc(lvl : Level)
     // Initialize chars from tiles
     for x in 0..<GRID_WIDTH do for y in 0..<GRID_HEIGHT
     {
-        switch lvl.grid[x][y] {
+        switch grid_get(lvl.grid,x,y) {
         case Tile.Blank:
             chars[x][y] = '.'
         case Tile.Wall:
