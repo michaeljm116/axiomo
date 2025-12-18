@@ -927,22 +927,6 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
     return best_path
 }
 
-//----------------------------------------------------------------------------\\
-// /Grid
-//----------------------------------------------------------------------------\\
-
-//Set the scale of the level to always match the size of the floor
-//So lets say you have a 3 x 3 grid but a 90 x 90 level, 1 grid block is 30
-set_grid_scale :: proc(floor : Entity, lvl : ^Level)
-{
-    assert(lvl.grid.width > 0 && lvl.grid.height > 0)
-    tc := get_component(floor, Cmp_Transform)
-    if tc == nil do return
-
-    lvl.grid_scale.x = tc.global.sca.x / f32(lvl.grid.width)
-    lvl.grid_scale.y = tc.global.sca.z / f32(lvl.grid.height)
-}
-
 // Sets a player on a tile in the level so that they are...
 // Flush with the floor and in center of that tile
 set_entity_on_tile :: proc(floor : Entity, entity : Entity, lvl : Level, x, y : i16)
@@ -1285,7 +1269,7 @@ start_game :: proc(){
     g.ves.curr_screen = .SelectAction
     start_level2(&g.level,g.mem_game.alloc)
     find_floor_entities()
-    set_grid_scale(g.floor, &g.level)
+    grid_set_scale(g.floor, g.level.grid)
     set_entity_on_tile(g.floor, g.player, g.level, g.level.player.pos.x, g.level.player.pos.y)
     for bee in g.level.bees{
         set_entity_on_tile(g.floor, bee.entity, g.level, bee.pos.x, bee.pos.y)
