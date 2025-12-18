@@ -54,9 +54,39 @@ overworld_start :: proc() {
 
 overworld_update :: proc(dt : f32){
     overworld_update_player_movement(g.player, dt)
-    overworld_point_camera_at(g.player)
+    overworld_point_camera_at_2(g.player)
+
+    trans := get_component(g.player, Cmp_Transform)
+    if trans == nil {
+        log.error("transform not found")
+        return
+    }
+    if trans.local.pos.x >= 20 do overworld_end()
 }
 
+overworld_end :: proc()
+{
+    app_restart()
+    g.app_state = .Game
+    ToggleMenuUI(&g.app_state)
+    battle_start()
+    start_game()
+}
+
+overworld_point_camera_at_2 :: proc(entity: Entity){
+    if !entity_exists(g.camera_entity) do find_camera_entity()
+    if !entity_exists(entity) do find_player_entity()
+
+    pt := get_component(entity, Cmp_Transform)
+    ct := get_component(g.camera_entity, Cmp_Transform)
+    if pt == nil || ct == nil{
+        log.error("transform not found")
+        return
+    }
+
+    overworld_follow_player(ct, pt)
+    overworld_look_at_player(ct, pt)
+}
 overworld_point_camera_at :: proc(entity: Entity){
     if !entity_exists(g.camera_entity) do find_camera_entity()
     if !entity_exists(entity) do find_player_entity()
@@ -113,8 +143,8 @@ overworld_update_player_movement :: proc(player: Entity, dt: f32) {
 
     if is_key_pressed(glfw.KEY_A) do input_x -= 1.0
     if is_key_pressed(glfw.KEY_D) do input_x += 1.0
-    if is_key_pressed(glfw.KEY_W) do input_z -= 1.0
-    if is_key_pressed(glfw.KEY_S) do input_z += 1.0
+    if is_key_pressed(glfw.KEY_W) do input_z += 1.0
+    if is_key_pressed(glfw.KEY_S) do input_z -= 1.0
 
     // Normalize diagonal movement
     mag_sq := input_x*input_x + input_z*input_z
@@ -132,6 +162,7 @@ overworld_update_player_movement :: proc(player: Entity, dt: f32) {
     vel.y = input_z
     b2.Body_SetLinearVelocity(body, vel)
 }
+
 overworld_setup_col_player :: proc(physics : ^axiom.Sys_Physics){
     find_player_entity()
     pt := get_component(g.player, Cmp_Transform)
@@ -208,6 +239,51 @@ overworld_setup_col_floor :: proc(physics : ^axiom.Sys_Physics){
     col.shapeid = b2.CreatePolygonShape(col.bodyid, col.shapedef, box)
 
     add_component(g.floor, col)
+}
+
+overworld_look_at_player :: proc(ct: ^Cmp_Transform, pt: ^Cmp_Transform) {
+    target_dir := linalg.normalize(ct.local.pos.xyz - pt.local.pos.xyz)
+
+    // Unused in original
+    _x_angle := linalg.dot(target_dir, vec3{-1, 0, 0})
+    _y_angle := linalg.dot(target_dir, vec3{0, 0, 1})
+
+    yaw   := -target_dir.x
+    pitch :=  target_dir.z
+    roll  := f32(0)
+
+    // Compose matrix to match GLM yawPitchRoll: rotateY(yaw) * rotateX(pitch) * rotateZ(roll)
+    mat_y := linalg.matrix4_rotate_f32(yaw,   {0,1,0})
+    mat_x := linalg.matrix4_rotate_f32(pitch, {1,0,0})
+    mat_z := linalg.matrix4_rotate_f32(roll,  {0,0,1})
+    rot_mat := mat_y * mat_x * mat_z
+
+    // Extract upper 3x3 for quaternion (flatten literal)
+    rot_mat3 := linalg.Matrix3f32{
+        rot_mat[0][0], rot_mat[0][1], rot_mat[0][2],
+        rot_mat[1][0], rot_mat[1][1], rot_mat[1][2],
+        rot_mat[2][0], rot_mat[2][1], rot_mat[2][2],
+    }
+    target_quat := linalg.quaternion_from_matrix3_f32(rot_mat3)
+    ct.local.rot = target_quat
+}
+
+overworld_follow_player :: proc(ct: ^Cmp_Transform, pt: ^Cmp_Transform) {
+    ct.local.pos.x = pt.local.pos.x
+    ct.local.pos.z = pt.local.pos.z
+}
+
+// Fixed version with proper look-at (recommended for actual use)
+overworld_look_at_player_fixed :: proc(ct: ^Cmp_Transform, pt: ^Cmp_Transform, player_eye_height: f32 = 1.5) {
+    target := pt.local.pos.xyz + {0, player_eye_height, 0}
+    dir := linalg.normalize(target - ct.local.pos.xyz)
+
+    horiz_len := math.sqrt_f32(dir.x*dir.x + dir.z*dir.z)
+    pitch_rad := math.atan2_f32(dir.y, horiz_len)
+    yaw_rad   := math.atan2_f32(dir.x, dir.z)
+
+    // Match GLM yawPitchRoll order: .YXZ (yaw Y, pitch X, roll Z)
+    ct.local.rot = linalg.quaternion_from_euler_angles_f32(yaw_rad, pitch_rad, 0.0, .YXZ)
 }
 
 // barrel : Entity
