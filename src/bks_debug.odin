@@ -9,12 +9,8 @@ display_player :: proc(p : Player)
 
 display_deck :: proc(deck: ^BeeDeck)
 {
-    for i in 0..<36
-    {
-        if i > 0 && i % 6 == 0
-        {
-            fmt.println()
-        }
+    for i in 0..<36{
+        if i > 0 && i % 6 == 0 do fmt.println()
         fmt.printf("%-12v ", queue.get(&deck.deck,i))
     }
     fmt.println()
@@ -25,10 +21,7 @@ display_temp_deck :: proc(deck: [dynamic]BeeAction)
     fmt.printfln("Temp Deck: ")
     for i in 0..<len(deck)
     {
-        if i > 0 && i % 6 == 0
-        {
-            fmt.println()
-        }
+        if i > 0 && i % 6 == 0 do fmt.println()
         fmt.printf("%-12v ", deck[i])
     }
     fmt.println()
@@ -63,7 +56,7 @@ display_level :: proc(lvl : Level)
     }
 
     // Overlay player rune if in bounds
-    if in_bounds(lvl.player.pos) {
+    if path_in_bounds(lvl.player.pos, lvl.grid^) {
         chars[lvl.player.pos[0]][lvl.player.pos[1]] = lvl.player.name
     }
 
@@ -71,7 +64,7 @@ display_level :: proc(lvl : Level)
     // If more bees are added as globals, add them here similarly or change this function to accept a slice.
     for bee in lvl.bees
     {
-        if in_bounds(bee.pos) {
+        if path_in_bounds(bee.pos, lvl.grid^) {
             chars[bee.pos[0]][bee.pos[1]] = bee.name
         }
     }

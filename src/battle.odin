@@ -591,10 +591,10 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
 
 bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int){
     assert(target_dist > 0)
-    dist := dist_grid(bee.pos, player.pos)
+    dist := path_dist_grid(bee.pos, player.pos)
     if dist > target_dist
     {
-        path := a_star_find_path(bee.pos, player.pos, grid_size)
+        path := path_a_star_find(bee.pos, player.pos, grid_size, g.level.grid^)
         // TODO: possibly insecure and bug prone if there's no valid distance due to walls
         if len(path) > target_dist do bee.target = path[target_dist]
         else {if len(path) == target_dist do bee.target = path[target_dist - 1]}
@@ -606,7 +606,7 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int)
         bee.flags |= {.Alert}
 
         if dist == target_dist {
-            path := a_star_find_path(bee.pos, player.pos, grid_size)
+            path := path_a_star_find(bee.pos, player.pos, grid_size, g.level.grid^)
             if len(path) > 1 do bee.target = path[1]
         }
     }
@@ -618,13 +618,13 @@ bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int){
     if len(target_path) > 0 do bee.target = target_path[len(target_path) - 1]
     else{
        best := bee.pos
-       bestd := dist_grid(bee.pos, player.pos)
+       bestd := path_dist_grid(bee.pos, player.pos)
        dirs := [4]vec2i{ vec2i{1,0}, vec2i{-1,0}, vec2i{0,1}, vec2i{0,-1} }
        for d in dirs {
             n := vec2i{ bee.pos[0] + d[0], bee.pos[1] + d[1] }
-            if !in_bounds(n) { continue }
-            if !is_walkable_internal(n, n, true) { continue }
-            nd := dist_grid(n, player.pos)
+            if !path_in_bounds(n, g.level.grid^) { continue }
+            if !path_is_walkable_internal(n, n, true, g.level.grid^) { continue }
+            nd := path_dist_grid(n, player.pos)
             if nd > bestd {
                 best = n
                 bestd = nd
@@ -635,7 +635,7 @@ bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int){
 }
 
 bee_action_attack :: proc(bee : ^Bee, player : ^Player, tot : i8){
-    dist := dist_grid(bee.pos, player.pos)
+    dist := path_dist_grid(bee.pos, player.pos)
     if dist <= 1 {
         if tot != 20 {
             acc := 7 + 2 * i8(.PlayerHyperAlert in bee.flags)
@@ -914,9 +914,9 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
     best_len := 999999
     for x in 0..<GRID_WIDTH do for y in 0..<GRID_HEIGHT{
         p := vec2i{i16(x), i16(y)}
-        if dist_grid(p, player.pos) < min_dist { continue }
-        if !is_walkable_internal(p, p, allow_through_walls) { continue } // p must be a valid standable tile
-        path := a_star_find_path(bee.pos, p, grid_size)
+        if path_dist_grid(p, player.pos) < min_dist { continue }
+        if !path_is_walkable_internal(p, p, allow_through_walls, g.level.grid^) { continue } // p must be a valid standable tile
+        path := path_a_star_find(bee.pos, p, grid_size, g.level.grid^)
         if len(path) == 0 { continue }
         if len(path) < best_len {
             best_len = len(path)

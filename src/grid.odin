@@ -29,7 +29,7 @@ grid_create :: proc(size : [2]i16 , alloc : mem.Allocator , scale := vec2f{1.0, 
 }
 
 grid_set :: proc{grid_set_i16, grid_set_vec2i}
-grid_get :: proc{grid_get_i16, grid_get_int, grid_get_vec2i, grid_get_no_ptr_i16, grid_get_no_ptr_vec2i}
+grid_get :: proc{grid_get_i16, grid_get_vec2i, grid_get_int_p, grid_get_i16_p, grid_get_vec2i_p}
 
 grid_set_i16 :: proc(grid : ^Grid, x, y : i16, tile : Tile){
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
@@ -39,25 +39,25 @@ grid_set_vec2i :: proc(grid : ^Grid, p : vec2i, tile : Tile){
     assert(p.x >= 0 && p.x < i16(grid.width) && p.y >= 0 && p.y < i16(grid.height))
     grid.data[p.y * i16(grid.width) + p.x] = tile
 }
-grid_get_i16 :: proc(grid : ^Grid, x, y : i16) -> Tile {
+grid_get_i16_p :: proc(grid : ^Grid, x, y : i16) -> Tile {
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
     return grid.data[y * grid.width + x]
 }
 
-grid_get_int :: proc(grid : ^Grid, x, y : int) -> Tile {
+grid_get_int_p :: proc(grid : ^Grid, x, y : int) -> Tile {
     assert(x >= 0 && x < int(grid.width) && y >= 0 && y < int(grid.height))
     return grid.data[y * int(grid.width) + x]
 }
-grid_get_vec2i :: proc(grid : ^Grid, p : vec2i) -> Tile {
+grid_get_vec2i_p :: proc(grid : ^Grid, p : vec2i) -> Tile {
     assert(p.x >= 0 && p.x < grid.width && p.y >= 0 && p.y < grid.height)
     return grid.data[p.y * grid.width + p.x]
 }
-grid_get_no_ptr_i16 :: proc(grid : Grid, x, y : i16) -> Tile {
+grid_get_i16 :: proc(grid : Grid, x, y : i16) -> Tile {
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
     return grid.data[y * grid.width + x]
 }
 
-grid_get_no_ptr_vec2i :: proc(grid : Grid, p : vec2i) -> Tile {
+grid_get_vec2i :: proc(grid : Grid, p : vec2i) -> Tile {
     assert(p.x >= 0 && p.x < grid.width && p.y >= 0 && p.y < grid.height)
     return grid.data[p.y * grid.width + p.x]
 }
@@ -82,15 +82,15 @@ path_pos_equal :: proc(a : vec2i, b : vec2i) -> bool {
 }
 
 path_pos_to_index :: proc(p : vec2i, grid : Grid) -> int {
-    return int(p[0]) + int(p[1]) * grid.width
+    return int(p.x + p.y * grid.width)
 }
 
-path_index_to_pos :: proc(i : int, grid : Grid) -> vec2i {
-    return vec2i{ i16(i % grid.width), i16(i / grid.width) }
+path_index_to_pos :: proc(i : i16, grid : Grid) -> vec2i {
+    return vec2i{ i % grid.width, i / grid.width }
 }
 
 path_in_bounds :: proc(p : vec2i, grid : Grid) -> bool {
-    if p[0] < 0 || p[0] >= i16(grid.width) || p[1] < 0 || p[1] >= i16(grid.height) {
+    if p.x < 0 || p.x >= grid.width || p.y < 0 || p.y >= grid.height {
         return false
     }
     return true
@@ -122,7 +122,7 @@ path_heuristic :: proc(a : vec2i, b : vec2i) -> int {
 // Returns path from start to goal as dynamic array of vec2i (start .. goal).
 // If no path found, returned array length == 0
 total_cells :: GRID_HEIGHT * GRID_WIDTH
-path_a_star_find_path :: proc(start : vec2i, goal, size : vec2i, grid : Grid) -> [dynamic]vec2i {
+path_a_star_find :: proc(start : vec2i, goal, size : vec2i, grid : Grid) -> [dynamic]vec2i {
     // Static arrays sized for grid
     g_score : [total_cells]int
     f_score : [total_cells]int
@@ -165,7 +165,7 @@ path_a_star_find_path :: proc(start : vec2i, goal, size : vec2i, grid : Grid) ->
             return path
         }
 
-        current_pos := path_index_to_pos(current_idx, grid)
+        current_pos := path_index_to_pos(i16(current_idx), grid)
 
         if current_idx == goal_idx {
             // reconstruct path
@@ -173,7 +173,7 @@ path_a_star_find_path :: proc(start : vec2i, goal, size : vec2i, grid : Grid) ->
             // backtrack
             node_idx := current_idx
             for {
-                append(&path, path_index_to_pos(node_idx, grid))
+                append(&path, path_index_to_pos(i16(node_idx), grid))
                 if node_idx == start_idx { break }
                 parent := came_from[node_idx]
                 // if no parent, fail
