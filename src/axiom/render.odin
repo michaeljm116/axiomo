@@ -2945,17 +2945,17 @@ end_frame :: proc(image_index: ^u32) {
     g_renderbase.current_frame = (g_renderbase.current_frame + 1) % MAX_FRAMES_IN_FLIGHT
 }
 
-added_entity :: proc(e: Entity) {
-    rc := get_component(e, Cmp_Render)
+added_entity :: proc(e: Entity, world : ^World) {
+    rc := get_component(e, Cmp_Render, world)
     if rc == nil { return }
     t := rc.type
 
     if .MATERIAL in t {
     }
     if .PRIMITIVE in t {
-        prim_comp := get_component(e, Cmp_Primitive)
-        mat_comp := get_component(e, Cmp_Material)
-        trans_comp := get_component(e, Cmp_Transform)
+        prim_comp := get_component(e, Cmp_Primitive, world)
+        mat_comp := get_component(e, Cmp_Material, world)
+        trans_comp := get_component(e, Cmp_Transform, world)
         prim_comp.mat_id = mat_comp.mat_unique_id
         prim_comp.world = trans_comp.world
         prim_comp.extents = trans_comp.local.sca.xyz
@@ -2967,8 +2967,8 @@ added_entity :: proc(e: Entity) {
         g_raytracer.update_flags |= {.OBJECT}
     }
     if .LIGHT in t {
-        light_comp := get_component(e, Cmp_Light)
-        trans_comp := get_component(e, Cmp_Transform)
+        light_comp := get_component(e, Cmp_Light, world)
+        trans_comp := get_component(e, Cmp_Transform, world)
         light := gpu.Light{
             pos = trans_comp.local.pos.xyz, // technically yes it should be global pos, but this is fine
             color = light_comp.color,
@@ -2983,7 +2983,7 @@ added_entity :: proc(e: Entity) {
         g_raytracer.update_flags |= {.LIGHT}
     }
     if .GUI in t {
-        gc := get_component(e, Cmp_Gui)
+        gc := get_component(e, Cmp_Gui, world)
         gui := gpu.Gui{
             min = gc.min,
             extents = gc.extents,

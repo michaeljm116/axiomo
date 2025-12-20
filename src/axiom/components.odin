@@ -501,36 +501,36 @@ node_component_named :: proc(entity: Entity, node_name: string, flags: Component
 }
 
 // Utility procedures for node hierarchy management using the ECS
-add_child :: proc(parent_entity, child_entity: Entity) {
-    parent_node := get_component(parent_entity, Cmp_Node)
-    child_node := get_component(child_entity, Cmp_Node)
+add_child :: proc(parent_entity, child_entity: Entity, world : ^World) {
+    parent_node := get_component(parent_entity, Cmp_Node, world)
+    child_node := get_component(child_entity, Cmp_Node, world)
     if (parent_node == nil || child_node == nil) do return
 
     parent_node.is_parent = true
     child_node.parent = parent_entity
     // if (!entity_exists(parent_node.child)) do parent_node.child = child_entity
-    if (parent_node.child == Entity(0) || !entity_exists(parent_node.child)) do parent_node.child = child_entity
+    if (parent_node.child == Entity(0) || !entity_exists(parent_node.child, world)) do parent_node.child = child_entity
     else{
-       first_child := get_component(parent_node.child, Cmp_Node)
-        last_bro := get_last_sibling(first_child)
+       first_child := get_component(parent_node.child, Cmp_Node, world)
+        last_bro := get_last_sibling(first_child, world)
        last_bro.brotha = child_entity
     }
 }
 
-get_last_sibling :: proc(node : ^Cmp_Node) -> ^Cmp_Node{
+get_last_sibling :: proc(node : ^Cmp_Node, world : ^World) -> ^Cmp_Node{
     last_bro := node
     next_bro := node.brotha
     for next_bro != Entity(0){
-        last_bro = get_component(next_bro, Cmp_Node)
+        last_bro = get_component(next_bro, Cmp_Node, world)
         next_bro = last_bro.brotha
     }
     return last_bro
 }
 
-remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
-    parent_node := get_component(parent_entity, Cmp_Node)
+remove_child :: proc(parent_entity: Entity, child_entity: Entity, world : ^World) {
+    parent_node := get_component(parent_entity, Cmp_Node, world)
     if parent_node == nil do return
-    child_node := get_component(child_entity, Cmp_Node)
+    child_node := get_component(child_entity, Cmp_Node, world)
     if child_node == nil do return
 
     // Check if this is the first child
@@ -540,8 +540,8 @@ remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
     } else {
         // Find the previous sibling
         curr := parent_node.child
-        for entity_exists(curr) {
-            curr_node := get_component(curr, Cmp_Node)
+        for entity_exists(curr,world) {
+            curr_node := get_component(curr, Cmp_Node, world)
             if curr_node.brotha == child_entity {
                 // Remove from linked list by updating previous sibling's brotha
                 curr_node.brotha = child_node.brotha
@@ -552,7 +552,7 @@ remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
     }
 
     // Update parent flag if no more children
-    if parent_node.child == Entity(0) || !entity_exists(parent_node.child) {
+    if parent_node.child == Entity(0) || !entity_exists(parent_node.child, world) {
         parent_node.is_parent = false
     }
 
@@ -563,21 +563,21 @@ remove_child :: proc(parent_entity: Entity, child_entity: Entity) {
 
 // Delete a parent node and all its descendant children.
 // This will call remove_entity for every entity in the subtree.
-delete_parent_node :: proc(parent_entity: Entity) {
-    parent_node := get_component(parent_entity, Cmp_Node)
+delete_parent_node :: proc(parent_entity: Entity,world : ^World) {
+    parent_node := get_component(parent_entity, Cmp_Node, world)
     if parent_node == nil do return
 
     // Recursively delete all children. Capture next sibling before recursion
     // because recursion will call remove_entity and invalidate components.
     child := parent_node.child
-    for entity_exists(child) {
-        child_node := get_component(child, Cmp_Node)
+    for entity_exists(child, world) {
+        child_node := get_component(child, Cmp_Node, world)
         if child_node == nil do break
 
         next := child_node.brotha
 
         // Recursively delete child's subtree (this will remove the child entity)
-        delete_parent_node(child)
+        delete_parent_node(child, world)
 
         // continue with next sibling
         child = next
@@ -585,21 +585,21 @@ delete_parent_node :: proc(parent_entity: Entity) {
 
     // If this node has a parent, unlink this node from that parent first.
     // Do this before calling remove_entity so the parent can be updated safely.
-    if entity_exists(parent_node.parent) do remove_child(parent_node.parent, parent_entity)
-    if entity_exists(parent_entity) do remove_component(parent_entity, Cmp_Node)
+    if entity_exists(parent_node.parent, world) do remove_child(parent_node.parent, parent_entity, world)
+    if entity_exists(parent_entity, world) do remove_component(parent_entity, Cmp_Node, world)
 }
 
 
-get_parent :: proc(entity: Entity) -> Entity {
-    node := get_component(entity, Cmp_Node)
+get_parent :: proc(entity: Entity, world : ^World) -> Entity {
+    node := get_component(entity, Cmp_Node, world)
     if node == nil {
         return Entity(0)
     }
     return node.parent
 }
 
-get_children :: proc(entity: Entity) -> []Entity {
-    node := get_component(entity, Cmp_Node)
+get_children :: proc(entity: Entity, world : ^World) -> []Entity {
+    node := get_component(entity, Cmp_Node, world)
     if node == nil {
         log.error("ERROR trying to get childen of empty component", entity)
         return nil
@@ -610,7 +610,7 @@ get_children :: proc(entity: Entity) -> []Entity {
     curr := node.child
     for curr != Entity(0) {
         append(&children, curr)
-        curr_node := get_component(curr, Cmp_Node)
+        curr_node := get_component(curr, Cmp_Node, world)
         if curr_node != nil {
             curr = curr_node.brotha
         } else {
@@ -630,17 +630,17 @@ check_any :: proc(component: Cmp_Node, flags: ComponentFlags) -> bool {
 }
 
 // Utility to create a hierarchical entity withCmp_Node
-create_node_entity :: proc(name: string, flags: ComponentFlag, parent: Entity = Entity(0)) -> Entity {
-    entity := add_entity()
+create_node_entity :: proc(name: string, flags: ComponentFlag, parent: Entity = Entity(0), world :^World) -> Entity {
+    entity := add_entity(world)
     node_comp := parent == Entity(0) ? node_component_named(entity, name, flags) : node_component_with_parent(entity, parent)
     node_comp.name = name
     node_comp.engine_flags += {flags}
 
-    add_component(entity, node_comp)
+    add_component(entity, node_comp, world)
 
     // If this entity has a parent, add it to the parent's children
     if parent != Entity(0) {
-        add_child(parent, entity)
+        add_child(parent, entity, world)
     }
 
     return entity
@@ -1093,10 +1093,10 @@ bvh_get_bounds :: proc(node: BvhNode) -> BvhBounds {
     return {}
 }
 
-flatten_entity :: proc(e : Entity)
+flatten_entity :: proc(e : Entity, world : ^World)
 {
     // Init & Set up queue and initial values
-    first_node := get_component(e, Cmp_Node)
+    first_node := get_component(e, Cmp_Node, world)
     bfg : Cmp_BFGraph
     q : queue.Queue(Entity)
     queue.init(&q,20, context.temp_allocator)
@@ -1131,15 +1131,15 @@ flatten_entity :: proc(e : Entity)
     add_component(e, bfg)
 }
 
-display_flattened_entity :: proc(e : Entity){
-    bfg := get_component(e, Cmp_BFGraph)
-    if(bfg == nil) do return
-    for e,i in bfg.nodes{
-        nc := get_component(e, Cmp_Node)
-        tc := get_component(e, Cmp_Transform)
-        if(nc != nil) do fmt.println(i, ": ", nc.name, " - ", tc.local.pos, " - ", tc.local.rot)
-    }
-}
+// display_flattened_entity :: proc(e : Entity){
+//     bfg := get_component(e, Cmp_BFGraph)
+//     if(bfg == nil) do return
+//     for e,i in bfg.nodes{
+//         nc := get_component(e, Cmp_Node)
+//         tc := get_component(e, Cmp_Transform)
+//         if(nc != nil) do fmt.println(i, ": ", nc.name, " - ", tc.local.pos, " - ", tc.local.rot)
+//     }
+// }
 
 // print_node_hierarchy :: proc(name: string) {
 //     table_node := get_table(Cmp_Node)
