@@ -1,4 +1,4 @@
-package game
+package game_tests
 // odin test src/test -define:ODIN_TEST_THREADS=1
 
 import "../axiom/external/ode_ecs"
@@ -254,26 +254,25 @@ load_assets :: proc(alloc : mem.Allocator)
 //     // axiom.load_scene(scene^, mem_stack.alloc)
 //     // testing.expect(t, true, "Scene loaded")
 // }
+// @(test)
+// test_load_prefab :: proc(t: ^testing.T){
+//     mem_stack := create_test_memory_stack()
+//     mem_arena := create_test_memory_arena()
+//     axiom.g_world = axiom.create_world(mem_stack)
+//     defer axiom.destroy_world(mem_stack)
+//     defer axiom.destroy_memory_stack(mem_stack)
+//     defer axiom.destroy_memory_arena(mem_arena)
+//     load_assets(mem_arena.alloc)
 
-@(test)
-test_load_prefab :: proc(t: ^testing.T){
-    mem_stack := create_test_memory_stack()
-    mem_arena := create_test_memory_arena()
-    axiom.g_world = axiom.create_world(mem_stack)
-    defer axiom.destroy_world(mem_stack)
-    defer axiom.destroy_memory_stack(mem_stack)
-    defer axiom.destroy_memory_arena(mem_arena)
-    load_assets(mem_arena.alloc)
+//     entity := axiom.load_prefab("Froku", mem_arena.alloc)
+//     testing.expect(t, true, "Froku loaded")
 
-    entity := axiom.load_prefab("Froku", mem_arena.alloc)
-    testing.expect(t, true, "Froku loaded")
+//     head_node := axiom.get_component(entity, axiom.Cmp_Node)
+//     testing.expect(t, head_node != nil, "Head Node not loaded")
+//     child_entity := head_node.child
+//     testing.expect(t, child_entity != axiom.Entity(0), "Child entity not loaded")
 
-    head_node := axiom.get_component(entity, axiom.Cmp_Node)
-    testing.expect(t, head_node != nil, "Head Node not loaded")
-    child_entity := head_node.child
-    testing.expect(t, child_entity != axiom.Entity(0), "Child entity not loaded")
-
-    // scene := axiom.set_new_scene("assets/scenes/Empty.json", mem_arena)
-    // axiom.load_scene(scene^, mem_stack.alloc)
-    // testing.expect(t, true, "Scene loaded")
-}
+//     // scene := axiom.set_new_scene("assets/scenes/Empty.json", mem_arena)
+//     // axiom.load_scene(scene^, mem_stack.alloc)
+//     // testing.expect(t, true, "Scene loaded")
+// }

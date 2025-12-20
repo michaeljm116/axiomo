@@ -1,4 +1,4 @@
-package game
+package game_tests
 
 // import "core:testing"
 // import "../axiom/resource"
