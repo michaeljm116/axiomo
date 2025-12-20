@@ -22,6 +22,28 @@
             }
           },
           {
+            "id": "8be6d53be3eeed5a",
+            "type": "leaf",
+            "state": {
+              "type": "kanban",
+              "state": {
+                "file": "Showcase Kanban.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                  ]
+                }
+              },
+              "icon": "lucide-trello",
+              "title": "Showcase Kanban"
+            }
+          },
+          {
             "id": "f88536f4a261db38",
             "type": "leaf",
             "state": {
@@ -92,7 +114,8 @@
               "title": "Theft of compassion"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -242,8 +265,9 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "b47c04f3ca1234e3",
+  "active": "8be6d53be3eeed5a",
   "lastOpenFiles": [
+    "TODO.md",
     "BeeKillingsInn/Physics.md",
     "BeeKillingsInn/Architecture.md",
     "Excalidraw/Architecture.md",
@@ -269,7 +293,6 @@
     "BeeKillingsInn/Code.md",
     "BeeKillingsInn/Bugs.md",
     "BeeKillingsInn/bg.md",
-    "BeeKillingsInn/Bee Ideas.md",
     "Photos/Pasted image 20251108055025.png",
     "Photos/{08E3CA3B-E91C-4292-AC97-23066AB46B4B}.png",
     "Photos/{857A3D8B-F0CC-4965-AB43-BB397C62E2E2}.png",

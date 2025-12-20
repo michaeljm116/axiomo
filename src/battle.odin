@@ -17,8 +17,6 @@ Level :: struct
     deck : BeeDeck,
     weapons : []Weapon,
     grid : ^Grid,
-    grid_data : []Tile,
-    grid_scale : vec2f,
     grid_weapons : [dynamic]WeaponGrid,
 }
 
@@ -937,8 +935,8 @@ set_entity_on_tile :: proc(floor : Entity, entity : Entity, lvl : Level, x, y : 
 
     // Determine tile center in world space.
     // Note: `ft.global.sca` is treated consistently with primitives in the renderer (half-extents).
-    full_cell_x := 2.0 * lvl.grid_scale.x
-    full_cell_z := 2.0 * lvl.grid_scale.y
+    full_cell_x := 2.0 * lvl.grid.scale.x
+    full_cell_z := 2.0 * lvl.grid.scale.y
 
     // left / bottom world edges (x and z) of the floor
     left_x := ft.global.pos.x - ft.global.sca.x
@@ -1194,7 +1192,7 @@ add_animations :: proc(){
 
 // Similar to move_entity_to_tile but just sets the vectors up
 set_up_character_anim :: proc(cha : ^Character){
-    scale := g.level.grid_scale
+    scale := g.level.grid.scale
     pt := get_component(cha.entity, Cmp_Transform)
     ft := get_component(g.floor, Cmp_Transform)
     if pt == nil || ft == nil do return
@@ -1729,7 +1727,7 @@ ves_animate_bee_start :: proc(bee: ^Bee){
 
 ves_animate_bee_end :: #force_inline proc(bee : ^Bee)
 {
-    move_entity_to_tile(bee.entity, g.level.grid_scale, bee.target)
+    move_entity_to_tile(bee.entity, g.level.grid.scale, bee.target)
     bee.pos = bee.target
     bee.anim.timer = 0
 }
@@ -1755,7 +1753,7 @@ ves_animate_player_start :: #force_inline proc(p : ^Player){
 }
 
 ves_animate_player_end :: #force_inline proc(p : ^Player){
-    move_entity_to_tile(p.entity, g.level.grid_scale, p.target)
+    move_entity_to_tile(p.entity, g.level.grid.scale, p.target)
     p.pos = p.target
     p.anim.timer = 0
     ac := get_component(p.entity, Cmp_Animation)

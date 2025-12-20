@@ -121,14 +121,14 @@ path_heuristic :: proc(a : vec2i, b : vec2i) -> int {
 
 // Returns path from start to goal as dynamic array of vec2i (start .. goal).
 // If no path found, returned array length == 0
-total_cells :: GRID_HEIGHT * GRID_WIDTH
 path_a_star_find :: proc(start : vec2i, goal, size : vec2i, grid : Grid) -> [dynamic]vec2i {
     // Static arrays sized for grid
-    g_score : [total_cells]int
-    f_score : [total_cells]int
-    came_from : [total_cells]vec2i
-    in_open : [total_cells]bool
-    closed : [total_cells]bool
+    total_cells := len(grid.data)
+    g_score := make([]int, total_cells, context.temp_allocator)
+    f_score := make([]int, total_cells, context.temp_allocator)
+    came_from := make([]vec2i, total_cells, context.temp_allocator)
+    in_open := make([]bool, total_cells, context.temp_allocator)
+    closed := make([]bool, total_cells, context.temp_allocator)
 
     // init
     for i in 0..<total_cells{
