@@ -53,8 +53,10 @@ Engine :: struct{
     num_nodes: i32,
     anim_initialized : bool
 }
+g_cap :: 10000
 
-engine_context :: #force_inline proc () -> ^Engine{
+engine_context :: #force_inline proc () -> ^Engine
+{
     return cast(^Engine)context.user_ptr
 }
 
@@ -69,23 +71,26 @@ World :: struct{
     cap : int
 }
 
-// Helper functions that assume g_world
-create_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World {
+// Helper functions that assume engine_ctx.world
+create_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World
+{
+    engine_ctx := engine_context()
     init_memory(mem_stack, mem.Megabyte * 100)
-    g_world = new(World, mem_stack.alloc)
-    g_world.cap = g_cap
+    engine_ctx.world = new(World, mem_stack.alloc)
+    engine_ctx.world.cap = g_cap
     tag_root = new(ecs.Tag_Table, mem_stack.alloc)
-    g_world.db = new(Database, mem_stack.alloc)
-    ecs.init(g_world.db, entities_cap=g_cap, allocator = mem_stack.alloc)
-    g_world.entity = add_entity()
-    g_world.alloc = mem_stack.alloc
-    create_main_tables(g_world)
-    init_views(g_world.alloc)
-    return g_world
+    engine_ctx.world.db = new(Database, mem_stack.alloc)
+    ecs.init(engine_ctx.world.db, entities_cap=g_cap, allocator = mem_stack.alloc)
+    engine_ctx.world.entity = add_entity()
+    engine_ctx.world.alloc = mem_stack.alloc
+    create_main_tables(engine_ctx.world)
+    init_views(engine_ctx.world.alloc)
+    return engine_ctx.world
 }
 
 create_main_tables :: proc(world : ^World)
 {
+    engine_ctx := engine_context()
     //Tables needed for views
     create_table(Cmp_Transform, world)
     create_table(Cmp_Node, world)
@@ -103,33 +108,43 @@ create_main_tables :: proc(world : ^World)
     create_table(Cmp_Render, world)
 }
 
-init_views :: proc(alloc : mem.Allocator){
+init_views :: proc(alloc : mem.Allocator)
+{
+    engine_ctx := engine_context()
     sys_transform_init(alloc)
     sys_bvh_init(alloc)
     sys_anim_init(alloc)
     sys_physics_init(alloc)
 }
 
-destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {
+destroy_world :: #force_inline proc(mem_stack : ^MemoryStack)
+{
+    engine_ctx := engine_context()
     destroy_memory_stack(mem_stack)
-    // g_world.tables = {}
-    // g_world = nil
+    // engine_ctx.world.tables = {}
+    // engine_ctx.world = nil
 }
-restart_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World{
+restart_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World
+{
+    engine_ctx := engine_context()
     render_clear_entities()
     destroy_world(mem_stack)
     return create_world(mem_stack)
 }
 
 // Entity management
-add_entity :: #force_inline proc() -> Entity {
-    entity, err := ecs.create_entity(g_world.db)
+add_entity :: #force_inline proc() -> Entity
+{
+    engine_ctx := engine_context()
+    entity, err := ecs.create_entity(engine_ctx.world.db)
     if err != ecs.API_Error.None do panic("Failed to add entity")
 	return entity
 }
 
 // Component management
-add_component_type :: #force_inline proc(entity: Entity, component: $T) -> (^T) {
+add_component_type :: #force_inline proc(entity: Entity, component: $T) -> (^T)
+{
+    engine_ctx := engine_context()
     // copy := component
     c, ok := add_component_typeid(entity, T)
     if ok != nil{
@@ -143,14 +158,16 @@ add_component_type :: #force_inline proc(entity: Entity, component: $T) -> (^T) 
     return c
 }
 
-add_component_typeid :: proc(entity: Entity, $T: typeid) -> (^T, Error) {
+add_component_typeid :: proc(entity: Entity, $T: typeid) -> (^T, Error)
+{
+    engine_ctx := engine_context()
     tid := typeid_of(T)
-    table_ptr, found := g_world.tables[tid]
+    table_ptr, found := engine_ctx.world.tables[tid]
     if !found {
-        new_table := new(Table(T), g_world.alloc)
-        table_err := ecs.table_init(new_table, db=g_world.db, cap=g_cap)
+        new_table := new(Table(T), engine_ctx.world.alloc)
+        table_err := ecs.table_init(new_table, db=engine_ctx.world.db, cap=g_cap)
         if table_err != nil do panic("failed to add table")
-        g_world.tables[tid] = rawptr(new_table)
+        engine_ctx.world.tables[tid] = rawptr(new_table)
         table_ptr = rawptr(new_table)
     }
     table := transmute(^Table(T)) table_ptr
@@ -159,20 +176,24 @@ add_component_typeid :: proc(entity: Entity, $T: typeid) -> (^T, Error) {
 }
 init_table :: ecs.table_init
 
-get_or_create_table :: proc($T: typeid) -> (^Table(T)){
+get_or_create_table :: proc($T: typeid) -> (^Table(T))
+{
+    engine_ctx := engine_context()
     tid := typeid_of(T)
-    table_ptr, found := g_world.tables[tid]
+    table_ptr, found := engine_ctx.world.tables[tid]
     if !found {
-        new_table := new(Table(T), g_world.alloc)
-        table_err := ecs.table_init(new_table, db=g_world.db, cap=g_cap)
+        new_table := new(Table(T), engine_ctx.world.alloc)
+        table_err := ecs.table_init(new_table, db=engine_ctx.world.db, cap=g_cap)
         if table_err != nil do panic("failed to add table")
-        g_world.tables[tid] = rawptr(new_table)
+        engine_ctx.world.tables[tid] = rawptr(new_table)
         table_ptr = rawptr(new_table)
     }
     return transmute(^Table(T))table_ptr
 }
 
-create_table :: proc($T: typeid, world : ^World) -> ^Table(T){
+create_table :: proc($T: typeid, world : ^World) -> ^Table(T)
+{
+    engine_ctx := engine_context()
     tid := typeid_of(T)
     new_table := new(Table(T), world.alloc)
     table_err := ecs.table_init(new_table, db=world.db, cap=world.cap)
@@ -186,9 +207,11 @@ add_component_table :: ecs.add_component
 
 add_component :: proc{add_component_type, add_component_typeid}
 
-remove_component :: #force_inline proc(entity: Entity, $T: typeid){
+remove_component :: #force_inline proc(entity: Entity, $T: typeid)
+{
+    engine_ctx := engine_context()
     // First find the table, then remove from table
-    table_ptr, found := g_world.tables[typeid_of(T)]
+    table_ptr, found := engine_ctx.world.tables[typeid_of(T)]
     if !found {
         fmt.println("Trying to remove component from non-existent table", entity, type_info_of(T))
         return
@@ -197,8 +220,10 @@ remove_component :: #force_inline proc(entity: Entity, $T: typeid){
     ecs.remove_component(table, entity)
 }
 
-entity_exists :: #force_inline proc(entity: Entity) -> bool {
-    return !ecs.is_entity_expired(g_world.db, entity) && (entity != Entity(0))
+entity_exists :: #force_inline proc(entity: Entity) -> bool
+{
+    engine_ctx := engine_context()
+    return !ecs.is_entity_expired(engine_ctx.world.db, entity) && (entity != Entity(0))
 }
 
 table_len     :: ecs.table_len
@@ -209,38 +234,50 @@ iterator_init :: ecs.iterator_init
 iterator_next :: ecs.iterator_next
 get_entity    :: ecs.get_entity
 
-get_component_table :: #force_inline proc(table : ^Table($T), entity : Entity) -> ^T{
+get_component_table :: #force_inline proc(table : ^Table($T), entity : Entity) -> ^T
+{
+    engine_ctx := engine_context()
     return ecs.get_component(table,entity)
 }
-get_component_type_id :: proc(entity: Entity, $T: typeid) -> ^T{
+get_component_type_id :: proc(entity: Entity, $T: typeid) -> ^T
+{
+    engine_ctx := engine_context()
    table := get_table(T)
    return ecs.get_component(table, entity)
 }
 get_component :: proc{get_component_type_id, get_component_table}
 
-get_table_ptr :: proc($T: typeid) -> rawptr {
+get_table_ptr :: proc($T: typeid) -> rawptr
+{
+    engine_ctx := engine_context()
     tid := typeid_of(T)
-    table_ptr, found := g_world.tables[tid]
+    table_ptr, found := engine_ctx.world.tables[tid]
     if !found {
         // return nil  // Or panic("Table not found for type") or just make the table
-        new_table := new(Table(T), g_world.alloc)
-        table_err := ecs.table_init(new_table, db=g_world.db, cap=g_cap)
+        new_table := new(Table(T), engine_ctx.world.alloc)
+        table_err := ecs.table_init(new_table, db=engine_ctx.world.db, cap=g_cap)
         if table_err != nil do panic("failed to add table")
-        g_world.tables[tid] = rawptr(new_table)
+        engine_ctx.world.tables[tid] = rawptr(new_table)
         table_ptr = rawptr(new_table)
     }
     return table_ptr
 }
-get_table :: proc($T: typeid) -> ^Table(T) {
+get_table :: proc($T: typeid) -> ^Table(T)
+{
+    engine_ctx := engine_context()
     table_ptr := get_table_ptr(T)
     return transmute(^Table(T)) table_ptr
 }
 
 has :: proc {has_component_table,has_component_type_id,}
-has_component_table :: #force_inline proc(table: ^Table($T), entity: Entity) -> bool{
+has_component_table :: #force_inline proc(table: ^Table($T), entity: Entity) -> bool
+{
+    engine_ctx := engine_context()
     return ecs.has_component(table, entity)
 }
-has_component_type_id :: #force_inline proc(entity: Entity, $T: typeid) -> bool{
+has_component_type_id :: #force_inline proc(entity: Entity, $T: typeid) -> bool
+{
+    engine_ctx := engine_context()
     table_ptr := get_table_ptr(T)
     if table_ptr == nil{
         fmt.println("Component Table does not exist")
@@ -250,8 +287,10 @@ has_component_type_id :: #force_inline proc(entity: Entity, $T: typeid) -> bool{
     return ecs.has_component(table, entity)
 }
 
-end_ecs :: #force_inline proc() {
-	// ecs.delete_world(g_world)
+end_ecs :: #force_inline proc()
+{
+    engine_ctx := engine_context()
+	// ecs.delete_world(engine_ctx.world)
 }
 
 tag_root : ^ecs.Tag_Table
@@ -262,19 +301,26 @@ untag :: ecs.untag
 // /Internal helpers
 //----------------------------------------------------------------------------\\
 
-get_material :: #force_inline proc(i: i32) -> ^resource.Material {
+get_material :: #force_inline proc(i: i32) -> ^resource.Material
+{
+    engine_ctx := engine_context()
 	return &resource.materials[i]
 }
-get_material_index :: #force_inline proc(id: i32) -> i32 {
+get_material_index :: #force_inline proc(id: i32) -> i32
+{
+    engine_ctx := engine_context()
 	for m, i in resource.materials {
-		if (m.unique_id == id) {
+		if (m.unique_id == id)
+		{
 			return i32(i)
 		}
 	}
 	return 1
 }
 
-map_sqt :: #force_inline proc(sqt : resource.Sqt) -> Sqt{
+map_sqt :: #force_inline proc(sqt : resource.Sqt) -> Sqt
+{
+    engine_ctx := engine_context()
     return Sqt{
         pos = sqt.pos,
         rot = sqt.rot,
@@ -282,12 +328,16 @@ map_sqt :: #force_inline proc(sqt : resource.Sqt) -> Sqt{
     }
 }
 
-map_vec2f :: #force_inline proc(vec : scene.Vector2) -> vec2f{
+map_vec2f :: #force_inline proc(vec : scene.Vector2) -> vec2f
+{
+    engine_ctx := engine_context()
     return vec2f{vec.x, vec.y}
 }
 
 map_gui :: proc{map_sc_gui_to_gui_cmp, map_gui_cmp_to_sc_gui}
-map_sc_gui_to_gui_cmp :: #force_inline proc(gui : scene.Gui) -> Cmp_Gui{
+map_sc_gui_to_gui_cmp :: #force_inline proc(gui : scene.Gui) -> Cmp_Gui
+{
+    engine_ctx := engine_context()
     return Cmp_Gui{
         align_ext = map_vec2f(gui.AlignExt),
         align_min = map_vec2f(gui.Alignment),
@@ -296,7 +346,9 @@ map_sc_gui_to_gui_cmp :: #force_inline proc(gui : scene.Gui) -> Cmp_Gui{
         id = gui.Texture.Name
     }
 }
-map_gui_cmp_to_sc_gui :: #force_inline proc(cmp: Cmp_Gui) -> scene.Gui {
+map_gui_cmp_to_sc_gui :: #force_inline proc(cmp: Cmp_Gui) -> scene.Gui
+{
+    engine_ctx := engine_context()
     return scene.Gui{
         AlignExt = scene.Vector2{x = cmp.align_ext.x, y = cmp.align_ext.y},
         Alignment = scene.Vector2{x = cmp.align_min.x, y = cmp.align_min.y},
@@ -306,7 +358,9 @@ map_gui_cmp_to_sc_gui :: #force_inline proc(cmp: Cmp_Gui) -> scene.Gui {
     }
 }
 
-save_ui_prefab :: #force_inline proc(entity: Entity, filename: string) {
+save_ui_prefab :: #force_inline proc(entity: Entity, filename: string)
+{
+    engine_ctx := engine_context()
     nc := get_component(entity, Cmp_Node)
     gc := get_component(entity, Cmp_Gui)
     if nc == nil || gc == nil {
@@ -345,6 +399,7 @@ save_ui_prefab :: #force_inline proc(entity: Entity, filename: string) {
 
 set_new_scene :: proc(name : string, arena : ^MemoryArena) -> ^scene.SceneData
 {
+    engine_ctx := engine_context()
     destroy_memory(arena)
     init_memory(arena, mem.Megabyte)
     return scene.load_new_scene(name, arena.alloc)
@@ -353,27 +408,39 @@ set_new_scene :: proc(name : string, arena : ^MemoryArena) -> ^scene.SceneData
 //----------------------------------------------------------------------------\\
 // /Resource
 //----------------------------------------------------------------------------\\
-load_materials :: #force_inline proc(file : string, materials : ^[dynamic]resource.Material){
+load_materials :: #force_inline proc(file : string, materials : ^[dynamic]resource.Material)
+{
+    engine_ctx := engine_context()
     resource.load_materials(file,materials)
 }
-load_models :: #force_inline proc(directory: string, models: ^[dynamic]resource.Model) {
+load_models :: #force_inline proc(directory: string, models: ^[dynamic]resource.Model)
+{
+    engine_ctx := engine_context()
     resource.load_models(directory, models)
 }
-load_anim_directory :: #force_inline proc(directory : string, poses : ^map[u32]resource.Animation, alloc : mem.Allocator){
+load_anim_directory :: #force_inline proc(directory : string, poses : ^map[u32]resource.Animation, alloc : mem.Allocator)
+{
+    engine_ctx := engine_context()
     resource.load_anim_directory(directory, poses, alloc)
 }
 
 //----------------------------------------------------------------------------\\
 // /Scene
 //----------------------------------------------------------------------------\\
-load_prefab_directory :: #force_inline proc(directory : string, prefabs : ^map[string]scene.Node, alloc := context.allocator){
+load_prefab_directory :: #force_inline proc(directory : string, prefabs : ^map[string]scene.Node, alloc := context.allocator)
+{
+    engine_ctx := engine_context()
    scene.load_prefab_directory(directory, prefabs, alloc)
 }
 
-load_prefab_node :: #force_inline proc(name: string, alloc := context.allocator) -> (root: scene.Node) {
+load_prefab_node :: #force_inline proc(name: string, alloc := context.allocator) -> (root: scene.Node)
+{
+    engine_ctx := engine_context()
     return scene.load_prefab_node(name,alloc)
 }
 
-load_new_scene :: #force_inline proc(name : string, allocator := context.temp_allocator) -> ^scene.SceneData {
+load_new_scene :: #force_inline proc(name : string, allocator := context.temp_allocator) -> ^scene.SceneData
+{
+    engine_ctx := engine_context()
     return scene.load_new_scene(name, allocator)
 }

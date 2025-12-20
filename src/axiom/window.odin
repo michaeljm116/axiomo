@@ -8,25 +8,31 @@ import "base:runtime"
 //----------------------------------------------------------------------------\\
 // /Window
 //----------------------------------------------------------------------------\\
-window_init :: proc(ctx : runtime.Context){
-    if !glfw.Init() {log.panic("glfw: could not be initialized")}
+window_init :: proc(ctx : runtime.Context)
+{
+    engine_ctx := engine_context()
+    if !glfw.Init()
+    {log.panic("glfw: could not be initialized")}
 
     glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
     glfw.WindowHint(glfw.RESIZABLE, glfw.FALSE)
     glfw.WindowHint(glfw.DECORATED, glfw.TRUE)
 
     // Get monitor and set to full screen
-    g_window.ctx = ctx
-    g_window.primary_monitor = glfw.GetPrimaryMonitor()
-    g_window.mode = glfw.GetVideoMode(g_window.primary_monitor)
-    g_window.width = c.int(f64(g_window.mode.width) * 0.5)
-    g_window.height =  c.int(f64(g_window.mode.height) * 0.5)
-    g_window.handle = glfw.CreateWindow(g_window.width, g_window.height, "Bee Killins Inn", nil, nil)
+    engine_ctx.window.ctx = ctx
+    engine_ctx.window.primary_monitor = glfw.GetPrimaryMonitor()
+    engine_ctx.window.mode = glfw.GetVideoMode(engine_ctx.window.primary_monitor)
+    engine_ctx.window.width = c.int(f64(engine_ctx.window.mode.width) * 0.5)
+    engine_ctx.window.height =  c.int(f64(engine_ctx.window.mode.height) * 0.5)
+    engine_ctx.window.handle = glfw.CreateWindow(engine_ctx.window.width, engine_ctx.window.height, "Bee Killins Inn", nil, nil)
 }
 
-window_renderer_init :: proc(){
-    glfw.SetFramebufferSizeCallback(g_window.handle, proc "c" (_: glfw.WindowHandle, _, _: i32) {
-        g_renderbase.framebuffer_resized = true
+window_renderer_init :: proc()
+{
+    engine_ctx := engine_context()
+    glfw.SetFramebufferSizeCallback(engine_ctx.window.handle, proc "c" (_: glfw.WindowHandle, _, _: i32)
+        {
+        engine_ctx.renderbase.framebuffer_resized = true
     })
     glfw.SetErrorCallback(glfw_error_callback)
 }
@@ -52,11 +58,13 @@ InputState :: struct {
     rotation_speed: f32,
 }
 
-window_input_init :: proc(){
-    glfw.SetKeyCallback(g_window.handle, key_callback)
-    glfw.SetCursorPosCallback(g_window.handle, mouse_callback)
-    glfw.SetMouseButtonCallback(g_window.handle, mouse_button_callback)
-    glfw.SetInputMode(g_window.handle, glfw.CURSOR, glfw.CURSOR_DISABLED)
+window_input_init :: proc()
+{
+    engine_ctx := engine_context()
+    glfw.SetKeyCallback(engine_ctx.window.handle, key_callback)
+    glfw.SetCursorPosCallback(engine_ctx.window.handle, mouse_callback)
+    glfw.SetMouseButtonCallback(engine_ctx.window.handle, mouse_button_callback)
+    glfw.SetInputMode(engine_ctx.window.handle, glfw.CURSOR, glfw.CURSOR_DISABLED)
 
     g_input = InputState{
         mouse_sensitivity = 0.1,
@@ -66,26 +74,36 @@ window_input_init :: proc(){
     }
 }
 
-is_key_pressed :: proc(key: i32) -> bool {
+is_key_pressed :: proc(key: i32) -> bool
+{
+    engine_ctx := engine_context()
     if key < 0 || key > glfw.KEY_LAST do return false
     return g_input.keys_pressed[key]
 }
-is_key_just_pressed :: proc(key: i32) -> bool {
+is_key_just_pressed :: proc(key: i32) -> bool
+{
+    engine_ctx := engine_context()
     if key < 0 || key > glfw.KEY_LAST do return false
     return g_input.keys_just_pressed[key]
 }
-is_key_just_released :: proc(key: i32) -> bool {
+is_key_just_released :: proc(key: i32) -> bool
+{
+    engine_ctx := engine_context()
     if key < 0 || key > glfw.KEY_LAST do return false
     return g_input.keys_just_released[key]
 }
-is_mouse_button_pressed :: proc(button: i32) -> bool {
+is_mouse_button_pressed :: proc(button: i32) -> bool
+{
+    engine_ctx := engine_context()
     if button < 0 || button > glfw.MOUSE_BUTTON_LAST do return false
     return g_input.mouse_buttons[button]
 }
 
 // GLFW Callbacks
-key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods: i32) {
-    context = g_window.ctx
+key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods: i32)
+{
+    engine_ctx := engine_context()
+    context = engine_ctx.window.ctx
     if key < 0 || key > glfw.KEY_LAST do return
 
     switch action {
@@ -112,8 +130,10 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods
     }
 }
 
-mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
-    context = g_window.ctx
+mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64)
+{
+    engine_ctx := engine_context()
+    context = engine_ctx.window.ctx
 
     if g_input.first_mouse {
         g_input.last_mouse_x = xpos
@@ -130,8 +150,10 @@ mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
     g_input.mouse_y = ypos
 }
 
-mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mods: i32) {
-    context = g_window.ctx
+mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mods: i32)
+{
+    engine_ctx := engine_context()
+    context = engine_ctx.window.ctx
 
     if button < 0 || button > glfw.MOUSE_BUTTON_LAST {
         return

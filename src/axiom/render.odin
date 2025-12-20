@@ -96,6 +96,7 @@ DEVICE_EXTENSIONS := []cstring {
 }
 init_vulkan :: proc()
 {
+    engine_ctx := engine_context()
 	//----------------------------------------------------------------------------\\
     // /Create Instance /ci
     //----------------------------------------------------------------------------\\
@@ -155,26 +156,26 @@ init_vulkan :: proc()
 	create_info.enabledExtensionCount = u32(len(extensions))
 	create_info.ppEnabledExtensionNames = raw_data(extensions)
 
-	must(vk.CreateInstance(&create_info, nil, &g_renderbase.instance))
+	must(vk.CreateInstance(&create_info, nil, &engine_ctx.renderbase.instance))
 
-	vk.load_proc_addresses_instance(g_renderbase.instance)
+	vk.load_proc_addresses_instance(engine_ctx.renderbase.instance)
 
 	when ENABLE_VALIDATION_LAYERS {
-		must(vk.CreateDebugUtilsMessengerEXT(g_renderbase.instance, &dbg_create_info, nil, &g_renderbase.dbg_messenger))
+		must(vk.CreateDebugUtilsMessengerEXT(engine_ctx.renderbase.instance, &dbg_create_info, nil, &engine_ctx.renderbase.dbg_messenger))
 	}
 
 	//----------------------------------------------------------------------------\\
     // /Create Surface and Devices /cs
     //----------------------------------------------------------------------------\\
-	must(glfw.CreateWindowSurface(g_renderbase.instance, g_window.handle, nil, &g_renderbase.surface))
+	must(glfw.CreateWindowSurface(engine_ctx.renderbase.instance, engine_ctx.window.handle, nil, &engine_ctx.renderbase.surface))
 
 	// Pick a suitable GPU.
 	must(pick_physical_device())
 
 	// Setup logical device,
-	indices := find_queue_families(g_renderbase.physical_device)
-	set_compute_queue_family_index(g_renderbase.physical_device, &indices)
-	g_renderbase.compute_queue_family_index = indices.compute.?
+	indices := find_queue_families(engine_ctx.renderbase.physical_device)
+	set_compute_queue_family_index(engine_ctx.renderbase.physical_device, &indices)
+	engine_ctx.renderbase.compute_queue_family_index = indices.compute.?
 	{
 		indices_set := make(map[u32]struct {}, allocator = context.temp_allocator)
 		indices_set[indices.graphics.?] = {}
@@ -220,8 +221,8 @@ init_vulkan :: proc()
 				sType = .PHYSICAL_DEVICE_FEATURES_2,
 				pNext = &device_features,
 			}
-			vk.GetPhysicalDeviceFeatures2(g_renderbase.physical_device, &device_features)
-			vk.GetPhysicalDeviceFeatures2(g_renderbase.physical_device, &physical_features)
+			vk.GetPhysicalDeviceFeatures2(engine_ctx.renderbase.physical_device, &device_features)
+			vk.GetPhysicalDeviceFeatures2(engine_ctx.renderbase.physical_device, &physical_features)
 			bindless_supported := indexing_features.descriptorBindingPartiallyBound && indexing_features.runtimeDescriptorArray
 			if bindless_supported {
 				log.info("vulkan: bindless descriptor indexing supported")
@@ -238,11 +239,11 @@ init_vulkan :: proc()
 		device_create_info.ppEnabledExtensionNames = raw_data(DEVICE_EXTENSIONS)
 
 		//TODO : ENABLE VALIDATION LAYERS
-		must(vk.CreateDevice(g_renderbase.physical_device, &device_create_info, nil, &g_renderbase.device))
+		must(vk.CreateDevice(engine_ctx.renderbase.physical_device, &device_create_info, nil, &engine_ctx.renderbase.device))
 
-		vk.GetDeviceQueue(g_renderbase.device, indices.graphics.?, 0, &g_renderbase.graphics_queue)
-		vk.GetDeviceQueue(g_renderbase.device, indices.present.?, 0, &g_renderbase.present_queue)
-		vk.GetDeviceQueue(g_renderbase.device, indices.compute.?, 1, &g_renderbase.compute_queue) // should be g_renderbase.compute_queue_family_index, but it aint workin fo some reason
+		vk.GetDeviceQueue(engine_ctx.renderbase.device, indices.graphics.?, 0, &engine_ctx.renderbase.graphics_queue)
+		vk.GetDeviceQueue(engine_ctx.renderbase.device, indices.present.?, 0, &engine_ctx.renderbase.present_queue)
+		vk.GetDeviceQueue(engine_ctx.renderbase.device, indices.compute.?, 1, &engine_ctx.renderbase.compute_queue) // should be engine_ctx.renderbase.compute_queue_family_index, but it aint workin fo some reason
 	}
 
 	init_vma()
@@ -251,19 +252,19 @@ init_vulkan :: proc()
 
 	// Load shaders.
 	{
-		g_renderbase.vert_shader_module = create_shader_module(SHADER_VERT)
-		g_renderbase.shader_stages[0] = vk.PipelineShaderStageCreateInfo {
+		engine_ctx.renderbase.vert_shader_module = create_shader_module(SHADER_VERT)
+		engine_ctx.renderbase.shader_stages[0] = vk.PipelineShaderStageCreateInfo {
 			sType  = .PIPELINE_SHADER_STAGE_CREATE_INFO,
 			stage  = {.VERTEX},
-			module = g_renderbase.vert_shader_module,
+			module = engine_ctx.renderbase.vert_shader_module,
 			pName  = "main",
 		}
 
-		g_renderbase.frag_shader_module = create_shader_module(SHADER_FRAG)
-		g_renderbase.shader_stages[1] = vk.PipelineShaderStageCreateInfo {
+		engine_ctx.renderbase.frag_shader_module = create_shader_module(SHADER_FRAG)
+		engine_ctx.renderbase.shader_stages[1] = vk.PipelineShaderStageCreateInfo {
 			sType  = .PIPELINE_SHADER_STAGE_CREATE_INFO,
 			stage  = {.FRAGMENT},
-			module = g_renderbase.frag_shader_module,
+			module = engine_ctx.renderbase.frag_shader_module,
 			pName  = "main",
 		}
 	}
@@ -271,7 +272,7 @@ init_vulkan :: proc()
 	// Set up render pass.
 	{
 		color_attachment := vk.AttachmentDescription {
-			format         = g_renderbase.swapchain_format.format,
+			format         = engine_ctx.renderbase.swapchain_format.format,
 			samples        = {._1},
 			loadOp         = .CLEAR,
 			storeOp        = .STORE,
@@ -329,7 +330,7 @@ init_vulkan :: proc()
 			pDependencies   = &dependency,
 		}
 
-		must(vk.CreateRenderPass(g_renderbase.device, &render_pass, nil, &g_renderbase.render_pass))
+		must(vk.CreateRenderPass(engine_ctx.renderbase.device, &render_pass, nil, &engine_ctx.renderbase.render_pass))
 	}
 
 	create_pipeline_cache()
@@ -341,7 +342,7 @@ init_vulkan :: proc()
 			flags            = {.TRANSIENT},
 			queueFamilyIndex = indices.graphics.?,
 		}
-		must(vk.CreateCommandPool(g_renderbase.device, &pool_info, nil, &g_renderbase.command_pool))
+		must(vk.CreateCommandPool(engine_ctx.renderbase.device, &pool_info, nil, &engine_ctx.renderbase.command_pool))
 	}
 
 	create_depth_resources()
@@ -357,21 +358,23 @@ init_vulkan :: proc()
 			flags = {.SIGNALED}, // Start with fences signaled so we can use them immediately.
 		}
 		for i in 0 ..< MAX_FRAMES_IN_FLIGHT {
-			must(vk.CreateSemaphore(g_renderbase.device, &sem_info, nil, &g_renderbase.image_available_semaphores[i]))
-			must(vk.CreateSemaphore(g_renderbase.device, &sem_info, nil, &g_renderbase.render_finished_semaphores[i]))
-			must(vk.CreateFence(g_renderbase.device, &fence_info, nil, &g_renderbase.in_flight_fences[i]))
+			must(vk.CreateSemaphore(engine_ctx.renderbase.device, &sem_info, nil, &engine_ctx.renderbase.image_available_semaphores[i]))
+			must(vk.CreateSemaphore(engine_ctx.renderbase.device, &sem_info, nil, &engine_ctx.renderbase.render_finished_semaphores[i]))
+			must(vk.CreateFence(engine_ctx.renderbase.device, &fence_info, nil, &engine_ctx.renderbase.in_flight_fences[i]))
 		}
 	}
 
-	g_renderbase.current_frame = 0
+	engine_ctx.renderbase.current_frame = 0
 	//update_vulkan()
 }
 
 @(require_results)
 pick_physical_device :: proc() -> vk.Result
 {
+    engine_ctx := engine_context()
 	score_physical_device :: proc(device: vk.PhysicalDevice) -> (score: int)
 	{
+	engine_ctx := engine_context()
 		props: vk.PhysicalDeviceProperties
 		vk.GetPhysicalDeviceProperties(device, &props)
 
@@ -451,16 +454,16 @@ pick_physical_device :: proc() -> vk.Result
 	}
 
 	count: u32
-	vk.EnumeratePhysicalDevices(g_renderbase.instance, &count, nil) or_return
+	vk.EnumeratePhysicalDevices(engine_ctx.renderbase.instance, &count, nil) or_return
 	if count == 0 {log.panic("vulkan: no GPU found")}
 
 	devices := make([]vk.PhysicalDevice, count, context.temp_allocator)
-	vk.EnumeratePhysicalDevices(g_renderbase.instance, &count, raw_data(devices)) or_return
+	vk.EnumeratePhysicalDevices(engine_ctx.renderbase.instance, &count, raw_data(devices)) or_return
 
 	best_device_score := -1
 	for device in devices {
 		if score := score_physical_device(device); score > best_device_score {
-			g_renderbase.physical_device = device
+			engine_ctx.renderbase.physical_device = device
 			best_device_score = score
 		}
 	}
@@ -479,6 +482,7 @@ Queue_Family_Indices :: struct {
 
 find_queue_families :: proc(device: vk.PhysicalDevice) -> (ids: Queue_Family_Indices)
 {
+    engine_ctx := engine_context()
 	count: u32
 	vk.GetPhysicalDeviceQueueFamilyProperties(device, &count, nil)
 
@@ -491,7 +495,7 @@ find_queue_families :: proc(device: vk.PhysicalDevice) -> (ids: Queue_Family_Ind
 		}
 
 		supported: b32
-		vk.GetPhysicalDeviceSurfaceSupportKHR(device, u32(i), g_renderbase.surface, &supported)
+		vk.GetPhysicalDeviceSurfaceSupportKHR(device, u32(i), engine_ctx.renderbase.surface, &supported)
 		if supported {
 			ids.present = u32(i)
 		}
@@ -508,6 +512,7 @@ find_queue_families :: proc(device: vk.PhysicalDevice) -> (ids: Queue_Family_Ind
 
 set_compute_queue_family_index :: proc(device: vk.PhysicalDevice, ids: ^Queue_Family_Indices)
 {
+    engine_ctx := engine_context()
 
    count: u32
    vk.GetPhysicalDeviceQueueFamilyProperties(device, &count, nil)
@@ -546,23 +551,24 @@ Swapchain_Support :: struct {
 
 query_swapchain_support :: proc(device: vk.PhysicalDevice,allocator := context.temp_allocator,) -> (support: Swapchain_Support,result: vk.Result,)
 {
+    engine_ctx := engine_context()
 	// NOTE: looks like a wrong binding with the third arg being a multipointer.
-	vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(device, g_renderbase.surface, &support.capabilities) or_return
+	vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(device, engine_ctx.renderbase.surface, &support.capabilities) or_return
 
 	{
 		count: u32
-		vk.GetPhysicalDeviceSurfaceFormatsKHR(device, g_renderbase.surface, &count, nil) or_return
+		vk.GetPhysicalDeviceSurfaceFormatsKHR(device, engine_ctx.renderbase.surface, &count, nil) or_return
 
 		support.formats = make([]vk.SurfaceFormatKHR, count, allocator)
-		vk.GetPhysicalDeviceSurfaceFormatsKHR(device, g_renderbase.surface, &count, raw_data(support.formats)) or_return
+		vk.GetPhysicalDeviceSurfaceFormatsKHR(device, engine_ctx.renderbase.surface, &count, raw_data(support.formats)) or_return
 	}
 
 	{
 		count: u32
-		vk.GetPhysicalDeviceSurfacePresentModesKHR(device, g_renderbase.surface, &count, nil) or_return
+		vk.GetPhysicalDeviceSurfacePresentModesKHR(device, engine_ctx.renderbase.surface, &count, nil) or_return
 
 		support.presentModes = make([]vk.PresentModeKHR, count, allocator)
-		vk.GetPhysicalDeviceSurfacePresentModesKHR(device, g_renderbase.surface, &count, raw_data(support.presentModes)) or_return
+		vk.GetPhysicalDeviceSurfacePresentModesKHR(device, engine_ctx.renderbase.surface, &count, raw_data(support.presentModes)) or_return
 	}
 
 	return
@@ -570,6 +576,7 @@ query_swapchain_support :: proc(device: vk.PhysicalDevice,allocator := context.t
 
 choose_swapchain_surface_format :: proc(formats: []vk.SurfaceFormatKHR) -> vk.SurfaceFormatKHR
 {
+    engine_ctx := engine_context()
     for format in formats {
 		if format.format == .B8G8R8A8_UNORM && format.colorSpace == .SRGB_NONLINEAR {
 			return format
@@ -582,6 +589,7 @@ choose_swapchain_surface_format :: proc(formats: []vk.SurfaceFormatKHR) -> vk.Su
 
 choose_swapchain_present_mode :: proc(modes: []vk.PresentModeKHR) -> vk.PresentModeKHR
 {
+    engine_ctx := engine_context()
 	// We would like mailbox for the best tradeoff between tearing and latency.
 	for mode in modes {
 		if mode == .MAILBOX {
@@ -595,12 +603,13 @@ choose_swapchain_present_mode :: proc(modes: []vk.PresentModeKHR) -> vk.PresentM
 
 choose_swapchain_extent :: proc(capabilities: vk.SurfaceCapabilitiesKHR) -> vk.Extent2D
 {
+    engine_ctx := engine_context()
 	if capabilities.currentExtent.width != max(u32)
 	{
 		return capabilities.currentExtent
 	}
 
-	width, height := glfw.GetFramebufferSize(g_window.handle)
+	width, height := glfw.GetFramebufferSize(engine_ctx.window.handle)
 	return(
 		vk.Extent2D {
 			width = clamp(u32(width), capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
@@ -611,9 +620,10 @@ choose_swapchain_extent :: proc(capabilities: vk.SurfaceCapabilitiesKHR) -> vk.E
 
 find_supported_format :: proc(candidates : []vk.Format, tiling : vk.ImageTiling, features : vk.FormatFeatureFlags) -> vk.Format
 {
+    engine_ctx := engine_context()
 	for format in candidates{
 		props : vk.FormatProperties
-		vk.GetPhysicalDeviceFormatProperties(g_renderbase.physical_device, format, &props)
+		vk.GetPhysicalDeviceFormatProperties(engine_ctx.renderbase.physical_device, format, &props)
 
 		if(tiling == .LINEAR && (props.linearTilingFeatures & features) == features) do return format
 		else if (tiling == .OPTIMAL && (props.optimalTilingFeatures & features) == features) do return format
@@ -633,13 +643,13 @@ find_depth_format :: proc() -> vk.Format
 
 glfw_error_callback :: proc "c" (code: i32, description: cstring)
 {
-	context = g_renderbase.ctx
+	context = engine_context().renderbase.ctx
 	log.errorf("glfw: %i: %s", code, description)
 }
 
 vk_messenger_callback :: proc "system" (messageSeverity: vk.DebugUtilsMessageSeverityFlagsEXT,messageTypes: vk.DebugUtilsMessageTypeFlagsEXT,pCallbackData: ^vk.DebugUtilsMessengerCallbackDataEXT,pUserData: rawptr,) -> b32
 {
-	context = g_renderbase.ctx
+	context = engine_ctx.renderbase.ctx
 
 	level: log.Level
 	if .ERROR in messageSeverity {
@@ -658,6 +668,7 @@ vk_messenger_callback :: proc "system" (messageSeverity: vk.DebugUtilsMessageSev
 
 physical_device_extensions :: proc(device: vk.PhysicalDevice,allocator := context.temp_allocator,) -> (exts: []vk.ExtensionProperties,res: vk.Result,)
 {
+    engine_ctx := engine_context()
 	count: u32
 	vk.EnumerateDeviceExtensionProperties(device, nil, &count, nil) or_return
 
@@ -669,10 +680,11 @@ physical_device_extensions :: proc(device: vk.PhysicalDevice,allocator := contex
 
 create_swapchain :: proc()
 {
-	indices := find_queue_families(g_renderbase.physical_device)
+    engine_ctx := engine_context()
+	indices := find_queue_families(engine_ctx.renderbase.physical_device)
 	// Setup swapchain.
 	{
-		support, result := query_swapchain_support(g_renderbase.physical_device, context.temp_allocator)
+		support, result := query_swapchain_support(engine_ctx.renderbase.physical_device, context.temp_allocator)
 		if result != .SUCCESS {
 			log.panicf("vulkan: query swapchain failed: %v", result)
 		}
@@ -681,8 +693,8 @@ create_swapchain :: proc()
 		present_mode := choose_swapchain_present_mode(support.presentModes)
 		extent := choose_swapchain_extent(support.capabilities)
 
-		g_renderbase.swapchain_format = surface_format
-		g_renderbase.swapchain_extent = extent
+		engine_ctx.renderbase.swapchain_format = surface_format
+		engine_ctx.renderbase.swapchain_extent = extent
 
 		image_count := support.capabilities.minImageCount + 1
 		if support.capabilities.maxImageCount > 0 && image_count > support.capabilities.maxImageCount {
@@ -691,7 +703,7 @@ create_swapchain :: proc()
 
 		create_info := vk.SwapchainCreateInfoKHR {
 			sType            = .SWAPCHAIN_CREATE_INFO_KHR,
-			surface          = g_renderbase.surface,
+			surface          = engine_ctx.renderbase.surface,
 			minImageCount    = image_count,
 			imageFormat      = surface_format.format,
 			imageColorSpace  = surface_format.colorSpace,
@@ -721,93 +733,99 @@ create_swapchain :: proc()
 		create_info.presentMode = present_mode
 		create_info.clipped = true
 
-		must(vk.CreateSwapchainKHR(g_renderbase.device, &create_info, nil, &g_renderbase.swapchain))
+		must(vk.CreateSwapchainKHR(engine_ctx.renderbase.device, &create_info, nil, &engine_ctx.renderbase.swapchain))
 	}
 
 	// Setup swapchain images.
 	{
 		count: u32
-		must(vk.GetSwapchainImagesKHR(g_renderbase.device, g_renderbase.swapchain, &count, nil))
+		must(vk.GetSwapchainImagesKHR(engine_ctx.renderbase.device, engine_ctx.renderbase.swapchain, &count, nil))
 
-		g_renderbase.swapchain_images = make([]vk.Image, count)
-		g_renderbase.swapchain_views = make([]vk.ImageView, count)
-		must(vk.GetSwapchainImagesKHR(g_renderbase.device, g_renderbase.swapchain, &count, raw_data(g_renderbase.swapchain_images)))
+		engine_ctx.renderbase.swapchain_images = make([]vk.Image, count)
+		engine_ctx.renderbase.swapchain_views = make([]vk.ImageView, count)
+		must(vk.GetSwapchainImagesKHR(engine_ctx.renderbase.device, engine_ctx.renderbase.swapchain, &count, raw_data(engine_ctx.renderbase.swapchain_images)))
 
-		for image, i in g_renderbase.swapchain_images {
+		for image, i in engine_ctx.renderbase.swapchain_images {
 			create_info := vk.ImageViewCreateInfo {
 				sType = .IMAGE_VIEW_CREATE_INFO,
 				image = image,
 				viewType = .D2,
-				format = g_renderbase.swapchain_format.format,
+				format = engine_ctx.renderbase.swapchain_format.format,
 				subresourceRange = {aspectMask = {.COLOR}, levelCount = 1, layerCount = 1},
 			}
-			must(vk.CreateImageView(g_renderbase.device, &create_info, nil, &g_renderbase.swapchain_views[i]))
+			must(vk.CreateImageView(engine_ctx.renderbase.device, &create_info, nil, &engine_ctx.renderbase.swapchain_views[i]))
 		}
 	}
 }
 
 destroy_swapchain :: proc()
 {
-	for view in g_renderbase.swapchain_views {
-		vk.DestroyImageView(g_renderbase.device, view, nil)
+    engine_ctx := engine_context()
+	for view in engine_ctx.renderbase.swapchain_views {
+	vk.DestroyImageView(engine_ctx.renderbase.device, view, nil)
 	}
-	delete(g_renderbase.swapchain_views)
-	delete(g_renderbase.swapchain_images)
-	vk.DestroySwapchainKHR(g_renderbase.device, g_renderbase.swapchain, nil)
+	delete(engine_ctx.renderbase.swapchain_views)
+	delete(engine_ctx.renderbase.swapchain_images)
+	vk.DestroySwapchainKHR(engine_ctx.renderbase.device, engine_ctx.renderbase.swapchain, nil)
 }
 
 create_framebuffers :: proc()
 {
-    g_renderbase.swapchain_frame_buffers = make([]vk.Framebuffer, len(g_renderbase.swapchain_views))
-    for view, i in g_renderbase.swapchain_views {
-        attachments := []vk.ImageView{view, g_renderbase.depth_view} // Color and depth attachments
+    engine_ctx := engine_context()
+    engine_ctx.renderbase.swapchain_frame_buffers = make([]vk.Framebuffer, len(engine_ctx.renderbase.swapchain_views))
+    for view, i in engine_ctx.renderbase.swapchain_views {
+        attachments := []vk.ImageView{view, engine_ctx.renderbase.depth_view} // Color and depth attachments
         frame_buffer := vk.FramebufferCreateInfo {
             sType           = .FRAMEBUFFER_CREATE_INFO,
-            renderPass      = g_renderbase.render_pass,
+            renderPass      = engine_ctx.renderbase.render_pass,
             attachmentCount = 2,
             pAttachments    = raw_data(attachments),
-            width           = g_renderbase.swapchain_extent.width,
-            height          = g_renderbase.swapchain_extent.height,
+            width           = engine_ctx.renderbase.swapchain_extent.width,
+            height          = engine_ctx.renderbase.swapchain_extent.height,
             layers          = 1,
         }
-        must(vk.CreateFramebuffer(g_renderbase.device, &frame_buffer, nil, &g_renderbase.swapchain_frame_buffers[i]))
+        must(vk.CreateFramebuffer(engine_ctx.renderbase.device, &frame_buffer, nil, &engine_ctx.renderbase.swapchain_frame_buffers[i]))
     }
 }
 
 create_pipeline_cache :: proc()
 {
+    engine_ctx := engine_context()
 	create_info : vk.PipelineCacheCreateInfo = {
 		sType = .PIPELINE_CACHE_CREATE_INFO,
 	}
-	must(vk.CreatePipelineCache(g_renderbase.device, &create_info, nil, &g_renderbase.pipeline_cache))
+	must(vk.CreatePipelineCache(engine_ctx.renderbase.device, &create_info, nil, &engine_ctx.renderbase.pipeline_cache))
 }
 
 init_vma :: proc()
 {
+    engine_ctx := engine_context()
 	vma_funcs := vma.create_vulkan_functions()
 
 	create_info := vma.AllocatorCreateInfo {
 		flags = {.EXT_MEMORY_BUDGET},
 		vulkanApiVersion = vk.API_VERSION_1_3,
-		instance = g_renderbase.instance,
-		device = g_renderbase.device,
-		physicalDevice = g_renderbase.physical_device,
+		instance = engine_ctx.renderbase.instance,
+		device = engine_ctx.renderbase.device,
+		physicalDevice = engine_ctx.renderbase.physical_device,
 		pVulkanFunctions = &vma_funcs
 	}
-	must(vma.CreateAllocator(&create_info, &g_renderbase.vma_allocator))
+	must(vma.CreateAllocator(&create_info, &engine_ctx.renderbase.vma_allocator))
 }
 
 create_depth_resources :: proc()
 {
+    engine_ctx := engine_context()
     depth_format := find_depth_format()
-    create_image(g_renderbase.swapchain_extent.width, g_renderbase.swapchain_extent.height, depth_format, .OPTIMAL, .DEPTH_STENCIL_ATTACHMENT, &g_renderbase.depth_image, &g_renderbase.depth_allocation)
-    g_renderbase.depth_view = create_image_view(g_renderbase.depth_image, depth_format, {.DEPTH})
-    transition_image_layout(g_renderbase.depth_image, depth_format, .UNDEFINED, .DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    create_image(engine_ctx.renderbase.swapchain_extent.width, engine_ctx.renderbase.swapchain_extent.height, depth_format, .OPTIMAL, .DEPTH_STENCIL_ATTACHMENT, &engine_ctx.renderbase.depth_image, &engine_ctx.renderbase.depth_allocation)
+    engine_ctx.renderbase.depth_view = create_image_view(engine_ctx.renderbase.depth_image, depth_format, {.DEPTH})
+    transition_image_layout(engine_ctx.renderbase.depth_image, depth_format, .UNDEFINED, .DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 }
 destroy_depth_resources :: proc()
 {
-    vk.DestroyImageView(g_renderbase.device, g_renderbase.depth_view, nil)
-    vma.DestroyImage(g_renderbase.vma_allocator, g_renderbase.depth_image, g_renderbase.depth_allocation)
+    engine_ctx := engine_context()
+    vk.DestroyImageView(engine_ctx.renderbase.device, engine_ctx.renderbase.depth_view, nil)
+    vma.DestroyImage(engine_ctx.renderbase.vma_allocator, engine_ctx.renderbase.depth_image, engine_ctx.renderbase.depth_allocation)
 }
 
 create_image :: proc (width, height : u32,format : vk.Format, tiling : vk.ImageTiling,usage : vk.ImageUsageFlag, image : ^vk.Image,allocation : ^vma.Allocation)
@@ -827,11 +845,12 @@ create_image :: proc (width, height : u32,format : vk.Format, tiling : vk.ImageT
 	}
 
 	alloc_info := vma.AllocationCreateInfo{usage = .AUTO}
-	must(vma.CreateImage(g_renderbase.vma_allocator, &image_info, &alloc_info, image, allocation, nil))
+	must(vma.CreateImage(engine_context().renderbase.vma_allocator, &image_info, &alloc_info, image, allocation, nil))
 }
 
 create_image_view :: proc(image: vk.Image, format: vk.Format, aspect_mask: vk.ImageAspectFlags) -> vk.ImageView
 {
+    engine_ctx := engine_context()
     view_info := vk.ImageViewCreateInfo{
         sType = .IMAGE_VIEW_CREATE_INFO,
         image = image,
@@ -844,12 +863,13 @@ create_image_view :: proc(image: vk.Image, format: vk.Format, aspect_mask: vk.Im
         },
     }
     view: vk.ImageView
-    must(vk.CreateImageView(g_renderbase.device, &view_info, nil, &view))
+    must(vk.CreateImageView(engine_ctx.renderbase.device, &view_info, nil, &view))
     return view
 }
 
 create_buffer :: proc(allocator : vma.Allocator, size : vk.DeviceSize, usage : vk.BufferUsageFlags, allocation : ^vma.Allocation, buffer : ^vk.Buffer)
 {
+    engine_ctx := engine_context()
 	buffer_info := vk.BufferCreateInfo{
 		sType = .BUFFER_CREATE_INFO,
 		size = size,
@@ -862,21 +882,23 @@ create_buffer :: proc(allocator : vma.Allocator, size : vk.DeviceSize, usage : v
 
 destroy_framebuffers :: proc()
 {
-	for frame_buffer in g_renderbase.swapchain_frame_buffers {vk.DestroyFramebuffer(g_renderbase.device, frame_buffer, nil)}
-	delete(g_renderbase.swapchain_frame_buffers)
+    engine_ctx := engine_context()
+	for frame_buffer in engine_ctx.renderbase.swapchain_frame_buffers {vk.DestroyFramebuffer(engine_ctx.renderbase.device, frame_buffer, nil)}
+	delete(engine_ctx.renderbase.swapchain_frame_buffers)
 }
 
 recreate_swapchain :: proc()
 {
+    engine_ctx := engine_context()
     // Don't do anything when minimized.
-    for w, h := glfw.GetFramebufferSize(g_window.handle); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(g_window.handle)
+    for w, h := glfw.GetFramebufferSize(engine_ctx.window.handle); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(engine_ctx.window.handle)
     {
         glfw.WaitEvents()
-        if glfw.WindowShouldClose(g_window.handle)
+        if glfw.WindowShouldClose(engine_ctx.window.handle)
         { break }
     }
 
-    vk.DeviceWaitIdle(g_renderbase.device)
+    vk.DeviceWaitIdle(engine_ctx.renderbase.device)
 
     destroy_framebuffers()
     destroy_depth_resources()
@@ -889,6 +911,7 @@ recreate_swapchain :: proc()
 
 create_shader_module :: proc(code: []byte) -> (module: vk.ShaderModule)
 {
+    engine_ctx := engine_context()
 	as_u32 := slice.reinterpret([]u32, code)
 
 	create_info := vk.ShaderModuleCreateInfo {
@@ -896,12 +919,13 @@ create_shader_module :: proc(code: []byte) -> (module: vk.ShaderModule)
 		codeSize = len(code),
 		pCode    = raw_data(as_u32),
 	}
-	must(vk.CreateShaderModule(g_renderbase.device, &create_info, nil, &module))
+	must(vk.CreateShaderModule(engine_ctx.renderbase.device, &create_info, nil, &module))
 	return
 }
 
 record_command_buffer :: proc(command_buffer: vk.CommandBuffer, image_index: u32)
 {
+    engine_ctx := engine_context()
     begin_info := vk.CommandBufferBeginInfo {
         sType = .COMMAND_BUFFER_BEGIN_INFO,
     }
@@ -913,25 +937,25 @@ record_command_buffer :: proc(command_buffer: vk.CommandBuffer, image_index: u32
 
     render_pass_info := vk.RenderPassBeginInfo {
         sType = .RENDER_PASS_BEGIN_INFO,
-        renderPass = g_renderbase.render_pass,
-        framebuffer = g_renderbase.swapchain_frame_buffers[image_index],
-        renderArea = {extent = g_renderbase.swapchain_extent},
+        renderPass = engine_ctx.renderbase.render_pass,
+        framebuffer = engine_ctx.renderbase.swapchain_frame_buffers[image_index],
+        renderArea = {extent = engine_ctx.renderbase.swapchain_extent},
         clearValueCount = 2,
         pClearValues = &clear_values[0],
     }
     vk.CmdBeginRenderPass(command_buffer, &render_pass_info, .INLINE)
 
-    vk.CmdBindPipeline(command_buffer, .GRAPHICS, g_renderbase.pipeline)
+    vk.CmdBindPipeline(command_buffer, .GRAPHICS, engine_ctx.renderbase.pipeline)
 
     viewport := vk.Viewport {
-        width    = f32(g_renderbase.swapchain_extent.width),
-        height   = f32(g_renderbase.swapchain_extent.height),
+        width    = f32(engine_ctx.renderbase.swapchain_extent.width),
+        height   = f32(engine_ctx.renderbase.swapchain_extent.height),
         maxDepth = 1.0,
     }
     vk.CmdSetViewport(command_buffer, 0, 1, &viewport)
 
     scissor := vk.Rect2D {
-        extent = g_renderbase.swapchain_extent,
+        extent = engine_ctx.renderbase.swapchain_extent,
     }
     vk.CmdSetScissor(command_buffer, 0, 1, &scissor)
 
@@ -944,11 +968,13 @@ record_command_buffer :: proc(command_buffer: vk.CommandBuffer, image_index: u32
 
 byte_arr_str :: proc(arr: ^[$N]byte) -> string
 {
+    engine_ctx := engine_context()
 	return strings.truncate_to_byte(string(arr[:]), 0)
 }
 
 must :: proc(result: vk.Result, loc := #caller_location)
 {
+    engine_ctx := engine_context()
 	if result != .SUCCESS {
 		log.panicf("vulkan failure %v", result, location = loc)
 	}
@@ -956,14 +982,15 @@ must :: proc(result: vk.Result, loc := #caller_location)
 
 begin_single_time_commands :: proc() -> vk.CommandBuffer
 {
+    engine_ctx := engine_context()
     alloc_info := vk.CommandBufferAllocateInfo {
         sType              = .COMMAND_BUFFER_ALLOCATE_INFO,
-        commandPool        = g_renderbase.command_pool,
+        commandPool        = engine_ctx.renderbase.command_pool,
         level              = .PRIMARY,
         commandBufferCount = 1,
     }
     command_buffer: vk.CommandBuffer
-    must(vk.AllocateCommandBuffers(g_renderbase.device, &alloc_info, &command_buffer))
+    must(vk.AllocateCommandBuffers(engine_ctx.renderbase.device, &alloc_info, &command_buffer))
 
     begin_info := vk.CommandBufferBeginInfo {
         sType = .COMMAND_BUFFER_BEGIN_INFO,
@@ -975,6 +1002,7 @@ begin_single_time_commands :: proc() -> vk.CommandBuffer
 
 end_single_time_commands :: proc(command_buffer: ^vk.CommandBuffer)
 {
+    engine_ctx := engine_context()
     must(vk.EndCommandBuffer(command_buffer^))
 
     submit_info := vk.SubmitInfo {
@@ -982,14 +1010,15 @@ end_single_time_commands :: proc(command_buffer: ^vk.CommandBuffer)
         commandBufferCount = 1,
         pCommandBuffers    = command_buffer,
     }
-    must(vk.QueueSubmit(g_renderbase.graphics_queue, 1, &submit_info, 0))
-    must(vk.QueueWaitIdle(g_renderbase.graphics_queue))
+    must(vk.QueueSubmit(engine_ctx.renderbase.graphics_queue, 1, &submit_info, 0))
+    must(vk.QueueWaitIdle(engine_ctx.renderbase.graphics_queue))
 
-    vk.FreeCommandBuffers(g_renderbase.device, g_renderbase.command_pool, 1, command_buffer)
+    vk.FreeCommandBuffers(engine_ctx.renderbase.device, engine_ctx.renderbase.command_pool, 1, command_buffer)
 }
 
 transition_image_layout :: proc(image: vk.Image, format: vk.Format, old_layout: vk.ImageLayout, new_layout: vk.ImageLayout)
 {
+    engine_ctx := engine_context()
     command_buffer := begin_single_time_commands()
 
     barrier := vk.ImageMemoryBarrier {
@@ -1058,11 +1087,13 @@ transition_image_layout :: proc(image: vk.Image, format: vk.Format, old_layout: 
 
 has_stencil_component :: proc(format: vk.Format) -> bool
 {
+    engine_ctx := engine_context()
     return format == .D32_SFLOAT_S8_UINT || format == .D24_UNORM_S8_UINT
 }
 
 copy_buffer_to_image :: proc(buffer: vk.Buffer, image: vk.Image, width, height: u32)
 {
+    engine_ctx := engine_context()
     command_buffer := begin_single_time_commands()
 
     region := vk.BufferImageCopy {
@@ -1109,6 +1140,7 @@ Texture :: struct {
 
 texture_destroy :: proc(texture: ^Texture, device: vk.Device, allocator: ^vma.Allocator)
 {
+    engine_ctx := engine_context()
     if texture.sampler != 0 {
         vk.DestroySampler(device, texture.sampler, nil)
     }
@@ -1128,6 +1160,7 @@ texture_create :: proc
 
 texture_load_create :: proc(texture: ^Texture) -> bool
 {
+    engine_ctx := engine_context()
     tex_width, tex_height, tex_channels: i32
     pixels := stbi.load(strings.clone_to_cstring(texture.path, context.temp_allocator), &tex_width, &tex_height, &tex_channels, 4)
     defer     stbi.image_free(pixels)
@@ -1137,16 +1170,18 @@ texture_load_create :: proc(texture: ^Texture) -> bool
     }
     texture.width = u32(tex_width)
     texture.height = u32(tex_height)
-    return texture_create_device(texture, pixels, g_renderbase.device, &g_renderbase.vma_allocator)
+    return texture_create_device(texture, pixels, engine_ctx.renderbase.device, &engine_ctx.renderbase.vma_allocator)
 }
 
 texture_create_w_pixels :: proc(texture: ^Texture, pixels : [^]byte) -> bool
 {
-    return texture_create_device(texture, pixels, g_renderbase.device, &g_renderbase.vma_allocator)
+    engine_ctx := engine_context()
+    return texture_create_device(texture, pixels, engine_ctx.renderbase.device, &engine_ctx.renderbase.vma_allocator)
 }
 
 texture_create_device :: proc(texture: ^Texture, pixels : [^]byte, device: vk.Device, allocator: ^vma.Allocator) -> bool
 {
+    engine_ctx := engine_context()
     image_size := vk.DeviceSize(texture.width * texture.height * 4)
         // Create staging buffer
     staging_buffer: vk.Buffer
@@ -1238,6 +1273,7 @@ texture_create_device :: proc(texture: ^Texture, pixels : [^]byte, device: vk.De
 
 texture_update_descriptor :: proc(texture: ^Texture)
 {
+    engine_ctx := engine_context()
     texture.descriptor = vk.DescriptorImageInfo {
         sampler = texture.sampler,
         imageView = texture.view,
@@ -1278,6 +1314,7 @@ Font :: struct {
 // Renders a string to an RGBA bitmap (returns buffer, width, height)
 render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32)
 {
+    engine_ctx := engine_context()
     // First pass: Compute total width/height
     total_width: f32 = 0
     max_height: f32 = 0
@@ -1285,8 +1322,8 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32)
     for char in text {
         advance_width, left_side_bearing: i32
         x0, y0, x1, y1: i32
-        sttt.GetCodepointHMetrics(&g_raytracer.font.info, char, &advance_width, &left_side_bearing)
-        sttt.GetCodepointBitmapBox(&g_raytracer.font.info, char, scale, scale, &x0, &y0, &x1, &y1)
+        sttt.GetCodepointHMetrics(&engine_ctx.raytracer.font.info, char, &advance_width, &left_side_bearing)
+        sttt.GetCodepointBitmapBox(&engine_ctx.raytracer.font.info, char, scale, scale, &x0, &y0, &x1, &y1)
 
         glyph_width := f32(x1 - x0)
         glyph_height := f32(y1 - y0)
@@ -1296,7 +1333,7 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32)
     }
 
     ascent, descent, line_gap: i32
-    sttt.GetFontVMetrics(&g_raytracer.font.info, &ascent, &descent, &line_gap)
+    sttt.GetFontVMetrics(&engine_ctx.raytracer.font.info, &ascent, &descent, &line_gap)
     baseline = max(baseline, f32(ascent) * scale)
 
     bitmap_width := i32(math.ceil(total_width)) + 10  // Padding
@@ -1310,14 +1347,14 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32)
     for char in text {
         if char == ' ' {
             advance_width: i32
-            sttt.GetCodepointHMetrics(&g_raytracer.font.info, char, &advance_width, nil)
+            sttt.GetCodepointHMetrics(&engine_ctx.raytracer.font.info, char, &advance_width, nil)
             x_pos += f32(advance_width) * scale
             continue
         }
 
         // Render glyph to temp alpha buffer
         glyph_w, glyph_h, glyph_xoff, glyph_yoff: i32
-        glyph_bitmap := sttt.GetCodepointBitmap(&g_raytracer.font.info, scale, scale, char, &glyph_w, &glyph_h, &glyph_xoff, &glyph_yoff)
+        glyph_bitmap := sttt.GetCodepointBitmap(&engine_ctx.raytracer.font.info, scale, scale, char, &glyph_w, &glyph_h, &glyph_xoff, &glyph_yoff)
         defer sttt.FreeBitmap(glyph_bitmap, nil)  // STB cleanup
 
         // Blit alpha to RGBA (white text; adjust color if needed)
@@ -1340,7 +1377,7 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32)
 
         // Advance
         advance_width: i32
-        sttt.GetCodepointHMetrics(&g_raytracer.font.info, char, &advance_width, nil)
+        sttt.GetCodepointHMetrics(&engine_ctx.raytracer.font.info, char, &advance_width, nil)
         x_pos += f32(advance_width) * scale
     }
 
@@ -1349,6 +1386,7 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32)
 
 create_texture_from_bitmap :: proc(bitmap: []u8, width, height: i32) -> Texture
 {
+    engine_ctx := engine_context()
     tex: Texture
     tex.width = u32(width)
     tex.height = u32(height)
@@ -1367,12 +1405,12 @@ create_texture_from_bitmap :: proc(bitmap: []u8, width, height: i32) -> Texture
         flags = {.HOST_ACCESS_SEQUENTIAL_WRITE},
         usage = .AUTO,
     }
-    must(vma.CreateBuffer(g_renderbase.vma_allocator, &staging_buffer_info, &staging_alloc_info, &staging_buffer, &staging_allocation, nil))
+    must(vma.CreateBuffer(engine_ctx.renderbase.vma_allocator, &staging_buffer_info, &staging_alloc_info, &staging_buffer, &staging_allocation, nil))
 
     data: rawptr
-    vma.MapMemory(g_renderbase.vma_allocator, staging_allocation, &data)
+    vma.MapMemory(engine_ctx.renderbase.vma_allocator, staging_allocation, &data)
     mem.copy(data, raw_data(bitmap), int(image_size))
-    vma.UnmapMemory(g_renderbase.vma_allocator, staging_allocation)
+    vma.UnmapMemory(engine_ctx.renderbase.vma_allocator, staging_allocation)
 
     // Image
     image_info := vk.ImageCreateInfo {
@@ -1389,7 +1427,7 @@ create_texture_from_bitmap :: proc(bitmap: []u8, width, height: i32) -> Texture
         sharingMode = .EXCLUSIVE,
     }
     alloc_info := vma.AllocationCreateInfo { usage = .AUTO }
-    must(vma.CreateImage(g_renderbase.vma_allocator, &image_info, &alloc_info, &tex.image, &tex.image_allocation, nil))
+    must(vma.CreateImage(engine_ctx.renderbase.vma_allocator, &image_info, &alloc_info, &tex.image, &tex.image_allocation, nil))
 
     transition_image_layout(tex.image, .R8G8B8A8_UNORM, .UNDEFINED, .TRANSFER_DST_OPTIMAL)
     copy_buffer_to_image(staging_buffer, tex.image, u32(width), u32(height))
@@ -1405,19 +1443,20 @@ create_texture_from_bitmap :: proc(bitmap: []u8, width, height: i32) -> Texture
         addressModeV = .CLAMP_TO_EDGE,
         addressModeW = .CLAMP_TO_EDGE,
     }
-    must(vk.CreateSampler(g_renderbase.device, &sampler_info, nil, &tex.sampler))
+    must(vk.CreateSampler(engine_ctx.renderbase.device, &sampler_info, nil, &tex.sampler))
 
     tex.image_layout = .SHADER_READ_ONLY_OPTIMAL
     texture_update_descriptor(&tex)
 
     // Cleanup staging
-    vma.DestroyBuffer(g_renderbase.vma_allocator, staging_buffer, staging_allocation)
+    vma.DestroyBuffer(engine_ctx.renderbase.vma_allocator, staging_buffer, staging_allocation)
 
     return tex
 }
 
 bake_font_atlas :: proc(font_path: string, pixel_height: f32)
 {
+    engine_ctx := engine_context()
     // Load TTF (e.g., "../assets/fonts/arial.ttf")
     ttf_data, ok := os.read_entire_file(font_path)
     if !ok { log.panic("Failed to load font") }
@@ -1448,8 +1487,8 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32)
         raw_data(&baked_chars)
     )
 
-    g_raytracer.font.info = info
-    g_raytracer.font.baked_chars = baked_chars
+    engine_ctx.raytracer.font.info = info
+    engine_ctx.raytracer.font.baked_chars = baked_chars
 
     // Create Vulkan texture from bitmap (RGBA, assuming 1-channel bitmap -> expand to RGBA)
     rgba_data := make([]byte, bitmap_width * bitmap_height * 4, context.temp_allocator)
@@ -1462,29 +1501,29 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32)
     }
 
     // Create texture (adapt your texture_create_device)
-    g_raytracer.font.atlas_texture = Texture{path = font_path}  // Reuse path for logging
-    g_raytracer.font.atlas_texture.width = u32(bitmap_width)
-    g_raytracer.font.atlas_texture.height = u32(bitmap_height)
+    engine_ctx.raytracer.font.atlas_texture = Texture{path = font_path}  // Reuse path for logging
+    engine_ctx.raytracer.font.atlas_texture.width = u32(bitmap_width)
+    engine_ctx.raytracer.font.atlas_texture.height = u32(bitmap_height)
     // Manual create: staging buffer, copy to image, etc. (copy from texture_create_device)
     // ... (use create_image, copy_buffer_to_image, etc., with .R8G8B8A8_UNORM)
     // Set sampler to .LINEAR for smooth scaling
-    // Call texture_update_descriptor(&g_raytracer.font.atlas_texture)
+    // Call texture_update_descriptor(&engine_ctx.raytracer.font.atlas_texture)
     //
-    if(texture_create(&g_raytracer.font.atlas_texture, raw_data(rgba_data)))
+    if(texture_create(&engine_ctx.raytracer.font.atlas_texture, raw_data(rgba_data)))
     {
-        append(&g_raytracer.bindless_textures, g_raytracer.font.atlas_texture)
+        append(&engine_ctx.raytracer.bindless_textures, engine_ctx.raytracer.font.atlas_texture)
         g_texture_indexes["Deutsch.ttf"] = i32(len(g_texture_indexes))
     }
-    texture_update_descriptor(&g_raytracer.font.atlas_texture)
+    texture_update_descriptor(&engine_ctx.raytracer.font.atlas_texture)
 
     // Store per-char UVs and metrics
-    g_raytracer.font.scale = sttt.ScaleForPixelHeight(&info, pixel_height)
-    g_raytracer.font.atlas_width, g_raytracer.font.atlas_height = bitmap_width, bitmap_height
+    engine_ctx.raytracer.font.scale = sttt.ScaleForPixelHeight(&info, pixel_height)
+    engine_ctx.raytracer.font.atlas_width, engine_ctx.raytracer.font.atlas_height = bitmap_width, bitmap_height
     for i in 0..<len(baked_chars)
     {
         c := baked_chars[i]
         char := rune(char_range[0] + rune(i))
-        g_raytracer.font.char_data[char] = {
+        engine_ctx.raytracer.font.char_data[char] = {
             uv_min = {f32(c.x0)/f32(bitmap_width), f32(c.y0)/f32(bitmap_height)},
             uv_ext = {f32(c.x1-c.x0)/f32(bitmap_width), f32(c.y1-c.y0)/f32(bitmap_height)},
             advance = c.xadvance,
@@ -1495,10 +1534,11 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32)
 
 destroy_vulkan :: proc()
 {
+    engine_ctx := engine_context()
     // Final cleanup after device is destroyed - only instance-level resources
-    vk.DestroyDebugUtilsMessengerEXT(g_renderbase.instance, g_renderbase.dbg_messenger, nil)
-    vk.DestroyInstance(g_renderbase.instance, nil)
-    glfw.DestroyWindow(g_window.handle)
+    vk.DestroyDebugUtilsMessengerEXT(engine_ctx.renderbase.instance, engine_ctx.renderbase.dbg_messenger, nil)
+    vk.DestroyInstance(engine_ctx.renderbase.instance, nil)
+    glfw.DestroyWindow(engine_ctx.window.handle)
     glfw.Terminate()
 }
 
@@ -1607,21 +1647,23 @@ ComputeRaytracer :: struct {
 //----------------------------------------------------------------------------\\
 initialize_raytracer :: proc()
 {
+    engine_ctx := engine_context()
     prepare_storage_buffers()
     create_uniform_buffers()
-    prepare_texture_target(&g_raytracer.compute_texture, u32(g_window.width), u32(g_window.height), .R8G8B8A8_UNORM)
+    prepare_texture_target(&engine_ctx.raytracer.compute_texture, u32(engine_ctx.window.width), u32(engine_ctx.window.height), .R8G8B8A8_UNORM)
     create_descriptor_set_layout() // multiple
     create_graphics_pipeline() // multiple
     create_descriptor_pool()
     create_descriptor_sets()
     prepare_compute()
     create_command_buffers(1.0, 0, 0) // multiple
-    g_raytracer.prepared = true
+    engine_ctx.raytracer.prepared = true
 }
 
 // Initialize a uniform buffer with the provided data
 init_uniform_buffer :: proc(vb: ^gpu.VBuffer, rc: ^RenderBase, data: $T)
 {
+    engine_ctx := engine_context()
     size := u64(size_of(T))
     create_buffer(rc, size, {.UNIFORM_BUFFER}, &vb.allocation, &vb.buffer)
     vb.buffer_info = vk.DescriptorBufferInfo{buffer = vb.buffer, offset = 0, range = size}
@@ -1632,25 +1674,26 @@ init_uniform_buffer :: proc(vb: ^gpu.VBuffer, rc: ^RenderBase, data: $T)
 }
 prepare_storage_buffers :: proc()
 {
-    reserve(&g_raytracer.materials, MAX_MATERIALS)
-    reserve(&g_raytracer.lights, MAX_LIGHTS)
+    engine_ctx := engine_context()
+    reserve(&engine_ctx.raytracer.materials, MAX_MATERIALS)
+    reserve(&engine_ctx.raytracer.lights, MAX_LIGHTS)
 
     gpu.vbuffer_init_storage_buffer_custom_size(
-        &g_raytracer.compute.storage_buffers.primitives,
-        &g_renderbase.vma_allocator,
-        g_raytracer.primitives[:],
+        &engine_ctx.raytracer.compute.storage_buffers.primitives,
+        &engine_ctx.renderbase.vma_allocator,
+        engine_ctx.raytracer.primitives[:],
         MAX_OBJS)
 
     gpu.vbuffer_init_storage_buffer_custom_size(
-        &g_raytracer.compute.storage_buffers.lights,
-        &g_renderbase.vma_allocator,
-        g_raytracer.lights[:],
+        &engine_ctx.raytracer.compute.storage_buffers.lights,
+        &engine_ctx.renderbase.vma_allocator,
+        engine_ctx.raytracer.lights[:],
         MAX_LIGHTS)
 
     gpu.vbuffer_init_storage_buffer_custom_size(
-        &g_raytracer.compute.storage_buffers.materials,
-        &g_renderbase.vma_allocator,
-        g_raytracer.materials[:],
+        &engine_ctx.raytracer.compute.storage_buffers.materials,
+        &engine_ctx.renderbase.vma_allocator,
+        engine_ctx.raytracer.materials[:],
         MAX_MATERIALS)
 
    gui_cmp := Cmp_Gui{{0, 0}, {1, 1}, {0, 0}, {1, 1}, 0, "title.png", 0, 0, false}
@@ -1658,31 +1701,33 @@ prepare_storage_buffers :: proc()
        align_min = gui_cmp.align_min, align_ext = gui_cmp.align_ext,
        layer = gui_cmp.layer, id = g_texture_indexes[gui_cmp.id], alpha = gui_cmp.alpha
    }
-   append(&g_raytracer.guis, gpu_gui)
-   gui_cmp.ref = i32(len(g_raytracer.guis))
+   append(&engine_ctx.raytracer.guis, gpu_gui)
+   gui_cmp.ref = i32(len(engine_ctx.raytracer.guis))
    gpu.vbuffer_init_storage_buffer_custom_size(
-        &g_raytracer.compute.storage_buffers.guis,
-        &g_renderbase.vma_allocator,
-        g_raytracer.guis[:],
+        &engine_ctx.raytracer.compute.storage_buffers.guis,
+        &engine_ctx.renderbase.vma_allocator,
+        engine_ctx.raytracer.guis[:],
         MAX_GUIS)
    gpu.vbuffer_init_storage_buffer_custom_size(
-       &g_raytracer.compute.storage_buffers.bvh,
-       &g_renderbase.vma_allocator,
-       g_raytracer.bvh[:],
+       &engine_ctx.raytracer.compute.storage_buffers.bvh,
+       &engine_ctx.renderbase.vma_allocator,
+       engine_ctx.raytracer.bvh[:],
        MAX_NODES)
 }
 
 create_uniform_buffers :: proc()
 {
-    gpu.vbuffer_init_custom(&g_raytracer.compute.uniform_buffer, &g_renderbase.vma_allocator, 1, {.UNIFORM_BUFFER}, .CPU_TO_GPU)
-    gpu.vbuffer_apply_changes_no_data(&g_raytracer.compute.uniform_buffer, &g_renderbase.vma_allocator)
+    engine_ctx := engine_context()
+    gpu.vbuffer_init_custom(&engine_ctx.raytracer.compute.uniform_buffer, &engine_ctx.renderbase.vma_allocator, 1, {.UNIFORM_BUFFER}, .CPU_TO_GPU)
+    gpu.vbuffer_apply_changes_no_data(&engine_ctx.raytracer.compute.uniform_buffer, &engine_ctx.renderbase.vma_allocator)
 }
 
 prepare_texture_target :: proc(tex: ^Texture, width, height: u32, format: vk.Format)
 {
+    engine_ctx := engine_context()
     // Get format properties to check if the format supports storage image operations
     format_properties: vk.FormatProperties
-    vk.GetPhysicalDeviceFormatProperties(g_renderbase.physical_device, format, &format_properties)
+    vk.GetPhysicalDeviceFormatProperties(engine_ctx.renderbase.physical_device, format, &format_properties)
     if (format_properties.optimalTilingFeatures & { .STORAGE_IMAGE }) == {} {
         panic("Format does not support storage image operations")
     }
@@ -1708,7 +1753,7 @@ prepare_texture_target :: proc(tex: ^Texture, width, height: u32, format: vk.For
     alloc_info := vma.AllocationCreateInfo{
         usage = .AUTO_PREFER_DEVICE,
     }
-    must(vma.CreateImage(g_renderbase.vma_allocator, &image_info, &alloc_info, &tex.image, &tex.image_allocation, nil))
+    must(vma.CreateImage(engine_ctx.renderbase.vma_allocator, &image_info, &alloc_info, &tex.image, &tex.image_allocation, nil))
 
     // Create image view
     view_info := vk.ImageViewCreateInfo{
@@ -1724,7 +1769,7 @@ prepare_texture_target :: proc(tex: ^Texture, width, height: u32, format: vk.For
             layerCount = 1,
         },
     }
-    must(vk.CreateImageView(g_renderbase.device, &view_info, nil, &tex.view))
+    must(vk.CreateImageView(engine_ctx.renderbase.device, &view_info, nil, &tex.view))
 
     // Create sampler
     sampler_info := vk.SamplerCreateInfo{
@@ -1744,7 +1789,7 @@ prepare_texture_target :: proc(tex: ^Texture, width, height: u32, format: vk.For
         maxLod = 0.0,
         borderColor = .FLOAT_OPAQUE_WHITE,
     }
-    must(vk.CreateSampler(g_renderbase.device, &sampler_info, nil, &tex.sampler))
+    must(vk.CreateSampler(engine_ctx.renderbase.device, &sampler_info, nil, &tex.sampler))
 
     // Transition layout to GENERAL (for compute storage/sampling) before descriptor use
     transition_image_layout(tex.image, format, .UNDEFINED, .GENERAL)
@@ -1759,6 +1804,7 @@ prepare_texture_target :: proc(tex: ^Texture, width, height: u32, format: vk.For
 
 create_descriptor_set_layout :: proc()
 {
+    engine_ctx := engine_context()
     bindings: [1]vk.DescriptorSetLayoutBinding
     bindings[0] = vk.DescriptorSetLayoutBinding{
         binding = 0,
@@ -1772,18 +1818,19 @@ create_descriptor_set_layout :: proc()
         bindingCount = 1,
         pBindings = &bindings[0],
     }
-    must(vk.CreateDescriptorSetLayout(g_renderbase.device, &layout_info, nil, &g_raytracer.graphics.descriptor_set_layout))
+    must(vk.CreateDescriptorSetLayout(engine_ctx.renderbase.device, &layout_info, nil, &engine_ctx.raytracer.graphics.descriptor_set_layout))
 
     pipeline_layout_info := vk.PipelineLayoutCreateInfo{
         sType = .PIPELINE_LAYOUT_CREATE_INFO,
         setLayoutCount = 1,
-        pSetLayouts = &g_raytracer.graphics.descriptor_set_layout,
+        pSetLayouts = &engine_ctx.raytracer.graphics.descriptor_set_layout,
     }
-    must(vk.CreatePipelineLayout(g_renderbase.device, &pipeline_layout_info, nil, &g_raytracer.graphics.pipeline_layout))
+    must(vk.CreatePipelineLayout(engine_ctx.renderbase.device, &pipeline_layout_info, nil, &engine_ctx.raytracer.graphics.pipeline_layout))
 }
 
 create_graphics_pipeline :: proc()
 {
+    engine_ctx := engine_context()
     // Input assembly state
     input_assembly_state := vk.PipelineInputAssemblyStateCreateInfo{
         sType = .PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -1865,7 +1912,7 @@ create_graphics_pipeline :: proc()
         pCode = cast(^u32)raw_data(vert_shader_code),
     }
     vert_shader_module: vk.ShaderModule
-    must(vk.CreateShaderModule(g_renderbase.device, &vert_module_info, nil, &vert_shader_module))
+    must(vk.CreateShaderModule(engine_ctx.renderbase.device, &vert_module_info, nil, &vert_shader_module))
 
     frag_module_info := vk.ShaderModuleCreateInfo{
         sType = .SHADER_MODULE_CREATE_INFO,
@@ -1873,7 +1920,7 @@ create_graphics_pipeline :: proc()
         pCode = cast(^u32)raw_data(frag_shader_code),
     }
     frag_shader_module: vk.ShaderModule
-    must(vk.CreateShaderModule(g_renderbase.device, &frag_module_info, nil, &frag_shader_module))
+    must(vk.CreateShaderModule(engine_ctx.renderbase.device, &frag_module_info, nil, &frag_shader_module))
 
     // Shader stages
     vert_shader_stage := vk.PipelineShaderStageCreateInfo{
@@ -1912,20 +1959,21 @@ create_graphics_pipeline :: proc()
         pDepthStencilState = &depth_stencil_state,
         pColorBlendState = &color_blend_state,
         pDynamicState = &dynamic_state,
-        layout = g_raytracer.graphics.pipeline_layout,
-        renderPass = g_renderbase.render_pass,
+        layout = engine_ctx.raytracer.graphics.pipeline_layout,
+        renderPass = engine_ctx.renderbase.render_pass,
         subpass = 0,
     }
 
-    must(vk.CreateGraphicsPipelines(g_renderbase.device, g_renderbase.pipeline_cache, 1, &pipeline_info, nil, &g_raytracer.graphics.pipeline))
+    must(vk.CreateGraphicsPipelines(engine_ctx.renderbase.device, engine_ctx.renderbase.pipeline_cache, 1, &pipeline_info, nil, &engine_ctx.raytracer.graphics.pipeline))
 
     // Destroy shader modules
-    vk.DestroyShaderModule(g_renderbase.device, frag_shader_module, nil)
-    vk.DestroyShaderModule(g_renderbase.device, vert_shader_module, nil)
+    vk.DestroyShaderModule(engine_ctx.renderbase.device, frag_shader_module, nil)
+    vk.DestroyShaderModule(engine_ctx.renderbase.device, vert_shader_module, nil)
 }
 
 create_descriptor_pool :: proc()
 {
+    engine_ctx := engine_context()
     pool_sizes: [5]vk.DescriptorPoolSize
     pool_sizes[0] = { type = .UNIFORM_BUFFER, descriptorCount = 2 }
     pool_sizes[1] = { type = .COMBINED_IMAGE_SAMPLER, descriptorCount = 3 + MAX_TEXTURES }
@@ -1939,34 +1987,36 @@ create_descriptor_pool :: proc()
         poolSizeCount = 5,
         pPoolSizes = &pool_sizes[0],
     }
-    must(vk.CreateDescriptorPool(g_renderbase.device, &pool_info, nil, &g_raytracer.descriptor_pool))
+    must(vk.CreateDescriptorPool(engine_ctx.renderbase.device, &pool_info, nil, &engine_ctx.raytracer.descriptor_pool))
 }
 
 create_descriptor_sets :: proc()
 {
+    engine_ctx := engine_context()
     alloc_info := vk.DescriptorSetAllocateInfo{
         sType = .DESCRIPTOR_SET_ALLOCATE_INFO,
-        descriptorPool = g_raytracer.descriptor_pool,
+        descriptorPool = engine_ctx.raytracer.descriptor_pool,
         descriptorSetCount = 1,
-        pSetLayouts = &g_raytracer.graphics.descriptor_set_layout,
+        pSetLayouts = &engine_ctx.raytracer.graphics.descriptor_set_layout,
     }
-    must(vk.AllocateDescriptorSets(g_renderbase.device, &alloc_info, &g_raytracer.graphics.descriptor_set))
+    must(vk.AllocateDescriptorSets(engine_ctx.renderbase.device, &alloc_info, &engine_ctx.raytracer.graphics.descriptor_set))
     write_set := vk.WriteDescriptorSet{
         sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = g_raytracer.graphics.descriptor_set,
+        dstSet = engine_ctx.raytracer.graphics.descriptor_set,
         dstBinding = 0,
         dstArrayElement = 0,
         descriptorCount = 1,
         descriptorType = .COMBINED_IMAGE_SAMPLER,
-        pImageInfo = &g_raytracer.compute_texture.descriptor,
+        pImageInfo = &engine_ctx.raytracer.compute_texture.descriptor,
     }
-    vk.UpdateDescriptorSets(g_renderbase.device, 1, &write_set, 0, nil)
+    vk.UpdateDescriptorSets(engine_ctx.renderbase.device, 1, &write_set, 0, nil)
 }
 
 prepare_compute :: proc()
 {
+    engine_ctx := engine_context()
     // Get compute queue
-    vk.GetDeviceQueue(g_renderbase.device, g_renderbase.compute_queue_family_index, 0, &g_raytracer.compute.queue)
+    vk.GetDeviceQueue(engine_ctx.renderbase.device, engine_ctx.renderbase.compute_queue_family_index, 0, &engine_ctx.raytracer.compute.queue)
 
     // Define descriptor set layout bindings
     bindings: [13]vk.DescriptorSetLayoutBinding
@@ -2011,33 +2061,33 @@ prepare_compute :: proc()
         pBindings = &bindings[0],
         pNext = &extended_flags_info,
     }
-    must(vk.CreateDescriptorSetLayout(g_renderbase.device, &layout_info, nil, &g_raytracer.compute.descriptor_set_layout))
+    must(vk.CreateDescriptorSetLayout(engine_ctx.renderbase.device, &layout_info, nil, &engine_ctx.raytracer.compute.descriptor_set_layout))
 
     // Create pipeline layout
     pipeline_layout_info := vk.PipelineLayoutCreateInfo{
         sType = .PIPELINE_LAYOUT_CREATE_INFO,
         setLayoutCount = 1,
-        pSetLayouts = &g_raytracer.compute.descriptor_set_layout,
+        pSetLayouts = &engine_ctx.raytracer.compute.descriptor_set_layout,
     }
-    must(vk.CreatePipelineLayout(g_renderbase.device, &pipeline_layout_info, nil, &g_raytracer.compute.pipeline_layout))
+    must(vk.CreatePipelineLayout(engine_ctx.renderbase.device, &pipeline_layout_info, nil, &engine_ctx.raytracer.compute.pipeline_layout))
 
     // Allocate descriptor set
     alloc_info := vk.DescriptorSetAllocateInfo{
         sType = .DESCRIPTOR_SET_ALLOCATE_INFO,
-        descriptorPool = g_raytracer.descriptor_pool,
+        descriptorPool = engine_ctx.raytracer.descriptor_pool,
         descriptorSetCount = 1,
-        pSetLayouts = &g_raytracer.compute.descriptor_set_layout,
+        pSetLayouts = &engine_ctx.raytracer.compute.descriptor_set_layout,
     }
-    must(vk.AllocateDescriptorSets(g_renderbase.device, &alloc_info, &g_raytracer.compute.descriptor_set))
+    must(vk.AllocateDescriptorSets(engine_ctx.renderbase.device, &alloc_info, &engine_ctx.raytracer.compute.descriptor_set))
 
     // Prepare image infos for gui_textures and bindless_textures
     texture_image_infos: [MAX_TEXTURES]vk.DescriptorImageInfo
     for i in 0..<MAX_TEXTURES {
-        texture_image_infos[i] = g_raytracer.gui_textures[i].descriptor
+        texture_image_infos[i] = engine_ctx.raytracer.gui_textures[i].descriptor
     }
-    bindless_image_infos := make([]vk.DescriptorImageInfo, len(g_raytracer.bindless_textures))
+    bindless_image_infos := make([]vk.DescriptorImageInfo, len(engine_ctx.raytracer.bindless_textures))
     defer delete(bindless_image_infos)
-    for t, i in g_raytracer.bindless_textures {
+    for t, i in engine_ctx.raytracer.bindless_textures {
         bindless_image_infos[i] = t.descriptor
     }
 
@@ -2045,161 +2095,161 @@ prepare_compute :: proc()
     write_sets: [dynamic]vk.WriteDescriptorSet
     defer delete(write_sets)
 
-    // Binding 0: STORAGE_IMAGE (always write, assuming g_raytracer.compute_texture.descriptor is valid; it's pImageInfo anyway)
+    // Binding 0: STORAGE_IMAGE (always write, assuming engine_ctx.raytracer.compute_texture.descriptor is valid; it's pImageInfo anyway)
     append(&write_sets, vk.WriteDescriptorSet{
         sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = g_raytracer.compute.descriptor_set,
+        dstSet = engine_ctx.raytracer.compute.descriptor_set,
         dstBinding = 0,
         dstArrayElement = 0,
         descriptorCount = 1,
         descriptorType = .STORAGE_IMAGE,
-        pImageInfo = &g_raytracer.compute_texture.descriptor,
+        pImageInfo = &engine_ctx.raytracer.compute_texture.descriptor,
     })
 
     // Binding 1: UNIFORM_BUFFER (skip if null)
-    if g_raytracer.compute.uniform_buffer.buffer_info.buffer != vk.Buffer(0)
+    if engine_ctx.raytracer.compute.uniform_buffer.buffer_info.buffer != vk.Buffer(0)
     {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 1,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .UNIFORM_BUFFER,
-            pBufferInfo = &g_raytracer.compute.uniform_buffer.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.uniform_buffer.buffer_info,
         })
     }
 
     // Binding 2: STORAGE_BUFFER verts (skip if null)
-    if g_raytracer.compute.storage_buffers.verts.buffer_info.buffer != vk.Buffer(0)
+    if engine_ctx.raytracer.compute.storage_buffers.verts.buffer_info.buffer != vk.Buffer(0)
     {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 2,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.verts.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.verts.buffer_info,
         })
     }
 
     // Binding 3: STORAGE_BUFFER faces (skip if null)
-    if g_raytracer.compute.storage_buffers.faces.buffer_info.buffer != vk.Buffer(0)
+    if engine_ctx.raytracer.compute.storage_buffers.faces.buffer_info.buffer != vk.Buffer(0)
     {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 3,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.faces.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.faces.buffer_info,
         })
     }
 
     // Binding 4: STORAGE_BUFFER blas (skip if null)
-    if g_raytracer.compute.storage_buffers.blas.buffer_info.buffer != vk.Buffer(0)
+    if engine_ctx.raytracer.compute.storage_buffers.blas.buffer_info.buffer != vk.Buffer(0)
     {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 4,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.blas.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.blas.buffer_info,
         })
     }
 
     // Binding 5: STORAGE_BUFFER shapes (skip if null)
-    if g_raytracer.compute.storage_buffers.shapes.buffer_info.buffer != vk.Buffer(0)
+    if engine_ctx.raytracer.compute.storage_buffers.shapes.buffer_info.buffer != vk.Buffer(0)
     {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 5,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.shapes.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.shapes.buffer_info,
         })
     }
 
     // Binding 6: STORAGE_BUFFER primitives (skip if null)
-    if g_raytracer.compute.storage_buffers.primitives.buffer_info.buffer != vk.Buffer(0)
+    if engine_ctx.raytracer.compute.storage_buffers.primitives.buffer_info.buffer != vk.Buffer(0)
     {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 6,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.primitives.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.primitives.buffer_info,
         })
     }
 
     // Binding 7: STORAGE_BUFFER materials (skip if null)
-    if g_raytracer.compute.storage_buffers.materials.buffer_info.buffer != vk.Buffer(0)
+    if engine_ctx.raytracer.compute.storage_buffers.materials.buffer_info.buffer != vk.Buffer(0)
     {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 7,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.materials.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.materials.buffer_info,
         })
     }
 
     // Binding 8: STORAGE_BUFFER lights (skip if null)
-    if g_raytracer.compute.storage_buffers.lights.buffer_info.buffer != vk.Buffer(0)
+    if engine_ctx.raytracer.compute.storage_buffers.lights.buffer_info.buffer != vk.Buffer(0)
     {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 8,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.lights.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.lights.buffer_info,
         })
     }
 
     // Binding 9: STORAGE_BUFFER guis (skip if null)
-    if g_raytracer.compute.storage_buffers.guis.buffer_info.buffer != vk.Buffer(0)
+    if engine_ctx.raytracer.compute.storage_buffers.guis.buffer_info.buffer != vk.Buffer(0)
     {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 9,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.guis.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.guis.buffer_info,
         })
     }
 
     // Binding 10: STORAGE_BUFFER bvh (skip if null)
-    if g_raytracer.compute.storage_buffers.bvh.buffer_info.buffer != vk.Buffer(0)
+    if engine_ctx.raytracer.compute.storage_buffers.bvh.buffer_info.buffer != vk.Buffer(0)
     {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 10,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.bvh.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.bvh.buffer_info,
         })
     }
 
     // Binding 11: COMBINED_IMAGE_SAMPLER array (always write, but could add checks if some are invalid)
     append(&write_sets, vk.WriteDescriptorSet{
         sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = g_raytracer.compute.descriptor_set,
+        dstSet = engine_ctx.raytracer.compute.descriptor_set,
         dstBinding = 11,
         dstArrayElement = 0,
         descriptorCount = MAX_TEXTURES,
@@ -2210,16 +2260,16 @@ prepare_compute :: proc()
     // Binding 12: COMBINED_IMAGE_SAMPLER bindless array (always write, with dynamic count)
     append(&write_sets, vk.WriteDescriptorSet{
         sType = .WRITE_DESCRIPTOR_SET,
-        dstSet = g_raytracer.compute.descriptor_set,
+        dstSet = engine_ctx.raytracer.compute.descriptor_set,
         dstBinding = 12,
         dstArrayElement = 0,
-        descriptorCount = u32(len(g_raytracer.bindless_textures)),
+        descriptorCount = u32(len(engine_ctx.raytracer.bindless_textures)),
         descriptorType = .COMBINED_IMAGE_SAMPLER,
         pImageInfo = raw_data(bindless_image_infos),
     })
 
     // Update descriptor sets (now with potentially fewer than 13 writes)
-    vk.UpdateDescriptorSets(g_renderbase.device, u32(len(write_sets)), raw_data(write_sets), 0, nil)
+    vk.UpdateDescriptorSets(engine_ctx.renderbase.device, u32(len(write_sets)), raw_data(write_sets), 0, nil)
 
     // Create compute pipeline
     shader_code, ok := os.read_entire_file("assets/shaders/raytracing.comp.spv")
@@ -2233,7 +2283,7 @@ prepare_compute :: proc()
         pCode = cast(^u32)raw_data(shader_code),
     }
     shader_module: vk.ShaderModule
-    must(vk.CreateShaderModule(g_renderbase.device, &module_info, nil, &shader_module))
+    must(vk.CreateShaderModule(engine_ctx.renderbase.device, &module_info, nil, &shader_module))
     pipeline_info := vk.ComputePipelineCreateInfo{
         sType = .COMPUTE_PIPELINE_CREATE_INFO,
         stage = {
@@ -2242,34 +2292,34 @@ prepare_compute :: proc()
             module = shader_module,
             pName = "main",
         },
-        layout = g_raytracer.compute.pipeline_layout,
+        layout = engine_ctx.raytracer.compute.pipeline_layout,
     }
-    must(vk.CreateComputePipelines(g_renderbase.device, g_renderbase.pipeline_cache, 1, &pipeline_info, nil, &g_raytracer.compute.pipeline))
-    defer vk.DestroyShaderModule(g_renderbase.device, shader_module, nil)
+    must(vk.CreateComputePipelines(engine_ctx.renderbase.device, engine_ctx.renderbase.pipeline_cache, 1, &pipeline_info, nil, &engine_ctx.raytracer.compute.pipeline))
+    defer vk.DestroyShaderModule(engine_ctx.renderbase.device, shader_module, nil)
 
     // Create command pool
     cmd_pool_info := vk.CommandPoolCreateInfo{
         sType = .COMMAND_POOL_CREATE_INFO,
-        queueFamilyIndex = g_renderbase.compute_queue_family_index,
+        queueFamilyIndex = engine_ctx.renderbase.compute_queue_family_index,
         flags = { .RESET_COMMAND_BUFFER },
     }
-    must(vk.CreateCommandPool(g_renderbase.device, &cmd_pool_info, nil, &g_raytracer.compute.command_pool))
+    must(vk.CreateCommandPool(engine_ctx.renderbase.device, &cmd_pool_info, nil, &engine_ctx.raytracer.compute.command_pool))
 
     // Allocate command buffer
     cmd_buf_info := vk.CommandBufferAllocateInfo{
         sType = .COMMAND_BUFFER_ALLOCATE_INFO,
-        commandPool = g_raytracer.compute.command_pool,
+        commandPool = engine_ctx.raytracer.compute.command_pool,
         level = .PRIMARY,
         commandBufferCount = 1,
     }
-    must(vk.AllocateCommandBuffers(g_renderbase.device, &cmd_buf_info, &g_raytracer.compute.command_buffer))
+    must(vk.AllocateCommandBuffers(engine_ctx.renderbase.device, &cmd_buf_info, &engine_ctx.raytracer.compute.command_buffer))
 
     // Create fence
     fence_info := vk.FenceCreateInfo{
         sType = .FENCE_CREATE_INFO,
         flags = { .SIGNALED },
     }
-    must(vk.CreateFence(g_renderbase.device, &fence_info, nil, &g_raytracer.compute.fence))
+    must(vk.CreateFence(engine_ctx.renderbase.device, &fence_info, nil, &engine_ctx.raytracer.compute.fence))
 
     create_compute_command_buffer()
 
@@ -2277,46 +2327,48 @@ prepare_compute :: proc()
 
 create_compute_command_buffer :: proc()
 {
+    engine_ctx := engine_context()
     cmd_buf_info := vk.CommandBufferBeginInfo {
         sType = .COMMAND_BUFFER_BEGIN_INFO,
         // No flags needed; equivalent to vks::initializers default (no ONE_TIME_SUBMIT for re-recordable if desired)
     }
 
-    must(vk.BeginCommandBuffer(g_raytracer.compute.command_buffer, &cmd_buf_info))
+    must(vk.BeginCommandBuffer(engine_ctx.raytracer.compute.command_buffer, &cmd_buf_info))
 
-    vk.CmdBindPipeline(g_raytracer.compute.command_buffer, .COMPUTE, g_raytracer.compute.pipeline)
-    vk.CmdBindDescriptorSets(g_raytracer.compute.command_buffer, .COMPUTE, g_raytracer.compute.pipeline_layout, 0, 1, &g_raytracer.compute.descriptor_set, 0, nil)
+    vk.CmdBindPipeline(engine_ctx.raytracer.compute.command_buffer, .COMPUTE, engine_ctx.raytracer.compute.pipeline)
+    vk.CmdBindDescriptorSets(engine_ctx.raytracer.compute.command_buffer, .COMPUTE, engine_ctx.raytracer.compute.pipeline_layout, 0, 1, &engine_ctx.raytracer.compute.descriptor_set, 0, nil)
 
     // Dispatch: Matches your /16 (assuming workgroup size 16x16 in shader; adjust if different)
-    vk.CmdDispatch(g_raytracer.compute.command_buffer, g_raytracer.compute_texture.width / 16, g_raytracer.compute_texture.height / 16, 1)
+    vk.CmdDispatch(engine_ctx.raytracer.compute.command_buffer, engine_ctx.raytracer.compute_texture.width / 16, engine_ctx.raytracer.compute_texture.height / 16, 1)
 
-    must(vk.EndCommandBuffer(g_raytracer.compute.command_buffer))
+    must(vk.EndCommandBuffer(engine_ctx.raytracer.compute.command_buffer))
 }
 
 create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, offset_height: i32 = 0)
 {
+    engine_ctx := engine_context()
     // Allocate command buffers if not already done
-    if len(g_renderbase.command_buffers) == 0
+    if len(engine_ctx.renderbase.command_buffers) == 0
     {
-        g_renderbase.command_buffers = make([]vk.CommandBuffer, len(g_renderbase.swapchain_frame_buffers))
+        engine_ctx.renderbase.command_buffers = make([]vk.CommandBuffer, len(engine_ctx.renderbase.swapchain_frame_buffers))
         command_buffer_info := vk.CommandBufferAllocateInfo{
             sType = .COMMAND_BUFFER_ALLOCATE_INFO,
-            commandPool = g_renderbase.command_pool,
+            commandPool = engine_ctx.renderbase.command_pool,
             level = .PRIMARY,
-            commandBufferCount = u32(len(g_renderbase.swapchain_images)),
+            commandBufferCount = u32(len(engine_ctx.renderbase.swapchain_images)),
         }
-        must(vk.AllocateCommandBuffers(g_renderbase.device, &command_buffer_info, &g_renderbase.command_buffers[0]))
+        must(vk.AllocateCommandBuffers(engine_ctx.renderbase.device, &command_buffer_info, &engine_ctx.renderbase.command_buffers[0]))
     }
 
     // Calculate viewport and scissor based on parameters
-    width := f32(g_renderbase.swapchain_extent.width) * swap_ratio
-    height := f32(g_renderbase.swapchain_extent.height) * swap_ratio
+    width := f32(engine_ctx.renderbase.swapchain_extent.width) * swap_ratio
+    height := f32(engine_ctx.renderbase.swapchain_extent.height) * swap_ratio
     x := f32(offset_width)
     y := f32(offset_height)
 
-    for i in 0..<len(g_renderbase.command_buffers)
+    for i in 0..<len(engine_ctx.renderbase.command_buffers)
     {
-        cmd_buffer := g_renderbase.command_buffers[i]
+        cmd_buffer := engine_ctx.renderbase.command_buffers[i]
 
         // Begin command buffer
         begin_info := vk.CommandBufferBeginInfo{
@@ -2332,7 +2384,7 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
             newLayout = .GENERAL,
             srcQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED,
             dstQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED,
-            image = g_raytracer.compute_texture.image,
+            image = engine_ctx.raytracer.compute_texture.image,
             subresourceRange = {
                 aspectMask = { .COLOR},
                 baseMipLevel = 0,
@@ -2359,16 +2411,16 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
         clear_values[1].depthStencil = { depth = 1.0, stencil = 0 }
         render_pass_info := vk.RenderPassBeginInfo{
             sType = .RENDER_PASS_BEGIN_INFO,
-            renderPass = g_renderbase.render_pass,
-            framebuffer = g_renderbase.swapchain_frame_buffers[i],
-            renderArea = { offset = {0, 0}, extent = g_renderbase.swapchain_extent },
+            renderPass = engine_ctx.renderbase.render_pass,
+            framebuffer = engine_ctx.renderbase.swapchain_frame_buffers[i],
+            renderArea = { offset = {0, 0}, extent = engine_ctx.renderbase.swapchain_extent },
             clearValueCount = 2,
             pClearValues = &clear_values[0],
         }
         vk.CmdBeginRenderPass(cmd_buffer, &render_pass_info, .INLINE)
 
         // Bind graphics pipeline
-        vk.CmdBindPipeline(cmd_buffer, .GRAPHICS, g_raytracer.graphics.pipeline)
+        vk.CmdBindPipeline(cmd_buffer, .GRAPHICS, engine_ctx.raytracer.graphics.pipeline)
 
         // Set viewport
         viewport := vk.Viewport{
@@ -2392,10 +2444,10 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
         vk.CmdBindDescriptorSets(
             cmd_buffer,
             .GRAPHICS,
-            g_raytracer.graphics.pipeline_layout,
+            engine_ctx.raytracer.graphics.pipeline_layout,
             0,
             1,
-            &g_raytracer.graphics.descriptor_set,
+            &engine_ctx.raytracer.graphics.descriptor_set,
             0,
             nil,
         )
@@ -2416,7 +2468,8 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
 //----------------------------------------------------------------------------\\
 start_up_raytracer :: proc(alloc: mem.Allocator)
 {
-    g_raytracer.texture_paths[0] =  "assets/textures/numbers.png"
+    engine_ctx := engine_context()
+    engine_ctx.raytracer.texture_paths[0] =  "assets/textures/numbers.png"
    map_models_to_gpu(alloc)
    map_materials_to_gpu(alloc)
    // bake_font_atlas("../../assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
@@ -2424,15 +2477,17 @@ start_up_raytracer :: proc(alloc: mem.Allocator)
 
 set_camera :: proc()
 {
-    g_raytracer.compute.ubo.aspect_ratio = 1280.0 / 720.0
-    g_raytracer.compute.ubo.fov = math.tan(f32(13.0 * 0.03490658503))
-    g_raytracer.compute.ubo.rotM = mat4f(0)
-    g_raytracer.compute.ubo.rand = rand.int31()
+    engine_ctx := engine_context()
+    engine_ctx.raytracer.compute.ubo.aspect_ratio = 1280.0 / 720.0
+    engine_ctx.raytracer.compute.ubo.fov = math.tan(f32(13.0 * 0.03490658503))
+    engine_ctx.raytracer.compute.ubo.rotM = mat4f(0)
+    engine_ctx.raytracer.compute.ubo.rand = rand.int31()
 }
 
 map_materials_to_gpu :: proc(alloc : mem.Allocator)
 {
-	g_raytracer.materials = make([dynamic]gpu.Material, len(res.materials), alloc)
+    engine_ctx := engine_context()
+	engine_ctx.raytracer.materials = make([dynamic]gpu.Material, len(res.materials), alloc)
 	for &m, i in res.materials{
 	    gpu_mat : gpu.Material = {
 			diffuse = m.diffuse,
@@ -2442,12 +2497,13 @@ map_materials_to_gpu :: proc(alloc : mem.Allocator)
 			refractive_index = m.refractive_index,
 			texture_id = g_texture_indexes[m.texture]
 		}
-        g_raytracer.materials[i] = gpu_mat
+        engine_ctx.raytracer.materials[i] = gpu_mat
 	}
 }
 
 map_models_to_gpu :: proc(alloc : mem.Allocator)
 {
+    engine_ctx := engine_context()
     verts : [dynamic]gpu.Vert
     faces : [dynamic]gpu.Index
     shapes : [dynamic]gpu.Shape
@@ -2457,7 +2513,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     defer delete(faces)
     defer delete(verts)
 
-    g_raytracer.mesh_assigner = make(map[i32][2]int, alloc)
+    engine_ctx.raytracer.mesh_assigner = make(map[i32][2]int, alloc)
 
     for mod in res.models
     {
@@ -2479,7 +2535,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
             for bvh in mesh.bvhs{
                 append(&blas, gpu.BvhNode{bvh.upper, bvh.offset, bvh.lower, bvh.numChildren})
             }
-            g_raytracer.mesh_assigner[mod.unique_id + i32(i)] = {prev_ind_size, prev_ind_size + len(mesh.faces)}
+            engine_ctx.raytracer.mesh_assigner[mod.unique_id + i32(i)] = {prev_ind_size, prev_ind_size + len(mesh.faces)}
         }
     }
 
@@ -2487,10 +2543,10 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     append(&blas, gpu.BvhNode{} )
 
     //Load them into the gpu
-    init_staging_buf(&g_raytracer.compute.storage_buffers.verts,verts, len(verts))
-    init_staging_buf(&g_raytracer.compute.storage_buffers.faces,faces, len(faces))
-    init_staging_buf(&g_raytracer.compute.storage_buffers.blas, blas, len(blas))
-    init_staging_buf(&g_raytracer.compute.storage_buffers.shapes, shapes, len(shapes))
+    init_staging_buf(&engine_ctx.raytracer.compute.storage_buffers.verts,verts, len(verts))
+    init_staging_buf(&engine_ctx.raytracer.compute.storage_buffers.faces,faces, len(faces))
+    init_staging_buf(&engine_ctx.raytracer.compute.storage_buffers.blas, blas, len(blas))
+    init_staging_buf(&engine_ctx.raytracer.compute.storage_buffers.shapes, shapes, len(shapes))
 
     //Dynamically load textures
     // g_texture_indexes = make(map[string]i32, g_mem_area.alloc)
@@ -2504,25 +2560,26 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
         t := Texture{path = f.fullpath}
         if texture_create(&t)
         {
-            append(&g_raytracer.bindless_textures, t)
+            append(&engine_ctx.raytracer.bindless_textures, t)
             g_texture_indexes[filename] = index
             index += 1
         }
     }
     os.file_info_slice_delete(files)
-    MAX_BINDLESS_TEXTURES = u32(len(g_raytracer.bindless_textures)) + 1
+    MAX_BINDLESS_TEXTURES = u32(len(engine_ctx.raytracer.bindless_textures)) + 1
 
     // Similarly for gui_textures if needed, but since it's fixed array, perhaps initialize with a default texture or handle differently
     // For now, assume gui_textures are critical, so check in loop
-    for &t, i in g_raytracer.gui_textures {
-        t = Texture{path = g_raytracer.texture_paths[i]}
-        if !texture_create(&t) do log.errorf("Failed to create GUI texture for path: %s", g_raytracer.texture_paths[i])
+    for &t, i in engine_ctx.raytracer.gui_textures {
+        t = Texture{path = engine_ctx.raytracer.texture_paths[i]}
+        if !texture_create(&t) do log.errorf("Failed to create GUI texture for path: %s", engine_ctx.raytracer.texture_paths[i])
     }
 }
 
 init_staging_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int )
 {
-    gpu.vbuffer_init_storage_buffer_with_staging_device(vbuf, g_renderbase.device, &g_renderbase.vma_allocator, g_renderbase.command_pool, g_renderbase.graphics_queue, objects[:], u32(size))
+    engine_ctx := engine_context()
+    gpu.vbuffer_init_storage_buffer_with_staging_device(vbuf, engine_ctx.renderbase.device, &engine_ctx.renderbase.vma_allocator, engine_ctx.renderbase.command_pool, engine_ctx.renderbase.graphics_queue, objects[:], u32(size))
 }
 
 //----------------------------------------------------------------------------\\
@@ -2530,73 +2587,74 @@ init_staging_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int
 //----------------------------------------------------------------------------\\
 update_descriptors :: proc()
 {
+    engine_ctx := engine_context()
     // Wait for fence - equivalent to vkWaitForFences with UINT64_MAX
-    vk.WaitForFences(g_renderbase.device, 1, &g_raytracer.compute.fence, true, fence_timeout_ns)
+    vk.WaitForFences(engine_ctx.renderbase.device, 1, &engine_ctx.raytracer.compute.fence, true, fence_timeout_ns)
 
     // Create write descriptor sets for the specific bindings you need
     // Based on your C++ code, you need bindings 6-10 for primitives, materials, lights, guis, and bvh
-    g_raytracer.compute_write_descriptor_sets = {
+    engine_ctx.raytracer.compute_write_descriptor_sets = {
         // Binding 6: for objects (primitives)
         vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 6,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.primitives.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.primitives.buffer_info,
         },
 
         // Binding 7: for materials
         vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 7,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.materials.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.materials.buffer_info,
         },
 
         // Binding 8: for lights
         vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 8,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.lights.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.lights.buffer_info,
         },
 
         // Binding 9: for gui
         vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 9,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.guis.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.guis.buffer_info,
         },
 
         // Binding 10: for bvhnodes
         vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
-            dstSet = g_raytracer.compute.descriptor_set,
+            dstSet = engine_ctx.raytracer.compute.descriptor_set,
             dstBinding = 10,
             dstArrayElement = 0,
             descriptorCount = 1,
             descriptorType = .STORAGE_BUFFER,
-            pBufferInfo = &g_raytracer.compute.storage_buffers.bvh.buffer_info,
+            pBufferInfo = &engine_ctx.raytracer.compute.storage_buffers.bvh.buffer_info,
         },
     }
 
     // Update descriptor sets
     vk.UpdateDescriptorSets(
-        g_renderbase.device,
-        u32(len(g_raytracer.compute_write_descriptor_sets)),
-        &g_raytracer.compute_write_descriptor_sets[0],
+        engine_ctx.renderbase.device,
+        u32(len(engine_ctx.raytracer.compute_write_descriptor_sets)),
+        &engine_ctx.raytracer.compute_write_descriptor_sets[0],
         0,
         nil
     )
@@ -2607,36 +2665,37 @@ update_descriptors :: proc()
 
 update_buffers :: proc()
 {
-    vk.WaitForFences(g_renderbase.device, 1, &g_raytracer.compute.fence, true, fence_timeout_ns)
+    engine_ctx := engine_context()
+    vk.WaitForFences(engine_ctx.renderbase.device, 1, &engine_ctx.raytracer.compute.fence, true, fence_timeout_ns)
 
-    if g_raytracer.update_flags == {} do return
+    if engine_ctx.raytracer.update_flags == {} do return
 
-    if .OBJECT in g_raytracer.update_flags {
+    if .OBJECT in engine_ctx.raytracer.update_flags {
         // compute_.storage_buffers.primitives.UpdateBuffers(vkDevice, primitives);
-        g_raytracer.update_flags -= {.OBJECT}
+        engine_ctx.raytracer.update_flags -= {.OBJECT}
     }
 
-    if .MATERIAL in g_raytracer.update_flags {
-        g_raytracer.update_flags -= {.MATERIAL}
+    if .MATERIAL in engine_ctx.raytracer.update_flags {
+        engine_ctx.raytracer.update_flags -= {.MATERIAL}
     }
 
-    if .LIGHT in g_raytracer.update_flags {
-        gpu.vbuffer_update(&g_raytracer.compute.storage_buffers.lights, &g_renderbase.vma_allocator, g_raytracer.lights[:])
-        g_raytracer.update_flags -= {.LIGHT}
+    if .LIGHT in engine_ctx.raytracer.update_flags {
+        gpu.vbuffer_update(&engine_ctx.raytracer.compute.storage_buffers.lights, &engine_ctx.renderbase.vma_allocator, engine_ctx.raytracer.lights[:])
+        engine_ctx.raytracer.update_flags -= {.LIGHT}
     }
 
-    if .GUI in g_raytracer.update_flags {
-        gpu.vbuffer_update(&g_raytracer.compute.storage_buffers.guis, &g_renderbase.vma_allocator, g_raytracer.guis[:])
-        g_raytracer.update_flags -= {.GUI}
+    if .GUI in engine_ctx.raytracer.update_flags {
+        gpu.vbuffer_update(&engine_ctx.raytracer.compute.storage_buffers.guis, &engine_ctx.renderbase.vma_allocator, engine_ctx.raytracer.guis[:])
+        engine_ctx.raytracer.update_flags -= {.GUI}
     }
 
-    if .BVH in g_raytracer.update_flags {
-        gpu.vbuffer_update_and_expand(&g_raytracer.compute.storage_buffers.primitives, &g_renderbase.vma_allocator, g_raytracer.primitives[:], u32(len(g_raytracer.primitives)))
-        gpu.vbuffer_update_and_expand(&g_raytracer.compute.storage_buffers.bvh, &g_renderbase.vma_allocator, g_raytracer.bvh[:], u32(len(g_raytracer.bvh)))
-        g_raytracer.update_flags -= {.BVH}
+    if .BVH in engine_ctx.raytracer.update_flags {
+        gpu.vbuffer_update_and_expand(&engine_ctx.raytracer.compute.storage_buffers.primitives, &engine_ctx.renderbase.vma_allocator, engine_ctx.raytracer.primitives[:], u32(len(engine_ctx.raytracer.primitives)))
+        gpu.vbuffer_update_and_expand(&engine_ctx.raytracer.compute.storage_buffers.bvh, &engine_ctx.renderbase.vma_allocator, engine_ctx.raytracer.bvh[:], u32(len(engine_ctx.raytracer.bvh)))
+        engine_ctx.raytracer.update_flags -= {.BVH}
     }
 
-    g_raytracer.update_flags = {}
+    engine_ctx.raytracer.update_flags = {}
     // compute_.storage_buffers.objects.UpdateAndExpandBuffers(vkDevice, objects, objects.size());
     // compute_.storage_buffers.bvh.UpdateAndExpandBuffers(vkDevice, bvh, bvh.size());
     update_descriptors()
@@ -2646,35 +2705,38 @@ update_camera :: proc{update_camera_full, update_camera_component}
 
 update_camera_full :: proc(camera: ^Camera)
 {
-    g_raytracer.compute.ubo.aspect_ratio = camera.aspect
-    g_raytracer.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
-    g_raytracer.compute.ubo.rotM = transmute(mat4f)camera.matrices.view
-    g_raytracer.compute.ubo.rand = rand.int31()
-    gpu.vbuffer_apply_changes(&g_raytracer.compute.uniform_buffer, &g_renderbase.vma_allocator, &g_raytracer.compute.ubo)
+    engine_ctx := engine_context()
+    engine_ctx.raytracer.compute.ubo.aspect_ratio = camera.aspect
+    engine_ctx.raytracer.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
+    engine_ctx.raytracer.compute.ubo.rotM = transmute(mat4f)camera.matrices.view
+    engine_ctx.raytracer.compute.ubo.rand = rand.int31()
+    gpu.vbuffer_apply_changes(&engine_ctx.raytracer.compute.uniform_buffer, &engine_ctx.renderbase.vma_allocator, &engine_ctx.raytracer.compute.ubo)
 }
 
 update_camera_component :: proc(camera: ^Cmp_Camera)
 {
-    g_raytracer.compute.ubo.aspect_ratio = camera.aspect_ratio
-    g_raytracer.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
-    g_raytracer.compute.ubo.rotM = transmute(mat4f)camera.rot_matrix
-    g_raytracer.compute.ubo.rand = rand.int31()
-    gpu.vbuffer_apply_changes(&g_raytracer.compute.uniform_buffer, &g_renderbase.vma_allocator, &g_raytracer.compute.ubo)
+    engine_ctx := engine_context()
+    engine_ctx.raytracer.compute.ubo.aspect_ratio = camera.aspect_ratio
+    engine_ctx.raytracer.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
+    engine_ctx.raytracer.compute.ubo.rotM = transmute(mat4f)camera.rot_matrix
+    engine_ctx.raytracer.compute.ubo.rand = rand.int31()
+    gpu.vbuffer_apply_changes(&engine_ctx.raytracer.compute.uniform_buffer, &engine_ctx.renderbase.vma_allocator, &engine_ctx.raytracer.compute.ubo)
 }
 
 update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity, root: BvhNode, num_nodes : i32, alloc : mem.Allocator = context.temp_allocator)
 {
+    engine_ctx := engine_context()
     context.allocator = alloc
     num_prims := len(ordered_prims)
     if(num_prims == 0) do return
-    g_raytracer.primitives = make([dynamic]gpu.Primitive, 0, num_prims, alloc)
-    g_raytracer.ordered_prims_map = make([dynamic]int, num_prims, alloc)
-    // clear(&g_raytracer.primitives)
-    // clear(&g_raytracer.ordered_prims_map)
-    // reserve(&g_raytracer.primitives, num_prims)
-    // resize(&g_raytracer.ordered_prims_map, num_prims)
+    engine_ctx.raytracer.primitives = make([dynamic]gpu.Primitive, 0, num_prims, alloc)
+    engine_ctx.raytracer.ordered_prims_map = make([dynamic]int, num_prims, alloc)
+    // clear(&engine_ctx.raytracer.primitives)
+    // clear(&engine_ctx.raytracer.ordered_prims_map)
+    // reserve(&engine_ctx.raytracer.primitives, num_prims)
+    // resize(&engine_ctx.raytracer.ordered_prims_map, num_prims)
     for op, i in ordered_prims{
-        g_raytracer.ordered_prims_map[op.primID] = i
+        engine_ctx.raytracer.ordered_prims_map[op.primID] = i
         prim := prims[op.primID]
         pc := get_component(prim, Cmp_Primitive)
 
@@ -2691,12 +2753,12 @@ update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [d
                 start_index = pc.start_index,
                 end_index = pc.end_index,
             }
-            append(&g_raytracer.primitives, gpu_prim)
+            append(&engine_ctx.raytracer.primitives, gpu_prim)
         }
     }
 
     // Flatten BVH tree
-    resize(&g_raytracer.bvh, int(num_nodes))
+    resize(&engine_ctx.raytracer.bvh, int(num_nodes))
 
     // Get root bounds
     root_bounds: BvhBounds
@@ -2714,15 +2776,16 @@ update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [d
 
     offset := 0
     flatten_bvh(root, root_bounds, &offset)
-    g_raytracer.update_flags |= {.BVH}
+    engine_ctx.raytracer.update_flags |= {.BVH}
 }
 
 // Flatten BVH tree into linear array for GPU
 flatten_bvh :: proc(node: BvhNode, bounds: BvhBounds, offset: ^int) -> i32
 {
+    engine_ctx := engine_context()
     if node == nil { return -1 }  // Safeguard
 
-    bvh_node := &g_raytracer.bvh[offset^]
+    bvh_node := &engine_ctx.raytracer.bvh[offset^]
     my_offset := i32(offset^)
     offset^ += 1
 
@@ -2735,7 +2798,7 @@ flatten_bvh :: proc(node: BvhNode, bounds: BvhBounds, offset: ^int) -> i32
         bvh_node.upper = n.bounds.upper
         bvh_node.lower = n.bounds.lower
         bvh_node.num_children = 0
-        bvh_node.offset = i32(g_raytracer.ordered_prims_map[n.id])
+        bvh_node.offset = i32(engine_ctx.raytracer.ordered_prims_map[n.id])
 
     case .Inner:
         n := cast(^InnerBvhNode)node
@@ -2752,6 +2815,7 @@ flatten_bvh :: proc(node: BvhNode, bounds: BvhBounds, offset: ^int) -> i32
 // Debug print for update_bvh parameters
 print_update_bvh_debug :: proc(ordered_prims: ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity)
 {
+    engine_ctx := engine_context()
     fmt.println("=== Update BVH Debug ===")
 
     for ordered_prim, idx in ordered_prims {
@@ -2774,24 +2838,27 @@ print_update_bvh_debug :: proc(ordered_prims: ^[dynamic]embree.RTCBuildPrimitive
 
 update_uniform_buffers :: proc()
 {
-    gpu.vbuffer_apply_changes(&g_raytracer.compute.uniform_buffer, &g_renderbase.vma_allocator, &g_raytracer.compute.ubo)
+    engine_ctx := engine_context()
+    gpu.vbuffer_apply_changes(&engine_ctx.raytracer.compute.uniform_buffer, &engine_ctx.renderbase.vma_allocator, &engine_ctx.raytracer.compute.ubo)
 }
 
 update_material :: proc(id: i32)
 {
+    engine_ctx := engine_context()
     m := get_material(id)
-    g_raytracer.materials[id].diffuse = m.diffuse
-    g_raytracer.materials[id].reflective = m.reflective
-    g_raytracer.materials[id].roughness = m.roughness
-    g_raytracer.materials[id].transparency = m.transparency
-    g_raytracer.materials[id].refractive_index = m.refractive_index
-    g_raytracer.materials[id].texture_id = g_texture_indexes[m.texture]
-    gpu.vbuffer_update(&g_raytracer.compute.storage_buffers.materials, &g_renderbase.vma_allocator, g_raytracer.materials[:])
+    engine_ctx.raytracer.materials[id].diffuse = m.diffuse
+    engine_ctx.raytracer.materials[id].reflective = m.reflective
+    engine_ctx.raytracer.materials[id].roughness = m.roughness
+    engine_ctx.raytracer.materials[id].transparency = m.transparency
+    engine_ctx.raytracer.materials[id].refractive_index = m.refractive_index
+    engine_ctx.raytracer.materials[id].texture_id = g_texture_indexes[m.texture]
+    gpu.vbuffer_update(&engine_ctx.raytracer.compute.storage_buffers.materials, &engine_ctx.renderbase.vma_allocator, engine_ctx.raytracer.materials[:])
 }
 
 update_gui :: proc(gc: ^Cmp_Gui)
 {
-    gui := &g_raytracer.guis[gc.ref]
+    engine_ctx := engine_context()
+    gui := &engine_ctx.raytracer.guis[gc.ref]
     gui.min = gc.min
     gui.extents = gc.extents
     gui.align_min = gc.align_min
@@ -2799,24 +2866,25 @@ update_gui :: proc(gc: ^Cmp_Gui)
     gui.layer = gc.layer
     gui.id = g_texture_indexes[gc.id]
     gui.alpha = gc.alpha
-    g_raytracer.update_flags |= {.GUI}
+    engine_ctx.raytracer.update_flags |= {.GUI}
 }
 
 update_text :: proc(tc: ^Cmp_Text)
 {
+    engine_ctx := engine_context()
     for ref in tc.shader_refs {
-        if ref >= 0 && ref < i32(len(g_raytracer.guis))
+        if ref >= 0 && ref < i32(len(engine_ctx.raytracer.guis))
         {
-            g_raytracer.guis[ref].alpha = 0
+            engine_ctx.raytracer.guis[ref].alpha = 0
         }
     }
     clear(&tc.shader_refs)
 
     pos := tc.min
     for char in tc.text {
-        if char not_in g_raytracer.font.char_data { continue }
+        if char not_in engine_ctx.raytracer.font.char_data { continue }
 
-        data := g_raytracer.font.char_data[char]
+        data := engine_ctx.raytracer.font.char_data[char]
         gui := gpu.Gui {
             min = pos + data.offset * tc.font_scale,
             extents = data.uv_ext * tc.font_scale,
@@ -2827,18 +2895,19 @@ update_text :: proc(tc: ^Cmp_Text)
             alpha = tc.alpha,
             // color = tc.color,  // If you add this to gpu.Gui
         }
-        append(&tc.shader_refs, i32(len(g_raytracer.guis)))
-        append(&g_raytracer.guis, gui)
+        append(&tc.shader_refs, i32(len(engine_ctx.raytracer.guis)))
+        append(&engine_ctx.raytracer.guis, gui)
         pos.x += data.advance * tc.font_scale
     }
 
     if len(tc.shader_refs) > 0 do tc.ref = tc.shader_refs[0]
     update_descriptors()
-    g_raytracer.update_flags |= {.GUI}
+    engine_ctx.raytracer.update_flags |= {.GUI}
 }
 
 int_to_array_of_ints :: proc(n: i32) -> [dynamic]i32
 {
+    engine_ctx := engine_context()
     if n == 0 {
         res := make([dynamic]i32, 1)
         res[0] = 0
@@ -2856,13 +2925,14 @@ int_to_array_of_ints :: proc(n: i32) -> [dynamic]i32
 
 update_gui_number :: proc(gnc: ^Cmp_GuiNumber)
 {
+    engine_ctx := engine_context()
     nums := int_to_array_of_ints(gnc.number)
     num_size := i32(len(nums))
     change_occured := num_size != gnc.highest_active_digit_index + i32(1)
     if !change_occured {
         for i in 0..<gnc.highest_active_digit_index + 1 {
-            g_raytracer.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
-            g_raytracer.guis[gnc.shader_references[i]].alpha = gnc.alpha
+            engine_ctx.raytracer.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
+            engine_ctx.raytracer.guis[gnc.shader_references[i]].alpha = gnc.alpha
         }
     } else {
         increased := num_size > gnc.highest_active_digit_index + 1
@@ -2879,30 +2949,30 @@ update_gui_number :: proc(gnc: ^Cmp_GuiNumber)
                         id = 0,
                         alpha = gnc.alpha,
                     }
-                    append(&gnc.shader_references, i32(len(g_raytracer.guis)))
-                    append(&g_raytracer.guis, gui)
+                    append(&gnc.shader_references, i32(len(engine_ctx.raytracer.guis)))
+                    append(&engine_ctx.raytracer.guis, gui)
                 }
-                gpu.vbuffer_update_and_expand(&g_raytracer.compute.storage_buffers.guis, &g_renderbase.vma_allocator, g_raytracer.guis[:], u32(len(g_raytracer.guis)))
+                gpu.vbuffer_update_and_expand(&engine_ctx.raytracer.compute.storage_buffers.guis, &engine_ctx.renderbase.vma_allocator, engine_ctx.raytracer.guis[:], u32(len(engine_ctx.raytracer.guis)))
             }
             for i in 0..<num_size {
-                g_raytracer.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
-                g_raytracer.guis[gnc.shader_references[i]].alpha = gnc.alpha
-                g_raytracer.guis[gnc.shader_references[i]].min.x = gnc.min.x - (f32(num_size - 1 - i) * gnc.extents.x)
+                engine_ctx.raytracer.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
+                engine_ctx.raytracer.guis[gnc.shader_references[i]].alpha = gnc.alpha
+                engine_ctx.raytracer.guis[gnc.shader_references[i]].min.x = gnc.min.x - (f32(num_size - 1 - i) * gnc.extents.x)
             }
             gnc.highest_active_digit_index = num_size - 1
         } else {
             for i in 0..<num_size {
-                g_raytracer.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
-                g_raytracer.guis[gnc.shader_references[i]].alpha = gnc.alpha
-                g_raytracer.guis[gnc.shader_references[i]].min.x = gnc.min.x - (f32(num_size - 1 - i) * gnc.extents.x)
+                engine_ctx.raytracer.guis[gnc.shader_references[i]].align_min = {0.1 * f32(nums[i]), 0.0}
+                engine_ctx.raytracer.guis[gnc.shader_references[i]].alpha = gnc.alpha
+                engine_ctx.raytracer.guis[gnc.shader_references[i]].min.x = gnc.min.x - (f32(num_size - 1 - i) * gnc.extents.x)
             }
             for i in gnc.highest_active_digit_index..<num_size {
-                g_raytracer.guis[gnc.shader_references[i]].alpha = 0
+                engine_ctx.raytracer.guis[gnc.shader_references[i]].alpha = 0
             }
             gnc.highest_active_digit_index = num_size - 1
         }
     }
-    g_raytracer.update_flags |= {.GUI}
+    engine_ctx.raytracer.update_flags |= {.GUI}
 }
 
 //----------------------------------------------------------------------------\\
@@ -2910,6 +2980,7 @@ update_gui_number :: proc(gnc: ^Cmp_GuiNumber)
 //----------------------------------------------------------------------------\\
 add_gui_number :: proc(gnc: ^Cmp_GuiNumber)
 {
+    engine_ctx := engine_context()
     nums := int_to_array_of_ints(gnc.number)
     num_size := i32(len(nums))
     for i in 0..<num_size {
@@ -2922,25 +2993,26 @@ add_gui_number :: proc(gnc: ^Cmp_GuiNumber)
             id = 0,
             alpha = gnc.alpha,
         }
-        append(&gnc.shader_references, i32(len(g_raytracer.guis)))
-        append(&g_raytracer.guis, gui)
+        append(&gnc.shader_references, i32(len(engine_ctx.raytracer.guis)))
+        append(&engine_ctx.raytracer.guis, gui)
     }
     gnc.ref = gnc.shader_references[0]
-    g_raytracer.update_flags |= {.GUI}
+    engine_ctx.raytracer.update_flags |= {.GUI}
 }
 
 fence_timeout_ns :: 10_000_000_000 // 1 second
 start_frame :: proc(image_index: ^u32)
 {
+    engine_ctx := engine_context()
     // Wait/reset graphics fence for prior frame sync (enables multi-frame overlap)
-    must(vk.WaitForFences(g_renderbase.device, 1, &g_renderbase.in_flight_fences[g_renderbase.current_frame], true, fence_timeout_ns))
-    must(vk.ResetFences(g_renderbase.device, 1, &g_renderbase.in_flight_fences[g_renderbase.current_frame]))
+    must(vk.WaitForFences(engine_ctx.renderbase.device, 1, &engine_ctx.renderbase.in_flight_fences[engine_ctx.renderbase.current_frame], true, fence_timeout_ns))
+    must(vk.ResetFences(engine_ctx.renderbase.device, 1, &engine_ctx.renderbase.in_flight_fences[engine_ctx.renderbase.current_frame]))
 
     result := vk.AcquireNextImageKHR(
-        g_renderbase.device,
-        g_renderbase.swapchain,
+        engine_ctx.renderbase.device,
+        engine_ctx.renderbase.swapchain,
         max(u64),
-        g_renderbase.image_available_semaphores[g_renderbase.current_frame],
+        engine_ctx.renderbase.image_available_semaphores[engine_ctx.renderbase.current_frame],
         {},
         image_index
     )
@@ -2955,34 +3027,35 @@ start_frame :: proc(image_index: ^u32)
     }
 
     wait_stages := vk.PipelineStageFlags{.COLOR_ATTACHMENT_OUTPUT}
-    g_renderbase.submit_info = vk.SubmitInfo{
+    engine_ctx.renderbase.submit_info = vk.SubmitInfo{
         sType = .SUBMIT_INFO,
         commandBufferCount = 1,
-        pCommandBuffers = &g_renderbase.command_buffers[image_index^],
+        pCommandBuffers = &engine_ctx.renderbase.command_buffers[image_index^],
         waitSemaphoreCount = 1,
-        pWaitSemaphores = &g_renderbase.image_available_semaphores[g_renderbase.current_frame],
+        pWaitSemaphores = &engine_ctx.renderbase.image_available_semaphores[engine_ctx.renderbase.current_frame],
         pWaitDstStageMask = &wait_stages,
         signalSemaphoreCount = 1,
-        pSignalSemaphores = &g_renderbase.render_finished_semaphores[g_renderbase.current_frame]
+        pSignalSemaphores = &engine_ctx.renderbase.render_finished_semaphores[engine_ctx.renderbase.current_frame]
     }
-    must(vk.QueueSubmit(g_renderbase.graphics_queue, 1, &g_renderbase.submit_info, g_renderbase.in_flight_fences[g_renderbase.current_frame]))  // Fence for graphics
+    must(vk.QueueSubmit(engine_ctx.renderbase.graphics_queue, 1, &engine_ctx.renderbase.submit_info, engine_ctx.renderbase.in_flight_fences[engine_ctx.renderbase.current_frame]))  // Fence for graphics
 }
 
 end_frame :: proc(image_index: ^u32)
 {
+    engine_ctx := engine_context()
     present_info := vk.PresentInfoKHR{
         sType = .PRESENT_INFO_KHR,
         waitSemaphoreCount = 1,  // Fixed to 1 (matches signal)
-        pWaitSemaphores = &g_renderbase.render_finished_semaphores[g_renderbase.current_frame],
+        pWaitSemaphores = &engine_ctx.renderbase.render_finished_semaphores[engine_ctx.renderbase.current_frame],
         swapchainCount = 1,
-        pSwapchains = &g_renderbase.swapchain,
+        pSwapchains = &engine_ctx.renderbase.swapchain,
         pImageIndices = image_index,
     }
 
-    result := vk.QueuePresentKHR(g_renderbase.present_queue, &present_info)
+    result := vk.QueuePresentKHR(engine_ctx.renderbase.present_queue, &present_info)
     switch {
-    case result == .ERROR_OUT_OF_DATE_KHR || result == .SUBOPTIMAL_KHR || g_renderbase.framebuffer_resized:
-        g_renderbase.framebuffer_resized = false
+    case result == .ERROR_OUT_OF_DATE_KHR || result == .SUBOPTIMAL_KHR || engine_ctx.renderbase.framebuffer_resized:
+        engine_ctx.renderbase.framebuffer_resized = false
         rt_recreate_swapchain()
         return  // Skip advance on recreate
     case result == .SUCCESS:
@@ -2993,21 +3066,22 @@ end_frame :: proc(image_index: ^u32)
     // No QueueWaitIdle: Use fences for async sync instead
 
     // Compute: Wait/reset dedicated compute fence (matches C++)
-    must(vk.WaitForFences(g_renderbase.device, 1, &g_raytracer.compute.fence, true, fence_timeout_ns))
-    must(vk.ResetFences(g_renderbase.device, 1, &g_raytracer.compute.fence))
+    must(vk.WaitForFences(engine_ctx.renderbase.device, 1, &engine_ctx.raytracer.compute.fence, true, fence_timeout_ns))
+    must(vk.ResetFences(engine_ctx.renderbase.device, 1, &engine_ctx.raytracer.compute.fence))
 
     compute_submit_info := vk.SubmitInfo{
         sType = .SUBMIT_INFO,
         commandBufferCount = 1,
-        pCommandBuffers = &g_raytracer.compute.command_buffer,
+        pCommandBuffers = &engine_ctx.raytracer.compute.command_buffer,
     }
-    must(vk.QueueSubmit(g_renderbase.compute_queue, 1, &compute_submit_info, g_raytracer.compute.fence))  // Dedicated fence
+    must(vk.QueueSubmit(engine_ctx.renderbase.compute_queue, 1, &compute_submit_info, engine_ctx.raytracer.compute.fence))  // Dedicated fence
 
-    g_renderbase.current_frame = (g_renderbase.current_frame + 1) % MAX_FRAMES_IN_FLIGHT
+    engine_ctx.renderbase.current_frame = (engine_ctx.renderbase.current_frame + 1) % MAX_FRAMES_IN_FLIGHT
 }
 
 added_entity :: proc(e: Entity)
 {
+    engine_ctx := engine_context()
     rc := get_component(e, Cmp_Render)
     if rc == nil { return }
     t := rc.type
@@ -3022,11 +3096,11 @@ added_entity :: proc(e: Entity)
         prim_comp.world = trans_comp.world
         prim_comp.extents = trans_comp.local.sca.xyz
         if prim_comp.id > 0 {
-            temp := g_raytracer.mesh_assigner[prim_comp.id]
+            temp := engine_ctx.raytracer.mesh_assigner[prim_comp.id]
             prim_comp.start_index = i32(temp[0])
             prim_comp.end_index = i32(temp[1])
         }
-        g_raytracer.update_flags |= {.OBJECT}
+        engine_ctx.raytracer.update_flags |= {.OBJECT}
     }
     if .LIGHT in t {
         light_comp := get_component(e, Cmp_Light)
@@ -3038,11 +3112,11 @@ added_entity :: proc(e: Entity)
             id = i32(e),
         }
         light_comp.id = light.id
-        append(&g_raytracer.lights, light)
-        append(&g_raytracer.light_comps, light_comp^)
+        append(&engine_ctx.raytracer.lights, light)
+        append(&engine_ctx.raytracer.light_comps, light_comp^)
 
-        gpu.vbuffer_update_and_expand(&g_raytracer.compute.storage_buffers.lights, &g_renderbase.vma_allocator, g_raytracer.lights[:], u32(len(g_raytracer.lights)))
-        g_raytracer.update_flags |= {.LIGHT}
+        gpu.vbuffer_update_and_expand(&engine_ctx.raytracer.compute.storage_buffers.lights, &engine_ctx.renderbase.vma_allocator, engine_ctx.raytracer.lights[:], u32(len(engine_ctx.raytracer.lights)))
+        engine_ctx.raytracer.update_flags |= {.LIGHT}
     }
     if .GUI in t {
         gc := get_component(e, Cmp_Gui)
@@ -3055,9 +3129,9 @@ added_entity :: proc(e: Entity)
             id = g_texture_indexes[gc.id],
             alpha = gc.alpha,
         }
-        gc.ref = i32(len(g_raytracer.guis))
-        append(&g_raytracer.guis, gui)
-        g_raytracer.update_flags |= {.GUI}
+        gc.ref = i32(len(engine_ctx.raytracer.guis))
+        append(&engine_ctx.raytracer.guis, gui)
+        engine_ctx.raytracer.update_flags |= {.GUI}
     }
     if .GUINUM in t {
         gnc := get_component(e, Cmp_GuiNumber)
@@ -3073,71 +3147,74 @@ added_entity :: proc(e: Entity)
                 id = 0,
                 alpha = gnc.alpha,
             }
-            append(&gnc.shader_references, i32(len(g_raytracer.guis)))
-            append(&g_raytracer.guis, gui)
+            append(&gnc.shader_references, i32(len(engine_ctx.raytracer.guis)))
+            append(&engine_ctx.raytracer.guis, gui)
         }
         gnc.ref = gnc.shader_references[0]
-        g_raytracer.update_flags |= {.GUI}
+        engine_ctx.raytracer.update_flags |= {.GUI}
     }
     if .CAMERA in t {
         cam := get_component(e, Cmp_Camera)
         trans_comp := get_component(e, Cmp_Transform)
-        g_raytracer.compute.ubo.aspect_ratio = cam.aspect_ratio
-        g_raytracer.compute.ubo.rotM = transmute(mat4f)trans_comp.world
-        g_raytracer.compute.ubo.fov = cam.fov
+        engine_ctx.raytracer.compute.ubo.aspect_ratio = cam.aspect_ratio
+        engine_ctx.raytracer.compute.ubo.rotM = transmute(mat4f)trans_comp.world
+        engine_ctx.raytracer.compute.ubo.fov = cam.fov
         update_camera(cam)
     }
     if .TEXT in t {
         tc := get_component(e,Cmp_Text)
         update_text(tc)
         tc.ref = tc.shader_refs[0] if len(tc.shader_refs) > 0 else -1
-        g_raytracer.update_flags |= {.GUI}
+        engine_ctx.raytracer.update_flags |= {.GUI}
     }
 }
 
 removed_entity :: proc(e: Entity)
 {
+    engine_ctx := engine_context()
     rc := get_component(e, Cmp_Render)
     if rc == nil { return }
     t := rc.type
 
     if .LIGHT in t {
         lc := get_component(e, Cmp_Light)
-        for l, i in g_raytracer.lights {
+        for l, i in engine_ctx.raytracer.lights {
             if lc.id == l.id {
-                ordered_remove(&g_raytracer.lights, i)
-                ordered_remove(&g_raytracer.light_comps, i)
+                ordered_remove(&engine_ctx.raytracer.lights, i)
+                ordered_remove(&engine_ctx.raytracer.light_comps, i)
                 break
             }
         }
-        if len(g_raytracer.lights) == 0 {
-            clear(&g_raytracer.lights)
-            clear(&g_raytracer.light_comps)
+        if len(engine_ctx.raytracer.lights) == 0 {
+            clear(&engine_ctx.raytracer.lights)
+            clear(&engine_ctx.raytracer.light_comps)
         }
     }
     if .TEXT in t {
         tc := get_component(e, Cmp_Text)
         for ref in tc.shader_refs {
-            if ref >= 0 && ref < i32(len(g_raytracer.guis))
+            if ref >= 0 && ref < i32(len(engine_ctx.raytracer.guis))
             {
-                g_raytracer.guis[ref].alpha = 0
+                engine_ctx.raytracer.guis[ref].alpha = 0
             }
         }
         delete(tc.shader_refs)
-        g_raytracer.update_flags |= {.GUI}
+        engine_ctx.raytracer.update_flags |= {.GUI}
     }
 }
 
 render_clear_entities :: proc()
 {
-    clear(&g_raytracer.lights)
-    clear(&g_raytracer.light_comps)
-    clear(&g_raytracer.primitives)
-    clear(&g_raytracer.guis)
+    engine_ctx := engine_context()
+    clear(&engine_ctx.raytracer.lights)
+    clear(&engine_ctx.raytracer.light_comps)
+    clear(&engine_ctx.raytracer.primitives)
+    clear(&engine_ctx.raytracer.guis)
 }
 
 process_entity :: proc(e: Entity)
 {
+    engine_ctx := engine_context()
     rc := get_component(e, Cmp_Render)
     if rc == nil { return }
     type := rc.type
@@ -3145,11 +3222,11 @@ process_entity :: proc(e: Entity)
 
     switch {
     case .MATERIAL in type:
-        g_raytracer.update_flags |= {.MATERIAL}
+        engine_ctx.raytracer.update_flags |= {.MATERIAL}
     case .PRIMITIVE in type:
-        g_raytracer.update_flags |= {.OBJECT}
+        engine_ctx.raytracer.update_flags |= {.OBJECT}
     case .LIGHT in type:
-        g_raytracer.update_flags |= {.LIGHT}
+        engine_ctx.raytracer.update_flags |= {.LIGHT}
     case .GUI in type:
         gc := get_component(e, Cmp_Gui)
         update_gui(gc)
@@ -3170,25 +3247,27 @@ process_entity :: proc(e: Entity)
 
 end :: proc()
 {
+    engine_ctx := engine_context()
     update_buffers()
     update_descriptors()
-    if glfw.WindowShouldClose(g_window.handle)
+    if glfw.WindowShouldClose(engine_ctx.window.handle)
     {
         end_ecs()
-        vk.DeviceWaitIdle(g_renderbase.device)
+        vk.DeviceWaitIdle(engine_ctx.renderbase.device)
     }
 }
 
 cleanup :: proc()
 {
-    vk.DeviceWaitIdle(g_renderbase.device)
+    engine_ctx := engine_context()
+    vk.DeviceWaitIdle(engine_ctx.renderbase.device)
 
     // Cleanup swapchain first
     cleanup_swapchain()
 
     // Destroy descriptor pool and layout before other resources
-    vk.DestroyDescriptorPool(g_renderbase.device, g_raytracer.descriptor_pool, nil)
-    vk.DestroyDescriptorSetLayout(g_renderbase.device, g_raytracer.graphics.descriptor_set_layout, nil)
+    vk.DestroyDescriptorPool(engine_ctx.renderbase.device, engine_ctx.raytracer.descriptor_pool, nil)
+    vk.DestroyDescriptorSetLayout(engine_ctx.renderbase.device, engine_ctx.raytracer.graphics.descriptor_set_layout, nil)
 
     // Now cleanup everything else including the device
     cleanup_vulkan()
@@ -3200,29 +3279,33 @@ cleanup :: proc()
 
 destroy_compute :: proc()
 {
+    engine_ctx := engine_context()
     // This function is now handled by cleanup_vulkan to ensure proper ordering
     // All compute resource cleanup moved to cleanup_vulkan()
 }
 
 cleanup_swapchain :: proc()
 {
-    vk.DestroyPipeline(g_renderbase.device, g_raytracer.graphics.pipeline, nil)
-    vk.DestroyPipelineLayout(g_renderbase.device, g_raytracer.graphics.pipeline_layout, nil)
+    engine_ctx := engine_context()
+    vk.DestroyPipeline(engine_ctx.renderbase.device, engine_ctx.raytracer.graphics.pipeline, nil)
+    vk.DestroyPipelineLayout(engine_ctx.renderbase.device, engine_ctx.raytracer.graphics.pipeline_layout, nil)
 
     cleanup_swapchain_vulkan()
 }
 
 rt_recreate_swapchain :: proc()
 {
+    engine_ctx := engine_context()
     recreate_swapchain_vulkan()
     create_descriptor_set_layout()
     create_graphics_pipeline()
-    create_command_buffers(0.7333333333, i32(f32(g_renderbase.swapchain_extent.width) * 0.16666666666), 36)
+    create_command_buffers(0.7333333333, i32(f32(engine_ctx.renderbase.swapchain_extent.width) * 0.16666666666), 36)
 }
 
 // Cleanup swap chain resources
 cleanup_swapchain_vulkan :: proc()
 {
+    engine_ctx := engine_context()
     // Swapchain views and swapchain are destroyed by destroy_swapchain()
     // This function is kept for any future swapchain-specific cleanup
 }
@@ -3230,15 +3313,16 @@ cleanup_swapchain_vulkan :: proc()
 // Recreate swap chain
 recreate_swapchain_vulkan :: proc()
 {
+    engine_ctx := engine_context()
     // Don't do anything when minimized.
-    for w, h := glfw.GetFramebufferSize(g_window.handle); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(g_window.handle)
+    for w, h := glfw.GetFramebufferSize(engine_ctx.window.handle); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(engine_ctx.window.handle)
     {
         glfw.WaitEvents()
-        if glfw.WindowShouldClose(g_window.handle)
+        if glfw.WindowShouldClose(engine_ctx.window.handle)
         { break }
     }
 
-    vk.DeviceWaitIdle(g_renderbase.device)
+    vk.DeviceWaitIdle(engine_ctx.renderbase.device)
 
     cleanup_swapchain_vulkan()
 
@@ -3250,48 +3334,49 @@ recreate_swapchain_vulkan :: proc()
 // Full Vulkan cleanup
 cleanup_vulkan :: proc()
 {
-    vk.DeviceWaitIdle(g_renderbase.device)
+    engine_ctx := engine_context()
+    vk.DeviceWaitIdle(engine_ctx.renderbase.device)
 
     // First cleanup all VMA buffers (must be done before device destruction)
-    gpu.vbuffer_destroy(&g_raytracer.compute.uniform_buffer, &g_renderbase.vma_allocator)
-    gpu.vbuffer_destroy(&g_raytracer.compute.storage_buffers.verts, &g_renderbase.vma_allocator)
-    gpu.vbuffer_destroy(&g_raytracer.compute.storage_buffers.faces, &g_renderbase.vma_allocator)
-    gpu.vbuffer_destroy(&g_raytracer.compute.storage_buffers.blas, &g_renderbase.vma_allocator)
-    gpu.vbuffer_destroy(&g_raytracer.compute.storage_buffers.shapes, &g_renderbase.vma_allocator)
-    gpu.vbuffer_destroy(&g_raytracer.compute.storage_buffers.primitives, &g_renderbase.vma_allocator)
-    gpu.vbuffer_destroy(&g_raytracer.compute.storage_buffers.materials, &g_renderbase.vma_allocator)
-    gpu.vbuffer_destroy(&g_raytracer.compute.storage_buffers.lights, &g_renderbase.vma_allocator)
-    gpu.vbuffer_destroy(&g_raytracer.compute.storage_buffers.guis, &g_renderbase.vma_allocator)
-    gpu.vbuffer_destroy(&g_raytracer.compute.storage_buffers.bvh, &g_renderbase.vma_allocator)
+    gpu.vbuffer_destroy(&engine_ctx.raytracer.compute.uniform_buffer, &engine_ctx.renderbase.vma_allocator)
+    gpu.vbuffer_destroy(&engine_ctx.raytracer.compute.storage_buffers.verts, &engine_ctx.renderbase.vma_allocator)
+    gpu.vbuffer_destroy(&engine_ctx.raytracer.compute.storage_buffers.faces, &engine_ctx.renderbase.vma_allocator)
+    gpu.vbuffer_destroy(&engine_ctx.raytracer.compute.storage_buffers.blas, &engine_ctx.renderbase.vma_allocator)
+    gpu.vbuffer_destroy(&engine_ctx.raytracer.compute.storage_buffers.shapes, &engine_ctx.renderbase.vma_allocator)
+    gpu.vbuffer_destroy(&engine_ctx.raytracer.compute.storage_buffers.primitives, &engine_ctx.renderbase.vma_allocator)
+    gpu.vbuffer_destroy(&engine_ctx.raytracer.compute.storage_buffers.materials, &engine_ctx.renderbase.vma_allocator)
+    gpu.vbuffer_destroy(&engine_ctx.raytracer.compute.storage_buffers.lights, &engine_ctx.renderbase.vma_allocator)
+    gpu.vbuffer_destroy(&engine_ctx.raytracer.compute.storage_buffers.guis, &engine_ctx.renderbase.vma_allocator)
+    gpu.vbuffer_destroy(&engine_ctx.raytracer.compute.storage_buffers.bvh, &engine_ctx.renderbase.vma_allocator)
 
     // Destroy textures
-    texture_destroy(&g_raytracer.compute_texture, g_renderbase.device, &g_renderbase.vma_allocator)
-    for &tex in g_raytracer.gui_textures do texture_destroy(&tex, g_renderbase.device, &g_renderbase.vma_allocator)
-    for &tex in g_raytracer.bindless_textures do texture_destroy(&tex, g_renderbase.device, &g_renderbase.vma_allocator)
-    texture_destroy(&g_raytracer.font.atlas_texture, g_renderbase.device, &g_renderbase.vma_allocator)
-    delete(g_raytracer.font.char_data)
+    texture_destroy(&engine_ctx.raytracer.compute_texture, engine_ctx.renderbase.device, &engine_ctx.renderbase.vma_allocator)
+    for &tex in engine_ctx.raytracer.gui_textures do texture_destroy(&tex, engine_ctx.renderbase.device, &engine_ctx.renderbase.vma_allocator)
+    for &tex in engine_ctx.raytracer.bindless_textures do texture_destroy(&tex, engine_ctx.renderbase.device, &engine_ctx.renderbase.vma_allocator)
+    texture_destroy(&engine_ctx.raytracer.font.atlas_texture, engine_ctx.renderbase.device, &engine_ctx.renderbase.vma_allocator)
+    delete(engine_ctx.raytracer.font.char_data)
 
     // Destroy all dynamic objects
-    delete(g_raytracer.primitives)
-    delete(g_raytracer.materials)
-    delete(g_raytracer.lights)
-    delete(g_raytracer.guis)
-    delete(g_raytracer.bvh)
-    delete(g_raytracer.mesh_comps)
-    delete(g_raytracer.light_comps)
-    delete(g_raytracer.mesh_assigner)
-    delete(g_raytracer.bindless_textures)
-    delete(g_raytracer.ordered_prims_map)
+    delete(engine_ctx.raytracer.primitives)
+    delete(engine_ctx.raytracer.materials)
+    delete(engine_ctx.raytracer.lights)
+    delete(engine_ctx.raytracer.guis)
+    delete(engine_ctx.raytracer.bvh)
+    delete(engine_ctx.raytracer.mesh_comps)
+    delete(engine_ctx.raytracer.light_comps)
+    delete(engine_ctx.raytracer.mesh_assigner)
+    delete(engine_ctx.raytracer.bindless_textures)
+    delete(engine_ctx.raytracer.ordered_prims_map)
     // Destroy command pools (this automatically frees command buffers)
-    vk.DestroyCommandPool(g_renderbase.device, g_raytracer.compute.command_pool, nil)
-    vk.DestroyCommandPool(g_renderbase.device, g_renderbase.command_pool, nil)
-    vk.DestroyFence(g_renderbase.device, g_raytracer.compute.fence, nil)
+    vk.DestroyCommandPool(engine_ctx.renderbase.device, engine_ctx.raytracer.compute.command_pool, nil)
+    vk.DestroyCommandPool(engine_ctx.renderbase.device, engine_ctx.renderbase.command_pool, nil)
+    vk.DestroyFence(engine_ctx.renderbase.device, engine_ctx.raytracer.compute.fence, nil)
 
     // Destroy pipelines and layouts
-    vk.DestroyPipeline(g_renderbase.device, g_raytracer.compute.pipeline, nil)
-    vk.DestroyPipelineLayout(g_renderbase.device, g_raytracer.compute.pipeline_layout, nil)
-    vk.DestroyDescriptorSetLayout(g_renderbase.device, g_raytracer.compute.descriptor_set_layout, nil)
-    vk.DestroyPipelineCache(g_renderbase.device, g_renderbase.pipeline_cache, nil)
+    vk.DestroyPipeline(engine_ctx.renderbase.device, engine_ctx.raytracer.compute.pipeline, nil)
+    vk.DestroyPipelineLayout(engine_ctx.renderbase.device, engine_ctx.raytracer.compute.pipeline_layout, nil)
+    vk.DestroyDescriptorSetLayout(engine_ctx.renderbase.device, engine_ctx.raytracer.compute.descriptor_set_layout, nil)
+    vk.DestroyPipelineCache(engine_ctx.renderbase.device, engine_ctx.renderbase.pipeline_cache, nil)
 
     // Destroy framebuffers first, then depth resources, then swapchain
     destroy_framebuffers()
@@ -3299,19 +3384,19 @@ cleanup_vulkan :: proc()
     destroy_swapchain()
     cleanup_swapchain_vulkan()
 
-    vk.DestroyRenderPass(g_renderbase.device, g_renderbase.render_pass, nil)
+    vk.DestroyRenderPass(engine_ctx.renderbase.device, engine_ctx.renderbase.render_pass, nil)
 
     // Destroy semaphores
-    for sem in g_renderbase.image_available_semaphores do vk.DestroySemaphore(g_renderbase.device, sem, nil)
-    for sem in g_renderbase.render_finished_semaphores do vk.DestroySemaphore(g_renderbase.device, sem, nil)
-    for fence in g_renderbase.in_flight_fences do vk.DestroyFence(g_renderbase.device, fence, nil)
+    for sem in engine_ctx.renderbase.image_available_semaphores do vk.DestroySemaphore(engine_ctx.renderbase.device, sem, nil)
+    for sem in engine_ctx.renderbase.render_finished_semaphores do vk.DestroySemaphore(engine_ctx.renderbase.device, sem, nil)
+    for fence in engine_ctx.renderbase.in_flight_fences do vk.DestroyFence(engine_ctx.renderbase.device, fence, nil)
 
     // Destroy remaining graphics resources
-    vk.DestroyShaderModule(g_renderbase.device, g_renderbase.vert_shader_module, nil)
-    vk.DestroyShaderModule(g_renderbase.device, g_renderbase.frag_shader_module, nil)
-    vma.DestroyAllocator(g_renderbase.vma_allocator)
+    vk.DestroyShaderModule(engine_ctx.renderbase.device, engine_ctx.renderbase.vert_shader_module, nil)
+    vk.DestroyShaderModule(engine_ctx.renderbase.device, engine_ctx.renderbase.frag_shader_module, nil)
+    vma.DestroyAllocator(engine_ctx.renderbase.vma_allocator)
 
     // Finally destroy device
-    vk.DestroyDevice(g_renderbase.device, nil)
-    vk.DestroySurfaceKHR(g_renderbase.instance, g_renderbase.surface, nil)
+    vk.DestroyDevice(engine_ctx.renderbase.device, nil)
+    vk.DestroySurfaceKHR(engine_ctx.renderbase.instance, engine_ctx.renderbase.surface, nil)
 }

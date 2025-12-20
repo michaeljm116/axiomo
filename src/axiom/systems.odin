@@ -96,7 +96,7 @@ sqt_transform :: proc(entity: Entity)
         l := get_component(get_table(Cmp_Light), nc.entity)
         if l != nil {
             // Update light in render system
-            g_raytracer.lights[0] = gpu.Light{
+            engine_ctx.raytracer.lights[0] = gpu.Light{
                 pos = tc.world[3].xyz,
                 color = l.color,
                 intensity = l.intensity,
@@ -164,15 +164,15 @@ geometry_transform_converter :: proc(nc: ^Cmp_Node)
 sys_bvh_init :: proc(alloc : mem.Allocator)
 {
     engine_ctx := engine_context()
-    v_bvh = new(View, alloc)
-    err := view_init(v_bvh, engine_ctx.world.db, {get_table(Cmp_Primitive), get_table(Cmp_Node), get_table(Cmp_Transform)})
+    engine_ctx.v_bvh = new(View, alloc)
+    err := view_init(engine_ctx.v_bvh, engine_ctx.world.db, {get_table(Cmp_Primitive), get_table(Cmp_Node), get_table(Cmp_Transform)})
     if err != nil do panic("Failed to initialize view")
 }
 
 sys_bvh_reset :: proc()
 {
     engine_ctx := engine_context()
-    view_rebuild(v_bvh)
+    view_rebuild(engine_ctx.v_bvh)
 }
 
 Sys_Bvh :: struct {
@@ -355,7 +355,7 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator)
 
     //Now Begin reseriving
     table_prims := get_table(Cmp_Primitive)
-    num_ents := view_len(v_bvh)
+    num_ents := view_len(engine_ctx.v_bvh)
     prims := make([dynamic]embree.RTCBuildPrimitive, 0, num_ents, alloc)
     entts := make([dynamic]Entity, 0, num_ents, alloc)
     pcmps := make([dynamic]^Cmp_Primitive, 0, num_ents, alloc)
@@ -363,7 +363,7 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator)
     // Asemble!
     pid := 0
     it : Iterator
-    iterator_init(&it, v_bvh)
+    iterator_init(&it, engine_ctx.v_bvh)
     for iterator_next(&it)
     {
         entity := get_entity(&it)
