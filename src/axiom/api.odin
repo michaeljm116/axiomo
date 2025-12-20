@@ -33,16 +33,30 @@ Error :: ecs.Error
 //----------------------------------------------------------------------------\\
 // /Globals for the engine
 //----------------------------------------------------------------------------\\
-g_renderbase : ^RenderBase
-g_raytracer : ^ComputeRaytracer
-g_window : Window
-g_input : InputState
-g_bvh : ^Sys_Bvh
-g_physics : ^Sys_Physics
+Engine :: struct{
+    renderbase : ^RenderBase,
+    raytracer : ^ComputeRaytracer,
+    window : Window,
+    input : InputState,
+    bvh : ^Sys_Bvh,
+    physics : ^Sys_Physics,
 
-g_texture_indexes : map[string]i32
-g_world : ^World
-g_cap :: 10000
+    texture_indexes : map[string]i32,
+    world : ^World,
+
+    v_transform : ^View,
+    v_bvh : ^View,
+    v_physics : ^View,
+    v_animation : ^View,
+    v_animate : ^View,
+
+    num_nodes: i32,
+    anim_initialized : bool
+}
+
+engine_context :: #force_inline proc () -> ^Engine{
+    return cast(^Engine)context.user_ptr
+}
 
 //----------------------------------------------------------------------------\\
 // /ECS

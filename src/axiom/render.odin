@@ -368,9 +368,10 @@ init_vulkan :: proc()
 }
 
 @(require_results)
-pick_physical_device :: proc() -> vk.Result {
-
-	score_physical_device :: proc(device: vk.PhysicalDevice) -> (score: int) {
+pick_physical_device :: proc() -> vk.Result
+{
+	score_physical_device :: proc(device: vk.PhysicalDevice) -> (score: int)
+	{
 		props: vk.PhysicalDeviceProperties
 		vk.GetPhysicalDeviceProperties(device, &props)
 
@@ -392,7 +393,8 @@ pick_physical_device :: proc() -> vk.Result {
 			required_loop: for required in DEVICE_EXTENSIONS {
 				for &extension in extensions {
 					extension_name := byte_arr_str(&extension.extensionName)
-					if extension_name == string(required) {
+					if extension_name == string(required)
+					{
 						continue required_loop
 					}
 				}
@@ -475,7 +477,8 @@ Queue_Family_Indices :: struct {
 	compute:  Maybe(u32)
 }
 
-find_queue_families :: proc(device: vk.PhysicalDevice) -> (ids: Queue_Family_Indices) {
+find_queue_families :: proc(device: vk.PhysicalDevice) -> (ids: Queue_Family_Indices)
+{
 	count: u32
 	vk.GetPhysicalDeviceQueueFamilyProperties(device, &count, nil)
 
@@ -529,7 +532,8 @@ set_compute_queue_family_index :: proc(device: vk.PhysicalDevice, ids: ^Queue_Fa
 		return
        }
    }
-   if(len(c) > 0){
+   if(len(c) > 0)
+   {
        ids.compute = c[0]
    }
 }
@@ -540,13 +544,8 @@ Swapchain_Support :: struct {
 	presentModes: []vk.PresentModeKHR,
 }
 
-query_swapchain_support :: proc(
-	device: vk.PhysicalDevice,
-	allocator := context.temp_allocator,
-) -> (
-	support: Swapchain_Support,
-	result: vk.Result,
-) {
+query_swapchain_support :: proc(device: vk.PhysicalDevice,allocator := context.temp_allocator,) -> (support: Swapchain_Support,result: vk.Result,)
+{
 	// NOTE: looks like a wrong binding with the third arg being a multipointer.
 	vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(device, g_renderbase.surface, &support.capabilities) or_return
 
@@ -569,7 +568,8 @@ query_swapchain_support :: proc(
 	return
 }
 
-choose_swapchain_surface_format :: proc(formats: []vk.SurfaceFormatKHR) -> vk.SurfaceFormatKHR {
+choose_swapchain_surface_format :: proc(formats: []vk.SurfaceFormatKHR) -> vk.SurfaceFormatKHR
+{
     for format in formats {
 		if format.format == .B8G8R8A8_UNORM && format.colorSpace == .SRGB_NONLINEAR {
 			return format
@@ -580,7 +580,8 @@ choose_swapchain_surface_format :: proc(formats: []vk.SurfaceFormatKHR) -> vk.Su
 	return formats[0]
 }
 
-choose_swapchain_present_mode :: proc(modes: []vk.PresentModeKHR) -> vk.PresentModeKHR {
+choose_swapchain_present_mode :: proc(modes: []vk.PresentModeKHR) -> vk.PresentModeKHR
+{
 	// We would like mailbox for the best tradeoff between tearing and latency.
 	for mode in modes {
 		if mode == .MAILBOX {
@@ -592,8 +593,10 @@ choose_swapchain_present_mode :: proc(modes: []vk.PresentModeKHR) -> vk.PresentM
 	return .FIFO
 }
 
-choose_swapchain_extent :: proc(capabilities: vk.SurfaceCapabilitiesKHR) -> vk.Extent2D {
-	if capabilities.currentExtent.width != max(u32) {
+choose_swapchain_extent :: proc(capabilities: vk.SurfaceCapabilitiesKHR) -> vk.Extent2D
+{
+	if capabilities.currentExtent.width != max(u32)
+	{
 		return capabilities.currentExtent
 	}
 
@@ -628,17 +631,14 @@ find_depth_format :: proc() -> vk.Format
 	)
 }
 
-glfw_error_callback :: proc "c" (code: i32, description: cstring) {
+glfw_error_callback :: proc "c" (code: i32, description: cstring)
+{
 	context = g_renderbase.ctx
 	log.errorf("glfw: %i: %s", code, description)
 }
 
-vk_messenger_callback :: proc "system" (
-	messageSeverity: vk.DebugUtilsMessageSeverityFlagsEXT,
-	messageTypes: vk.DebugUtilsMessageTypeFlagsEXT,
-	pCallbackData: ^vk.DebugUtilsMessengerCallbackDataEXT,
-	pUserData: rawptr,
-) -> b32 {
+vk_messenger_callback :: proc "system" (messageSeverity: vk.DebugUtilsMessageSeverityFlagsEXT,messageTypes: vk.DebugUtilsMessageTypeFlagsEXT,pCallbackData: ^vk.DebugUtilsMessengerCallbackDataEXT,pUserData: rawptr,) -> b32
+{
 	context = g_renderbase.ctx
 
 	level: log.Level
@@ -656,13 +656,8 @@ vk_messenger_callback :: proc "system" (
 	return false
 }
 
-physical_device_extensions :: proc(
-	device: vk.PhysicalDevice,
-	allocator := context.temp_allocator,
-) -> (
-	exts: []vk.ExtensionProperties,
-	res: vk.Result,
-) {
+physical_device_extensions :: proc(device: vk.PhysicalDevice,allocator := context.temp_allocator,) -> (exts: []vk.ExtensionProperties,res: vk.Result,)
+{
 	count: u32
 	vk.EnumerateDeviceExtensionProperties(device, nil, &count, nil) or_return
 
@@ -672,7 +667,8 @@ physical_device_extensions :: proc(
 	return
 }
 
-create_swapchain :: proc() {
+create_swapchain :: proc()
+{
 	indices := find_queue_families(g_renderbase.physical_device)
 	// Setup swapchain.
 	{
@@ -750,7 +746,8 @@ create_swapchain :: proc() {
 	}
 }
 
-destroy_swapchain :: proc() {
+destroy_swapchain :: proc()
+{
 	for view in g_renderbase.swapchain_views {
 		vk.DestroyImageView(g_renderbase.device, view, nil)
 	}
@@ -759,7 +756,8 @@ destroy_swapchain :: proc() {
 	vk.DestroySwapchainKHR(g_renderbase.device, g_renderbase.swapchain, nil)
 }
 
-create_framebuffers :: proc() {
+create_framebuffers :: proc()
+{
     g_renderbase.swapchain_frame_buffers = make([]vk.Framebuffer, len(g_renderbase.swapchain_views))
     for view, i in g_renderbase.swapchain_views {
         attachments := []vk.ImageView{view, g_renderbase.depth_view} // Color and depth attachments
@@ -799,22 +797,20 @@ init_vma :: proc()
 	must(vma.CreateAllocator(&create_info, &g_renderbase.vma_allocator))
 }
 
-create_depth_resources :: proc() {
+create_depth_resources :: proc()
+{
     depth_format := find_depth_format()
     create_image(g_renderbase.swapchain_extent.width, g_renderbase.swapchain_extent.height, depth_format, .OPTIMAL, .DEPTH_STENCIL_ATTACHMENT, &g_renderbase.depth_image, &g_renderbase.depth_allocation)
     g_renderbase.depth_view = create_image_view(g_renderbase.depth_image, depth_format, {.DEPTH})
     transition_image_layout(g_renderbase.depth_image, depth_format, .UNDEFINED, .DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 }
-destroy_depth_resources :: proc() {
+destroy_depth_resources :: proc()
+{
     vk.DestroyImageView(g_renderbase.device, g_renderbase.depth_view, nil)
     vma.DestroyImage(g_renderbase.vma_allocator, g_renderbase.depth_image, g_renderbase.depth_allocation)
 }
 
-create_image :: proc (width, height : u32,
-	format : vk.Format, tiling : vk.ImageTiling,
-	usage : vk.ImageUsageFlag, image : ^vk.Image,
-	allocation : ^vma.Allocation
-)
+create_image :: proc (width, height : u32,format : vk.Format, tiling : vk.ImageTiling,usage : vk.ImageUsageFlag, image : ^vk.Image,allocation : ^vma.Allocation)
 {
 	image_info := vk.ImageCreateInfo{
 		sType = .IMAGE_CREATE_INFO,
@@ -834,7 +830,8 @@ create_image :: proc (width, height : u32,
 	must(vma.CreateImage(g_renderbase.vma_allocator, &image_info, &alloc_info, image, allocation, nil))
 }
 
-create_image_view :: proc(image: vk.Image, format: vk.Format, aspect_mask: vk.ImageAspectFlags) -> vk.ImageView {
+create_image_view :: proc(image: vk.Image, format: vk.Format, aspect_mask: vk.ImageAspectFlags) -> vk.ImageView
+{
     view_info := vk.ImageViewCreateInfo{
         sType = .IMAGE_VIEW_CREATE_INFO,
         image = image,
@@ -863,16 +860,20 @@ create_buffer :: proc(allocator : vma.Allocator, size : vk.DeviceSize, usage : v
 	must(vma.CreateBuffer(allocator, &buffer_info, &alloc_info, buffer, allocation, nil))
 }
 
-destroy_framebuffers :: proc() {
+destroy_framebuffers :: proc()
+{
 	for frame_buffer in g_renderbase.swapchain_frame_buffers {vk.DestroyFramebuffer(g_renderbase.device, frame_buffer, nil)}
 	delete(g_renderbase.swapchain_frame_buffers)
 }
 
-recreate_swapchain :: proc() {
+recreate_swapchain :: proc()
+{
     // Don't do anything when minimized.
-    for w, h := glfw.GetFramebufferSize(g_window.handle); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(g_window.handle) {
+    for w, h := glfw.GetFramebufferSize(g_window.handle); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(g_window.handle)
+    {
         glfw.WaitEvents()
-        if glfw.WindowShouldClose(g_window.handle) { break }
+        if glfw.WindowShouldClose(g_window.handle)
+        { break }
     }
 
     vk.DeviceWaitIdle(g_renderbase.device)
@@ -886,7 +887,8 @@ recreate_swapchain :: proc() {
     create_framebuffers()
 }
 
-create_shader_module :: proc(code: []byte) -> (module: vk.ShaderModule) {
+create_shader_module :: proc(code: []byte) -> (module: vk.ShaderModule)
+{
 	as_u32 := slice.reinterpret([]u32, code)
 
 	create_info := vk.ShaderModuleCreateInfo {
@@ -898,7 +900,8 @@ create_shader_module :: proc(code: []byte) -> (module: vk.ShaderModule) {
 	return
 }
 
-record_command_buffer :: proc(command_buffer: vk.CommandBuffer, image_index: u32) {
+record_command_buffer :: proc(command_buffer: vk.CommandBuffer, image_index: u32)
+{
     begin_info := vk.CommandBufferBeginInfo {
         sType = .COMMAND_BUFFER_BEGIN_INFO,
     }
@@ -939,17 +942,20 @@ record_command_buffer :: proc(command_buffer: vk.CommandBuffer, image_index: u32
     must(vk.EndCommandBuffer(command_buffer))
 }
 
-byte_arr_str :: proc(arr: ^[$N]byte) -> string {
+byte_arr_str :: proc(arr: ^[$N]byte) -> string
+{
 	return strings.truncate_to_byte(string(arr[:]), 0)
 }
 
-must :: proc(result: vk.Result, loc := #caller_location) {
+must :: proc(result: vk.Result, loc := #caller_location)
+{
 	if result != .SUCCESS {
 		log.panicf("vulkan failure %v", result, location = loc)
 	}
 }
 
-begin_single_time_commands :: proc() -> vk.CommandBuffer {
+begin_single_time_commands :: proc() -> vk.CommandBuffer
+{
     alloc_info := vk.CommandBufferAllocateInfo {
         sType              = .COMMAND_BUFFER_ALLOCATE_INFO,
         commandPool        = g_renderbase.command_pool,
@@ -967,7 +973,8 @@ begin_single_time_commands :: proc() -> vk.CommandBuffer {
     return command_buffer
 }
 
-end_single_time_commands :: proc(command_buffer: ^vk.CommandBuffer) {
+end_single_time_commands :: proc(command_buffer: ^vk.CommandBuffer)
+{
     must(vk.EndCommandBuffer(command_buffer^))
 
     submit_info := vk.SubmitInfo {
@@ -981,7 +988,8 @@ end_single_time_commands :: proc(command_buffer: ^vk.CommandBuffer) {
     vk.FreeCommandBuffers(g_renderbase.device, g_renderbase.command_pool, 1, command_buffer)
 }
 
-transition_image_layout :: proc(image: vk.Image, format: vk.Format, old_layout: vk.ImageLayout, new_layout: vk.ImageLayout) {
+transition_image_layout :: proc(image: vk.Image, format: vk.Format, old_layout: vk.ImageLayout, new_layout: vk.ImageLayout)
+{
     command_buffer := begin_single_time_commands()
 
     barrier := vk.ImageMemoryBarrier {
@@ -1002,7 +1010,8 @@ transition_image_layout :: proc(image: vk.Image, format: vk.Format, old_layout: 
 
     if new_layout == .DEPTH_STENCIL_ATTACHMENT_OPTIMAL {
         barrier.subresourceRange.aspectMask = {.DEPTH}
-        if has_stencil_component(format) {
+        if has_stencil_component(format)
+        {
             barrier.subresourceRange.aspectMask |= {.STENCIL}
         }
     }
@@ -1047,11 +1056,13 @@ transition_image_layout :: proc(image: vk.Image, format: vk.Format, old_layout: 
     end_single_time_commands(&command_buffer)
 }
 
-has_stencil_component :: proc(format: vk.Format) -> bool {
+has_stencil_component :: proc(format: vk.Format) -> bool
+{
     return format == .D32_SFLOAT_S8_UINT || format == .D24_UNORM_S8_UINT
 }
 
-copy_buffer_to_image :: proc(buffer: vk.Buffer, image: vk.Image, width, height: u32) {
+copy_buffer_to_image :: proc(buffer: vk.Buffer, image: vk.Image, width, height: u32)
+{
     command_buffer := begin_single_time_commands()
 
     region := vk.BufferImageCopy {
@@ -1096,7 +1107,8 @@ Texture :: struct {
     descriptor_set: vk.DescriptorSet,
 }
 
-texture_destroy :: proc(texture: ^Texture, device: vk.Device, allocator: ^vma.Allocator) {
+texture_destroy :: proc(texture: ^Texture, device: vk.Device, allocator: ^vma.Allocator)
+{
     if texture.sampler != 0 {
         vk.DestroySampler(device, texture.sampler, nil)
     }
@@ -1114,7 +1126,8 @@ texture_create :: proc
     texture_create_w_pixels,
 }
 
-texture_load_create :: proc(texture: ^Texture) -> bool {
+texture_load_create :: proc(texture: ^Texture) -> bool
+{
     tex_width, tex_height, tex_channels: i32
     pixels := stbi.load(strings.clone_to_cstring(texture.path, context.temp_allocator), &tex_width, &tex_height, &tex_channels, 4)
     defer     stbi.image_free(pixels)
@@ -1127,11 +1140,13 @@ texture_load_create :: proc(texture: ^Texture) -> bool {
     return texture_create_device(texture, pixels, g_renderbase.device, &g_renderbase.vma_allocator)
 }
 
-texture_create_w_pixels :: proc(texture: ^Texture, pixels : [^]byte) -> bool {
+texture_create_w_pixels :: proc(texture: ^Texture, pixels : [^]byte) -> bool
+{
     return texture_create_device(texture, pixels, g_renderbase.device, &g_renderbase.vma_allocator)
 }
 
-texture_create_device :: proc(texture: ^Texture, pixels : [^]byte, device: vk.Device, allocator: ^vma.Allocator) -> bool {
+texture_create_device :: proc(texture: ^Texture, pixels : [^]byte, device: vk.Device, allocator: ^vma.Allocator) -> bool
+{
     image_size := vk.DeviceSize(texture.width * texture.height * 4)
         // Create staging buffer
     staging_buffer: vk.Buffer
@@ -1221,7 +1236,8 @@ texture_create_device :: proc(texture: ^Texture, pixels : [^]byte, device: vk.De
     return true
 }
 
-texture_update_descriptor :: proc(texture: ^Texture) {
+texture_update_descriptor :: proc(texture: ^Texture)
+{
     texture.descriptor = vk.DescriptorImageInfo {
         sampler = texture.sampler,
         imageView = texture.view,
@@ -1260,7 +1276,8 @@ Font :: struct {
 }
 
 // Renders a string to an RGBA bitmap (returns buffer, width, height)
-render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32) {
+render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32)
+{
     // First pass: Compute total width/height
     total_width: f32 = 0
     max_height: f32 = 0
@@ -1330,7 +1347,8 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32) {
     return bitmap, bitmap_width, bitmap_height
 }
 
-create_texture_from_bitmap :: proc(bitmap: []u8, width, height: i32) -> Texture {
+create_texture_from_bitmap :: proc(bitmap: []u8, width, height: i32) -> Texture
+{
     tex: Texture
     tex.width = u32(width)
     tex.height = u32(height)
@@ -1398,7 +1416,8 @@ create_texture_from_bitmap :: proc(bitmap: []u8, width, height: i32) -> Texture 
     return tex
 }
 
-bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
+bake_font_atlas :: proc(font_path: string, pixel_height: f32)
+{
     // Load TTF (e.g., "../assets/fonts/arial.ttf")
     ttf_data, ok := os.read_entire_file(font_path)
     if !ok { log.panic("Failed to load font") }
@@ -1451,7 +1470,8 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     // Set sampler to .LINEAR for smooth scaling
     // Call texture_update_descriptor(&g_raytracer.font.atlas_texture)
     //
-    if(texture_create(&g_raytracer.font.atlas_texture, raw_data(rgba_data))){
+    if(texture_create(&g_raytracer.font.atlas_texture, raw_data(rgba_data)))
+    {
         append(&g_raytracer.bindless_textures, g_raytracer.font.atlas_texture)
         g_texture_indexes["Deutsch.ttf"] = i32(len(g_texture_indexes))
     }
@@ -1460,7 +1480,8 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     // Store per-char UVs and metrics
     g_raytracer.font.scale = sttt.ScaleForPixelHeight(&info, pixel_height)
     g_raytracer.font.atlas_width, g_raytracer.font.atlas_height = bitmap_width, bitmap_height
-    for i in 0..<len(baked_chars) {
+    for i in 0..<len(baked_chars)
+    {
         c := baked_chars[i]
         char := rune(char_range[0] + rune(i))
         g_raytracer.font.char_data[char] = {
@@ -1599,7 +1620,8 @@ initialize_raytracer :: proc()
 }
 
 // Initialize a uniform buffer with the provided data
-init_uniform_buffer :: proc(vb: ^gpu.VBuffer, rc: ^RenderBase, data: $T) {
+init_uniform_buffer :: proc(vb: ^gpu.VBuffer, rc: ^RenderBase, data: $T)
+{
     size := u64(size_of(T))
     create_buffer(rc, size, {.UNIFORM_BUFFER}, &vb.allocation, &vb.buffer)
     vb.buffer_info = vk.DescriptorBufferInfo{buffer = vb.buffer, offset = 0, range = size}
@@ -1608,7 +1630,8 @@ init_uniform_buffer :: proc(vb: ^gpu.VBuffer, rc: ^RenderBase, data: $T) {
     mem.copy(mapped, &data, size_of(T))
     vma.UnmapMemory(rc.vma_allocator, vb.allocation)
 }
-prepare_storage_buffers :: proc() {
+prepare_storage_buffers :: proc()
+{
     reserve(&g_raytracer.materials, MAX_MATERIALS)
     reserve(&g_raytracer.lights, MAX_LIGHTS)
 
@@ -1649,12 +1672,14 @@ prepare_storage_buffers :: proc() {
        MAX_NODES)
 }
 
-create_uniform_buffers :: proc() {
+create_uniform_buffers :: proc()
+{
     gpu.vbuffer_init_custom(&g_raytracer.compute.uniform_buffer, &g_renderbase.vma_allocator, 1, {.UNIFORM_BUFFER}, .CPU_TO_GPU)
     gpu.vbuffer_apply_changes_no_data(&g_raytracer.compute.uniform_buffer, &g_renderbase.vma_allocator)
 }
 
-prepare_texture_target :: proc(tex: ^Texture, width, height: u32, format: vk.Format) {
+prepare_texture_target :: proc(tex: ^Texture, width, height: u32, format: vk.Format)
+{
     // Get format properties to check if the format supports storage image operations
     format_properties: vk.FormatProperties
     vk.GetPhysicalDeviceFormatProperties(g_renderbase.physical_device, format, &format_properties)
@@ -1732,7 +1757,8 @@ prepare_texture_target :: proc(tex: ^Texture, width, height: u32, format: vk.For
     }
 }
 
-create_descriptor_set_layout :: proc() {
+create_descriptor_set_layout :: proc()
+{
     bindings: [1]vk.DescriptorSetLayoutBinding
     bindings[0] = vk.DescriptorSetLayoutBinding{
         binding = 0,
@@ -1756,7 +1782,8 @@ create_descriptor_set_layout :: proc() {
     must(vk.CreatePipelineLayout(g_renderbase.device, &pipeline_layout_info, nil, &g_raytracer.graphics.pipeline_layout))
 }
 
-create_graphics_pipeline :: proc() {
+create_graphics_pipeline :: proc()
+{
     // Input assembly state
     input_assembly_state := vk.PipelineInputAssemblyStateCreateInfo{
         sType = .PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -1897,7 +1924,8 @@ create_graphics_pipeline :: proc() {
     vk.DestroyShaderModule(g_renderbase.device, vert_shader_module, nil)
 }
 
-create_descriptor_pool :: proc() {
+create_descriptor_pool :: proc()
+{
     pool_sizes: [5]vk.DescriptorPoolSize
     pool_sizes[0] = { type = .UNIFORM_BUFFER, descriptorCount = 2 }
     pool_sizes[1] = { type = .COMBINED_IMAGE_SAMPLER, descriptorCount = 3 + MAX_TEXTURES }
@@ -1914,7 +1942,8 @@ create_descriptor_pool :: proc() {
     must(vk.CreateDescriptorPool(g_renderbase.device, &pool_info, nil, &g_raytracer.descriptor_pool))
 }
 
-create_descriptor_sets :: proc() {
+create_descriptor_sets :: proc()
+{
     alloc_info := vk.DescriptorSetAllocateInfo{
         sType = .DESCRIPTOR_SET_ALLOCATE_INFO,
         descriptorPool = g_raytracer.descriptor_pool,
@@ -1934,7 +1963,8 @@ create_descriptor_sets :: proc() {
     vk.UpdateDescriptorSets(g_renderbase.device, 1, &write_set, 0, nil)
 }
 
-prepare_compute :: proc() {
+prepare_compute :: proc()
+{
     // Get compute queue
     vk.GetDeviceQueue(g_renderbase.device, g_renderbase.compute_queue_family_index, 0, &g_raytracer.compute.queue)
 
@@ -2027,7 +2057,8 @@ prepare_compute :: proc() {
     })
 
     // Binding 1: UNIFORM_BUFFER (skip if null)
-    if g_raytracer.compute.uniform_buffer.buffer_info.buffer != vk.Buffer(0) {
+    if g_raytracer.compute.uniform_buffer.buffer_info.buffer != vk.Buffer(0)
+    {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
             dstSet = g_raytracer.compute.descriptor_set,
@@ -2040,7 +2071,8 @@ prepare_compute :: proc() {
     }
 
     // Binding 2: STORAGE_BUFFER verts (skip if null)
-    if g_raytracer.compute.storage_buffers.verts.buffer_info.buffer != vk.Buffer(0) {
+    if g_raytracer.compute.storage_buffers.verts.buffer_info.buffer != vk.Buffer(0)
+    {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
             dstSet = g_raytracer.compute.descriptor_set,
@@ -2053,7 +2085,8 @@ prepare_compute :: proc() {
     }
 
     // Binding 3: STORAGE_BUFFER faces (skip if null)
-    if g_raytracer.compute.storage_buffers.faces.buffer_info.buffer != vk.Buffer(0) {
+    if g_raytracer.compute.storage_buffers.faces.buffer_info.buffer != vk.Buffer(0)
+    {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
             dstSet = g_raytracer.compute.descriptor_set,
@@ -2066,7 +2099,8 @@ prepare_compute :: proc() {
     }
 
     // Binding 4: STORAGE_BUFFER blas (skip if null)
-    if g_raytracer.compute.storage_buffers.blas.buffer_info.buffer != vk.Buffer(0) {
+    if g_raytracer.compute.storage_buffers.blas.buffer_info.buffer != vk.Buffer(0)
+    {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
             dstSet = g_raytracer.compute.descriptor_set,
@@ -2079,7 +2113,8 @@ prepare_compute :: proc() {
     }
 
     // Binding 5: STORAGE_BUFFER shapes (skip if null)
-    if g_raytracer.compute.storage_buffers.shapes.buffer_info.buffer != vk.Buffer(0) {
+    if g_raytracer.compute.storage_buffers.shapes.buffer_info.buffer != vk.Buffer(0)
+    {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
             dstSet = g_raytracer.compute.descriptor_set,
@@ -2092,7 +2127,8 @@ prepare_compute :: proc() {
     }
 
     // Binding 6: STORAGE_BUFFER primitives (skip if null)
-    if g_raytracer.compute.storage_buffers.primitives.buffer_info.buffer != vk.Buffer(0) {
+    if g_raytracer.compute.storage_buffers.primitives.buffer_info.buffer != vk.Buffer(0)
+    {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
             dstSet = g_raytracer.compute.descriptor_set,
@@ -2105,7 +2141,8 @@ prepare_compute :: proc() {
     }
 
     // Binding 7: STORAGE_BUFFER materials (skip if null)
-    if g_raytracer.compute.storage_buffers.materials.buffer_info.buffer != vk.Buffer(0) {
+    if g_raytracer.compute.storage_buffers.materials.buffer_info.buffer != vk.Buffer(0)
+    {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
             dstSet = g_raytracer.compute.descriptor_set,
@@ -2118,7 +2155,8 @@ prepare_compute :: proc() {
     }
 
     // Binding 8: STORAGE_BUFFER lights (skip if null)
-    if g_raytracer.compute.storage_buffers.lights.buffer_info.buffer != vk.Buffer(0) {
+    if g_raytracer.compute.storage_buffers.lights.buffer_info.buffer != vk.Buffer(0)
+    {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
             dstSet = g_raytracer.compute.descriptor_set,
@@ -2131,7 +2169,8 @@ prepare_compute :: proc() {
     }
 
     // Binding 9: STORAGE_BUFFER guis (skip if null)
-    if g_raytracer.compute.storage_buffers.guis.buffer_info.buffer != vk.Buffer(0) {
+    if g_raytracer.compute.storage_buffers.guis.buffer_info.buffer != vk.Buffer(0)
+    {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
             dstSet = g_raytracer.compute.descriptor_set,
@@ -2144,7 +2183,8 @@ prepare_compute :: proc() {
     }
 
     // Binding 10: STORAGE_BUFFER bvh (skip if null)
-    if g_raytracer.compute.storage_buffers.bvh.buffer_info.buffer != vk.Buffer(0) {
+    if g_raytracer.compute.storage_buffers.bvh.buffer_info.buffer != vk.Buffer(0)
+    {
         append(&write_sets, vk.WriteDescriptorSet{
             sType = .WRITE_DESCRIPTOR_SET,
             dstSet = g_raytracer.compute.descriptor_set,
@@ -2235,7 +2275,8 @@ prepare_compute :: proc() {
 
 }
 
-create_compute_command_buffer :: proc() {
+create_compute_command_buffer :: proc()
+{
     cmd_buf_info := vk.CommandBufferBeginInfo {
         sType = .COMMAND_BUFFER_BEGIN_INFO,
         // No flags needed; equivalent to vks::initializers default (no ONE_TIME_SUBMIT for re-recordable if desired)
@@ -2252,7 +2293,8 @@ create_compute_command_buffer :: proc() {
     must(vk.EndCommandBuffer(g_raytracer.compute.command_buffer))
 }
 
-create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, offset_height: i32 = 0) {
+create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, offset_height: i32 = 0)
+{
     // Allocate command buffers if not already done
     if len(g_renderbase.command_buffers) == 0
     {
@@ -2272,7 +2314,8 @@ create_command_buffers :: proc(swap_ratio: f32 = 1.0, offset_width: i32 = 0, off
     x := f32(offset_width)
     y := f32(offset_height)
 
-    for i in 0..<len(g_renderbase.command_buffers) {
+    for i in 0..<len(g_renderbase.command_buffers)
+    {
         cmd_buffer := g_renderbase.command_buffers[i]
 
         // Begin command buffer
@@ -2459,7 +2502,8 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
         if file_ext != ".png" && file_ext != ".jpg" && file_ext != ".jpeg" do continue
         filename := strings.clone(f.name, alloc)
         t := Texture{path = f.fullpath}
-        if texture_create(&t){
+        if texture_create(&t)
+        {
             append(&g_raytracer.bindless_textures, t)
             g_texture_indexes[filename] = index
             index += 1
@@ -2484,7 +2528,8 @@ init_staging_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int
 //----------------------------------------------------------------------------\\
 // Updates /up
 //----------------------------------------------------------------------------\\
-update_descriptors :: proc() {
+update_descriptors :: proc()
+{
     // Wait for fence - equivalent to vkWaitForFences with UINT64_MAX
     vk.WaitForFences(g_renderbase.device, 1, &g_raytracer.compute.fence, true, fence_timeout_ns)
 
@@ -2560,7 +2605,8 @@ update_descriptors :: proc() {
     create_compute_command_buffer()
 }
 
-update_buffers :: proc() {
+update_buffers :: proc()
+{
     vk.WaitForFences(g_renderbase.device, 1, &g_raytracer.compute.fence, true, fence_timeout_ns)
 
     if g_raytracer.update_flags == {} do return
@@ -2598,7 +2644,8 @@ update_buffers :: proc() {
 
 update_camera :: proc{update_camera_full, update_camera_component}
 
-update_camera_full :: proc(camera: ^Camera) {
+update_camera_full :: proc(camera: ^Camera)
+{
     g_raytracer.compute.ubo.aspect_ratio = camera.aspect
     g_raytracer.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
     g_raytracer.compute.ubo.rotM = transmute(mat4f)camera.matrices.view
@@ -2606,7 +2653,8 @@ update_camera_full :: proc(camera: ^Camera) {
     gpu.vbuffer_apply_changes(&g_raytracer.compute.uniform_buffer, &g_renderbase.vma_allocator, &g_raytracer.compute.ubo)
 }
 
-update_camera_component :: proc(camera: ^Cmp_Camera) {
+update_camera_component :: proc(camera: ^Cmp_Camera)
+{
     g_raytracer.compute.ubo.aspect_ratio = camera.aspect_ratio
     g_raytracer.compute.ubo.fov = math.tan(camera.fov * 0.03490658503)
     g_raytracer.compute.ubo.rotM = transmute(mat4f)camera.rot_matrix
@@ -2670,7 +2718,8 @@ update_bvh :: proc(ordered_prims : ^[dynamic]embree.RTCBuildPrimitive, prims: [d
 }
 
 // Flatten BVH tree into linear array for GPU
-flatten_bvh :: proc(node: BvhNode, bounds: BvhBounds, offset: ^int) -> i32 {
+flatten_bvh :: proc(node: BvhNode, bounds: BvhBounds, offset: ^int) -> i32
+{
     if node == nil { return -1 }  // Safeguard
 
     bvh_node := &g_raytracer.bvh[offset^]
@@ -2701,14 +2750,16 @@ flatten_bvh :: proc(node: BvhNode, bounds: BvhBounds, offset: ^int) -> i32 {
 }
 
 // Debug print for update_bvh parameters
-print_update_bvh_debug :: proc(ordered_prims: ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity) {
+print_update_bvh_debug :: proc(ordered_prims: ^[dynamic]embree.RTCBuildPrimitive, prims: [dynamic]Entity)
+{
     fmt.println("=== Update BVH Debug ===")
 
     for ordered_prim, idx in ordered_prims {
         prim_id := ordered_prim.primID
         prim_value := prims[prim_id] if prim_id < u32(len(prims)) else Entity(0)
 
-        if prim_id < u32(len(prims)) {
+        if prim_id < u32(len(prims))
+        {
             node := get_component(prim_value, Cmp_Node)
             node_name := node.name if node != nil && len(node.name) > 0 else fmt.aprintf("Entity_%d", prim_value)
             defer if node == nil || len(node.name) == 0 do delete(node_name)
@@ -2721,11 +2772,13 @@ print_update_bvh_debug :: proc(ordered_prims: ^[dynamic]embree.RTCBuildPrimitive
 }
 
 
-update_uniform_buffers :: proc() {
+update_uniform_buffers :: proc()
+{
     gpu.vbuffer_apply_changes(&g_raytracer.compute.uniform_buffer, &g_renderbase.vma_allocator, &g_raytracer.compute.ubo)
 }
 
-update_material :: proc(id: i32) {
+update_material :: proc(id: i32)
+{
     m := get_material(id)
     g_raytracer.materials[id].diffuse = m.diffuse
     g_raytracer.materials[id].reflective = m.reflective
@@ -2736,7 +2789,8 @@ update_material :: proc(id: i32) {
     gpu.vbuffer_update(&g_raytracer.compute.storage_buffers.materials, &g_renderbase.vma_allocator, g_raytracer.materials[:])
 }
 
-update_gui :: proc(gc: ^Cmp_Gui) {
+update_gui :: proc(gc: ^Cmp_Gui)
+{
     gui := &g_raytracer.guis[gc.ref]
     gui.min = gc.min
     gui.extents = gc.extents
@@ -2748,9 +2802,11 @@ update_gui :: proc(gc: ^Cmp_Gui) {
     g_raytracer.update_flags |= {.GUI}
 }
 
-update_text :: proc(tc: ^Cmp_Text) {
+update_text :: proc(tc: ^Cmp_Text)
+{
     for ref in tc.shader_refs {
-        if ref >= 0 && ref < i32(len(g_raytracer.guis)) {
+        if ref >= 0 && ref < i32(len(g_raytracer.guis))
+        {
             g_raytracer.guis[ref].alpha = 0
         }
     }
@@ -2781,7 +2837,8 @@ update_text :: proc(tc: ^Cmp_Text) {
     g_raytracer.update_flags |= {.GUI}
 }
 
-int_to_array_of_ints :: proc(n: i32) -> [dynamic]i32 {
+int_to_array_of_ints :: proc(n: i32) -> [dynamic]i32
+{
     if n == 0 {
         res := make([dynamic]i32, 1)
         res[0] = 0
@@ -2797,7 +2854,8 @@ int_to_array_of_ints :: proc(n: i32) -> [dynamic]i32 {
     return res
 }
 
-update_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
+update_gui_number :: proc(gnc: ^Cmp_GuiNumber)
+{
     nums := int_to_array_of_ints(gnc.number)
     num_size := i32(len(nums))
     change_occured := num_size != gnc.highest_active_digit_index + i32(1)
@@ -2850,7 +2908,8 @@ update_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
 //----------------------------------------------------------------------------\\
 // /Main Procs /main procs
 //----------------------------------------------------------------------------\\
-add_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
+add_gui_number :: proc(gnc: ^Cmp_GuiNumber)
+{
     nums := int_to_array_of_ints(gnc.number)
     num_size := i32(len(nums))
     for i in 0..<num_size {
@@ -2871,7 +2930,8 @@ add_gui_number :: proc(gnc: ^Cmp_GuiNumber) {
 }
 
 fence_timeout_ns :: 10_000_000_000 // 1 second
-start_frame :: proc(image_index: ^u32) {
+start_frame :: proc(image_index: ^u32)
+{
     // Wait/reset graphics fence for prior frame sync (enables multi-frame overlap)
     must(vk.WaitForFences(g_renderbase.device, 1, &g_renderbase.in_flight_fences[g_renderbase.current_frame], true, fence_timeout_ns))
     must(vk.ResetFences(g_renderbase.device, 1, &g_renderbase.in_flight_fences[g_renderbase.current_frame]))
@@ -2908,7 +2968,8 @@ start_frame :: proc(image_index: ^u32) {
     must(vk.QueueSubmit(g_renderbase.graphics_queue, 1, &g_renderbase.submit_info, g_renderbase.in_flight_fences[g_renderbase.current_frame]))  // Fence for graphics
 }
 
-end_frame :: proc(image_index: ^u32) {
+end_frame :: proc(image_index: ^u32)
+{
     present_info := vk.PresentInfoKHR{
         sType = .PRESENT_INFO_KHR,
         waitSemaphoreCount = 1,  // Fixed to 1 (matches signal)
@@ -2945,7 +3006,8 @@ end_frame :: proc(image_index: ^u32) {
     g_renderbase.current_frame = (g_renderbase.current_frame + 1) % MAX_FRAMES_IN_FLIGHT
 }
 
-added_entity :: proc(e: Entity) {
+added_entity :: proc(e: Entity)
+{
     rc := get_component(e, Cmp_Render)
     if rc == nil { return }
     t := rc.type
@@ -3000,7 +3062,8 @@ added_entity :: proc(e: Entity) {
     if .GUINUM in t {
         gnc := get_component(e, Cmp_GuiNumber)
         nums := int_to_array_of_ints(gnc.number)
-        for i in 0..<len(nums) {
+        for i in 0..<len(nums)
+        {
             gui := gpu.Gui{
                 min = gnc.min,
                 extents = gnc.extents,
@@ -3032,7 +3095,8 @@ added_entity :: proc(e: Entity) {
     }
 }
 
-removed_entity :: proc(e: Entity) {
+removed_entity :: proc(e: Entity)
+{
     rc := get_component(e, Cmp_Render)
     if rc == nil { return }
     t := rc.type
@@ -3054,7 +3118,8 @@ removed_entity :: proc(e: Entity) {
     if .TEXT in t {
         tc := get_component(e, Cmp_Text)
         for ref in tc.shader_refs {
-            if ref >= 0 && ref < i32(len(g_raytracer.guis)) {
+            if ref >= 0 && ref < i32(len(g_raytracer.guis))
+            {
                 g_raytracer.guis[ref].alpha = 0
             }
         }
@@ -3063,14 +3128,16 @@ removed_entity :: proc(e: Entity) {
     }
 }
 
-render_clear_entities :: proc() {
+render_clear_entities :: proc()
+{
     clear(&g_raytracer.lights)
     clear(&g_raytracer.light_comps)
     clear(&g_raytracer.primitives)
     clear(&g_raytracer.guis)
 }
 
-process_entity :: proc(e: Entity) {
+process_entity :: proc(e: Entity)
+{
     rc := get_component(e, Cmp_Render)
     if rc == nil { return }
     type := rc.type
@@ -3101,16 +3168,19 @@ process_entity :: proc(e: Entity) {
     }
 }
 
-end :: proc() {
+end :: proc()
+{
     update_buffers()
     update_descriptors()
-    if glfw.WindowShouldClose(g_window.handle) {
+    if glfw.WindowShouldClose(g_window.handle)
+    {
         end_ecs()
         vk.DeviceWaitIdle(g_renderbase.device)
     }
 }
 
-cleanup :: proc() {
+cleanup :: proc()
+{
     vk.DeviceWaitIdle(g_renderbase.device)
 
     // Cleanup swapchain first
@@ -3128,19 +3198,22 @@ cleanup :: proc() {
     delete(g_texture_indexes)
 }
 
-destroy_compute :: proc() {
+destroy_compute :: proc()
+{
     // This function is now handled by cleanup_vulkan to ensure proper ordering
     // All compute resource cleanup moved to cleanup_vulkan()
 }
 
-cleanup_swapchain :: proc() {
+cleanup_swapchain :: proc()
+{
     vk.DestroyPipeline(g_renderbase.device, g_raytracer.graphics.pipeline, nil)
     vk.DestroyPipelineLayout(g_renderbase.device, g_raytracer.graphics.pipeline_layout, nil)
 
     cleanup_swapchain_vulkan()
 }
 
-rt_recreate_swapchain :: proc() {
+rt_recreate_swapchain :: proc()
+{
     recreate_swapchain_vulkan()
     create_descriptor_set_layout()
     create_graphics_pipeline()
@@ -3148,17 +3221,21 @@ rt_recreate_swapchain :: proc() {
 }
 
 // Cleanup swap chain resources
-cleanup_swapchain_vulkan :: proc() {
+cleanup_swapchain_vulkan :: proc()
+{
     // Swapchain views and swapchain are destroyed by destroy_swapchain()
     // This function is kept for any future swapchain-specific cleanup
 }
 
 // Recreate swap chain
-recreate_swapchain_vulkan :: proc() {
+recreate_swapchain_vulkan :: proc()
+{
     // Don't do anything when minimized.
-    for w, h := glfw.GetFramebufferSize(g_window.handle); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(g_window.handle) {
+    for w, h := glfw.GetFramebufferSize(g_window.handle); w == 0 || h == 0; w, h = glfw.GetFramebufferSize(g_window.handle)
+    {
         glfw.WaitEvents()
-        if glfw.WindowShouldClose(g_window.handle) { break }
+        if glfw.WindowShouldClose(g_window.handle)
+        { break }
     }
 
     vk.DeviceWaitIdle(g_renderbase.device)
@@ -3171,7 +3248,8 @@ recreate_swapchain_vulkan :: proc() {
 }
 
 // Full Vulkan cleanup
-cleanup_vulkan :: proc() {
+cleanup_vulkan :: proc()
+{
     vk.DeviceWaitIdle(g_renderbase.device)
 
     // First cleanup all VMA buffers (must be done before device destruction)
