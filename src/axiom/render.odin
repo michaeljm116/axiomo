@@ -2450,7 +2450,7 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     init_staging_buf(&g_raytracer.compute.storage_buffers.shapes, shapes, len(shapes))
 
     //Dynamically load textures
-    // g_texture_indexes = make(map[string]i32, g_mem_area.alloc)
+    g_texture_indexes = make(map[string]i32, alloc)
     g_texture_indexes[""] = -1
     index :i32= 0
     files := path2.get_dir_files("assets/textures")
