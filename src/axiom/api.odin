@@ -59,6 +59,7 @@ World :: struct{
 create_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World {
     init_memory(mem_stack, mem.Megabyte * 100)
     g_world = new(World, mem_stack.alloc)
+    g_world.tables = make(map[typeid]rawptr, mem_stack.alloc)
     g_world.cap = g_cap
     tag_root = new(ecs.Tag_Table, mem_stack.alloc)
     g_world.db = new(Database, mem_stack.alloc)
@@ -97,7 +98,8 @@ init_views :: proc(alloc : mem.Allocator){
 }
 
 destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {
-    destroy_memory_stack(mem_stack)
+    // destroy_memory_stack(mem_stack)
+    reset_memory_stack(mem_stack)
     // g_world.tables = {}
     // g_world = nil
 }

@@ -44,6 +44,7 @@ init_memory_arena_static :: proc(ma : ^MemoryArena, reserved :uint= vmem.DEFAULT
 
 destroy_memory_arena :: proc(ma : ^MemoryArena){
     vmem.arena_destroy(&ma.arena)
+    free(ma)
 }
 reset_memory_arena :: proc(ma : ^MemoryArena){
     vmem.arena_free_all(&ma.arena)
@@ -57,10 +58,17 @@ init_memory_stack :: proc(ms : ^MemoryStack, size : u64){
    mem.rollback_stack_init_buffered(&ms.stack, ms.buffer)
    ms.alloc = mem.rollback_stack_allocator(&ms.stack)
 }
-
 destroy_memory_stack :: proc(ms : ^MemoryStack){
     mem.rollback_stack_destroy(&ms.stack)
+    delete(ms.buffer)
+    free(ms)
 }
+
+reset_memory_stack :: proc(ms: ^MemoryStack){
+    mem.rollback_stack_destroy(&ms.stack)
+    delete(ms.buffer)
+}
+
 destroy_memory :: proc{destroy_memory_arena, destroy_memory_stack}
 
 print_tracking_stats :: proc(ta: ^mem.Tracking_Allocator) {

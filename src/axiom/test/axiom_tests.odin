@@ -26,7 +26,7 @@ create_test_memory_stack :: proc() -> ^axiom.MemoryStack {
 }
 create_test_memory_arena :: proc() -> ^axiom.MemoryArena {
     arena := new(axiom.MemoryArena)
-    axiom.init_memory(arena, mem.Megabyte * 100) // Adjust size as needed
+    axiom.init_memory(arena, mem.Megabyte * 1) // Adjust size as needed
     return arena
 }
 
@@ -93,8 +93,9 @@ create_test_world :: proc() -> ^TestContext
     axiom.g_physics = axiom.sys_physics_create(test_ctx.mem_core.alloc)
     axiom.start_up_raytracer(test_ctx.mem_area.alloc)
     frame := create_frame()
+
+    axiom.reset_memory_stack(test_ctx.mem_game)
     world := axiom.create_world(test_ctx.mem_game)
-    // axiom.load_scene("Empty", test_ctx.mem_game.alloc)
     return test_ctx
 }
 
@@ -103,6 +104,7 @@ destroy_test_world :: proc(test_ctx : ^TestContext)
     defer axiom.destroy_memory_arena(test_ctx.mem_core)
     defer axiom.destroy_memory_arena(test_ctx.mem_area)
     defer axiom.destroy_memory_stack(test_ctx.mem_game)
+    // defer axiom.destroy_world(test_ctx.mem_game)
     glfw.SetKeyCallback(axiom.g_window.handle, nil)
     glfw.SetCursorPosCallback(axiom.g_window.handle, nil)
     glfw.SetMouseButtonCallback(axiom.g_window.handle, nil)
@@ -126,6 +128,24 @@ test_load_empty_scene :: proc(t: ^testing.T){
     defer destroy_test_world(test_ctx)
     axiom.load_scene("Empty", test_ctx.mem_game.alloc)
     testing.expect(t,test_ctx != nil, "Test context should not be nil")
+}
+
+@(test)
+test_run_animation_system_3_frames :: proc(t: ^testing.T){
+    test_ctx := create_test_world()
+    defer destroy_test_world(test_ctx)
+    testing.expect(t,test_ctx != nil, "Test context should not be nil")
+
+    axiom.sys_anim_process_ecs(f32(test_ctx.frame.physics_time_step))
+	axiom.sys_trans_process_ecs()
+
+	axiom.sys_anim_process_ecs(f32(test_ctx.frame.physics_time_step))
+	axiom.sys_trans_process_ecs()
+
+	axiom.sys_anim_process_ecs(f32(test_ctx.frame.physics_time_step))
+	axiom.sys_trans_process_ecs()
+
+	testing.expect(t,test_ctx != nil, "Test context should not be nil")
 }
 
 // @(test)
