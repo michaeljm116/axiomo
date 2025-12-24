@@ -22,38 +22,6 @@
             }
           },
           {
-            "id": "8be6d53be3eeed5a",
-            "type": "leaf",
-            "state": {
-              "type": "kanban",
-              "state": {
-                "file": "Showcase Kanban.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false,
-                    false,
-                    false
-                  ]
-                }
-              },
-              "icon": "lucide-trello",
-              "title": "Showcase Kanban"
-            }
-          },
-          {
-            "id": "f88536f4a261db38",
-            "type": "leaf",
-            "state": {
-              "type": "empty",
-              "state": {},
-              "icon": "lucide-file",
-              "title": "New tab"
-            }
-          },
-          {
             "id": "f6f08cdc8d12a879",
             "type": "leaf",
             "state": {
@@ -66,7 +34,7 @@
                     false,
                     false,
                     false,
-                    false
+                    true
                   ]
                 }
               },
@@ -172,7 +140,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 344.5
+    "width": 200
   },
   "right": {
     "id": "954f4e27756410bd",
@@ -265,34 +233,34 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "8be6d53be3eeed5a",
+  "active": "f6f08cdc8d12a879",
   "lastOpenFiles": [
+    "Pre Production.md",
+    "2025-11-21.md",
+    "Excalidraw/PlayersTUrn.excalidraw.md",
+    "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md",
+    "Excalidraw/Arenas.md",
+    "Excalidraw/Architecture.md",
+    "Excalidraw/AnimationStates.excalidraw.md",
+    "Showcase Kanban.md",
+    "Kanban.md",
+    "BeeKillingsInn/KillerBee prototype.md",
+    "BeeKillingsInn/Next Steps.md",
     "TODO.md",
     "BeeKillingsInn/Physics.md",
     "BeeKillingsInn/Architecture.md",
-    "Excalidraw/Architecture.md",
     "BeeKillingsInn/Merge Bee with Axiomo.md",
     "BeeKillingsInn/Menu system.md",
     "Theft of compassion.md",
     "BeeKillingsInn/Story.md",
-    "BeeKillingsInn/Next Steps.md",
     "BeeKillingsInn/Visualizations!.md",
     "BeeKillingsInn/Rules Engine.md",
     "BeeKillingsInn/Refactor.md",
     "BeeKillingsInn/NEW ecs NOTES.md",
     "BeeKillingsInn/Megastructification.md",
     "BeeKillingsInn/Inspo-TItle.md",
-    "BeeKillingsInn/KillerBee prototype.md",
     "BeeKillingsInn/Inspo - Art.md",
     "BeeKillingsInn/High Level Arcitecture.md",
-    "BeeKillingsInn/Grok.md",
-    "BeeKillingsInn/Epics.md",
-    "BeeKillingsInn/Engineification.md",
-    "BeeKillingsInn/Engine Improvements.md",
-    "BeeKillingsInn/ECS Notes.md",
-    "BeeKillingsInn/Code.md",
-    "BeeKillingsInn/Bugs.md",
-    "BeeKillingsInn/bg.md",
     "Photos/Pasted image 20251108055025.png",
     "Photos/{08E3CA3B-E91C-4292-AC97-23066AB46B4B}.png",
     "Photos/{857A3D8B-F0CC-4965-AB43-BB397C62E2E2}.png",

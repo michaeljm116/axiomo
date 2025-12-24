@@ -50,10 +50,10 @@ app_destroy :: proc() {
 }
 
 app_post_init :: proc(){
-    // chest := g.level.chests[0]
-    // chest2 := g.level.chests[1]
-    // move_entity_to_tile(chest, g.level.grid_scale, vec2{2,0})
-    // move_entity_to_tile(chest2, g.level.grid_scale, vec2{4,3})
+    // chest := g.battle.chests[0]
+    // chest2 := g.battle.chests[1]
+    // move_entity_to_tile(chest, g.battle.grid_scale, vec2{2,0})
+    // move_entity_to_tile(chest2, g.battle.grid_scale, vec2{4,3})
 }
 
 // Update input state and camera
@@ -105,14 +105,14 @@ app_run :: proc(dt: f32, state: ^AppState) {
             overworld_start()
         }
 	case .Game:
-		run_battle(&g.state, &g.level.player, &g.level.bees, &g.level.deck)
+		run_battle(&g.state, &g.battle.player, &g.battle.bees, &g.battle.deck)
 		ves_update_all(dt)
-		if (g.level.player.health <= 0){
+		if (g.battle.player.health <= 0){
 			state^ = .GameOver
             destroy_level1()
 			ToggleMenuUI(state)
 		}
-	    else if (len(g.level.bees) <= 0){
+	    else if (len(g.battle.bees) <= 0){
     		state^ = .Victory
             destroy_level1()
             ToggleMenuUI(state)
@@ -121,7 +121,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
             state^ = .Pause
             ToggleMenuUI(state)
         }
-        ves_cleanup(&g.level)
+        ves_cleanup(&g.battle)
 	case .Pause:
         if is_key_just_pressed(glfw.KEY_ENTER){
             state^ = .Game

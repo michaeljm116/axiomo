@@ -32,10 +32,10 @@ display_bee :: proc (b : Bee)
     fmt.println("Bee ",b.name, ":  Position: ", b.pos)
 }
 
-display_level :: proc(lvl : Level)
+display_level :: proc(battle : Battle)
 {
-    display_player(lvl.player)
-    for bee in lvl.bees do display_bee(bee)
+    display_player(battle.player)
+    for bee in battle.bees do display_bee(bee)
 
     // Create a simple character grid representation based on Tile and overlay entities (player + bees)
     chars : [GRID_WIDTH][GRID_HEIGHT]rune
@@ -43,7 +43,7 @@ display_level :: proc(lvl : Level)
     // Initialize chars from tiles
     for x in 0..<GRID_WIDTH do for y in 0..<GRID_HEIGHT
     {
-        switch grid_get(lvl.grid,x,y) {
+        switch grid_get(battle.grid,x,y) {
         case Tile.Blank:
             chars[x][y] = '.'
         case Tile.Wall:
@@ -56,15 +56,15 @@ display_level :: proc(lvl : Level)
     }
 
     // Overlay player rune if in bounds
-    if path_in_bounds(lvl.player.pos, lvl.grid^) {
-        chars[lvl.player.pos[0]][lvl.player.pos[1]] = lvl.player.name
+    if path_in_bounds(battle.player.pos, battle.grid^) {
+        chars[battle.player.pos[0]][battle.player.pos[1]] = battle.player.name
     }
 
     // Overlay bees (supporting the two global bees)
     // If more bees are added as globals, add them here similarly or change this function to accept a slice.
-    for bee in lvl.bees
+    for bee in battle.bees
     {
-        if path_in_bounds(bee.pos, lvl.grid^) {
+        if path_in_bounds(bee.pos, battle.grid^) {
             chars[bee.pos[0]][bee.pos[1]] = bee.name
         }
     }

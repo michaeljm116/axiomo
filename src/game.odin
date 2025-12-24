@@ -33,7 +33,7 @@ Game_Memory :: struct
     // BKS
     state : GameState,
     current_bee: int,
-    level : Level,
+    battle : Battle,
     dice :  [2]Dice,
     ui_keys: [dynamic]string,
 

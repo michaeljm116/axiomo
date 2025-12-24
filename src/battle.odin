@@ -10,7 +10,8 @@ import "base:intrinsics"
 import "vendor:glfw"
 import xxh2"axiom/extensions/xxhash2"
 import "axiom"
-Level :: struct
+
+Battle :: struct
 {
     player : Player,
     bees : [dynamic]Bee,
@@ -18,6 +19,7 @@ Level :: struct
     weapons : []Weapon,
     grid : ^Grid,
     grid_weapons : [dynamic]WeaponGrid,
+
 }
 
 //----------------------------------------------------------------------------\\
@@ -37,12 +39,12 @@ destroy_visuals :: proc(visuals : ^Cmp_Visual) {
 destroy_level1 :: proc() {
     app_restart()
     // destroy_world()
-    // for b in g.level.bees {
+    // for b in g.battle.bees {
     //     vc := get_component(b.entity, Cmp_Visual)
     //     if vc != nil do destroy_visuals(vc)
     //     if(axiom.entity_exists(b.entity)) do axiom.delete_parent_node(b.entity)
     // }
-    // for gw in g.level.grid_weapons do axiom.delete_parent_node(gw.chest)
+    // for gw in g.battle.grid_weapons do axiom.delete_parent_node(gw.chest)
 
     // assert(axiom.entity_exists(g.floor))
 }
@@ -122,11 +124,11 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
                 state^ = .SelectAction
                 game_state^ = .BeesTurn
 
-                if weap_check(player.target, g.level.grid) {
-                    pick_up_weapon(player, g.level.weapons)
+                if weap_check(player.target, g.battle.grid) {
+                    pick_up_weapon(player, g.battle.weapons)
 
                     //check for chest
-                    for weap in g.level.grid_weapons{
+                    for weap in g.battle.grid_weapons{
                         if player.target == weap.pos do animate_chest(weap.chest)
                     }
                 }
@@ -158,7 +160,7 @@ run_players_turn :: proc(state : ^PlayerInputState, game_state : ^GameState, pla
                 if .Dead in bees[bee_selection^].flags{
                     fmt.printfln("Bee %v is dead", bees[bee_selection^].name)
                     //remove the bee for now
-                    ordered_remove(&g.level.bees, bee_selection^)
+                    ordered_remove(&g.battle.bees, bee_selection^)
                 }
             }
             else if is_key_just_pressed(glfw.KEY_F){
@@ -219,7 +221,7 @@ run_bee_decision :: proc(bee : ^Bee, deck : ^BeeDeck) -> BeeAction{
     }
     fmt.printf("Chosen 🎴: %v\n", chosen_card)
     return chosen_card
-    // bee_action_perform(chosen_card, bee, &g.level.player)
+    // bee_action_perform(chosen_card, bee, &g.battle.player)
 }
 
 update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
@@ -268,8 +270,8 @@ update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dt: f32) {
 // If B button is pressed, go back to previous menu
 handle_back_button :: proc(state : ^PlayerInputState){
     if(!is_key_just_pressed(glfw.KEY_B)) do return
-    hide_weapon(g.level.player.weapon)
-    g.level.bees[g.bee_selection].removed |= {.PlayerSelected}
+    hide_weapon(g.battle.player.weapon)
+    g.battle.bees[g.bee_selection].removed |= {.PlayerSelected}
     #partial switch state^ {
         case .Movement:
             state^ = .SelectAction
@@ -407,6 +409,18 @@ BeeType :: enum
     Normal,
     Aggressive,
     Passive,
+}
+init_bee_entity :: proc(bee: ^Bee)
+{
+    switch bee.type {
+        case .Normal:
+            bee.entity = load_prefab("Bee")
+        case .Aggressive:
+            bee.entity = load_prefab("AggressiveBee")
+        case .Passive:
+            bee.entity = load_prefab("Bee")
+    }
+    add_component(bee.entity, Cmp_Visual)
 }
 
 Bee :: struct {
@@ -583,7 +597,7 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
             else do bee.state = .Finishing
             // bee_action_attack(bee, player)
     }
-    // move_entity_to_tile(bee.entity, g.level.grid_scale, bee.pos)
+    // move_entity_to_tile(bee.entity, g.battle.grid_scale, bee.pos)
     // if bee is hovering player, turn on alert
 }
 
@@ -592,7 +606,7 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int)
     dist := path_dist_grid(bee.pos, player.pos)
     if dist > target_dist
     {
-        path := path_a_star_find(bee.pos, player.pos, grid_size, g.level.grid^)
+        path := path_a_star_find(bee.pos, player.pos, grid_size, g.battle.grid^)
         // TODO: possibly insecure and bug prone if there's no valid distance due to walls
         if len(path) > target_dist do bee.target = path[target_dist]
         else {if len(path) == target_dist do bee.target = path[target_dist - 1]}
@@ -604,7 +618,7 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int)
         bee.flags |= {.Alert}
 
         if dist == target_dist {
-            path := path_a_star_find(bee.pos, player.pos, grid_size, g.level.grid^)
+            path := path_a_star_find(bee.pos, player.pos, grid_size, g.battle.grid^)
             if len(path) > 1 do bee.target = path[1]
         }
     }
@@ -620,8 +634,8 @@ bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int){
        dirs := [4]vec2i{ vec2i{1,0}, vec2i{-1,0}, vec2i{0,1}, vec2i{0,-1} }
        for d in dirs {
             n := vec2i{ bee.pos[0] + d[0], bee.pos[1] + d[1] }
-            if !path_in_bounds(n, g.level.grid^) { continue }
-            if !path_is_walkable_internal(n, n, true, g.level.grid^) { continue }
+            if !path_in_bounds(n, g.battle.grid^) { continue }
+            if !path_is_walkable_internal(n, n, true, g.battle.grid^) { continue }
             nd := path_dist_grid(n, player.pos)
             if nd > bestd {
                 best = n
@@ -802,12 +816,12 @@ hide_dice :: proc() {
     }
 }
 
-place_chest_on_grid :: proc(pos : vec2i, lvl : ^Level)
+place_chest_on_grid :: proc(pos : vec2i, battle : ^Battle)
 {
     chest := load_prefab("Chest")
     context.allocator = g.mem_game.alloc
-    set_entity_on_tile(g.floor, chest, lvl^, pos.x, pos.y)
-    append(&lvl.grid_weapons, WeaponGrid{pos, chest})
+    set_entity_on_tile(g.floor, chest, battle^, pos.x, pos.y)
+    append(&battle.grid_weapons, WeaponGrid{pos, chest})
 }
 
 //----------------------------------------------------------------------------\\
@@ -834,7 +848,7 @@ GameFlag :: enum
 GameFlags :: bit_set[GameFlag; u32]
 move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
 {
-    // display_level(g.level)
+    // display_level(g.battle)
     dir : vec2i
     switch (key)
     {
@@ -848,7 +862,7 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
             dir.x = 1
     }
     bounds := p.pos + dir
-    if bounds_check(bounds, g.level.grid^) {
+    if bounds_check(bounds, g.battle.grid^) {
         //Animate Player
         p.target = bounds
         p.c_flags = {.Walk}
@@ -913,8 +927,8 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
     for x in 0..<GRID_WIDTH do for y in 0..<GRID_HEIGHT{
         p := vec2i{i16(x), i16(y)}
         if path_dist_grid(p, player.pos) < min_dist { continue }
-        if !path_is_walkable_internal(p, p, allow_through_walls, g.level.grid^) { continue } // p must be a valid standable tile
-        path := path_a_star_find(bee.pos, p, grid_size, g.level.grid^)
+        if !path_is_walkable_internal(p, p, allow_through_walls, g.battle.grid^) { continue } // p must be a valid standable tile
+        path := path_a_star_find(bee.pos, p, grid_size, g.battle.grid^)
         if len(path) == 0 { continue }
         if len(path) < best_len {
             best_len = len(path)
@@ -925,9 +939,9 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
     return best_path
 }
 
-// Sets a player on a tile in the level so that they are...
+// Sets a player on a tile in the Battle so that they are...
 // Flush with the floor and in center of that tile
-set_entity_on_tile :: proc(floor : Entity, entity : Entity, lvl : Level, x, y : i16)
+set_entity_on_tile :: proc(floor : Entity, entity : Entity, battle : Battle, x, y : i16)
 {
     ft := get_component(floor, Cmp_Transform)
     pt := get_component(entity, Cmp_Transform)
@@ -935,8 +949,8 @@ set_entity_on_tile :: proc(floor : Entity, entity : Entity, lvl : Level, x, y : 
 
     // Determine tile center in world space.
     // Note: `ft.global.sca` is treated consistently with primitives in the renderer (half-extents).
-    full_cell_x := 2.0 * lvl.grid.scale.x
-    full_cell_z := 2.0 * lvl.grid.scale.y
+    full_cell_x := 2.0 * battle.grid.scale.x
+    full_cell_z := 2.0 * battle.grid.scale.y
 
     // left / bottom world edges (x and z) of the floor
     left_x := ft.global.pos.x - ft.global.sca.x
@@ -1185,14 +1199,14 @@ add_animation :: proc(c : ^Character, prefab : string){
 }
 
 add_animations :: proc(){
-    add_animation(&g.level.player.base, "Froku")
-    add_animation(&g.level.bees[0].base, "AggressiveBee")
-    add_animation(&g.level.bees[1].base, "Bee")
+    add_animation(&g.battle.player.base, "Froku")
+    add_animation(&g.battle.bees[0].base, "AggressiveBee")
+    add_animation(&g.battle.bees[1].base, "Bee")
 }
 
 // Similar to move_entity_to_tile but just sets the vectors up
 set_up_character_anim :: proc(cha : ^Character){
-    scale := g.level.grid.scale
+    scale := g.battle.grid.scale
     pt := get_component(cha.entity, Cmp_Transform)
     ft := get_component(g.floor, Cmp_Transform)
     if pt == nil || ft == nil do return
@@ -1265,18 +1279,21 @@ battle_start :: proc(){
 start_game :: proc(){
     g.state = .PlayerTurn
     g.ves.curr_screen = .SelectAction
-    start_level2(&g.level,g.mem_game.alloc)
+    start_battle1(&g.battle,g.mem_game.alloc)
+    init_dice_entities(&g.dice)
+    for &bee in g.battle.bees do init_bee_entity(&bee)
+
     find_floor_entities()
-    grid_set_scale(g.floor, g.level.grid)
-    set_entity_on_tile(g.floor, g.player, g.level, g.level.player.pos.x, g.level.player.pos.y)
-    for bee in g.level.bees{
-        set_entity_on_tile(g.floor, bee.entity, g.level, bee.pos.x, bee.pos.y)
+    grid_set_scale(g.floor, g.battle.grid)
+    set_entity_on_tile(g.floor, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y)
+    for bee in g.battle.bees{
+        set_entity_on_tile(g.floor, bee.entity, g.battle, bee.pos.x, bee.pos.y)
         face_right(bee.entity)
     }
 
-    place_chest_on_grid(vec2i{2,0}, &g.level)
-    place_chest_on_grid(vec2i{4,3}, &g.level)
-    g.level.player.entity = g.player
+    place_chest_on_grid(vec2i{2,0}, &g.battle)
+    place_chest_on_grid(vec2i{4,3}, &g.battle)
+    g.battle.player.entity = g.player
     add_animations()
 }
 
@@ -1448,7 +1465,7 @@ hide_visuals :: proc(visuals : ^Cmp_Visual, flags : VisualFlags)
     visuals.flags -= flags
 }
 // curr_max_union
-cmu :: struct #raw_union{
+CurrMax :: struct #raw_union{
     using _: struct{
         curr:f32,
         max:f32,
@@ -1456,19 +1473,32 @@ cmu :: struct #raw_union{
     _: [2]f32,
 }
 
-CurrMax :: struct #raw_union {
-    using _: [2]f32,
-    using _: struct {
-        curr: f32,
-        max: f32,
-    },
-}
-
 Dice :: struct {
     num : i8,
-    time : cmu,
-    interval : cmu,
+    time : CurrMax,
+    interval : CurrMax,
     entity : Entity,
+}
+
+init_dice :: proc(dice_ptr : ^[2]Dice)
+{
+    for &dice, i in dice_ptr{
+        dice.num = i8(i)
+        dice.time.max = 1.0
+        dice.interval.max = 0.16
+    }
+}
+
+init_dice_entities :: proc(dice : ^[2]Dice)
+{
+    dice.x.entity = g_gui["Dice1"]
+    dice.y.entity = g_gui["Dice2"]
+    for &d, i in dice {
+        gc := get_component(d.entity, Cmp_Gui)
+        gc.alpha = 0.0
+        gc.min.x += (f32(i) * 0.16)
+        update_gui(gc)
+    }
 }
 
 ONE_SIXTH :: 1.0/6.0
@@ -1532,8 +1562,8 @@ ves_update_all :: proc(dt : f32)
 {
     ves_update_dice()
     ves_update_screen()
-    ves_update_visuals(&g.level)
-    ves_update_animations(&g.level, dt)
+    ves_update_visuals(&g.battle)
+    ves_update_animations(&g.battle, dt)
 }
 
 // When a screen is turned off or on, update it accordingly
@@ -1596,9 +1626,9 @@ ves_update_dice :: proc(){
     }
 }
 
-ves_update_animations :: proc(lvl : ^Level, dt : f32)
+ves_update_animations :: proc(battle : ^Battle, dt : f32)
 {
-    for &b in lvl.bees{
+    for &b in battle.bees{
         if .Animate in b.added{
             g.ves.anim_state = .Start
             ves_animate_bee_start(&b)
@@ -1614,38 +1644,38 @@ ves_update_animations :: proc(lvl : ^Level, dt : f32)
 
     // Animate Player
     {
-       if .Animate in lvl.player.added{
+       if .Animate in battle.player.added{
            g.ves.anim_state = .Start
-           ves_animate_player_start(&lvl.player)
+           ves_animate_player_start(&battle.player)
         }
-       if .Animate in lvl.player.flags do if ves_animate_player(&lvl.player, dt){
+       if .Animate in battle.player.flags do if ves_animate_player(&battle.player, dt){
            g.ves.anim_state = .Update
        }
-       else if .Animate in lvl.player.removed {
+       else if .Animate in battle.player.removed {
            g.ves.anim_state = .Finished
-           ves_animate_player_end(&lvl.player)
+           ves_animate_player_end(&battle.player)
        }
     }
 }
 
-ves_cleanup :: proc(lvl : ^Level)
+ves_cleanup :: proc(battle : ^Battle)
 {
-    for &b in &lvl.bees{
+    for &b in &battle.bees{
         b.flags += b.added
         b.flags -= b.removed
         b.added = {}
         b.removed = {}
     }
-    p := &lvl.player
+    p := &battle.player
     p.flags += p.added
     p.flags -= p.removed
     p.added = {}
     p.removed = {}
 }
 
-ves_update_visuals :: proc(lvl : ^Level)
+ves_update_visuals :: proc(battle : ^Battle)
 {
-    for &b in lvl.bees{
+    for &b in battle.bees{
         if .PlayerFocused in b.added{
             b.added -= {.PlayerFocused}
             b.flags += {.PlayerFocused}
@@ -1727,7 +1757,7 @@ ves_animate_bee_start :: proc(bee: ^Bee){
 
 ves_animate_bee_end :: #force_inline proc(bee : ^Bee)
 {
-    move_entity_to_tile(bee.entity, g.level.grid.scale, bee.target)
+    move_entity_to_tile(bee.entity, g.battle.grid.scale, bee.target)
     bee.pos = bee.target
     bee.anim.timer = 0
 }
@@ -1753,7 +1783,7 @@ ves_animate_player_start :: #force_inline proc(p : ^Player){
 }
 
 ves_animate_player_end :: #force_inline proc(p : ^Player){
-    move_entity_to_tile(p.entity, g.level.grid.scale, p.target)
+    move_entity_to_tile(p.entity, g.battle.grid.scale, p.target)
     p.pos = p.target
     p.anim.timer = 0
     ac := get_component(p.entity, Cmp_Animation)
