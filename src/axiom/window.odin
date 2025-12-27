@@ -99,7 +99,7 @@ key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods
         //Repeat Timer ++
     }
     // Handle special keys
-    if key == glfw.KEY_ESCAPE && action == glfw.PRESS do glfw.SetWindowShouldClose(window, true)
+    if key == glfw.KEY_GRAVE_ACCENT && action == glfw.PRESS do glfw.SetWindowShouldClose(window, true)
 
     // Toggle mouse capture
     if key == glfw.KEY_TAB && action == glfw.PRESS {

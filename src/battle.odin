@@ -277,7 +277,7 @@ update_bee :: proc(bee: ^Bee, deck: ^BeeDeck, player: ^Player, dice : ^[2]Dice, 
 
 // If B button is pressed, go back to previous menu
 handle_back_button :: proc(state : ^PlayerInputState, weapon : Weapon, bee : ^Bee){
-    if(!is_key_just_pressed(glfw.KEY_B)) do return
+    if(!is_key_just_pressed(glfw.KEY_ESCAPE)) do return
     hide_weapon(weapon)
     bee.removed |= {.PlayerSelected}
     #partial switch state^ {
