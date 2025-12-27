@@ -13,12 +13,12 @@ import "vendor:glfw"
 import "core:math/linalg"
 import "core:math"
 
-// @(test)
-// test_create_world :: proc(t: ^testing.T){
-//     test_ctx := create_test_world()
-//     defer destroy_test_world(test_ctx)
-//     testing.expect(t,test_ctx != nil, "Test context should not be nil")
-// }
+@(test)
+test_create_world :: proc(t: ^testing.T){
+    test_ctx := create_test_world()
+    defer destroy_test_world(test_ctx)
+    testing.expect(t,test_ctx != nil, "Test context should not be nil")
+}
 
 // @(test)
 // test_load_empty_scene :: proc(t: ^testing.T){

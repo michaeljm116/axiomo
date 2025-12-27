@@ -99,16 +99,22 @@ create_test_world :: proc() -> ^TestContext
 
 destroy_test_world :: proc(test_ctx : ^TestContext)
 {
+    defer delete(test_ctx.mem_game.buffer)
+    defer free(test_ctx.mem_game)
+    defer free(test_ctx.mem_area)
+    defer free(test_ctx.mem_core)
     defer axiom.destroy_memory_arena(test_ctx.mem_core)
     defer axiom.destroy_memory_arena(test_ctx.mem_area)
     defer axiom.destroy_memory_stack(test_ctx.mem_game)
-    // defer axiom.destroy_world(test_ctx.mem_game)
+
     glfw.SetKeyCallback(axiom.g_window.handle, nil)
     glfw.SetCursorPosCallback(axiom.g_window.handle, nil)
     glfw.SetMouseButtonCallback(axiom.g_window.handle, nil)
     glfw.SetInputMode(axiom.g_window.handle, glfw.CURSOR, glfw.CURSOR_NORMAL)
     axiom.bvh_system_destroy(axiom.g_bvh)
     axiom.cleanup()
+
     free_all(context.temp_allocator)
+
     free(test_ctx)
 }

@@ -29,7 +29,7 @@ start_battle1 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocato
 
     //Shuffle bee BeeDeck
     deck_init(&g.battle.deck, 36)
-    init_dice(&g.dice)
+    init_dice(&g.battle.dice)
 }
 
 // Levels:
@@ -66,22 +66,8 @@ start_battle2 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocato
     battle.bees[2] = Bee{name = '🐝', pos = vec2i{6,4}, target = vec2i{6,2}, health = 100, type = .Aggressive, flags = {}, entity = load_prefab("AggressiveBee")}
     for b in battle.bees do add_component(b.entity, Cmp_Visual)
 
-
     //Shuffle bee BeeDeck
     deck_init(&g.battle.deck, 36)
+    init_dice(&g.battle.dice)
 
-    //Set up visuals over bee
-    for &dice, i in g.dice{
-        dice = Dice{num = i8(i)}
-        dice.time.max = 1.0
-        dice.interval.max = 0.16
-    }
-    g.dice.x.entity = g_gui["Dice1"]
-    g.dice.y.entity = g_gui["Dice2"]
-    for &d, i in g.dice {
-        gc := get_component(d.entity, Cmp_Gui)
-        gc.alpha = 0.0
-        gc.min.x += (f32(i) * 0.16)
-        update_gui(gc)
-    }
 }
