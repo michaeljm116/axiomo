@@ -25,21 +25,12 @@
             "id": "f6f08cdc8d12a879",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "excalidraw",
               "state": {
-                "file": "Kanban.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false,
-                    true
-                  ]
-                }
+                "file": "Excalidraw/Refactor.md"
               },
-              "icon": "lucide-trello",
-              "title": "Kanban"
+              "icon": "excalidraw-icon",
+              "title": "Refactor"
             }
           },
           {
@@ -235,15 +226,15 @@
   },
   "active": "f6f08cdc8d12a879",
   "lastOpenFiles": [
+    "Excalidraw/Arenas.md",
+    "Excalidraw/Architecture.md",
+    "Kanban.md",
     "Pre Production.md",
     "2025-11-21.md",
     "Excalidraw/PlayersTUrn.excalidraw.md",
     "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md",
-    "Excalidraw/Arenas.md",
-    "Excalidraw/Architecture.md",
     "Excalidraw/AnimationStates.excalidraw.md",
     "Showcase Kanban.md",
-    "Kanban.md",
     "BeeKillingsInn/KillerBee prototype.md",
     "BeeKillingsInn/Next Steps.md",
     "TODO.md",

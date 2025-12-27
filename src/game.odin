@@ -31,15 +31,8 @@ Game_Memory :: struct
     objects : [2][dynamic]Entity,
 
     // BKS
-    state : GameState,
-    current_bee: int,
     battle : Battle,
-    dice :  [2]Dice,
     ui_keys: [dynamic]string,
-
-    bee_selection : int,
-    bee_is_near : bool,
-    pt_state : PlayerInputState,
 
     app_state : AppState,
     title : Entity,

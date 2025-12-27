@@ -38,7 +38,7 @@ test_run_players_turn_movement_flow :: proc(t: ^testing.T) {
 
     // Use local state variables (game.run_players_turn expects pointers)
     pt := game.PlayerInputState.SelectAction
-    gs := game.GameState.PlayerTurn
+    gs := game.BattleState.PlayerTurn
     bee_sel := 0
     bee_near_local := false
 
