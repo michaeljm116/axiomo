@@ -1,5 +1,0 @@
-Example, Imagine you need a vehicle, you have two choices, a very expensive raptor, and a motorbike. You can only afford the motorbike, but that raptor looks soooo nice. You remember that you have a rich friend so you ask him for money to buy the raptor instead of the bike and the rich friend says no, buy what you're able to afford.
-
-So then you come up with a plan, instead of buying the motorbike, you take out a loan to buy the raptor, then time goes buy and you begin paying for the loan. It's so difficult to pay for the loan so instead of paying for rent and food you use that money to pay the loan. then you tell your rich friend helpppp I can't afford rent and food. So the friend in compassion keeps helping you pay for rent and food.
-
-What you've done in this example, is theft of compassion. The only reason you can't afford food is because you're paying the loan, the only reason you're paying the loan is you refuse to buy the vehicle you're able to afford. And so now your rich friend is ultimately paying for that loan
