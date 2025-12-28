@@ -275,6 +275,7 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
                 bee.state = .Finishing
             }
         }
+        case .Moving:
     case .Finishing:
         bee.state = .Deciding
         bee.removed += {.Animate, .Attack, .Moving}
@@ -461,6 +462,7 @@ BeeState :: enum{
     Deciding,
     Acting,
     Finishing,
+    Moving
 }
 
 BeeActionPriority_Aggressive :: [BeeAction]int{
