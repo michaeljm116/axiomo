@@ -11,10 +11,14 @@
             "id": "b47c04f3ca1234e3",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "BeeKillingsInn/QA/Unit Tests.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "Unit Tests"
             }
           },
           {
@@ -23,16 +27,15 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Rules/!!! Rules !!!.md",
+                "file": "DailyNotes/Thursday January 01, 2026.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "!!! Rules !!!"
+              "title": "Thursday January 01, 2026"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -182,19 +185,20 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "f6f08cdc8d12a879",
+  "active": "b47c04f3ca1234e3",
   "lastOpenFiles": [
+    "BeeKillingsInn/Rules/Rules Engine.md",
+    "DailyNotes/Thursday January 01, 2026.md",
+    "BeeKillingsInn/Rules/!!! Rules !!!.md",
     "BeeKillingsInn/QA/Unit Tests.md",
     "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md",
     "DailyNotes/Saturday December 27 2025.md",
     "BeeKillingsInn/Story/Story.md",
     "BeeKillingsInn/Story",
-    "BeeKillingsInn/Rules/Rules Engine.md",
     "BeeKillingsInn/Rules/KillerBee prototype.md",
     "BeeKillingsInn/Rules/Bee Ideas.md",
     "BeeKillingsInn/Rules/Future.md",
     "BeeKillingsInn/Rules/Grok.md",
-    "BeeKillingsInn/Rules/!!! Rules !!!.md",
     "BeeKillingsInn/Rules",
     "BeeKillingsInn/QA/Bugs.md",
     "BeeKillingsInn/QA",
@@ -213,7 +217,6 @@
     "BeeKillingsInn/Code/Megastructification.md",
     "BeeKillingsInn/Code/Engineification.md",
     "BeeKillingsInn/Code/Merge Bee with Axiomo.md",
-    "BeeKillingsInn/Code/Menu system.md",
     "BeeKillingsInn/Code",
     "BeeKillingsInn/Art",
     "DailyNotes",
