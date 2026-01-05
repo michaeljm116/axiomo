@@ -1,3 +1,4 @@
+//odin test src/test -define:ODIN_TEST_THREADS=1 -debug
 package game_tests
 
 import "core:testing"

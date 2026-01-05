@@ -1,6 +1,7 @@
 package game
 import "core:mem"
 import "axiom"
+import queue "core:container/queue"
 
 start_battle1 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocator)
 {
@@ -30,7 +31,24 @@ start_battle1 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocato
     //Shuffle bee BeeDeck
     deck_init(&g.battle.deck, 36)
     init_dice(&g.battle.dice)
+
+    init_variants(battle)
+    init_battle_queue(battle, alloc)
 }
+
+init_variants :: #force_inline proc(battle : ^Battle){
+    battle.player.variant = &battle.player
+    for &b in battle.bees do b.variant = &b
+}
+
+init_battle_queue :: proc(battle : ^Battle, alloc : mem.Allocator)
+{
+   count := len(battle.bees) + 1
+   queue.init(&battle.battle_queue, count, alloc)
+   queue.push(&battle.battle_queue, &battle.player.base)
+   for &b in battle.bees do queue.push(&battle.battle_queue, &b)
+}
+
 
 // Levels:
 // 1. Make Grid

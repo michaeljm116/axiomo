@@ -27,6 +27,7 @@ Battle :: struct
     dice :  [2]Dice,
     bee_selection : int,
     bee_is_near : bool,
+    battle_queue : queue.Queue(^Character)
 }
 
 //----------------------------------------------------------------------------\\
@@ -58,32 +59,28 @@ destroy_level1 :: proc() {
 //----------------------------------------------------------------------------\\
 // /Run Game
 //----------------------------------------------------------------------------\\
-run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)//state : ^GameState, player : ^Player, bees : ^[dynamic]Bee, deck : ^BeeDeck)
+run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
 {
     using battle
     switch state
     {
-        case .Start:
-            // start_game()
-            state = .PlayerTurn
-            break
-        case .PlayerTurn:
-            run_players_turn(battle, ves)
-            break
-        case .BeesTurn:
-            if current_bee >= len(bees) {
-                current_bee = 0
-                state = .PlayerTurn
-                return
-            }
-            bee := &bees[current_bee]
-            run_bee_turn(bee, battle, ves, f32(g.frame.physics_time_step))  // New proc (defined below)
-            break
         case .End:
-            // destroy_bee_deck(deck)
-            state = .Start
-            break
-        case .Pause:
+	        if check_end_condition(battle) do break
+	        curr := queue.pop_front(&battle_queue)
+	        if .Dead not_in curr.flags do queue.push(&battle_queue, curr)
+			state = .Start
+        case .Start:
+        	if check_end_condition(battle) do break
+         	state = .Continue
+        case .Continue:
+        	switch v in queue.front(&battle_queue).variant{
+         		case ^Player:
+        			run_players_turn(battle, ves)
+           		case ^Bee:
+             		run_bee_turn(v, battle, ves, f32(g.frame.physics_time_step))
+             }
+        case .PlayerTurn:
+        case .BeesTurn:
     }
 }
 
@@ -96,10 +93,25 @@ check_win_condition :: #force_inline proc(battle : ^Battle) -> bool
     for b in battle.bees do if .Dead not_in b.flags do return false
     return true
 }
-
 check_lose_condition :: #force_inline proc(battle : ^Battle) -> bool
 {
     return battle.player.health <= 0
+}
+check_end_condition :: proc(battle : ^Battle) -> bool
+{
+    if check_win_condition(battle) || check_lose_condition(battle)
+    {
+        battle.state = .End
+        return true
+    }
+    return false
+}
+check_status_effect_player :: proc(player : ^Player)
+{
+}
+check_status_effect_bee :: proc(bee : ^Bee)
+{
+
 }
 
 run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^PlayerInputState, battle_state : ^BattleState, player : ^Player, bees : ^[dynamic]Bee, bee_selection : ^int, bee_is_near : ^bool)
@@ -138,7 +150,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             if ves.anim_state == .Finished {
                 ves.anim_state = .None
                 input_state = .SelectAction
-                state = .BeesTurn
+                state = .End
 
                 if weap_check(player.target, g.battle.grid) {
                     pick_up_weapon(&player, g.battle.weapons)
@@ -184,7 +196,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                 if .PlayerFocused in bees[bee_selection].flags do bees[bee_selection].flags |= {.PlayerHyperFocused}
                 bees[bee_selection].added |= {.PlayerFocused}
                 input_state = .SelectAction
-                state = .BeesTurn
+                state = .End
 
                 //display visual
                 // vc := get_component(bees[bee_selection].entity, Cmp_Visual)
@@ -195,7 +207,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                 if .PlayerDodge in bees[bee_selection].flags do bees[bee_selection].flags |= {.PlayerHyperAlert}
                 bees[bee_selection].added |= {.PlayerDodge}
                 input_state = .SelectAction
-                state = .BeesTurn
+                state = .End
                 // vc := get_component(bees[bee_selection].entity, Cmp_Visual)
                 // vc.flags += {.Dodge}
             }
@@ -210,7 +222,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                 bee := &bees[bee_selection]
                 player_attack(player, bee, acc)
                 input_state = .SelectAction
-                state = .BeesTurn
+                state = .End
                 return
             }
         // case .Animate:
@@ -245,7 +257,7 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
     if .Dead in bee.flags
     {
         set_dead_bee(bee)
-        g.battle.current_bee += 1
+        state = .End
         return
     }
     switch bee.state {
@@ -275,11 +287,11 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
                 bee.state = .Finishing
             }
         }
-        case .Moving:
+    case .Moving:
     case .Finishing:
         bee.state = .Deciding
         bee.removed += {.Animate, .Attack, .Moving}
-        g.battle.current_bee += 1
+        state = .End
         g.ves.anim_state = .None
         g.ves.dice_state = .None
     }
@@ -380,6 +392,7 @@ Player :: struct{
 
 CharacterFlag :: enum { Walk, Run, Attack, Dodge, Focus,}
 CharacterFlags :: bit_set[CharacterFlag; u16]
+CharacterVariant :: union {^Player, ^Bee}
 
 Character :: struct
 {
@@ -388,13 +401,19 @@ Character :: struct
     health : i8,
     target : vec2i,
     entity : Entity,
+
+    //Animation related
     c_flags : CharacterFlags,
     anim : CharacterAnimation,
     move_anim : MovementTimes,
     attack_anim : AttackTimes,
+
+    //visual event related
     flags : GameFlags,
     removed : GameFlags,
     added : GameFlags,
+    status : StatusEffects,
+    variant : CharacterVariant
 }
 
 CharacterAnimation :: struct
@@ -428,6 +447,7 @@ BeeType :: enum
     Aggressive,
     Passive,
 }
+
 init_bee_entity :: proc(bee: ^Bee)
 {
     switch bee.type {
@@ -931,10 +951,10 @@ bee_near :: proc(p : Player, bee : Bee) -> bool{
 BattleState :: enum
 {
     Start,
+    Continue,
     PlayerTurn,
     BeesTurn,
-    End,
-    Pause,
+    End
 }
 
 find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allow_through_walls : bool) -> [dynamic]vec2i
@@ -1295,7 +1315,7 @@ battle_start :: proc(){
 }
 
 start_game :: proc(){
-    g.battle.state = .PlayerTurn
+    g.battle.state = .Start
     g.ves.curr_screen = .SelectAction
 
     start_battle1(&g.battle,g.mem_game.alloc)

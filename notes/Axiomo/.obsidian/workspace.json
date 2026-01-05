@@ -8,31 +8,17 @@
         "type": "tabs",
         "children": [
           {
-            "id": "b47c04f3ca1234e3",
+            "id": "c659c1b69f95df06",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/QA/Unit Tests.md",
+                "file": "DailyNotes/Monday January 05, 2026.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Unit Tests"
-            }
-          },
-          {
-            "id": "f6f08cdc8d12a879",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "DailyNotes/Thursday January 01, 2026.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Thursday January 01, 2026"
+              "title": "Monday January 05, 2026"
             }
           }
         ]
@@ -92,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 255.5
   },
   "right": {
     "id": "954f4e27756410bd",
@@ -185,18 +171,24 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "b47c04f3ca1234e3",
+  "active": "c659c1b69f95df06",
   "lastOpenFiles": [
-    "BeeKillingsInn/Rules/Rules Engine.md",
-    "DailyNotes/Thursday January 01, 2026.md",
     "BeeKillingsInn/Rules/!!! Rules !!!.md",
-    "BeeKillingsInn/QA/Unit Tests.md",
-    "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md",
+    "DailyNotes/Monday January 05, 2026.md",
     "DailyNotes/Saturday December 27 2025.md",
+    "DailyNotes/Friday January 02, 2026.md",
+    "Resolutions 2026.md",
+    "Untitled 1.base",
+    "Untitled.base",
+    "DailyNotes/Thursday January 01, 2026.md",
+    "DailyNotes/Saturday January 03, 2026.md",
+    "BeeKillingsInn/Rules/Bee Ideas.md",
+    "BeeKillingsInn/QA/Unit Tests.md",
+    "BeeKillingsInn/Rules/Rules Engine.md",
+    "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md",
     "BeeKillingsInn/Story/Story.md",
     "BeeKillingsInn/Story",
     "BeeKillingsInn/Rules/KillerBee prototype.md",
-    "BeeKillingsInn/Rules/Bee Ideas.md",
     "BeeKillingsInn/Rules/Future.md",
     "BeeKillingsInn/Rules/Grok.md",
     "BeeKillingsInn/Rules",
@@ -213,10 +205,6 @@
     "BeeKillingsInn/Code/Visualizations!.md",
     "BeeKillingsInn/Code/Physics.md",
     "BeeKillingsInn/Code/Refactor.md",
-    "BeeKillingsInn/Code/NEW ecs NOTES.md",
-    "BeeKillingsInn/Code/Megastructification.md",
-    "BeeKillingsInn/Code/Engineification.md",
-    "BeeKillingsInn/Code/Merge Bee with Axiomo.md",
     "BeeKillingsInn/Code",
     "BeeKillingsInn/Art",
     "DailyNotes",
@@ -226,8 +214,6 @@
     "Photos/Pasted image 20251114095035.png",
     "Photos/Pasted image 20251108060935.png",
     "Photos/{EC33DE1D-6A47-42AA-B324-0E1936535917}.png",
-    "Untitled 1.base",
-    "Untitled.base",
     "Photos/{80489E69-1C89-455B-ACD9-51B3CA0AFD47}.png",
     "Photos/{0921DF1F-BCAF-4B33-8B35-87CF37C72AFB}.png",
     "Photos/{D5BCC3A0-866C-4EC3-9F86-2010C8AECA4E}.png",

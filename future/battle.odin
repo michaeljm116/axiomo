@@ -70,10 +70,7 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)//state : ^GameState
             state = .PlayerTurn
             break
         case .PlayerTurn:
-            // Check for player status effects before their turn
             check_player_status_effects(battle)
-            
-            // Check win/lose condition
             if check_win_condition(battle) {
                 clear(&bees)
                 ves.curr_screen = .None
@@ -84,14 +81,11 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)//state : ^GameState
                 state = .End
                 return
             }
-            
+
             run_players_turn(battle, ves)
             break
         case .BeesTurn:
-            // Check for bee status effects before their turn
             check_bee_status_effects(battle)
-            
-            // Check win/lose condition
             if check_win_condition(battle) {
                 clear(&bees)
                 ves.curr_screen = .None
@@ -102,7 +96,7 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)//state : ^GameState
                 state = .End
                 return
             }
-            
+
             if current_bee >= len(bees) {
                 current_bee = 0
                 state = .PlayerTurn
@@ -215,7 +209,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             }
             if ves.anim_state == .Finished {
                 ves.anim_state = .None
-                
+
                 // Check for same-tile overlap with bees - alert them
                 check_same_tile_alerting(&player, &bees)
 
@@ -227,7 +221,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                         if player.target == weap.pos do animate_chest(weap.chest)
                     }
                 }
-                
+
                 // Handle run (double move)
                 run_moves_left -= 1
                 if run_moves_left > 0 {

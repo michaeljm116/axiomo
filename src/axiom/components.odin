@@ -57,7 +57,6 @@ Cmp_Transform :: struct {
     global: Sqt,            // global transform
     euler_rotation: vec3,   // euler angles for rotation
 }
-
 ComponentFlag :: enum {
     NODE        = 0,
     TRANSFORM   = 1,
