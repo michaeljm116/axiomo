@@ -136,25 +136,29 @@ game_should_run :: proc() -> bool{
 @(export)
 game_update :: proc(){
 	ax.start_frame(&ax.g_renderbase.image_index)
-	// Poll and free: Move to main loop if overlapping better
 	glfw.PollEvents()
-	g.frame.curr_time = glfw.GetTime()
 
+	//Get the frame time and set up delta_time
+	g.frame.curr_time = glfw.GetTime()
 	frame_time := g.frame.curr_time - g.frame.prev_time
 	g.frame.prev_time = g.frame.curr_time
+
 	if frame_time > 0.25 {frame_time = 0.25}
 	g.frame.delta_time = f32(frame_time)
-	g.frame.physics_acc_time += f32(frame_time)
 
+	//perform initial update
+	app_update(g.frame.delta_time)
+	sys_visual_process_ecs(g.frame.delta_time)
+	ax.sys_trans_process_ecs()
+
+	// only iterate physics at a certain timestep
+	g.frame.physics_acc_time += f32(frame_time)
 	for g.frame.physics_acc_time >= f32(g.frame.physics_time_step) {
-    	app_update(f32(g.frame.physics_time_step))
-		sys_visual_process_ecs(f32(g.frame.physics_time_step))
 		ax.sys_anim_process_ecs(f32(g.frame.physics_time_step))
-		ax.sys_trans_process_ecs()
+		ax.sys_physics_update(ax.g_physics, f32(g.frame.physics_time_step))
 		g.frame.physics_acc_time -= f32(g.frame.physics_time_step)
 	}
 
-	ax.sys_physics_update(ax.g_physics, f32(g.frame.physics_acc_time))
 	ax.sys_bvh_process_ecs(ax.g_bvh, g.mem_frame.alloc)
 
 	ax.update_buffers()
