@@ -242,7 +242,7 @@ run_bee_decision :: proc(bee : ^Bee, deck : ^BeeDeck) -> BeeAction{
         cards = deck_draw(deck, 2)
         chosen_card = deck_choose_card(cards, BeeActionPriority_Aggressive)
     case .Passive:
-        deck_draw(deck, 2)
+        cards = deck_draw(deck, 2)
         chosen_card = deck_choose_card(cards, BeeActionPriority_Passive)
     case .Normal:
         chosen_card = deck_draw(deck, 1)[0]
