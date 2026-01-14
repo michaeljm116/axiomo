@@ -98,8 +98,8 @@ init_views :: proc(alloc : mem.Allocator){
 }
 
 destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {
-    // destroy_memory_stack(mem_stack)
     reset_memory_stack(mem_stack)
+    anim_initialized = false
     // g_world.tables = {}
     // g_world = nil
 }

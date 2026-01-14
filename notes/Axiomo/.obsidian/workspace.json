@@ -13,15 +13,28 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/Monday January 05, 2026.md",
+                "file": "DailyNotes/January 12, 2026, Mon.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Monday January 05, 2026"
+              "title": "January 12, 2026, Mon"
+            }
+          },
+          {
+            "id": "7471e0af74e30ec0",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.11.4"
+              },
+              "icon": "lucide-book-up",
+              "title": "Release Notes 1.11.4"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -171,19 +184,22 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "362ef739b5f48f96",
+  "active": "7471e0af74e30ec0",
   "lastOpenFiles": [
+    "DailyNotes/January 05, 2026.md",
+    "DailyNotes/January 12, 2026, Mon.md",
+    "DailyNotes/Monday January 12, 2026.md",
+    "DailyNotes/December",
+    "DailyNotes/January 03, 2026.md",
+    "DailyNotes/January 01, 2026.md",
+    "DailyNotes/January 02, 2026.md",
     "DailyNotes/Wednesday January 07, 2026.md",
     "BeeKillingsInn/GameDesign/!!! Rules !!!.md",
-    "DailyNotes/Monday January 05, 2026.md",
-    "DailyNotes/Friday January 02, 2026.md",
-    "DailyNotes/Saturday December 27 2025.md",
+    "DailyNotes/December/Saturday December 27 2025.md",
     "BeeKillingsInn/GameDesign/Rules Engine.md",
     "BeeKillingsInn/GameDesign/KillerBee prototype.md",
     "BeeKillingsInn/GameDesign/Grok.md",
     "BeeKillingsInn/GameDesign/Future.md",
-    "DailyNotes/Saturday January 03, 2026.md",
-    "DailyNotes/Thursday January 01, 2026.md",
     "Resolutions 2026.md",
     "Untitled 1.base",
     "Untitled.base",
@@ -203,8 +219,6 @@
     "BeeKillingsInn/Production/Next Steps.md",
     "BeeKillingsInn/Production/Epics.md",
     "BeeKillingsInn/Production",
-    "BeeKillingsInn/Code/Visualizations!.md",
-    "BeeKillingsInn/Code/Physics.md",
     "BeeKillingsInn/Code",
     "BeeKillingsInn/Art",
     "DailyNotes",
@@ -217,7 +231,6 @@
     "Photos/{80489E69-1C89-455B-ACD9-51B3CA0AFD47}.png",
     "Photos/{0921DF1F-BCAF-4B33-8B35-87CF37C72AFB}.png",
     "Photos/{D5BCC3A0-866C-4EC3-9F86-2010C8AECA4E}.png",
-    "Photos/{CFB84E8B-4DCA-47D5-AE91-93FEC7921C44}.png",
-    "Photos"
+    "Photos/{CFB84E8B-4DCA-47D5-AE91-93FEC7921C44}.png"
   ]
 }

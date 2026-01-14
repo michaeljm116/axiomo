@@ -1,5 +1,5 @@
 {
   "folder": "DailyNotes",
   "autorun": true,
-  "format": "dddd MMMM DD, y"
+  "format": "MMMM DD, y, ddd"
 }
