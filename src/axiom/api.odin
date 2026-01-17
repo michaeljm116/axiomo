@@ -98,15 +98,11 @@ init_views :: proc(alloc : mem.Allocator){
 }
 
 destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {
-    reset_memory_stack(mem_stack)
+	render_clear_entities()
+	reset_memory_stack(mem_stack)
     anim_initialized = false
     // g_world.tables = {}
     // g_world = nil
-}
-restart_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World{
-    render_clear_entities()
-    destroy_world(mem_stack)
-    return create_world(mem_stack)
 }
 
 // Entity management

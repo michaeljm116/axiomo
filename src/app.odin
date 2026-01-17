@@ -32,7 +32,9 @@ app_start :: proc() {
 }
 
 app_restart :: proc(){
-    ax.g_world = restart_world()
+    destroy_world()
+    create_world()
+
     sys_visual_init(g.mem_game.alloc)
     init_game_ui(&g_gui, g_mem_core.alloc)
 }

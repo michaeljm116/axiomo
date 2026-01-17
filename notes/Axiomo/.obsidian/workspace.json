@@ -4,25 +4,25 @@
     "type": "split",
     "children": [
       {
-        "id": "a79c97991abed3b1",
+        "id": "cbb89c835c9cf036",
         "type": "tabs",
         "children": [
           {
-            "id": "362ef739b5f48f96",
+            "id": "9d159372cca60cb1",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/January 12, 2026, Mon.md",
+                "file": "DailyNotes/January 17, 2026, Sat.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "January 12, 2026, Mon"
+              "title": "January 17, 2026, Sat"
             }
           },
           {
-            "id": "7471e0af74e30ec0",
+            "id": "9c9220b1b7692fab",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -35,8 +35,7 @@
               "title": "Prototype"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -186,13 +185,15 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "7471e0af74e30ec0",
+  "active": "9d159372cca60cb1",
   "lastOpenFiles": [
-    "BeeKillingsInn/Production/Epics.md",
     "BeeKillingsInn/Production/Prototype.md",
+    "DailyNotes/January 17, 2026, Sat.md",
+    "DailyNotes/January 12, 2026, Mon.md",
+    "BeeKillingsInn/Production/Untitled.md",
+    "BeeKillingsInn/Production/Epics.md",
     "BeeKillingsInn/Production/_Travel.md",
     "DailyNotes/January 05, 2026.md",
-    "DailyNotes/January 12, 2026, Mon.md",
     "DailyNotes/Monday January 12, 2026.md",
     "DailyNotes/December",
     "DailyNotes/January 03, 2026.md",
@@ -218,8 +219,6 @@
     "BeeKillingsInn/QA",
     "BeeKillingsInn/Production/TODO.md",
     "BeeKillingsInn/Production/Pre Production.md",
-    "BeeKillingsInn/Production/Showcase Kanban.md",
-    "BeeKillingsInn/Production/Kanban.md",
     "BeeKillingsInn/Production",
     "BeeKillingsInn/Code",
     "BeeKillingsInn/Art",

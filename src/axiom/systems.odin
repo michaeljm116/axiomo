@@ -336,6 +336,8 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
     //Now Begin reseriving
     table_prims := get_table(Cmp_Primitive)
     num_ents := view_len(v_bvh)
+    assert(num_ents > 0, "Error, no Cmp_Primitives in scene")
+
     prims := make([dynamic]embree.RTCBuildPrimitive, 0, num_ents, alloc)
     entts := make([dynamic]Entity, 0, num_ents, alloc)
     pcmps := make([dynamic]^Cmp_Primitive, 0, num_ents, alloc)
@@ -343,10 +345,13 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
     // Asemble!
     pid := 0
     it : Iterator
-    iterator_init(&it, v_bvh)
+    err := iterator_init(&it, v_bvh)
+    assert(err == nil, "Iterator is required")
     for iterator_next(&it) {
         entity := get_entity(&it)
+        assert(entity.ix != 0, "Entity is required")
         pc := get_component(table_prims, entity)
+        assert(pc != nil, "Primitive component is required")
         center := pc.world[3].xyz
         lower := center - pc.aabb_extents
         upper := center + pc.aabb_extents
@@ -365,6 +370,7 @@ sys_bvh_process_ecs :: proc(using system: ^Sys_Bvh, alloc : mem.Allocator) {
         append(&prims, build_prim)
         pid += 1
     }
+    assert(len(prims) > 0, "Error, no prims in bvh")
 
     // Set up build arguments
     MIN_LEAF_SIZE :: 1
@@ -749,25 +755,29 @@ sys_anim_reset :: proc(){
 
 sys_anim_process_ecs :: proc(dt : f32)
 {
-    sys_anim_reset()
     if !anim_initialized do return
-    // sys_anim_reset()
     it : Iterator
     anims := get_table(Cmp_Animation)
     animates := get_table(Cmp_Animate)
     transforms := get_table(Cmp_Transform)
 
-    iterator_init(&it, v_animation)
+	assert(anims != nil && animates != nil && transforms != nil, "Animation, Animate, and Transform components are required")
+
+    err := iterator_init(&it, v_animation)
+    assert(err == nil, "Failed to initialize animation iterator")
     for iterator_next(&it){
         entity := get_entity(&it)
         sys_anim_update(entity, dt)
     }
 
-    iterator_init(&it, v_animate)
+    err = iterator_init(&it, v_animate)
+    assert(err == nil, "Failed to initialize animate iterator")
     for iterator_next(&it){
         entity := get_entity(&it)
         animate := get_component(animates, entity)
+        assert(animate != nil, "Animate component is required")
         transform := get_component(transforms, entity)
+        assert(transform != nil, "Transform component is required")
         sys_anim_process(entity, animate, transform, dt)
     }
 }

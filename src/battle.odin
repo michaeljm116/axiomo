@@ -45,6 +45,7 @@ destroy_visuals :: proc(visuals : ^Cmp_Visual) {
 
 destroy_level1 :: proc() {
     app_restart()
+    load_scene("Empty")
     // destroy_world()
     // for b in g.battle.bees {
     //     vc := get_component(b.entity, Cmp_Visual)

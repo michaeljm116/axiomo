@@ -1,3 +1,5 @@
-[INFO ] --- [2025-12-13 16:55:08] [render.odin:379:score_physical_device()] vulkan: device "NVIDIA GeForce RTX 3050 Laptop GPU" scored 332768
-[INFO ] --- [2025-12-13 16:55:08] [render.odin:379:score_physical_device()] vulkan: device "Intel(R) Iris(R) Xe Graphics" scored 216384
-[INFO ] --- [2025-12-13 16:55:08] [render.odin:227:init_vulkan()] vulkan: bindless descriptor indexing supported
+[INFO ] --- [2026-01-17 17:10:23] [render.odin:379:score_physical_device()] vulkan: device "NVIDIA GeForce RTX 3050 Laptop GPU" scored 332768
+[INFO ] --- [2026-01-17 17:10:23] [render.odin:379:score_physical_device()] vulkan: device "Intel(R) Iris(R) Xe Graphics" scored 216384
+[INFO ] --- [2026-01-17 17:10:23] [render.odin:227:init_vulkan()] vulkan: bindless descriptor indexing supported
+Entered Destroy Edit Mode
+destroying game
