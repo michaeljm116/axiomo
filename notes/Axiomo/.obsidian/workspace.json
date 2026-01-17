@@ -25,12 +25,14 @@
             "id": "7471e0af74e30ec0",
             "type": "leaf",
             "state": {
-              "type": "release-notes",
+              "type": "markdown",
               "state": {
-                "currentVersion": "1.11.4"
+                "file": "BeeKillingsInn/Production/Prototype.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-book-up",
-              "title": "Release Notes 1.11.4"
+              "icon": "lucide-file",
+              "title": "Prototype"
             }
           }
         ],
@@ -186,6 +188,9 @@
   },
   "active": "7471e0af74e30ec0",
   "lastOpenFiles": [
+    "BeeKillingsInn/Production/Epics.md",
+    "BeeKillingsInn/Production/Prototype.md",
+    "BeeKillingsInn/Production/_Travel.md",
     "DailyNotes/January 05, 2026.md",
     "DailyNotes/January 12, 2026, Mon.md",
     "DailyNotes/Monday January 12, 2026.md",
@@ -211,13 +216,10 @@
     "BeeKillingsInn/GameDesign",
     "BeeKillingsInn/QA/Bugs.md",
     "BeeKillingsInn/QA",
-    "BeeKillingsInn/Production/_Travel.md",
     "BeeKillingsInn/Production/TODO.md",
     "BeeKillingsInn/Production/Pre Production.md",
     "BeeKillingsInn/Production/Showcase Kanban.md",
     "BeeKillingsInn/Production/Kanban.md",
-    "BeeKillingsInn/Production/Next Steps.md",
-    "BeeKillingsInn/Production/Epics.md",
     "BeeKillingsInn/Production",
     "BeeKillingsInn/Code",
     "BeeKillingsInn/Art",
