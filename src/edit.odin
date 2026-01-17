@@ -265,6 +265,10 @@ handle_destroy_mode :: proc()
         // fmt.printf("Placed %s at (%d, %d)\n", selected_destroy, grid_pos_x, grid_pos_y)
     }
 
+    if is_key_just_pressed(glfw.KEY_LEFT_ALT) {
+	   	set_game_victory()
+    }
+
     if is_key_just_pressed(glfw.KEY_ENTER)
     {
         set_game_start()

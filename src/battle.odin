@@ -45,7 +45,6 @@ destroy_visuals :: proc(visuals : ^Cmp_Visual) {
 
 destroy_level1 :: proc() {
     app_restart()
-    load_scene("Empty")
     // destroy_world()
     // for b in g.battle.bees {
     //     vc := get_component(b.entity, Cmp_Visual)
@@ -1338,10 +1337,22 @@ start_game :: proc(){
 }
 
 set_game_over :: proc(){
-    fmt.println("destroying game")
-    g.app_state = .GameOver
-    destroy_level1()
-	ToggleMenuUI(&g.app_state)
+	g.battle.player.health = 0
+    // fmt.println("destroying game")
+    // g.app_state = .GameOver
+    // destroy_level1()
+    // load_scene("Empty")
+	// ToggleMenuUI(&g.app_state)
+}
+
+set_game_victory :: proc(){
+	clear(&g.battle.bees)
+	// fmt.println("destroying game")
+	//     g.app_state = .Victory
+	//     destroy_level1()
+	//     overworld_start()
+	//     load_scene("Overworld")
+	// ToggleMenuUI(&g.app_state)
 }
 
 set_game_start :: proc(){

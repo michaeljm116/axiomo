@@ -111,12 +111,10 @@ app_run :: proc(dt: f32, state: ^AppState) {
 		ves_update_all(dt)
 		if (g.battle.player.health <= 0){
 			state^ = .GameOver
-            destroy_level1()
-			ToggleMenuUI(state)
+ 			ToggleMenuUI(state)
 		}
 	    else if (len(g.battle.bees) <= 0){
     		state^ = .Victory
-            destroy_level1()
             ToggleMenuUI(state)
 		}
         else if (is_key_just_pressed(glfw.KEY_P)){
@@ -129,10 +127,17 @@ app_run :: proc(dt: f32, state: ^AppState) {
             state^ = .Game
             ToggleMenuUI(state)
         }
-	case .GameOver, .Victory:
+	case .GameOver:
     	if is_key_just_pressed(glfw.KEY_ENTER){
             state^ = .MainMenu
             ToggleMenuUI(state)
+        }
+	case .Victory:
+    	if is_key_just_pressed(glfw.KEY_ENTER){
+     		app_restart()
+            state^ = .Overworld
+            ToggleMenuUI(state)
+            overworld_start()
         }
 	case .Overworld:
 	   overworld_update(dt)
