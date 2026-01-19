@@ -29,4 +29,22 @@ Plan:
 		* Cannot reenter battle
 	* Lose = Go to Main Menu
 		* Everything is reset
-		* 
+
+## Overworld STruct
+* to get the next mechanic in you'll need an overworld struct that saves all the game data relavan to overworld and probably just in general player stats etc... for the rpg of it
+* So for the purpose of the current objective you'd want a tuple of...
+	* Battle Name
+	* Pos:
+		* x
+		* y
+	* Scale
+		* x
+		* y?
+* I think to do this you  need a much better level setting program instead of just the levels.odin you currently have
+
+## Levels
+* Player Abilities should not be there should just be a file maybe
+* Bees.... There should be bee types that are already configured
+	* the positions should be set tho
+* the grid and where the chest are shoudld be set too
+* The level number shouldn't be s*

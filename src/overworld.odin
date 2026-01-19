@@ -10,6 +10,59 @@ import "axiom/resource"
 import "core:log"
 import b2 "vendor:box2d"
 
+Room :: struct
+{
+	using entrance : AreaEntry,
+	battle : Battle,
+	is_battle : bool,
+}
+
+Floor :: struct
+{
+	using entrance : AreaEntry,
+	rooms : map[string]Room,
+}
+
+Inn :: struct
+{
+	levels : map[u32]Floor,
+}
+
+AreaEntry :: struct
+{
+	entry : AreaTrigger,
+	exit : AreaTrigger,
+}
+
+AreaTrigger :: struct
+{
+	dir : AreaDirection,
+	can_enter : bool,
+	pos : vec2f,
+	len : f32,
+}
+AreaDirection :: enum{Up,Down,Left,Right}
+
+overworld_detect_area_change :: proc(player_transform : Cmp_Transform, trigger : AreaTrigger) -> bool
+{
+    using player_transform.local
+    px := pos.x
+    py := pos.y
+    tx := trigger.pos.x
+    ty := trigger.pos.y
+    tl := trigger.len
+
+    switch trigger.dir {
+	    case .Up: return py > ty && px > tx && px < tx + tl
+	    case .Down: return py < ty && px > tx && px < tx + tl
+	    case .Left: return px < tx && py > ty && py < ty + tl
+	    case .Right: return px > tx && py > ty && py < ty + tl
+    }
+    return false
+}
+
+
+
 CollisionCategory :: enum
 {
     Player,

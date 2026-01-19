@@ -174,6 +174,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                 // }
             }
             else do enemy_selection(&bee_selection, bees)
+            // else do battle_selection(&bee_selection, battle.battle_queue.data)
         case .Action:
             ves.curr_screen = .Action
             handle_back_button(&input_state, player.weapon, &bees[bee_selection])
@@ -319,6 +320,29 @@ handle_back_button :: proc(state : ^PlayerInputState, weapon : Weapon, bee : ^Be
 }
 
 //Select enemy via vector position... rottate based off wasd
+battle_selection :: proc(selection : ^int, battlers : [dynamic]^Character)
+{
+    prev_selection := selection^
+    num := len(battlers)
+    assert(num > 0)
+    if(num == 1){selection^ = 0}
+    else {
+        if(is_key_just_pressed(glfw.KEY_W) || is_key_just_pressed(glfw.KEY_D)){
+            selection^ = (selection^ + 1) %num
+        }
+        else if(is_key_just_pressed(glfw.KEY_A) || is_key_just_pressed(glfw.KEY_S)){
+            selection^ = math.abs(selection^ - 1) %num
+            if selection^ < 0 do selection^ =num
+        }
+    }
+
+    // if its a new selection, update visual
+    if prev_selection != selection^{
+        battlers[selection^].added += {.PlayerSelected}
+        battlers[prev_selection].removed += {.PlayerSelected}
+    }
+}
+
 enemy_selection :: proc(selection : ^int, bees : [dynamic]Bee)
 {
     prev_selection := selection^
@@ -341,6 +365,7 @@ enemy_selection :: proc(selection : ^int, bees : [dynamic]Bee)
         bees[prev_selection].removed += {.PlayerSelected}
     }
 }
+
 start_bee_selection :: proc(selection: int, bees : ^[dynamic]Bee)
 {
     for &b , i in bees
@@ -387,7 +412,6 @@ Tile :: enum
 Player :: struct{
     using base : Character,
     weapon : Weapon,
-    abilities : [dynamic]Ability,
 }
 
 CharacterFlag :: enum { Walk, Run, Attack, Dodge, Focus,}
@@ -1318,9 +1342,9 @@ start_game :: proc(){
     g.battle.state = .Start
     g.ves.curr_screen = .SelectAction
 
-    start_battle1(&g.battle,g.mem_game.alloc)
-    init_dice_entities(&g.battle.dice)
-    for &bee in g.battle.bees do init_bee_entity(&bee)
+    battle_setup_1(&g.battle,g.mem_game.alloc)
+    init_battle(&g.battle, g.mem_game.alloc)
+    init_battle_Visuals(&g.battle)
 
     find_floor_entities()
     grid_set_scale(g.floor, g.battle.grid)
@@ -1727,61 +1751,63 @@ ves_cleanup :: proc(battle : ^Battle)
 
 ves_update_visuals :: proc(battle : ^Battle)
 {
-    for &b in battle.bees{
-        if .PlayerFocused in b.added{
-            b.added -= {.PlayerFocused}
-            b.flags += {.PlayerFocused}
+    if battle.battle_queue.len < 1 do return
+    for i in 0 ..< battle.battle_queue.len{
+	    c := queue.get(&battle.battle_queue, i)
+        if .PlayerFocused in c.added{
+        c.added -= {.PlayerFocused}
+        c.flags += {.PlayerFocused}
 
-            vc := get_component(b.entity, Cmp_Visual)
+        vc := get_component(c.entity, Cmp_Visual)
             vc.flags += {.Focus}
         }
-        if .PlayerFocused in b.removed{
-            b.removed -= {.PlayerFocused}
-            b.flags -= {.PlayerFocused}
+        if .PlayerFocused in c.removed{
+            c.removed -= {.PlayerFocused}
+            c.flags -= {.PlayerFocused}
 
-            vc := get_component(b.entity, Cmp_Visual)
+            vc := get_component(c.entity, Cmp_Visual)
             vc.flags -= {.Focus}
         }
-        if .PlayerDodge in b.added{
-            b.added -= {.PlayerDodge}
-            b.flags += {.PlayerDodge}
+        if .PlayerDodge in c.added{
+            c.added -= {.PlayerDodge}
+            c.flags += {.PlayerDodge}
 
-            vc := get_component(b.entity, Cmp_Visual)
+            vc := get_component(c.entity, Cmp_Visual)
             vc.flags += {.Dodge}
         }
-        if .PlayerDodge  in b.removed{
-            b.removed -= {.PlayerDodge}
-            b.flags -= {.PlayerDodge}
+        if .PlayerDodge  in c.removed{
+            c.removed -= {.PlayerDodge}
+            c.flags -= {.PlayerDodge}
 
-            vc := get_component(b.entity, Cmp_Visual)
+            vc := get_component(c.entity, Cmp_Visual)
             vc.flags -= {.Dodge}
         }
-        if .Alert in b.added{
-            b.added -= {.Alert}
-            b.flags += {.Alert}
+        if .Alert in c.added{
+            c.added -= {.Alert}
+            c.flags += {.Alert}
 
-            vc := get_component(b.entity, Cmp_Visual)
+            vc := get_component(c.entity, Cmp_Visual)
             vc.flags += {.Alert}
         }
-        if .Alert in b.removed{
-            b.removed -= {.Alert}
-            b.flags -= {.Alert}
+        if .Alert in c.removed{
+            c.removed -= {.Alert}
+            c.flags -= {.Alert}
 
-            vc := get_component(b.entity, Cmp_Visual)
+            vc := get_component(c.entity, Cmp_Visual)
             vc.flags -= {.Alert}
         }
-        if .PlayerSelected in b.added{
-            b.added -= {.PlayerSelected}
-            b.flags += {.PlayerSelected}
+        if .PlayerSelected in c.added{
+            c.added -= {.PlayerSelected}
+            c.flags += {.PlayerSelected}
 
-            vc := get_component(b.entity, Cmp_Visual)
+            vc := get_component(c.entity, Cmp_Visual)
             vc.flags += {.Select}
         }
-        if .PlayerSelected in b.removed{
-            b.removed -= {.PlayerSelected}
-            b.flags -= {.PlayerSelected}
+        if .PlayerSelected in c.removed{
+            c.removed -= {.PlayerSelected}
+            c.flags -= {.PlayerSelected}
 
-            vc := get_component(b.entity, Cmp_Visual)
+            vc := get_component(c.entity, Cmp_Visual)
             vc.flags -= {.Select}
         }
     }
