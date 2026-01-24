@@ -129,7 +129,6 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
     {
 	    case .SelectCharacter:
 	        ves.curr_screen = .SelectCharacter
-	        handle_back_button(&input_state, player.weapon, &curr_sel)
             if is_key_just_pressed(glfw.KEY_SPACE) || is_key_just_pressed(glfw.KEY_ENTER)
             {
 				switch c in curr_sel.character.variant
