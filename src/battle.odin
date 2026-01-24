@@ -112,7 +112,6 @@ check_status_effect_player :: proc(player : ^Player)
 }
 check_status_effect_bee :: proc(bee : ^Bee)
 {
-
 }
 
 run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^PlayerInputState, battle_state : ^BattleState, player : ^Player, bees : ^[dynamic]Bee, bee_selection : ^int, bee_is_near : ^bool)
@@ -219,6 +218,7 @@ check_action_focused :: proc(battle : ^Battle) -> bool{
     if .PlayerFocused in curr_sel.character.flags do curr_sel.character.flags |= {.PlayerHyperFocused}
     curr_sel.character.added |= {.PlayerFocused}
     input_state = .SelectCharacter
+    battle.state = .End
     return true
 }
 check_action_dodged :: proc(battle : ^Battle) -> bool{
@@ -229,6 +229,7 @@ check_action_dodged :: proc(battle : ^Battle) -> bool{
     if .PlayerDodge in curr_sel.character.flags do curr_sel.character.flags |= {.PlayerHyperAlert}
     curr_sel.character.added |= {.PlayerDodge}
     input_state = .SelectCharacter
+    battle.state = .End
     return true
 }
 
