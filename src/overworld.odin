@@ -42,6 +42,7 @@ AreaTrigger :: struct
 	len : f32,
 }
 AreaDirection :: enum{Up,Down,Left,Right}
+AreaType :: enum{Inn, Floor, Room}
 
 overworld_detect_area_change :: proc(player_transform : Cmp_Transform, trigger : AreaTrigger) -> bool
 {
@@ -60,8 +61,6 @@ overworld_detect_area_change :: proc(player_transform : Cmp_Transform, trigger :
     }
     return false
 }
-
-
 
 CollisionCategory :: enum
 {

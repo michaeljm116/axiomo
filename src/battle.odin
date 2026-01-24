@@ -9,6 +9,8 @@ import "core:container/queue"
 import "base:intrinsics"
 import "vendor:glfw"
 import xxh2"axiom/extensions/xxhash2"
+import queue2 "axiom/extensions/queue2"
+
 import "axiom"
 
 Battle :: struct
@@ -25,10 +27,15 @@ Battle :: struct
 
     current_bee: int,
     dice :  [2]Dice,
-    bee_selection : int,
+    // bee_selection : int,
     bee_is_near : bool,
-    battle_queue : queue.Queue(^Character)
+    battle_queue : queue.Queue(^Character),
+    selected : ^Character,
+    curr_sel : BattleSelection,
 }
+
+
+
 
 //----------------------------------------------------------------------------\\
 // /Start UP
@@ -119,119 +126,118 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
     using battle
     //Check if victory:
     victory := check_win_condition(battle)
-    if victory {
+    if victory
+    {
         clear(&bees)
         ves.curr_screen = .None
     }
+
     switch input_state
     {
-        case .SelectAction:
-            ves.curr_screen = .SelectAction
-            if is_key_just_pressed(glfw.KEY_1){
-                ves.anim_state = .Start
-                input_state = .Movement
-                ves.curr_screen = .Movement
+	    case .SelectCharacter:
+	        ves.curr_screen = .SelectCharacter
+	        handle_back_button(&input_state, player.weapon, &curr_sel)
+            if is_key_just_pressed(glfw.KEY_SPACE) || is_key_just_pressed(glfw.KEY_ENTER)
+            {
+               	// if character is player, go to Movement state
+	            // if its bee then go to action state
+				switch c in selected.variant
+				{
+             		case ^Player:
+			            ves.anim_state = .Start
+		                input_state = .Movement
+                        ves.curr_screen = .Movement
+               		case ^Bee:
+						bee_is_near = bee_near(player, c^)
+		                input_state = .Action
+		                // c.removed |= {.PlayerSelected}
+		                show_weapon(player.weapon)
+	             }
             }
-            if is_key_just_pressed(glfw.KEY_2){
-                input_state = .SelectEnemy
-                ves.curr_screen = .SelectEnemy
-                bee_selection = 0
-                bee_is_near = false
-                start_bee_selection(bee_selection, &bees)
-            }
-            break
-        case .Movement:
-        handle_back_button(&input_state, player.weapon, &bees[bee_selection])
+            else do battle_selection_update(&battle.curr_sel)
+	    case .Movement:
+        	handle_back_button(&input_state, player.weapon, &curr_sel)
             input, moved := get_input()
-            if moved{
+            if moved
+            {
                 move_player(&player, input, &input_state)
                 ves.curr_screen = .None
             }
-            if ves.anim_state == .Finished {
+            if ves.anim_state == .Finished
+            {
                 ves.anim_state = .None
-                input_state = .SelectAction
+                input_state = .SelectCharacter
                 state = .End
 
-                if weap_check(player.target, g.battle.grid) {
+                if weap_check(player.target, g.battle.grid)
+                {
                     pick_up_weapon(&player, g.battle.weapons)
-
                     //check for chest
-                    for weap in g.battle.grid_weapons{
-                        if player.target == weap.pos do animate_chest(weap.chest)
-                    }
+                    for weap in g.battle.grid_weapons do if player.target == weap.pos do animate_chest(weap.chest)
                 }
             }
-        case .SelectEnemy:
-        handle_back_button(&input_state, player.weapon, &bees[bee_selection])
-            if is_key_just_pressed(glfw.KEY_SPACE) || is_key_just_pressed(glfw.KEY_ENTER){
-                bee_is_near = bee_near(player, bees[bee_selection])
-                input_state = .Action
-                bees[bee_selection].removed |= {.PlayerSelected}
-                show_weapon(player.weapon)
-                // for b in bees{
-                //     vc := get_component(b.entity, Cmp_Visual)
-                //     if vc != nil do hide_visuals(vc, {.Select})
-                // }
-            }
-            else do enemy_selection(&bee_selection, bees)
-            // else do battle_selection(&bee_selection, battle.battle_queue.data)
         case .Action:
             ves.curr_screen = .Action
-            handle_back_button(&input_state, player.weapon, &bees[bee_selection])
-            if(bee_is_near && is_key_just_pressed(glfw.KEY_SPACE)){
-                hide_weapon(player.weapon)
-                ves.curr_screen = .None
-                // player_attack(player, &bees[bee_selection])
-                // input_state = .SelectAction
-                // state^ = .BeesTurn
-                input_state = .DiceRoll
-                ves.dice_state = .Start
-                if .Dead in bees[bee_selection].flags{
-                    fmt.printfln("Bee %v is dead", bees[bee_selection].name)
-                    //remove the bee for now
-                    ordered_remove(&g.battle.bees, bee_selection)
-                }
-            }
-            else if is_key_just_pressed(glfw.KEY_F){
-                hide_weapon(player.weapon)
-                if .PlayerFocused in bees[bee_selection].flags do bees[bee_selection].flags |= {.PlayerHyperFocused}
-                bees[bee_selection].added |= {.PlayerFocused}
-                input_state = .SelectAction
-                state = .End
-
-                //display visual
-                // vc := get_component(bees[bee_selection].entity, Cmp_Visual)
-                // vc.flags += {.Focus}
-            }
-            else if is_key_just_pressed(glfw.KEY_D){
-                hide_weapon(player.weapon)
-                if .PlayerDodge in bees[bee_selection].flags do bees[bee_selection].flags |= {.PlayerHyperAlert}
-                bees[bee_selection].added |= {.PlayerDodge}
-                input_state = .SelectAction
-                state = .End
-                // vc := get_component(bees[bee_selection].entity, Cmp_Visual)
-                // vc.flags += {.Dodge}
-            }
+            handle_back_button(&input_state, player.weapon, &curr_sel)
+            if check_action_attack(battle, ves) do return
+            else if check_action_focused(battle) do return
+            else if check_action_dodged(battle) do return
         case .DiceRoll:
             ves.curr_screen = .DiceRoll
             if ves.dice_state == .Update do return
-            if ves.dice_state == .Finished{
+            if ves.dice_state == .Finished
+            {
                 ves.dice_state = .None
                 ves.curr_screen = .None
                 fmt.println("Dice Num 1: ", dice[0].num, " Dice Num 2: ", dice[1].num)
                 acc := dice[0].num + dice[1].num
-                bee := &bees[bee_selection]
+                bee := curr_sel.character.variant.(^Bee)
                 player_attack(player, bee, acc)
-                input_state = .SelectAction
+                input_state = .SelectCharacter
                 state = .End
                 return
             }
-        // case .Animate:
-        //     TogglePlayerTurnUI(state)
-        //     animate_player(player, f32(g.frame.physics_time_step), state)
-        //     if state^ == .SelectAction do state^ = .BeesTurn
-        //     break
     }
+
+}
+check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
+	if !battle.bee_is_near || !is_key_just_pressed(glfw.KEY_SPACE) do return false
+
+	using battle
+	hide_weapon(player.weapon)
+    ves.curr_screen = .None
+    // player_attack(player, &curr_sel.character)
+    // input_state = .SelectCharacter
+    // state^ = .BeesTurn
+    input_state = .DiceRoll
+    ves.dice_state = .Start
+    if .Dead in curr_sel.character.flags
+    {
+        fmt.printfln("Bee %v is dead", curr_sel.character.name)
+        ordered_remove(&curr_sel.selectables, curr_sel.index)
+    }
+    return true
+}
+
+check_action_focused :: proc(battle : ^Battle) -> bool{
+	if !is_key_just_pressed(glfw.KEY_F) do return false
+
+	using battle
+	hide_weapon(player.weapon)
+    if .PlayerFocused in curr_sel.character.flags do curr_sel.character.flags |= {.PlayerHyperFocused}
+    curr_sel.character.added |= {.PlayerFocused}
+    input_state = .SelectCharacter
+    return true
+}
+check_action_dodged :: proc(battle : ^Battle) -> bool{
+	if !is_key_just_pressed(glfw.KEY_D) do return false
+
+	using battle
+	hide_weapon(player.weapon)
+    if .PlayerDodge in curr_sel.character.flags do curr_sel.character.flags |= {.PlayerHyperAlert}
+    curr_sel.character.added |= {.PlayerDodge}
+    input_state = .SelectCharacter
+    return true
 }
 
 run_bee_decision :: proc(bee : ^Bee, deck : ^BeeDeck) -> BeeAction{
@@ -299,81 +305,71 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
 }
 
 // If B button is pressed, go back to previous menu
-handle_back_button :: proc(state : ^PlayerInputState, weapon : Weapon, bee : ^Bee){
+handle_back_button :: proc(state : ^PlayerInputState, weapon : Weapon, selected : ^BattleSelection){
     if(!is_key_just_pressed(glfw.KEY_ESCAPE)) do return
     hide_weapon(weapon)
-    bee.removed |= {.PlayerSelected}
+    selected.character.removed |= {.PlayerSelected}
     #partial switch state^ {
         case .Movement:
-            state^ = .SelectAction
-            g.ves.curr_screen = .SelectAction
-            break
-        case .SelectEnemy:
-            state^ = .SelectAction
-            g.ves.curr_screen = .SelectAction
+            state^ = .SelectCharacter
+            g.ves.curr_screen = .SelectCharacter
             break
         case .Action:
-            state^ = .SelectEnemy
-            g.ves.curr_screen = .SelectEnemy
+            state^ = .SelectCharacter
+            g.ves.curr_screen = .SelectCharacter
             break
     }
+}
+BattleSelection :: struct
+{
+	index : int,
+	character : ^Character,
+	selectables: [dynamic]^Character
+}
+battle_selection_init :: proc(battle : ^Battle, selection : ^BattleSelection, alloc : mem.Allocator){
+	selection.index = 0
+	selection.selectables = make([dynamic]^Character, 0, len(battle.bees) + 1, alloc)
+	selection.character = selection.selectables[selection.index]
+}
+battle_selection_next :: proc(sel : ^BattleSelection) -> int
+{
+	prev := sel.index
+	sel.index += 1
+	if sel.index >= len(sel.selectables) do sel.index = 0
+	sel.character = sel.selectables[sel.index]
+	return prev
+}
+battle_selection_prev :: proc(sel : ^BattleSelection) -> int
+{
+	prev := sel.index
+	sel.index -= 1
+	if sel.index < 0 do sel.index = len(sel.selectables) - 1
+	sel.character = sel.selectables[sel.index]
+	return prev
 }
 
 //Select enemy via vector position... rottate based off wasd
-battle_selection :: proc(selection : ^int, battlers : [dynamic]^Character)
+battle_selection_update :: proc(curr : ^BattleSelection)
 {
-    prev_selection := selection^
-    num := len(battlers)
-    assert(num > 0)
-    if(num == 1){selection^ = 0}
-    else {
-        if(is_key_just_pressed(glfw.KEY_W) || is_key_just_pressed(glfw.KEY_D)){
-            selection^ = (selection^ + 1) %num
-        }
-        else if(is_key_just_pressed(glfw.KEY_A) || is_key_just_pressed(glfw.KEY_S)){
-            selection^ = math.abs(selection^ - 1) %num
-            if selection^ < 0 do selection^ =num
-        }
+	changed := -1
+    if(is_key_just_pressed(glfw.KEY_W) || is_key_just_pressed(glfw.KEY_D)){
+        changed = battle_selection_next(curr)
     }
-
+    else if(is_key_just_pressed(glfw.KEY_A) || is_key_just_pressed(glfw.KEY_S)){
+       changed = battle_selection_prev(curr)
+    }
     // if its a new selection, update visual
-    if prev_selection != selection^{
-        battlers[selection^].added += {.PlayerSelected}
-        battlers[prev_selection].removed += {.PlayerSelected}
+    if changed >= 0{
+        curr.selectables[curr.index].added += {.PlayerSelected}
+        curr.selectables[changed].removed += {.PlayerSelected}
     }
 }
 
-enemy_selection :: proc(selection : ^int, bees : [dynamic]Bee)
+start_selection :: proc(battle : ^Battle)
 {
-    prev_selection := selection^
-    num_bees := len(bees)
-    assert(num_bees > 0)
-    if(num_bees == 1){selection^ = 0}
-    else {
-        if(is_key_just_pressed(glfw.KEY_W) || is_key_just_pressed(glfw.KEY_D)){
-            selection^ = (selection^ + 1) % num_bees
-        }
-        else if(is_key_just_pressed(glfw.KEY_A) || is_key_just_pressed(glfw.KEY_S)){
-            selection^ = math.abs(selection^ - 1) % num_bees
-            if selection^ < 0 do selection^ = num_bees
-        }
-    }
-
-    // if its a new selection, update visual
-    if prev_selection != selection^{
-        bees[selection^].added += {.PlayerSelected}
-        bees[prev_selection].removed += {.PlayerSelected}
-    }
+	for c in battle.curr_sel.selectables do c.removed += {.PlayerSelected}
 }
 
-start_bee_selection :: proc(selection: int, bees : ^[dynamic]Bee)
-{
-    for &b , i in bees
-    {
-        if selection == i do b.added += {.PlayerSelected}
-        else do b.removed += {.PlayerSelected}
-    }
-}
 
 get_input :: proc() -> (string, bool)
 {
@@ -394,9 +390,10 @@ get_input :: proc() -> (string, bool)
 
 PlayerInputState :: enum
 {
-   SelectAction,
+   // SelectCharacter,
+   SelectCharacter,
    Movement,
-   SelectEnemy,
+   // SelectEnemy,
    Action,
    DiceRoll,
 }
@@ -450,14 +447,16 @@ CharacterAnimation :: struct
     end_rot : quat,    // rotation end (quaternion)
 }
 
-Ability :: struct {
+Ability :: struct
+{
    use_on : ^Bee,
    type : AbilityType,
    level : i8,
    uses : i8,
 }
 
-AbilityType :: enum{
+AbilityType :: enum
+{
     Focused,
     Dodge
 }
@@ -485,10 +484,10 @@ init_bee_entity :: proc(bee: ^Bee)
     add_component(bee.entity, Cmp_Visual)
 }
 
-Bee :: struct {
+Bee :: struct
+{
     using base : Character,
     type : BeeType,
-
     state: BeeState,
 }
 
@@ -1153,39 +1152,6 @@ find_light_entity :: proc() {
 }
 
 //----------------------------------------------------------------------------\\
-// /UI
-//----------------------------------------------------------------------------\\
-TogglePlayerTurnUI :: proc(state : ^PlayerInputState)
-{
-    #partial switch state^{
-        case .SelectAction:
-            ToggleUI("SelectAction", false)
-            ToggleUI("MoveWASD", false)
-            ToggleUI("Attack", false)
-            ToggleUI("Focus", false)
-            ToggleUI("Dodge", false)
-
-            ToggleUI("Move", true)
-            ToggleUI("EnemySelect", true)
-        case .SelectEnemy:
-            ToggleUI("Move", false)
-            ToggleUI("EnemySelect", false)
-            ToggleUI("ChooseBee", true)
-            ToggleUI("SelectAction", true)
-        case .Movement:
-            ToggleUI("Move", false)
-            ToggleUI("EnemySelect", false)
-            ToggleUI("MoveWASD", true)
-        case .Action:
-            ToggleUI("ChooseBee", false)
-            ToggleUI("SelectAction", false)
-            ToggleUI("Attack", true)
-            ToggleUI("Focus", true)
-            ToggleUI("Dodge", true)
-    }
-}
-
-//----------------------------------------------------------------------------\\
 // /Animation
 //----------------------------------------------------------------------------\\
 MovementAnimHash :: enum i32 {
@@ -1340,7 +1306,7 @@ battle_start :: proc(){
 
 start_game :: proc(){
     g.battle.state = .Start
-    g.ves.curr_screen = .SelectAction
+    g.ves.curr_screen = .SelectCharacter
 
     battle_setup_1(&g.battle,g.mem_game.alloc)
     init_battle(&g.battle, g.mem_game.alloc)
@@ -1612,9 +1578,8 @@ dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
 VES_Screen :: enum
 {
     None,
-    SelectAction,
+    SelectCharacter,
     Movement,
-    SelectEnemy,
     Action,
     DiceRoll,
 }
@@ -1648,12 +1613,12 @@ ves_update_screen :: proc(battle: ^Battle){
         //First turn off all screen
         switch g.ves.prev_screen{
             case .None: break
-            case .SelectAction:
+            case .SelectCharacter:
                 ToggleUI("Move", false)
                 ToggleUI("EnemySelect", false)
-            case .SelectEnemy:
+            // case .SelectEnemy:
                 ToggleUI("ChooseBee", false)
-                ToggleUI("SelectAction", false)
+                ToggleUI("SelectCharacter", false)
             case .Movement:
                 ToggleUI("MoveWASD", false)
             case .Action:
@@ -1666,12 +1631,12 @@ ves_update_screen :: proc(battle: ^Battle){
         //Then turn new screen
         switch g.ves.curr_screen{
             case .None: break
-            case .SelectAction:
+            case .SelectCharacter:
                 ToggleUI("Move", true)
                 ToggleUI("EnemySelect", true)
-            case .SelectEnemy:
+            // case .SelectEnemy:
                 ToggleUI("ChooseBee", true)
-                ToggleUI("SelectAction", true)
+                ToggleUI("SelectCharacter", true)
             case .Movement:
                 ToggleUI("MoveWASD", true)
             case .Action:
