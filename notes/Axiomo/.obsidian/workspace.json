@@ -45,7 +45,8 @@
               "title": "January 24, 2026, Sat"
             }
           }
-        ]
+        ],
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -195,10 +196,10 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "9c9220b1b7692fab",
+  "active": "505342c29acfbae0",
   "lastOpenFiles": [
-    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143017.png",
     "Excalidraw/PlayersTUrn.excalidraw.md",
+    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143017.png",
     "DailyNotes/January 24, 2026, Sat.md",
     "Untitled.md",
     "Excalidraw/HotelOverworld.excalidraw.md",

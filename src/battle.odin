@@ -30,12 +30,8 @@ Battle :: struct
     // bee_selection : int,
     bee_is_near : bool,
     battle_queue : queue.Queue(^Character),
-    selected : ^Character,
     curr_sel : BattleSelection,
 }
-
-
-
 
 //----------------------------------------------------------------------------\\
 // /Start UP
@@ -71,11 +67,6 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
     using battle
     switch state
     {
-        case .End:
-	        if check_end_condition(battle) do break
-	        curr := queue.pop_front(&battle_queue)
-	        if .Dead not_in curr.flags do queue.push(&battle_queue, curr)
-			state = .Start
         case .Start:
         	if check_end_condition(battle) do break
          	state = .Continue
@@ -86,8 +77,11 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
            		case ^Bee:
              		run_bee_turn(v, battle, ves, f32(g.frame.physics_time_step))
              }
-        case .PlayerTurn:
-        case .BeesTurn:
+        case .End:
+	        if check_end_condition(battle) do break
+	        curr := queue.pop_front(&battle_queue)
+	        if .Dead not_in curr.flags do queue.push(&battle_queue, curr)
+			state = .Start
     }
 }
 
@@ -139,9 +133,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
 	        handle_back_button(&input_state, player.weapon, &curr_sel)
             if is_key_just_pressed(glfw.KEY_SPACE) || is_key_just_pressed(glfw.KEY_ENTER)
             {
-               	// if character is player, go to Movement state
-	            // if its bee then go to action state
-				switch c in selected.variant
+				switch c in curr_sel.character.variant
 				{
              		case ^Player:
 			            ves.anim_state = .Start
@@ -152,7 +144,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
 		                input_state = .Action
 		                // c.removed |= {.PlayerSelected}
 		                show_weapon(player.weapon)
-	             }
+	            }
             }
             else do battle_selection_update(&battle.curr_sel)
 	    case .Movement:
@@ -326,11 +318,17 @@ BattleSelection :: struct
 	character : ^Character,
 	selectables: [dynamic]^Character
 }
+
 battle_selection_init :: proc(battle : ^Battle, selection : ^BattleSelection, alloc : mem.Allocator){
 	selection.index = 0
 	selection.selectables = make([dynamic]^Character, 0, len(battle.bees) + 1, alloc)
+
+	// Add player first, then all bees
+	append(&selection.selectables, &battle.player.base)
+	for &b in battle.bees do append(&selection.selectables, &b.base)
 	selection.character = selection.selectables[selection.index]
 }
+
 battle_selection_next :: proc(sel : ^BattleSelection) -> int
 {
 	prev := sel.index
@@ -339,6 +337,7 @@ battle_selection_next :: proc(sel : ^BattleSelection) -> int
 	sel.character = sel.selectables[sel.index]
 	return prev
 }
+
 battle_selection_prev :: proc(sel : ^BattleSelection) -> int
 {
 	prev := sel.index
@@ -369,7 +368,6 @@ start_selection :: proc(battle : ^Battle)
 {
 	for c in battle.curr_sel.selectables do c.removed += {.PlayerSelected}
 }
-
 
 get_input :: proc() -> (string, bool)
 {
@@ -975,8 +973,6 @@ BattleState :: enum
 {
     Start,
     Continue,
-    PlayerTurn,
-    BeesTurn,
     End
 }
 
@@ -1291,7 +1287,7 @@ slerp_character_angle :: proc(cha : ^Character, dt : f32){
     ct.local.rot = linalg.quaternion_slerp(cha.anim.start_rot, cha.anim.end_rot, f32(eased_t))
 }
 
-battle_start :: proc(){
+battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
     g.battle.state = .Start
     g.battle.current_bee = 0
 	load_scene("BeeKillingsInn")
@@ -1305,12 +1301,13 @@ battle_start :: proc(){
 }
 
 start_game :: proc(){
-    g.battle.state = .Start
+    g.battle.state = .Start //NOTE: Why is this in repeat?
     g.ves.curr_screen = .SelectCharacter
 
-    battle_setup_1(&g.battle,g.mem_game.alloc)
+    battle_setup_1(&g.battle,g.mem_game.alloc) //NOTE: The actual initialize of the battle
+    g.battle.player.entity = g.player
     init_battle(&g.battle, g.mem_game.alloc)
-    init_battle_Visuals(&g.battle)
+    init_battle_visuals(&g.battle)
 
     find_floor_entities()
     grid_set_scale(g.floor, g.battle.grid)
@@ -1322,8 +1319,7 @@ start_game :: proc(){
 
     place_chest_on_grid(vec2i{2,0}, &g.battle)
     place_chest_on_grid(vec2i{4,3}, &g.battle)
-    g.battle.player.entity = g.player
-    add_animations()
+        add_animations()
 }
 
 set_game_over :: proc(){
@@ -1375,6 +1371,7 @@ sys_visual_init :: #force_inline proc(alloc : mem.Allocator){
     err := axiom.view_init(v_visual, axiom.g_world.db, {get_table(Cmp_Visual), get_table(Cmp_Transform)})
     if err != nil do panic("Failed to initialize visuals view")
 }
+
 sys_visual_reset :: #force_inline proc(){axiom.view_rebuild(v_visual)}
 
 sys_visual_process_ecs :: proc(dt : f32)
@@ -1618,7 +1615,7 @@ ves_update_screen :: proc(battle: ^Battle){
                 ToggleUI("EnemySelect", false)
             // case .SelectEnemy:
                 ToggleUI("ChooseBee", false)
-                ToggleUI("SelectCharacter", false)
+                ToggleUI("SelectAction", false)
             case .Movement:
                 ToggleUI("MoveWASD", false)
             case .Action:
@@ -1636,7 +1633,7 @@ ves_update_screen :: proc(battle: ^Battle){
                 ToggleUI("EnemySelect", true)
             // case .SelectEnemy:
                 ToggleUI("ChooseBee", true)
-                ToggleUI("SelectCharacter", true)
+                ToggleUI("SelectAction", true)
             case .Movement:
                 ToggleUI("MoveWASD", true)
             case .Action:
@@ -1716,14 +1713,15 @@ ves_cleanup :: proc(battle : ^Battle)
 
 ves_update_visuals :: proc(battle : ^Battle)
 {
-    if battle.battle_queue.len < 1 do return
-    for i in 0 ..< battle.battle_queue.len{
-	    c := queue.get(&battle.battle_queue, i)
+	if len(battle.curr_sel.selectables) < 1 do return
+	for c in battle.curr_sel.selectables{
+	    // c := queue.get(&battle.battle_queue, i)
         if .PlayerFocused in c.added{
-        c.added -= {.PlayerFocused}
-        c.flags += {.PlayerFocused}
+	        c.added -= {.PlayerFocused}
+	        c.flags += {.PlayerFocused}
 
-        vc := get_component(c.entity, Cmp_Visual)
+	        vc := get_component(c.entity, Cmp_Visual)
+			assert(vc != nil)
             vc.flags += {.Focus}
         }
         if .PlayerFocused in c.removed{
@@ -1731,6 +1729,7 @@ ves_update_visuals :: proc(battle : ^Battle)
             c.flags -= {.PlayerFocused}
 
             vc := get_component(c.entity, Cmp_Visual)
+            assert(vc != nil)
             vc.flags -= {.Focus}
         }
         if .PlayerDodge in c.added{
@@ -1738,6 +1737,7 @@ ves_update_visuals :: proc(battle : ^Battle)
             c.flags += {.PlayerDodge}
 
             vc := get_component(c.entity, Cmp_Visual)
+            assert(vc != nil)
             vc.flags += {.Dodge}
         }
         if .PlayerDodge  in c.removed{
@@ -1745,6 +1745,7 @@ ves_update_visuals :: proc(battle : ^Battle)
             c.flags -= {.PlayerDodge}
 
             vc := get_component(c.entity, Cmp_Visual)
+            assert(vc != nil)
             vc.flags -= {.Dodge}
         }
         if .Alert in c.added{
@@ -1752,6 +1753,7 @@ ves_update_visuals :: proc(battle : ^Battle)
             c.flags += {.Alert}
 
             vc := get_component(c.entity, Cmp_Visual)
+            assert(vc != nil)
             vc.flags += {.Alert}
         }
         if .Alert in c.removed{
@@ -1766,6 +1768,7 @@ ves_update_visuals :: proc(battle : ^Battle)
             c.flags += {.PlayerSelected}
 
             vc := get_component(c.entity, Cmp_Visual)
+            assert(vc != nil)
             vc.flags += {.Select}
         }
         if .PlayerSelected in c.removed{
@@ -1773,6 +1776,7 @@ ves_update_visuals :: proc(battle : ^Battle)
             c.flags -= {.PlayerSelected}
 
             vc := get_component(c.entity, Cmp_Visual)
+            assert(vc != nil)
             vc.flags -= {.Select}
         }
     }
