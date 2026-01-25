@@ -140,7 +140,6 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                		case ^Bee:
 						bee_is_near = bee_near(player, c^)
 		                input_state = .Action
-		                // c.removed |= {.PlayerSelected}
 		                show_weapon(player.weapon)
 	            }
             }
@@ -188,8 +187,8 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                 return
             }
     }
-
 }
+
 check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
 	if !battle.bee_is_near || !is_key_just_pressed(glfw.KEY_SPACE) do return false
 
