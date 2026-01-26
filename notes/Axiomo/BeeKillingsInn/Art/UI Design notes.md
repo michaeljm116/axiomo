@@ -41,7 +41,6 @@
 ### Considerations
 * Dodge works well in E33 cause of the camera, 
 	* you'll need to do likewise if you want that dodge
-	* *
 ![[Pasted image 20260119143017.png]]
 ![[Pasted image 20260119143121.png]]
 ![[Pasted image 20260119143138.png]]
