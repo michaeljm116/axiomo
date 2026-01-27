@@ -67,12 +67,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Production/Steam Next Fest 2026.md",
+                "file": "BeeKillingsInn/Production/List of Levels-Features.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Steam Next Fest 2026"
+              "title": "List of Levels-Features"
             }
           },
           {
@@ -95,16 +95,36 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/GameDesign/!!! Rules !!!.md",
+                "file": "DailyNotes/January 27, 2026, Tue.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "!!! Rules !!!"
+              "title": "January 27, 2026, Tue"
             }
           }
         ],
-        "currentTab": 6
+        "currentTab": 4
+      },
+      {
+        "id": "4bbbced6f972023a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a34932614490029b",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "BeeKillingsInn/GameDesign/Bee Ideas.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Bee Ideas"
+            }
+          }
+        ]
       }
     ],
     "direction": "vertical"
@@ -254,12 +274,14 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "3950c4debd72815c",
+  "active": "522da18b77ea95a3",
   "lastOpenFiles": [
-    "BeeKillingsInn/GameDesign/Bee Ideas.md",
     "BeeKillingsInn/Production/Steam Next Fest 2026.md",
-    "BeeKillingsInn/Production/Next Steps.md",
+    "BeeKillingsInn/GameDesign/Bee Ideas.md",
     "BeeKillingsInn/GameDesign/!!! Rules !!!.md",
+    "BeeKillingsInn/Production/List of Levels-Features.md",
+    "DailyNotes/January 27, 2026, Tue.md",
+    "BeeKillingsInn/Production/Next Steps.md",
     "BeeKillingsInn/GameDesign/Future.md",
     "BeeKillingsInn/Production/!kb_Kanban.md",
     "BeeKillingsInn/GameDesign/UI-UX thoughts.md",
@@ -283,8 +305,6 @@
     "Pasted image 20260124190313.png",
     "Untitled.md",
     "Excalidraw/HotelOverworld.excalidraw.md",
-    "Excalidraw/Refactor.md",
-    "Excalidraw/Drawing 2025-11-08 08.23.54.excalidraw.md",
     "BeeKillingsInn/Art/UIInspo",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151208.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151050.png",
