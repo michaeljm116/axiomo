@@ -5,6 +5,7 @@
 		* Passive
 		* Boss
 		* Kamikaze
+		* beedrill
 	* Multiple Weapon Types
 		* Hand
 		* Swatter
@@ -25,7 +26,7 @@
 		* Obstacles as weapons
 		* Obstacles as slowdowns
 * ## Floors:
-	* ### Floor 1 Battles:
+	* ### Floor 1 Battles aka tutorial:
 		1. Short 4x3 room, 1 Bee only + strong hand
 		2. Short 4x3 room, 1 Bee only + inaccurate hand, focus
 		3. Short 4x3 room, 1 Bee only + weak hand, dodge

@@ -11,4 +11,16 @@
 
 ## Mo Ideas
 * The bee attacks need an explaination on screen
-* *
+* 
+
+
+# UI info that's needed
+* Player
+	* Health
+	* Focus/Dodge meter only on bee
+	* weapon/pic and stats
+* Bee
+	* Health
+	* Flying/Crawling
+	* 
+*  

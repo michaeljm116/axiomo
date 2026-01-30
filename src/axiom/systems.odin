@@ -1079,6 +1079,54 @@ check_if_finished :: proc(curr: Sqt, ac: ^Cmp_Animate) -> bool {
 }
 
 //----------------------------------------------------------------------------\\
+// /Text Rendering System
+//----------------------------------------------------------------------------\\
+v_text : ^View
+sys_text_init :: proc(alloc : mem.Allocator) {
+    v_text = new(View, alloc)
+    err := view_init(v_text, g_world.db, {get_table(Cmp_Text), get_table(Cmp_Node)})
+    if err != nil do panic("Failed to initialize text view")
+}
+
+sys_text_reset :: proc(){
+    view_rebuild(v_text)
+}
+
+sys_text_process_ecs :: proc() {
+    sys_text_reset()
+    it : Iterator
+    err := iterator_init(&it, v_text)
+    if err != nil do return
+    
+    for iterator_next(&it) {
+        entity := get_entity(&it)
+        text_comp := get_component(get_table(Cmp_Text), entity)
+        if text_comp != nil && text_comp.update {
+            update_text(text_comp)
+            text_comp.update = false
+        }
+    }
+}
+
+add_text_entity :: proc(text: string, position: vec2f, font_scale: f32 = 1.0, color: vec4 = {1,1,1,1}, alpha: f32 = 1.0) -> Entity {
+    entity := add_entity()
+    text_comp := cmp_text_create(text, position, font_scale, color, alpha)
+    add_component(entity, text_comp)
+    add_component(entity, Cmp_Node{name = "Text", engine_flags = {.GUI}})
+    added_entity(entity)
+    return entity
+}
+
+update_text_content :: proc(entity: Entity, new_text: string) {
+    text_comp := get_component(entity, Cmp_Text)
+    if text_comp != nil {
+        delete(text_comp.text)
+        text_comp.text = strings.clone(new_text)
+        text_comp.update = true
+    }
+}
+
+//----------------------------------------------------------------------------\\
 // /UI
 //----------------------------------------------------------------------------\\
 add_ui :: proc (gui : Cmp_Gui, name : string) -> Entity

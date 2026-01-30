@@ -121,6 +121,10 @@ game_init :: proc() {
 
 	// you need to have trannsformed and constructed a bvh before stuff below
 	ax.initialize_raytracer()
+	
+	// Test font rendering system
+	test_text := ax.add_text_entity("Hello Vulkan Font!", {400, 300}, font_scale = 2.0)
+	
 	glfw.PollEvents()
 	g.frame.prev_time = glfw.GetTime()
 }
@@ -159,6 +163,7 @@ game_update :: proc(){
 	}
 
 	ax.sys_trans_process_ecs()
+	ax.sys_text_process_ecs()
 	ax.sys_bvh_process_ecs(ax.g_bvh, g.mem_frame.alloc)
 
 	ax.update_buffers()

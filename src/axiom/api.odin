@@ -95,6 +95,7 @@ init_views :: proc(alloc : mem.Allocator){
     sys_bvh_init(alloc)
     sys_anim_init(alloc)
     sys_physics_init(alloc)
+    sys_text_init(alloc)
 }
 
 destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {

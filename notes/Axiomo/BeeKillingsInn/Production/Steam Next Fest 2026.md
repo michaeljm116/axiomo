@@ -30,4 +30,22 @@
  2. Play Testability aka finish a prototype UI
  3. Create all Battles
  4. Create all Overworlds
- 5. 
+
+
+## High Level
+* 2 Months - 120+ hours - Features: Now till April
+	* Very disgustingly ugly verison of the game
+	* Focus on gameplay and features alone
+	* Focus on level layout and flow
+	* refine refine refine and use any and all developer shortcuts to just get it to work
+* 1 Month - 60+ hours - Full vertical slice - April
+	* Usable UI
+	* Everything animated and sound
+	* Entire levels designed and decorated
+	* Tutorialish for the first floor
+* 2 Months  - 120hrs+ playtest & polish - May-June
+	* Begin Marketing
+	* Make the vertical slice better
+	* Maybe even hire an artist or 2
+* 2 Weeks - 30hrs+ - Steam Fest - Full Demo
+	* Any steam related thing is done

@@ -1401,7 +1401,7 @@ create_texture_from_bitmap :: proc(bitmap: []u8, width, height: i32) -> Texture 
 bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     // Load TTF (e.g., "../assets/fonts/arial.ttf")
     ttf_data, ok := os.read_entire_file(font_path)
-    if !ok { log.panic("Failed to load font") }
+    if !ok { log.panic("Failed to load font", font_path) }
     defer delete(ttf_data)
 
     // Init font info
@@ -1433,7 +1433,8 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     g_raytracer.font.baked_chars = baked_chars
 
     // Create Vulkan texture from bitmap (RGBA, assuming 1-channel bitmap -> expand to RGBA)
-    rgba_data := make([]byte, bitmap_width * bitmap_height * 4, context.temp_allocator)
+// Create RGBA texture data from bitmap (using default allocator for consistency)
+    rgba_data := make([]byte, bitmap_width * bitmap_height * 4)
     defer delete(rgba_data)
     for i in 0..<bitmap_width*bitmap_height {
         rgba_data[i*4 + 0] = 255
@@ -1454,6 +1455,8 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     if(texture_create(&g_raytracer.font.atlas_texture, raw_data(rgba_data))){
         append(&g_raytracer.bindless_textures, g_raytracer.font.atlas_texture)
         g_texture_indexes["Deutsch.ttf"] = i32(len(g_texture_indexes))
+        log.infof("Font atlas created: %dx%d, texture index: %d",
+                 bitmap_width, bitmap_height, g_texture_indexes["Deutsch.ttf"])
     }
     texture_update_descriptor(&g_raytracer.font.atlas_texture)
 
@@ -2376,7 +2379,9 @@ start_up_raytracer :: proc(alloc: mem.Allocator)
     g_raytracer.texture_paths[0] =  "assets/textures/numbers.png"
    map_models_to_gpu(alloc)
    map_materials_to_gpu(alloc)
-   // bake_font_atlas("../../assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
+   // Initialize font system for compute raytracer
+   bake_font_atlas("../../assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
+   log.info("Font system initialized for compute raytracer")
 }
 
 set_camera :: proc()
@@ -2756,14 +2761,27 @@ update_text :: proc(tc: ^Cmp_Text) {
     }
     clear(&tc.shader_refs)
 
-    pos := tc.min
+    // Convert screen space to UV space (0-1) for compute shader
+    screen_to_uv :: proc(screen_pos: vec2f) -> vec2f {
+        return {
+            screen_pos.x / f32(g_window.width),
+            screen_pos.y / f32(g_window.height)
+        }
+    }
+
+    pos_screen := tc.min
     for char in tc.text {
         if char not_in g_raytracer.font.char_data { continue }
 
         data := g_raytracer.font.char_data[char]
+
+        // Convert positions and extents to UV space
+        pos_uv := screen_to_uv(pos_screen + data.offset * tc.font_scale)
+        extents_uv := data.uv_ext * tc.font_scale / vec2f{f32(g_window.width), f32(g_window.height)}
+
         gui := gpu.Gui {
-            min = pos + data.offset * tc.font_scale,
-            extents = data.uv_ext * tc.font_scale,
+            min = pos_uv,
+            extents = extents_uv,
             align_min = data.uv_min,
             align_ext = data.uv_ext,
             layer = tc.layer,
@@ -2773,10 +2791,14 @@ update_text :: proc(tc: ^Cmp_Text) {
         }
         append(&tc.shader_refs, i32(len(g_raytracer.guis)))
         append(&g_raytracer.guis, gui)
-        pos.x += data.advance * tc.font_scale
+        pos_screen.x += data.advance * tc.font_scale
     }
 
-    if len(tc.shader_refs) > 0 do tc.ref = tc.shader_refs[0]
+    if len(tc.shader_refs) > 0 {
+        tc.ref = tc.shader_refs[0]
+        // log.infof("Text rendered: '%s' at UV pos (%.2f, %.2f) with %d chars",
+                 // tc.text[:], pos_uv.x, pos_uv.y, len(tc.shader_refs))
+    }
     update_descriptors()
     g_raytracer.update_flags |= {.GUI}
 }

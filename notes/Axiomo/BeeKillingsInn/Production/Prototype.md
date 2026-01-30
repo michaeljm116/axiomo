@@ -14,6 +14,10 @@ As a developer, I'd like a working prototype of the game in which I can go from 
 	* Maybe make it so walls also make anything behind the wall invisible?
 * Weapon Mechanics:
 	* Bug Spray, death in 2 turns.... 
+* Grid Visibility, Selectibility:
+	* multi colored squares around your character when he's selected
+	* transparency if possible
+	* not really a mechanic, just a visibility thing not needed now i suppose
 ## Analysis of Mechanics
 * Run:
 	* Additional movement option for run v walk

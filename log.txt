@@ -1,5 +1,7 @@
-[INFO ] --- [2026-01-19 21:32:19] [render.odin:379:score_physical_device()] vulkan: device "NVIDIA GeForce RTX 3050 Laptop GPU" scored 332768
-[INFO ] --- [2026-01-19 21:32:19] [render.odin:379:score_physical_device()] vulkan: device "Intel(R) Iris(R) Xe Graphics" scored 216384
-[INFO ] --- [2026-01-19 21:32:19] [render.odin:227:init_vulkan()] vulkan: bindless descriptor indexing supported
+[INFO ] --- [2026-01-28 07:46:44] [render.odin:379:score_physical_device()] vulkan: device "NVIDIA GeForce RTX 3050 Laptop GPU" scored 332768
+[INFO ] --- [2026-01-28 07:46:44] [render.odin:379:score_physical_device()] vulkan: device "Intel(R) Iris(R) Xe Graphics" scored 216384
+[INFO ] --- [2026-01-28 07:46:44] [render.odin:227:init_vulkan()] vulkan: bindless descriptor indexing supported
+[INFO ] --- [2026-01-28 07:46:45] [render.odin:1458:bake_font_atlas()] Font atlas created: 512x512, texture index: 19
+[INFO ] --- [2026-01-28 07:46:45] [render.odin:2384:start_up_raytracer()] Font system initialized for compute raytracer
 Found Player
 Player facing left

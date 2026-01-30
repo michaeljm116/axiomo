@@ -73,6 +73,7 @@ grid_set_scale :: proc(floor : Entity, grid : ^Grid)
     grid.scale.x = tc.global.sca.x / f32(grid.width)
     grid.scale.y = tc.global.sca.z / f32(grid.height)
 }
+grid_in_bounds :: path_in_bounds
 
 //----------------------------------------------------------------------------\\
 // /Pathfinding A* path finding using grid

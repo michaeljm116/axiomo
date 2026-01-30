@@ -144,8 +144,6 @@ app_run :: proc(dt: f32, state: ^AppState) {
 	}
 }
 
-
-
 //----------------------------------------------------------------------------\\
 // /Menu
 //----------------------------------------------------------------------------\\
@@ -249,6 +247,22 @@ init_game_ui :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
         game_ui[key] = e
         append(&g.ui_keys, key)
     }
+
+    // Create high-layer text object
+    text_cmp := Cmp_Gui{
+        min = {0.3, 0.7},           // Position (30% from left, 70% from top)
+        extents = {0.4, 0.1},       // Size (40% width, 10% height)
+        align_min = {0.5, 0.5},     // Center alignment
+        align_ext = {0.5, 0.5},
+        layer = 100,                // High layer value (higher = more on top)
+        id = "your_texture.png",    // Your text texture
+        alpha = 1.0,
+        update = true
+    }
+
+    text_entity := ax.add_ui(text_cmp, "HighLayerText")
+    game_ui["HighLayerText"] = text_entity
+    append(&g.ui_keys, "HighLayerText")
 }
 
 ToggleUI :: proc(name : string, on : bool)

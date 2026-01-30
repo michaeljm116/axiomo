@@ -30,7 +30,11 @@ Battle :: struct
     // bee_selection : int,
     bee_is_near : bool,
     battle_queue : queue.Queue(^Character),
+
+    // Per - Turn data
     curr_sel : BattleSelection,
+    walkable : map[vec2i]Tile,
+    runable : map[vec2i]Tile,
 }
 
 //----------------------------------------------------------------------------\\
@@ -938,6 +942,29 @@ bounds_check :: proc(bounds : vec2i, grid : Grid) -> bool
     }
     return true
 }
+
+// Checks where player position is and shows where you can walk/run to
+// Walkable = anything 1 square away
+// Runable = anything 2 squares away
+init_walkable_runnable :: proc(battle : ^Battle, alloc : mem.Allocator)
+{
+    using battle
+    battle.walkable = make_map(map[vec2i]Tile, alloc)
+    battle.runable  = make_map(map[vec2i]Tile, alloc)
+
+    dirs := [4]vec2i{ vec2i{1,0}, vec2i{-1,0}, vec2i{0,1}, vec2i{0,-1} }
+    for d in dirs {
+        one := vec2i{ player.pos[0] + d[0], player.pos[1] + d[1] }
+        if bounds_check(one, battle.grid^) {
+            battle.walkable[one] = Tile.Entity
+            two := vec2i{ player.pos[0] + d[0]*2, player.pos[1] + d[1]*2 }
+            if bounds_check(two, battle.grid^) {
+                battle.runable[two] = Tile.Entity
+            }
+        }
+    }
+}
+
 
 weap_check :: proc(p : vec2i, grid : ^Grid) -> bool{
     if grid_get(grid,p) == .Weapon{

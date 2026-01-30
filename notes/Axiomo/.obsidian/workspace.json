@@ -4,124 +4,49 @@
     "type": "split",
     "children": [
       {
-        "id": "cbb89c835c9cf036",
+        "id": "bac501f670c3d87b",
         "type": "tabs",
+        "dimension": 69.62962962962963,
         "children": [
-          {
-            "id": "9c9220b1b7692fab",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "BeeKillingsInn/GameDesign/UI-UX thoughts.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "UI-UX thoughts"
-            }
-          },
-          {
-            "id": "71719c00a783bfa1",
-            "type": "leaf",
-            "state": {
-              "type": "image",
-              "state": {
-                "file": "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143017.png"
-              },
-              "icon": "lucide-image",
-              "title": "Pasted image 20260119143017"
-            }
-          },
-          {
-            "id": "505342c29acfbae0",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "DailyNotes/January 24, 2026, Sat.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "January 24, 2026, Sat"
-            }
-          },
-          {
-            "id": "2a70201e0bfb0337",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "BeeKillingsInn/GameDesign/UI-UX thoughts.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "UI-UX thoughts"
-            }
-          },
           {
             "id": "522da18b77ea95a3",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Production/List of Levels-Features.md",
+                "file": "BeeKillingsInn/Production/Mechanics/Run.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "List of Levels-Features"
-            }
-          },
-          {
-            "id": "31de7de5b5483c6f",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "BeeKillingsInn/GameDesign/Bee Ideas.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Bee Ideas"
-            }
-          },
-          {
-            "id": "3950c4debd72815c",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "DailyNotes/January 27, 2026, Tue.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "January 27, 2026, Tue"
+              "title": "Run"
             }
           }
-        ],
-        "currentTab": 4
+        ]
       },
       {
-        "id": "4bbbced6f972023a",
+        "id": "53ad210fee8adff0",
         "type": "tabs",
+        "dimension": 30.37037037037037,
         "children": [
           {
-            "id": "a34932614490029b",
+            "id": "0e2877b445f321da",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "kanban",
               "state": {
-                "file": "BeeKillingsInn/GameDesign/Bee Ideas.md",
-                "mode": "source",
-                "source": false
+                "file": "BeeKillingsInn/Production/!kb_Mechanics.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false
+                  ]
+                }
               },
-              "icon": "lucide-file",
-              "title": "Bee Ideas"
+              "icon": "lucide-trello",
+              "title": "!kb_Mechanics"
             }
           }
         ]
@@ -276,43 +201,43 @@
   },
   "active": "522da18b77ea95a3",
   "lastOpenFiles": [
-    "BeeKillingsInn/Production/Steam Next Fest 2026.md",
-    "BeeKillingsInn/GameDesign/Bee Ideas.md",
-    "BeeKillingsInn/GameDesign/!!! Rules !!!.md",
-    "BeeKillingsInn/Production/List of Levels-Features.md",
+    "BeeKillingsInn/Production/!kb_Mechanics.md",
+    "BeeKillingsInn/Production/Mechanics/Run.md",
     "DailyNotes/January 27, 2026, Tue.md",
-    "BeeKillingsInn/Production/Next Steps.md",
-    "BeeKillingsInn/GameDesign/Future.md",
-    "BeeKillingsInn/Production/!kb_Kanban.md",
+    "BeeKillingsInn/GameDesign/Bee Ideas.md",
     "BeeKillingsInn/GameDesign/UI-UX thoughts.md",
     "DailyNotes/January 24, 2026, Sat.md",
-    "BeeKillingsInn/Production/Prototype.md",
-    "BeeKillingsInn/Production/Pre Production.md",
-    "BeeKillingsInn/Production/Mini FGGS.md",
-    "BeeKillingsInn/Production/Epics.md",
-    "BeeKillingsInn/Production/TODO.md",
-    "BeeKillingsInn/Production/Reminders.md",
-    "BeeKillingsInn/GameDesign/KillerBee prototype.md",
-    "BeeKillingsInn/GameDesign/Rules Engine.md",
-    "BeeKillingsInn/Production/!kb_demo.md",
-    "BeeKillingsInn/Production/!kb_Showcase.md",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143017.png",
-    "BeeKillingsInn/Production/z_Travel.md",
+    "BeeKillingsInn/Production/!kb_Showcase.md",
+    "BeeKillingsInn/Production/Prototype.md",
+    "BeeKillingsInn/Production/Mechanics",
+    "BeeKillingsInn/Production/Pre Production.md",
+    "BeeKillingsInn/Production/Epics.md",
+    "BeeKillingsInn/Production/List of Levels-Features.md",
+    "BeeKillingsInn/Production/!kb_demo.md",
+    "BeeKillingsInn/Production/!kb_Kanban.md",
     "BeeKillingsInn/Art/UI Design notes.md",
-    "Excalidraw/PlayersTUrn.excalidraw.md",
-    "BeeKillingsInn/Art/tactics insop.md",
-    "Pasted image 20260124191542.png",
-    "Pasted image 20260124190313.png",
-    "Untitled.md",
-    "Excalidraw/HotelOverworld.excalidraw.md",
-    "BeeKillingsInn/Art/UIInspo",
+    "BeeKillingsInn/GameDesign/KillerBee prototype.md",
+    "BeeKillingsInn/Production/Steam Next Fest 2026.md",
+    "DailyNotes/January 29, 2026, Thu.md",
+    "BeeKillingsInn/GameDesign/Rules Engine.md",
+    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143121.png",
+    "BeeKillingsInn/Art/Inspo - Art.md",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151208.png",
+    "BeeKillingsInn/GameDesign/!!! Rules !!!.md",
+    "BeeKillingsInn/Art/Inspo-TItle.md",
+    "BeeKillingsInn/Art/tactics insop.md",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151050.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143937.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143455.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143326.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143138.png",
-    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143121.png",
+    "BeeKillingsInn/GameDesign/Grok.md",
+    "BeeKillingsInn/GameDesign/Future.md",
+    "BeeKillingsInn/Production/Next Steps.md",
+    "Pasted image 20260124191542.png",
+    "Pasted image 20260124190313.png",
+    "BeeKillingsInn/Art/UIInspo",
     "DailyNotes/December",
     "Untitled 1.base",
     "Untitled.base",
@@ -320,7 +245,6 @@
     "BeeKillingsInn/GameDesign",
     "BeeKillingsInn/QA",
     "BeeKillingsInn/Production",
-    "BeeKillingsInn/Code",
-    "BeeKillingsInn/Art"
+    "BeeKillingsInn/Code"
   ]
 }
