@@ -207,11 +207,11 @@ game_hot_reloaded :: proc(mem:rawptr){
 }
 @(export)
 game_force_reload :: proc() -> bool{
-    return is_key_just_pressed(glfw.KEY_F5)
+    return ax.is_key_just_pressed(glfw.KEY_F5)
 }
 @(export)
 game_force_restart :: proc() -> bool{
-    return is_key_just_pressed(glfw.KEY_F6)
+    return ax.is_key_just_pressed(glfw.KEY_F6)
 }
 
 //--------------------------------------------------------------------------------\\

@@ -69,6 +69,8 @@ destroy_level1 :: proc() {
 run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
 {
     using battle
+    // refresh controller state each frame from window input
+    axiom.controller_update_from_window_input()
     switch state
     {
         case .Start:
@@ -133,7 +135,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
     {
 	    case .SelectCharacter:
 	        ves.curr_screen = .SelectCharacter
-            if is_key_just_pressed(glfw.KEY_SPACE) || is_key_just_pressed(glfw.KEY_ENTER)
+            if axiom.controller_just_pressed(.Action) || axiom.controller_just_pressed(.Select)
             {
 				switch c in curr_sel.character.variant
 				{
@@ -194,7 +196,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
 }
 
 check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
-	if !battle.bee_is_near || !is_key_just_pressed(glfw.KEY_SPACE) do return false
+    if !battle.bee_is_near || !axiom.controller_just_pressed(.Action) do return false
 
 	using battle
 	hide_weapon(player.weapon)
@@ -213,7 +215,7 @@ check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
 }
 
 check_action_focused :: proc(battle : ^Battle) -> bool{
-	if !is_key_just_pressed(glfw.KEY_F) do return false
+    if !axiom.controller_just_pressed(.Focus) do return false
 
 	using battle
 	hide_weapon(player.weapon)
@@ -224,7 +226,7 @@ check_action_focused :: proc(battle : ^Battle) -> bool{
     return true
 }
 check_action_dodged :: proc(battle : ^Battle) -> bool{
-	if !is_key_just_pressed(glfw.KEY_D) do return false
+    if !axiom.controller_just_pressed(.Dodge) do return false
 
 	using battle
 	hide_weapon(player.weapon)
@@ -301,7 +303,7 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
 
 // If B button is pressed, go back to previous menu
 handle_back_button :: proc(state : ^PlayerInputState, weapon : Weapon, selected : ^BattleSelection){
-    if(!is_key_just_pressed(glfw.KEY_ESCAPE)) do return
+    if(!axiom.controller_just_pressed(.Cancel)) do return
     hide_weapon(weapon)
     selected.character.removed |= {.PlayerSelected}
     #partial switch state^ {
@@ -354,10 +356,10 @@ battle_selection_prev :: proc(sel : ^BattleSelection) -> int
 battle_selection_update :: proc(curr : ^BattleSelection)
 {
 	changed := -1
-    if(is_key_just_pressed(glfw.KEY_W) || is_key_just_pressed(glfw.KEY_D)){
+    if(axiom.controller_just_pressed(.Up) || axiom.controller_just_pressed(.Right)){
         changed = battle_selection_next(curr)
     }
-    else if(is_key_just_pressed(glfw.KEY_A) || is_key_just_pressed(glfw.KEY_S)){
+    else if(axiom.controller_just_pressed(.Left) || axiom.controller_just_pressed(.Down)){
        changed = battle_selection_prev(curr)
     }
     // if its a new selection, update visual
@@ -374,19 +376,19 @@ start_selection :: proc(battle : ^Battle)
 
 get_input :: proc() -> (string, bool)
 {
-    if is_key_just_pressed(glfw.KEY_W) {
-       return "w", true
-    }
-    else if is_key_just_pressed(glfw.KEY_S) {
-       return "s", true
-    }
-    else if is_key_just_pressed(glfw.KEY_A) {
-       return "a", true
-    }
-    else if is_key_just_pressed(glfw.KEY_D) {
-       return "d", true
-    }
-    return "", false
+     if axiom.controller_just_pressed(.Up) {
+         return "w", true
+     }
+     else if axiom.controller_just_pressed(.Down) {
+         return "s", true
+     }
+     else if axiom.controller_just_pressed(.Left) {
+         return "a", true
+     }
+     else if axiom.controller_just_pressed(.Right) {
+         return "d", true
+     }
+     return "", false
 }
 
 PlayerInputState :: enum
