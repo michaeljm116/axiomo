@@ -226,7 +226,7 @@ path_is_walkable_internal :: proc(p : vec2i, goal : vec2i, allow_through_walls :
     return false
 }
 
-path_get_walkable_runnable :: proc(pos, goal : vec2i, grid : ^Grid, walkable, runable : ^map[vec2i]bool) -> ()
+path_set_walkable_runnable :: proc(pos, goal : vec2i, grid : ^Grid, walkable, runable : ^map[vec2i]bool)
 {
     dirs := [4]vec2i{ vec2i{1,0}, vec2i{-1,0}, vec2i{0,1}, vec2i{0,-1} }
     for d in dirs {
