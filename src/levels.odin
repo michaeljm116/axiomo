@@ -8,9 +8,9 @@ battle_setup_1 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocat
     using battle
     // Clear and initialize grid contiguously
     battle.grid = grid_create({10, 10}, alloc)
-    grid_set(grid,2,0,.Weapon)
-    grid_set(grid,4,3,.Weapon)
-    grid_set(grid,5,0,.Wall)
+    grid_set(grid,2,0,{.Weapon})
+    grid_set(grid,4,3,{.Weapon})
+    grid_set(grid,5,0,{.Wall})
 
     // Initialize Player and Bee
     bees = make([dynamic]Bee, 2, alloc)
@@ -24,9 +24,9 @@ battle_setup_2 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocat
     // add somethings to the grid
     using battle
     grid = grid_create({10, 10}, alloc)
-    grid_set(grid,3,0,.Weapon)
-    grid_set(grid,2,3,.Weapon)
-    grid_set(grid,4,0,.Wall)
+    grid_set(grid,3,0,{.Weapon})
+    grid_set(grid,2,3,{.Weapon})
+    grid_set(grid,4,0,{.Wall})
 
     // Initialize Player and Bee
     player = {name = 'p', pos = vec2i{0,2}, health = 1, weapon = WeaponsDB[.Hand]}

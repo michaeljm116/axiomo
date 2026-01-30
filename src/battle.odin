@@ -33,8 +33,8 @@ Battle :: struct
 
     // Per - Turn data
     curr_sel : BattleSelection,
-    walkable : map[vec2i]Tile,
-    runable : map[vec2i]Tile,
+    walkable : map[vec2i]bool,
+    runable : map[vec2i]bool,
 }
 
 //----------------------------------------------------------------------------\\
@@ -391,21 +391,20 @@ get_input :: proc() -> (string, bool)
 
 PlayerInputState :: enum
 {
-   // SelectCharacter,
    SelectCharacter,
    Movement,
-   // SelectEnemy,
    Action,
    DiceRoll,
 }
 
-Tile :: enum
+TileFlag :: enum
 {
     Blank,
     Wall,
     Weapon,
     Entity
 }
+Tile :: bit_set[TileFlag; u8]
 
 Player :: struct{
     using base : Character,
@@ -924,7 +923,7 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
             dir.x = 1
     }
     bounds := p.pos + dir
-    if bounds_check(bounds, g.battle.grid^) {
+    if path_is_walkable(p.pos, bounds, g.battle.grid^) {
         //Animate Player
         p.target = bounds
         p.c_flags = {.Walk}
@@ -932,43 +931,16 @@ move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
     }
 }
 
-bounds_check :: proc(bounds : vec2i, grid : Grid) -> bool
-{
-    if(bounds.x < 0 || bounds.x >= i16(grid.width) || bounds.y < 0 || bounds.y >= i16(grid.height)) {
-        return false
-    }
-    if grid_get(grid,bounds) != .Blank && grid_get(grid,bounds) != .Weapon {
-        return false
-    }
-    return true
-}
-
 // Checks where player position is and shows where you can walk/run to
 // Walkable = anything 1 square away
 // Runable = anything 2 squares away
-init_walkable_runnable :: proc(battle : ^Battle, alloc : mem.Allocator)
-{
-    using battle
-    battle.walkable = make_map(map[vec2i]Tile, alloc)
-    battle.runable  = make_map(map[vec2i]Tile, alloc)
 
-    dirs := [4]vec2i{ vec2i{1,0}, vec2i{-1,0}, vec2i{0,1}, vec2i{0,-1} }
-    for d in dirs {
-        one := vec2i{ player.pos[0] + d[0], player.pos[1] + d[1] }
-        if bounds_check(one, battle.grid^) {
-            battle.walkable[one] = Tile.Entity
-            two := vec2i{ player.pos[0] + d[0]*2, player.pos[1] + d[1]*2 }
-            if bounds_check(two, battle.grid^) {
-                battle.runable[two] = Tile.Entity
-            }
-        }
-    }
-}
 
 
 weap_check :: proc(p : vec2i, grid : ^Grid) -> bool{
-    if grid_get(grid,p) == .Weapon{
-        grid_set(grid,p,.Blank)
+    // Tile is a bitset; check membership
+    if .Weapon in grid_get(grid,p) {
+        grid_set(grid,p, { .Blank })
         return true
     }
     return false

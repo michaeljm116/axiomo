@@ -64,8 +64,7 @@ setup_battle :: proc() -> ^Battle {
             removed = {},
             added = {},
         },
-        weapon = {},
-        abilities = make([dynamic]game.Ability),
+    weapon = {},
     }
 
     // Initialize bees (minimal for tests)
@@ -124,16 +123,15 @@ setup_battle :: proc() -> ^Battle {
     battle.grid.height = game.GRID_HEIGHT
     battle.grid.data = make([]game.Tile, int(battle.grid.width * battle.grid.height))
     for i in 0..<len(battle.grid.data) {
-        battle.grid.data[i] = .Blank
+        battle.grid.data[i] = game.Tile{ .Blank }
     }
     battle.grid.scale = {1.0, 1.0}
 
     // States
-    battle.state = .PlayerTurn
-    battle.input_state = .SelectAction
+    battle.state = .Continue
+    battle.input_state = .SelectCharacter
     battle.current_bee = 0
     battle.dice = [2]game.Dice {}
-    battle.bee_selection = 0
     battle.bee_is_near = false
 
     return battle
@@ -231,7 +229,7 @@ Game_Continues_When_Player_Moves_Into_Item_Tile_And_Picks_Up_Item :: proc(t: ^te
 
     // Set an item tile
     idx := int(battle.player.pos.y * i16(battle.grid.width) + battle.player.pos.x + 1)
-    battle.grid.data[idx] = .Weapon
+    battle.grid.data[idx] = game.Tile{ .Weapon }
 
     // Game should continue
     testing.expect(t, !game.check_win_condition(battle), "Game continues after item tile")
@@ -263,7 +261,7 @@ Game_Does_Not_Proceed_To_Bee_Turn_If_Player_Dies_During_Player_Turn :: proc(t: ^
     defer teardown_battle(battle)
 
     battle.player.health = 0
-    battle.state = .PlayerTurn
+    battle.state = .Continue
 
     // Lose condition should be true
     testing.expect(t, game.check_lose_condition(battle), "Lose condition true when health is 0")
@@ -295,8 +293,8 @@ Player_Can_Only_Perform_One_Action_Per_Turn_By_Default :: proc(t: ^testing.T) {
     battle := setup_battle()
     defer teardown_battle(battle)
 
-    // This is a rule verification - player starts in SelectAction
-    testing.expect(t, battle.input_state == .SelectAction, "Starts in SelectAction")
+    // This is a rule verification - player starts in SelectCharacter
+    testing.expect(t, battle.input_state == .SelectCharacter, "Starts in SelectCharacter")
 }
 
 @(test)
@@ -304,8 +302,8 @@ Player_Can_Choose_Attack_Prepare_Or_Move_Each_Turn :: proc(t: ^testing.T) {
     battle := setup_battle()
     defer teardown_battle(battle)
 
-    // Player starts in SelectAction, can transition to Movement or SelectEnemy
-    testing.expect(t, battle.input_state == .SelectAction, "Can choose action")
+    // Player starts in SelectCharacter, can transition to Movement or SelectEnemy
+    testing.expect(t, battle.input_state == .SelectCharacter, "Can choose action")
 }
 
 @(test)
@@ -315,7 +313,7 @@ Player_Cannot_Perform_Two_Attacks_In_One_Turn :: proc(t: ^testing.T) {
 
     // Rule: after completing an action, turn should end
     // This is enforced by state machine in run_players_turn
-    testing.expect(t, battle.state == .PlayerTurn, "Player turn state valid")
+    testing.expect(t, battle.state == .Continue, "Player turn state valid")
 }
 
 // ===========================================================================
@@ -383,19 +381,19 @@ Player_Cannot_Move_Outside_Grid_Bounds :: proc(t: ^testing.T) {
     battle := setup_battle()
     defer teardown_battle(battle)
 
-    // Test bounds_check function
+    // Test in-bounds function
     // Position at edge should fail for movement outside
     out_of_bounds := vec2i{-1, 0}
-    testing.expect(t, !game.bounds_check(out_of_bounds, battle.grid^), "Cannot move outside grid left")
+    testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid left")
 
     out_of_bounds = vec2i{i16(game.GRID_WIDTH), 0}
-    testing.expect(t, !game.bounds_check(out_of_bounds, battle.grid^), "Cannot move outside grid right")
+    testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid right")
 
     out_of_bounds = vec2i{0, -1}
-    testing.expect(t, !game.bounds_check(out_of_bounds, battle.grid^), "Cannot move outside grid bottom")
+    testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid bottom")
 
     out_of_bounds = vec2i{0, i16(game.GRID_HEIGHT)}
-    testing.expect(t, !game.bounds_check(out_of_bounds, battle.grid^), "Cannot move outside grid top")
+    testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid top")
 }
 
 @(test)
@@ -404,9 +402,9 @@ Player_Cannot_Move_Into_Wall_Tile :: proc(t: ^testing.T) {
     defer teardown_battle(battle)
 
     // Set a wall tile
-    battle.grid.data[1] = .Wall // Position {1, 0}
+    battle.grid.data[1] = game.Tile{ .Wall } // Position {1, 0}
 
-    testing.expect(t, !game.bounds_check({1, 0}, battle.grid^), "Cannot move into wall tile")
+    testing.expect(t, !game.path_is_walkable(vec2i{1, 0}, battle.player.pos, battle.grid^), "Cannot move into wall tile")
 }
 
 @(test)
@@ -422,7 +420,7 @@ Player_Can_Move_Onto_Blank_Tile :: proc(t: ^testing.T) {
     defer teardown_battle(battle)
 
     // Blank tile should be valid
-    testing.expect(t, game.bounds_check({1, 0}, battle.grid^), "Can move onto blank tile")
+    testing.expect(t, game.path_is_walkable(vec2i{1, 0}, battle.player.pos, battle.grid^), "Can move onto blank tile")
 }
 
 @(test)
@@ -431,10 +429,10 @@ Player_Can_Move_Onto_Item_Tile :: proc(t: ^testing.T) {
     defer teardown_battle(battle)
 
     // Set weapon tile
-    battle.grid.data[1] = .Weapon
+    battle.grid.data[1] = game.Tile{ .Weapon }
 
     // Weapon tiles are walkable
-    testing.expect(t, game.bounds_check({1, 0}, battle.grid^), "Can move onto item tile")
+    testing.expect(t, game.path_is_walkable(vec2i{1, 0}, battle.player.pos, battle.grid^), "Can move onto item tile")
 }
 
 @(test)
@@ -444,7 +442,7 @@ Player_Can_Move_Onto_Entity_Tile :: proc(t: ^testing.T) {
 
     // Entity tiles - testing if bee position is walkable
     // Bees don't block movement, they're on blank tiles
-    testing.expect(t, game.bounds_check(battle.bees[0].pos, battle.grid^), "Can move onto entity tile")
+    testing.expect(t, game.path_is_walkable(battle.bees[0].pos, battle.player.pos, battle.grid^), "Can move onto entity tile")
 }
 
 @(test)
@@ -480,10 +478,10 @@ Player_Automatically_Picks_Up_Item_When_Landing_On_Item_Tile :: proc(t: ^testing
 
     // Set weapon tile
     idx := 1 // Position {1, 0}
-    battle.grid.data[idx] = .Weapon
+    battle.grid.data[idx] = game.Tile{ .Weapon }
 
     // weap_check returns true if there's a weapon and clears it
-    testing.expect(t, game.weap_check({1, 0}, battle.grid), "Picks up item on weapon tile")
+    testing.expect(t, game.weap_check(vec2i{1, 0}, battle.grid), "Picks up item on weapon tile")
 }
 
 @(test)
@@ -492,11 +490,11 @@ Item_Tile_Becomes_Blank_After_Player_Pickup :: proc(t: ^testing.T) {
     defer teardown_battle(battle)
 
     idx := 1 // Position {1, 0}
-    battle.grid.data[idx] = .Weapon
+    battle.grid.data[idx] = game.Tile{ .Weapon }
 
-    game.weap_check({1, 0}, battle.grid) // This clears the tile
+    game.weap_check(vec2i{1, 0}, battle.grid) // This clears the tile
 
-    testing.expect(t, battle.grid.data[idx] == .Blank, "Item tile becomes blank after pickup")
+    testing.expect(t, battle.grid.data[idx] == game.Tile{ .Blank }, "Item tile becomes blank after pickup")
 }
 
 // ===========================================================================
@@ -688,9 +686,9 @@ Bee_Cannot_Move_Into_Wall_Tile :: proc(t: ^testing.T) {
     defer teardown_battle(battle)
 
     // Set a wall
-    battle.grid.data[1] = .Wall
+    battle.grid.data[1] = game.Tile{ .Wall }
 
-    testing.expect(t, !game.bounds_check({1, 0}, battle.grid^), "Bee cannot move into wall tile")
+    testing.expect(t, !game.path_is_walkable(vec2i{1, 0}, battle.bees[0].pos, battle.grid^), "Bee cannot move into wall tile")
 }
 
 @(test)
@@ -698,7 +696,7 @@ Bee_Can_Move_Onto_Blank_Tile :: proc(t: ^testing.T) {
     battle := setup_battle()
     defer teardown_battle(battle)
 
-    testing.expect(t, game.bounds_check({2, 2}, battle.grid^), "Bee can move onto blank tile")
+    testing.expect(t, game.path_is_walkable(vec2i{2, 2}, battle.bees[0].pos, battle.grid^), "Bee can move onto blank tile")
 }
 
 // ===========================================================================

@@ -101,7 +101,7 @@ path_is_walkable :: proc(p : vec2i, goal : vec2i, grid: Grid) -> bool {
     if path_pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !path_in_bounds(p, grid) { return false }
     t := grid_get(grid,p)
-    return t == Tile.Blank || t == Tile.Weapon
+    return .Blank in t || .Weapon in t
 }
 
 path_abs_i :: proc(x : int) -> int {
@@ -221,7 +221,23 @@ path_is_walkable_internal :: proc(p : vec2i, goal : vec2i, allow_through_walls :
     if path_pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !path_in_bounds(p, grid) { return false }
     t := grid_get(grid,p)
-    if t == Tile.Blank || t == Tile.Weapon { return true }
-    if allow_through_walls && t == Tile.Wall { return true }
+    if .Blank in t || .Weapon in t { return true }
+    if allow_through_walls && .Wall in t { return true }
     return false
+}
+
+path_get_walkable_runnable :: proc(pos, goal : vec2i, grid : ^Grid, walkable, runable : ^map[vec2i]bool) -> ()
+{
+    dirs := [4]vec2i{ vec2i{1,0}, vec2i{-1,0}, vec2i{0,1}, vec2i{0,-1} }
+    for d in dirs {
+        one_step := vec2i{ pos[0] + d[0], pos[1] + d[1] }
+        if path_is_walkable(one_step, goal, grid^) {
+            walkable[one_step] = true
+
+            two_step := vec2i{ pos[0] + d[0]*2, pos[1] + d[1]*2 }
+            if path_is_walkable(two_step, goal, grid^) {
+                runable[two_step] = true
+            }
+        }
+    }
 }

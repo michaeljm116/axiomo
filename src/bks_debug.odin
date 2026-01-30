@@ -43,15 +43,17 @@ display_level :: proc(battle : Battle)
     // Initialize chars from tiles
     for x in 0..<GRID_WIDTH do for y in 0..<GRID_HEIGHT
     {
-        switch grid_get(battle.grid,x,y) {
-        case Tile.Blank:
+        tile := grid_get(battle.grid, x, y)
+        if .Blank in tile {
             chars[x][y] = '.'
-        case Tile.Wall:
+        } else if .Wall in tile {
             chars[x][y] = '#'
-        case Tile.Weapon:
+        } else if .Weapon in tile {
             chars[x][y] = '!'
-        case Tile.Entity:
+        } else if .Entity in tile {
             chars[x][y] = '.'
+        } else {
+            chars[x][y] = '?'
         }
     }
 
