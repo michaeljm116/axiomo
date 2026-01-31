@@ -130,26 +130,27 @@ test_just_flags_are_one_frame_only :: proc(t: ^testing.T) {
 test_dpad_axis_basic_directions :: proc(t: ^testing.T) {
     using testing
 
-    // W pressed → forward/up
-    set_key_state(glfw.KEY_W, true)
+// W pressed → forward/up
+    set_key_state(glfw.KEY_W, true, true, false)
     axiom.controller_handle_keyboard(&axiom.g_controller, 0.016)
 
 	expectf(t, axiom.g_controller.left_axis.x ==  0, "Expected left_axis.x to be 0, Result: %f", axiom.g_controller.left_axis.x)
-    expectf(t, axiom.g_controller.left_axis.y == -1, "Expected left_axis.y to be -1, Result: %f", axiom.g_controller.left_axis.y)   // note your sign flip
+    expectf(t, axiom.g_controller.left_axis.y == 1, "Expected left_axis.y to be 1, Result: %f", axiom.g_controller.left_axis.y)   // W pressed gives positive Y
     expectf(t, axiom.g_controller.left_axis.isMoving, "Expected isMoving to be true, Result: %v", axiom.g_controller.left_axis.isMoving)
 
-    // A + D → should cancel
-    set_key_state(glfw.KEY_A, true)
-    set_key_state(glfw.KEY_D, true)
+	// A + D → should cancel
+    set_key_state(glfw.KEY_A, true, true, false)
+    set_key_state(glfw.KEY_D, true, true, false)
     axiom.controller_handle_keyboard(&axiom.g_controller, 0.016)
 
 	expectf(t, axiom.g_controller.left_axis.x == 0, "Expected left_axis.x to be 0, Result: %f", axiom.g_controller.left_axis.x)
-    expectf(t, axiom.g_controller.left_axis.y == 0, "Expected left_axis.y to be 0, Result: %f", axiom.g_controller.left_axis.y)    // still from previous W
-    expectf(t, !axiom.g_controller.left_axis.isMoving, "Expected isMoving to be false, Result: %v", axiom.g_controller.left_axis.isMoving)
+    expectf(t, axiom.g_controller.left_axis.y == 1, "Expected left_axis.y to be 1, Result: %f", axiom.g_controller.left_axis.y)    // still from previous W
+    expectf(t, axiom.g_controller.left_axis.isMoving, "Expected isMoving to be true, Result: %v", axiom.g_controller.left_axis.isMoving)
 
-    // Only D → right
-    set_key_state(glfw.KEY_A, false)
-    set_key_state(glfw.KEY_W, false)
+	// Only D → right
+    set_key_state(glfw.KEY_A, false, false, true)  // just_released
+    set_key_state(glfw.KEY_W, false, false, true)  // just_released
+    set_key_state(glfw.KEY_D, true, true, false)
     axiom.controller_handle_keyboard(&axiom.g_controller, 0.016)
 
 	expectf(t, axiom.g_controller.left_axis.x ==  1, "Expected left_axis.x to be 1, Result: %f", axiom.g_controller.left_axis.x)
@@ -161,17 +162,18 @@ test_dpad_axis_basic_directions :: proc(t: ^testing.T) {
 test_axis_diagonal_and_zero :: proc(t: ^testing.T) {
     using testing
 
-    // W + D → up-right
-    set_key_state(glfw.KEY_W, true)
-    set_key_state(glfw.KEY_D, true)
+	// W + D → up-right
+    set_key_state(glfw.KEY_W, true, true, false)
+    set_key_state(glfw.KEY_D, true, true, false)
     axiom.controller_handle_keyboard(&axiom.g_controller, 0.016)
 
 	expectf(t, axiom.g_controller.left_axis.x ==  1, "Expected x == 1, Result: %f", axiom.g_controller.left_axis.x)
-    expectf(t, axiom.g_controller.left_axis.y == -1, "Expected left_axis.y to be -1, Result: %f", axiom.g_controller.left_axis.y)
+    expectf(t, axiom.g_controller.left_axis.y == 1, "Expected left_axis.y to be 1, Result: %f", axiom.g_controller.left_axis.y)
     expectf(t, axiom.g_controller.left_axis.isMoving, "Expected isMoving to be true, Result: %v", axiom.g_controller.left_axis.isMoving)
 
-    // Release all
-    reset_input_state()
+	// Release all
+    set_key_state(glfw.KEY_W, false, false, true)  // just_released
+    set_key_state(glfw.KEY_D, false, false, true)  // just_released
     axiom.controller_handle_keyboard(&axiom.g_controller, 0.016)
 
 	expectf(t, axiom.g_controller.left_axis.x == 0, "Expected left_axis.x to be 0, Result: %f", axiom.g_controller.left_axis.x)
@@ -191,7 +193,7 @@ test_epsilon_deadzone :: proc(t: ^testing.T) {
 	expectf(t, axiom.controller_handle_epsilon(0.00)  == 0.0, "Expected epsilon(0.00) to be 0.0, Result: %f", axiom.controller_handle_epsilon(0.00))
     expectf(t, axiom.controller_handle_epsilon(0.04)  == 0.0, "Expected epsilon(0.04) to be 0.0, Result: %f", axiom.controller_handle_epsilon(0.04))
     expectf(t, axiom.controller_handle_epsilon(0.049) == 0.0, "Expected epsilon(0.049) to be 0.0, Result: %f", axiom.controller_handle_epsilon(0.049))
-    expectf(t, axiom.controller_handle_epsilon(0.05)  >  0.0, "Expected epsilon(0.05) to be > 0.0, Result: %f", axiom.controller_handle_epsilon(0.05))
+    expectf(t, axiom.controller_handle_epsilon(0.05)  == 0.0, "Expected epsilon(0.05) to be 0.0, Result: %f", axiom.controller_handle_epsilon(0.05))
     expectf(t, axiom.controller_handle_epsilon(0.051) >  0.0, "Expected epsilon(0.051) to be > 0.0, Result: %f", axiom.controller_handle_epsilon(0.051))
 
 	expectf(t, axiom.controller_handle_epsilon(-0.07) <  0.0, "Expected epsilon(-0.07) to be < 0.0, Result: %f", axiom.controller_handle_epsilon(-0.07))
