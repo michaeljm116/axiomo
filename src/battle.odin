@@ -132,7 +132,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
     {
 	    case .SelectCharacter:
 	        ves.curr_screen = .SelectCharacter
-            if controller_just_pressed(.ActionD) || controller_just_pressed(.ActionR)
+            if game_controller_just_pressed(.Select)
             {
 				switch c in curr_sel.character.variant
 				{
@@ -149,9 +149,9 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             else do battle_selection_update(&battle.curr_sel)
 	    case .Movement:
         	handle_back_button(&input_state, player.weapon, &curr_sel)
-            if controller_is_moving()
+            if game_controller_is_moving()
             {
-                move_player(&player, controller_move_axis(), &input_state)
+                move_player(&player, game_controller_move_axis(), &input_state)
                 ves.curr_screen = .None
             }
             if ves.anim_state == .Finished
@@ -192,7 +192,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
 }
 
 check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
-    if !battle.bee_is_near || !controller_just_pressed(.ActionD) do return false
+    if !battle.bee_is_near || !game_controller_just_pressed(.Select) do return false
 
 	using battle
 	hide_weapon(player.weapon)
@@ -211,7 +211,7 @@ check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
 }
 
 check_action_focused :: proc(battle : ^Battle) -> bool{
-    if !controller_just_pressed(.ActionL) do return false
+    if !game_controller_just_pressed(.Focus) do return false
 
 	using battle
 	hide_weapon(player.weapon)
@@ -222,7 +222,7 @@ check_action_focused :: proc(battle : ^Battle) -> bool{
     return true
 }
 check_action_dodged :: proc(battle : ^Battle) -> bool{
-    if !controller_just_pressed(.ActionR) do return false
+    if !game_controller_just_pressed(.Dodge) do return false
 
 	using battle
 	hide_weapon(player.weapon)
@@ -299,7 +299,7 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
 
 // If B button is pressed, go back to previous menu
 handle_back_button :: proc(state : ^PlayerInputState, weapon : Weapon, selected : ^BattleSelection){
-    if(!controller_just_pressed(.ActionR)) do return
+    if(!game_controller_just_pressed(.Back)) do return
     hide_weapon(weapon)
     selected.character.removed |= {.PlayerSelected}
     #partial switch state^ {
@@ -349,6 +349,7 @@ battle_selection_prev :: proc(sel : ^BattleSelection) -> int
 }
 
 //Select enemy via vector position... rottate based off wasd
+// TODO: CHANGE TO AXIS
 battle_selection_update :: proc(curr : ^BattleSelection)
 {
 	changed := -1
@@ -882,7 +883,7 @@ GameFlags :: bit_set[GameFlag; u32]
 move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState)
 {
     bounds := p.pos + axis.as_int
-    if controller_held(.AnalogL){
+    if game_controller_held(.Run){
         bounds = p.pos + 2 * axis.as_int
         if .Runnable in grid_get(g.battle.grid, bounds){
             p.target = bounds

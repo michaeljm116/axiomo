@@ -39,7 +39,7 @@ Game_Memory :: struct
     titleAnim : MenuAnimation,
     main_menu : Entity,
     main_menuAnim : MenuAnimation,
-
+    controller : GameController,
     game_started : bool,
     ves : VisualEventData,
     mem_game : ax.MemoryStack,                   // This holds game data, reset upon restarting of a game, ecs goes here
@@ -73,6 +73,7 @@ game_init :: proc() {
     g = new(Game_Memory)
     set_up_game_arenas()
 	ax.g_renderbase.ctx = context
+	init_game_controller(&ax.g_controller)
 
 	//----------------------------------------------------------------------------\\
     // /Asset Loading

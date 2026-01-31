@@ -106,8 +106,89 @@ controller_is_moving :: #force_inline proc() -> bool {
     return axiom.g_controller.left_axis.isMoving
 }
 
+GameButton :: enum
+{
+    Select,
+    Back,
+    Dodge,
+    Focus,
+    Walk,
+    Run,
+}
+ButtonTypes :: bit_set[axiom.ButtonType;u16]
 
+Controller :: axiom.Controller
 GameController :: struct
 {
+    buttons : [GameButton]ButtonTypes,
+    move_axis : ^axiom.Axis,
+    look_axis : ^axiom.Axis,
+}
 
+init_game_controller :: proc(c : ^Controller)
+{
+    g.controller.move_axis = &c.left_axis
+    g.controller.look_axis = &c.right_axis
+
+    g.controller.buttons[.Select] = {.ActionD, .ActionU}
+    g.controller.buttons[.Back] = {.ActionL, .ActionR}
+    g.controller.buttons[.Dodge] = {.ShoulderL, .ShoulderR}
+    g.controller.buttons[.Focus] = {.TriggerL, .TriggerR}
+    g.controller.buttons[.Walk] = {.PadU, .PadD, .PadL, .PadR}
+    g.controller.buttons[.Run] = {.AnalogL}
+}
+
+game_controller_held :: #force_inline proc(button: GameButton) -> bool {
+    for b in g.controller.buttons[button] {
+        if .Held in axiom.g_controller.buttons[b].action do return true
+    }
+    return false
+}
+
+game_controller_just_pressed :: #force_inline proc(button: GameButton) -> bool {
+    for b in g.controller.buttons[button] {
+        if .JustPressed in axiom.g_controller.buttons[b].action do return true
+    }
+    return false
+}
+
+game_controller_pressed :: #force_inline proc(button: GameButton) -> bool {
+    for b in g.controller.buttons[button] {
+        if .Pressed in axiom.g_controller.buttons[b].action do return true
+    }
+    return false
+}
+
+game_controller_just_released :: #force_inline proc(button: GameButton) -> bool {
+    for b in g.controller.buttons[button] {
+        if .JustReleased in axiom.g_controller.buttons[b].action do return true
+    }
+    return false
+}
+
+game_controller_all_released :: #force_inline proc(button: GameButton) -> bool {
+    for b in g.controller.buttons[button] {
+        if .Pressed in axiom.g_controller.buttons[b].action do return false
+    }
+    return true
+}
+
+game_controller_button_state :: proc(button: GameButton) -> axiom.ButtonActions {
+    combined: axiom.ButtonActions
+    for b in g.controller.buttons[button] {
+        combined += axiom.g_controller.buttons[b].action
+    }
+    return combined
+}
+
+game_controller_is_moving :: #force_inline proc() -> bool {
+    return g.controller.move_axis.isMoving
+}
+
+game_controller_move_axis :: #force_inline proc() -> MoveAxis {
+    return g.controller.move_axis^
+}
+
+game_controller_is_running :: #force_inline proc() -> bool {
+    return game_controller_held(.Run) || game_controller_pressed(.Run)
 }
