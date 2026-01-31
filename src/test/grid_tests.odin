@@ -338,7 +338,7 @@ test_path_get_walkable_runnable :: proc(t: ^testing.T) {
     walkable := make(map[game.vec2i]bool, 0, context.temp_allocator)
     runable := make(map[game.vec2i]bool, 0, context.temp_allocator)
 
-    game.path_get_walkable_runnable(pos, goal, grid, &walkable, &runable)
+    game.path_set_walkable_runnable(pos, goal, grid, &walkable, &runable)
 
     // West (0,1) should be walkable
     testing.expect(t, walkable[game.vec2i{0, 1}], "West neighbor should be marked walkable")

@@ -69,8 +69,8 @@ destroy_level1 :: proc() {
 run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
 {
     using battle
-    // refresh controller state each frame from window input
-    axiom.controller_update_from_window_input()
+    // refresh controller state each frame from window input (pass frame dt)
+    axiom.controller_update_from_window_input(g.frame.delta_time)
     switch state
     {
         case .Start:
@@ -356,11 +356,11 @@ battle_selection_prev :: proc(sel : ^BattleSelection) -> int
 battle_selection_update :: proc(curr : ^BattleSelection)
 {
 	changed := -1
-    if(axiom.controller_just_pressed(.Up) || axiom.controller_just_pressed(.Right)){
+     if(axiom.controller_dir_pressed(.Up) || axiom.controller_dir_pressed(.Right)){
         changed = battle_selection_next(curr)
     }
-    else if(axiom.controller_just_pressed(.Left) || axiom.controller_just_pressed(.Down)){
-       changed = battle_selection_prev(curr)
+    else if(axiom.controller_dir_pressed(.Left) || axiom.controller_dir_pressed(.Down)){
+         changed = battle_selection_prev(curr)
     }
     // if its a new selection, update visual
     if changed >= 0{
@@ -376,16 +376,16 @@ start_selection :: proc(battle : ^Battle)
 
 get_input :: proc() -> (string, bool)
 {
-     if axiom.controller_just_pressed(.Up) {
+     if axiom.controller_dir_pressed(.Up) {
          return "w", true
      }
-     else if axiom.controller_just_pressed(.Down) {
+     else if axiom.controller_dir_pressed(.Down) {
          return "s", true
      }
-     else if axiom.controller_just_pressed(.Left) {
+     else if axiom.controller_dir_pressed(.Left) {
          return "a", true
      }
-     else if axiom.controller_just_pressed(.Right) {
+     else if axiom.controller_dir_pressed(.Right) {
          return "d", true
      }
      return "", false
