@@ -525,6 +525,11 @@ set_dead_bee :: proc(bee : ^Bee)
     tc.local.rot = linalg.quaternion_angle_axis_f32(179, {0,0,1})
 }
 
+// TODO: THIS USES GLOBAL STATE. BAAD
+alert_all_bees :: proc()
+{
+	for &bee in g.battle.bees do bee.added += {.Alert}
+}
 //----------------------------------------------------------------------------\\
 // /Deck
 //----------------------------------------------------------------------------\\
@@ -896,6 +901,7 @@ move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState, gr
             p.target = bounds
             p.c_flags = {.Run}
             p.added += {.Animate}
+            alert_all_bees()
         }
     }
     else if .Walkable in grid_get(grid, bounds) {
