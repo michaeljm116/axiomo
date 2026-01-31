@@ -58,6 +58,7 @@ game_init_window :: proc(){
    windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
    ax.window_init(context)
    ax.window_input_init()
+   ax.controller_init_default_keyboard(&ax.g_controller)
 }
 
 @(export)
@@ -121,10 +122,10 @@ game_init :: proc() {
 
 	// you need to have trannsformed and constructed a bvh before stuff below
 	ax.initialize_raytracer()
-	
+
 	// Test font rendering system
 	test_text := ax.add_text_entity("Hello Vulkan Font!", {400, 300}, font_scale = 2.0)
-	
+
 	glfw.PollEvents()
 	g.frame.prev_time = glfw.GetTime()
 }
@@ -151,6 +152,7 @@ game_update :: proc(){
 	g.frame.delta_time = f32(frame_time)
 
 	//perform initial update
+	controller_update(g.frame.delta_time)
 	app_update(g.frame.delta_time)
 	sys_visual_process_ecs(g.frame.delta_time)
 

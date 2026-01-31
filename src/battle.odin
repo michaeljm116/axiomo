@@ -69,8 +69,6 @@ destroy_level1 :: proc() {
 run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
 {
     using battle
-    // refresh controller state each frame from window input (pass frame dt)
-    axiom.controller_update_from_window_input(g.frame.delta_time)
     switch state
     {
         case .Start:
@@ -135,7 +133,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
     {
 	    case .SelectCharacter:
 	        ves.curr_screen = .SelectCharacter
-            if axiom.controller_just_pressed(.Action) || axiom.controller_just_pressed(.Select)
+            if controller_just_pressed(.ActionD) || controller_just_pressed(.ActionR)
             {
 				switch c in curr_sel.character.variant
 				{
@@ -196,7 +194,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
 }
 
 check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
-    if !battle.bee_is_near || !axiom.controller_just_pressed(.Action) do return false
+    if !battle.bee_is_near || !controller_just_pressed(.ActionD) do return false
 
 	using battle
 	hide_weapon(player.weapon)
@@ -215,7 +213,7 @@ check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
 }
 
 check_action_focused :: proc(battle : ^Battle) -> bool{
-    if !axiom.controller_just_pressed(.Focus) do return false
+    if !controller_just_pressed(.ActionL) do return false
 
 	using battle
 	hide_weapon(player.weapon)
@@ -226,7 +224,7 @@ check_action_focused :: proc(battle : ^Battle) -> bool{
     return true
 }
 check_action_dodged :: proc(battle : ^Battle) -> bool{
-    if !axiom.controller_just_pressed(.Dodge) do return false
+    if !controller_just_pressed(.ActionR) do return false
 
 	using battle
 	hide_weapon(player.weapon)
@@ -303,7 +301,7 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
 
 // If B button is pressed, go back to previous menu
 handle_back_button :: proc(state : ^PlayerInputState, weapon : Weapon, selected : ^BattleSelection){
-    if(!axiom.controller_just_pressed(.Cancel)) do return
+    if(!controller_just_pressed(.ActionR)) do return
     hide_weapon(weapon)
     selected.character.removed |= {.PlayerSelected}
     #partial switch state^ {
@@ -356,10 +354,10 @@ battle_selection_prev :: proc(sel : ^BattleSelection) -> int
 battle_selection_update :: proc(curr : ^BattleSelection)
 {
 	changed := -1
-     if(axiom.controller_dir_pressed(.Up) || axiom.controller_dir_pressed(.Right)){
+     if(controller_just_pressed(.PadU) || controller_just_pressed(.PadR)){
         changed = battle_selection_next(curr)
     }
-    else if(axiom.controller_dir_pressed(.Left) || axiom.controller_dir_pressed(.Down)){
+    else if(controller_just_pressed(.PadL) || controller_just_pressed(.PadD)){
          changed = battle_selection_prev(curr)
     }
     // if its a new selection, update visual
@@ -376,16 +374,16 @@ start_selection :: proc(battle : ^Battle)
 
 get_input :: proc() -> (string, bool)
 {
-     if axiom.controller_dir_pressed(.Up) {
+     if controller_just_pressed(.PadU) {
          return "w", true
      }
-     else if axiom.controller_dir_pressed(.Down) {
+     else if controller_just_pressed(.PadD) {
          return "s", true
      }
-     else if axiom.controller_dir_pressed(.Left) {
+     else if controller_just_pressed(.PadL) {
          return "a", true
      }
-     else if axiom.controller_dir_pressed(.Right) {
+     else if controller_just_pressed(.PadR) {
          return "d", true
      }
      return "", false

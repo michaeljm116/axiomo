@@ -46,6 +46,7 @@ g_renderbase : ^RenderBase
 g_raytracer : ^ComputeRaytracer
 g_window : Window
 g_input : InputState
+g_controller : Controller
 g_bvh : ^Sys_Bvh
 g_physics : ^Sys_Physics
 

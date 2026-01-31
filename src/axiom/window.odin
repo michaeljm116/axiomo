@@ -3,6 +3,7 @@ package axiom
 import "vendor:glfw"
 import "core:c"
 import "core:log"
+import "core:math"
 import "base:runtime"
 
 //----------------------------------------------------------------------------\\
@@ -144,4 +145,151 @@ mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mo
     case glfw.RELEASE:
         g_input.mouse_buttons[button] = false
     }
+}
+
+//----------------------------------------------------------------------------\\
+// /Controller
+//----------------------------------------------------------------------------\\
+ButtonType :: enum
+{
+   ActionU,
+   ActionD,
+   ActionL,
+   ActionR,
+
+   PadU,
+   PadD,
+   PadL,
+   PadR,
+
+   ShoulderL,
+   ShoulderR,
+   TriggerL,
+   TriggerR,
+
+   MenuL,
+   MenuR,
+   AnalogL,
+   AnalogR,
+}
+
+ButtonAction :: enum
+{
+    JustPressed,
+    Pressed,
+    Held,
+    Released,
+    JustReleased
+}
+ButtonActions :: bit_set[ButtonAction;u16]
+
+InputType :: enum
+{
+    Keyboard,
+    Gamepad,
+    Joystick,
+    AI,
+}
+
+//----------------------------------------------------------------------------\\
+// /Structs
+//----------------------------------------------------------------------------\\
+Button :: struct // 16bytes
+{
+    key: i32,
+    val: i16,
+    action: ButtonActions,
+    time: CurrMax,
+}
+
+// Axis value + moving flag
+Axis :: struct {
+    using _ : vec2f,
+    isMoving : bool,
+}
+
+Controller :: struct
+{
+    type : InputType,
+    buttons : [ButtonType]Button,
+    left_axis : Axis,
+    right_axis : Axis,
+}
+
+//----------------------------------------------------------------------------\\
+// /Procs
+//----------------------------------------------------------------------------\\
+controller_handle_button :: proc(button: ^Button, dt: f32) {
+    if is_key_just_pressed(button.key){
+        button.time.curr = 0
+        button.action = {.JustPressed, .Pressed}
+        button.val = 1
+    }
+    else if is_key_pressed(button.key){
+        button.action -= {.JustPressed}
+        button.time.curr += dt
+        if button.time.curr >= button.time.max do button.action += {.Held}
+    }
+    else if is_key_just_released(button.key){
+        button.time.curr = 0
+        button.val = 0
+        button.action = {.JustReleased, .Released}
+    }
+    else {
+        button.action -= {.JustReleased}
+        button.time.curr += dt
+    }
+}
+
+// Helper function matching C++ handle_epsilon for deadzone handling
+controller_handle_epsilon :: proc(val: f32) -> f32 {
+    return val * math.ceil(abs(val) - 0.05)
+}
+
+controller_handle_keyboard :: proc(kb : ^Controller, dt: f32) {
+    for &b in kb.buttons{
+        controller_handle_button(&b, dt)
+    }
+    kb.left_axis = {
+        {f32(-kb.buttons[.PadL].val + kb.buttons[.PadR].val),
+        f32(-kb.buttons[.PadD].val + kb.buttons[.PadU].val)},
+        false
+    }
+    kb.left_axis.isMoving = !((kb.left_axis.x * kb.left_axis.x + kb.left_axis.y * kb.left_axis.y) == 0)
+}
+
+controller_init_default_keyboard :: proc(kb : ^Controller) {
+    using kb
+
+    buttons[.PadU].key = glfw.KEY_W
+    buttons[.PadD].key = glfw.KEY_S
+    buttons[.PadL].key = glfw.KEY_A
+    buttons[.PadR].key = glfw.KEY_D
+
+    buttons[.ActionD].key = glfw.KEY_SPACE
+    buttons[.ActionU].key = glfw.KEY_E
+    buttons[.ActionL].key = glfw.KEY_Q
+    buttons[.ActionR].key = glfw.KEY_R
+
+    buttons[.ShoulderL].key = glfw.KEY_LEFT_CONTROL
+    buttons[.ShoulderR].key = glfw.KEY_LEFT_ALT
+    buttons[.TriggerL].key  = glfw.KEY_LEFT_SHIFT
+    buttons[.TriggerR].key  = glfw.KEY_RIGHT_SHIFT
+
+    buttons[.MenuL].key  = glfw.KEY_TAB
+    buttons[.MenuR].key  = glfw.KEY_ESCAPE
+    buttons[.AnalogL].key = glfw.KEY_1
+    buttons[.AnalogR].key = glfw.KEY_2
+
+    for &b in buttons {
+        b.val    = 0
+        b.action = {}
+        b.time.curr = 0
+        b.time.max  = 0.4
+    }
+
+    // Set initial input type if not already set elsewhere
+    kb.type = .Keyboard
+    kb.left_axis  = {{0, 0}, false}
+    kb.right_axis = {{0, 0}, false}
 }
