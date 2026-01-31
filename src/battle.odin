@@ -559,7 +559,7 @@ deck_shuffle :: proc(deck : ^[dynamic]BeeAction)
     }
 }
 
-//Draw a card from the bee deck, if the deck is blank, refresh
+//Draw a card from the bee deck, if the deck is empty, refresh
 deck_draw :: proc(bd : ^BeeDeck, num_cards : int = 1) -> [dynamic]BeeAction
 {
     if(queue.len(bd.deck) <= num_cards) do deck_refesh(bd)
@@ -907,7 +907,7 @@ move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState)
 weap_check :: proc(p : vec2i, grid : ^Grid) -> bool{
     // Tile is a bitset; check membership
     if .Weapon in grid_get(grid,p) {
-        grid_set(grid,p, { .Blank })
+        grid_set(grid,p, {})
         return true
     }
     return false

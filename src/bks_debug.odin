@@ -44,7 +44,7 @@ display_level :: proc(battle : Battle)
     for x in 0..<GRID_WIDTH do for y in 0..<GRID_HEIGHT
     {
         tile := grid_get(battle.grid, x, y)
-        if .Blank in tile {
+        if tile == nil {
             chars[x][y] = '.'
         } else if .Wall in tile {
             chars[x][y] = '#'

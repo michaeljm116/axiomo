@@ -58,7 +58,7 @@ game_init_window :: proc(){
    windows.SetConsoleOutputCP(windows.CODEPAGE.UTF8)
    ax.window_init(context)
    ax.window_input_init()
-   ax.controller_init_default_keyboard(&ax.g_controller)
+   controller_init()
 }
 
 @(export)

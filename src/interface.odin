@@ -78,6 +78,7 @@ is_key_pressed :: axiom.is_key_pressed
 
 Controller :: axiom.Controller
 MoveAxis :: axiom.Axis
+controller_init :: #force_inline proc() {axiom.controller_init_default_keyboard(&axiom.g_controller)}
 controller_update :: #force_inline proc(dt: f32) {
     axiom.controller_handle_keyboard(&axiom.g_controller, dt)
 }

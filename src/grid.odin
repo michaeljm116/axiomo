@@ -11,7 +11,6 @@ grid_size := vec2i{GRID_WIDTH, GRID_HEIGHT}
 
 TileFlag :: enum
 {
-    Blank,
     Wall,
     Weapon,
     Entity,
@@ -126,8 +125,7 @@ path_is_walkable :: proc(p : vec2i, goal : vec2i, grid: Grid) -> bool {
     if path_pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !path_in_bounds(p, grid) { return false }
     t := grid_get(grid,p)
-    // return .Blank in t || .Weapon in t
-    return .Blank in t || t == {} || .Weapon in t
+    return  t == nil || .Weapon in t
 }
 
 path_abs_i :: proc(x : int) -> int {
@@ -247,7 +245,7 @@ path_is_walkable_internal :: proc(p : vec2i, goal : vec2i, allow_through_walls :
     if path_pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !path_in_bounds(p, grid) { return false }
     t := grid_get(grid,p)
-    if .Blank in t || {} in t || .Weapon in t { return true }
+    if t == nil || .Weapon in t { return true }
     if allow_through_walls && .Wall in t { return true }
     return false
 }
