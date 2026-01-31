@@ -115,9 +115,7 @@ path_index_to_pos :: proc(i : i32, grid : Grid) -> vec2i {
 }
 
 path_in_bounds :: proc(p : vec2i, grid : Grid) -> bool {
-    if p.x < 0 || p.x >= grid.width || p.y < 0 || p.y >= grid.height {
-        return false
-    }
+    if p.x < 0 || p.x >= grid.width || p.y < 0 || p.y >= grid.height do return false
     return true
 }
 

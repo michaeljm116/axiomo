@@ -883,8 +883,11 @@ GameFlags :: bit_set[GameFlag; u32]
 move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState)
 {
     bounds := p.pos + axis.as_int
+    if !path_in_bounds(bounds, g.battle.grid^) do return
+
     if game_controller_held(.Run){
         bounds = p.pos + 2 * axis.as_int
+        if !path_in_bounds(bounds, g.battle.grid^) do return
         if .Runnable in grid_get(g.battle.grid, bounds){
             p.target = bounds
             p.c_flags = {.Run}
