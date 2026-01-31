@@ -7,7 +7,7 @@ battle_setup_1 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocat
 {
     using battle
     // Clear and initialize grid contiguously
-    battle.grid = grid_create({10, 10}, alloc)
+    battle.grid = grid_create({7, 5}, alloc)
     grid_set(grid,2,0,{.Weapon})
     grid_set(grid,4,3,{.Weapon})
     grid_set(grid,5,0,{.Wall})
@@ -23,7 +23,7 @@ battle_setup_2 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocat
 {
     // add somethings to the grid
     using battle
-    grid = grid_create({10, 10}, alloc)
+    grid = grid_create({7, 5}, alloc)
     grid_set(grid,3,0,{.Weapon})
     grid_set(grid,2,3,{.Weapon})
     grid_set(grid,4,0,{.Wall})

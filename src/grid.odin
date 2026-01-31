@@ -9,6 +9,18 @@ GRID_WIDTH :: 7
 GRID_HEIGHT :: 5
 grid_size := vec2i{GRID_WIDTH, GRID_HEIGHT}
 
+TileFlag :: enum
+{
+    Blank,
+    Wall,
+    Weapon,
+    Entity,
+
+    Walkable,
+    Runnable,
+}
+Tile :: bit_set[TileFlag; u8]
+
 Grid :: struct{
     data : []Tile,
     width : i32,
@@ -25,6 +37,7 @@ grid_create :: proc(size : [2]i32 , alloc : mem.Allocator , scale := vec2f{1.0, 
     grid.data = make([]Tile, grid.width * grid.height, alloc)
     grid.scale = scale
     grid.weapons = make([dynamic]WeaponGrid, alloc)
+    grid_size = size
     return grid
 }
 
@@ -61,6 +74,18 @@ grid_get_vec2i :: proc(grid : Grid, p : vec2i) -> Tile {
     assert(p.x >= 0 && p.x < grid.width && p.y >= 0 && p.y < grid.height)
     return grid.data[p.y * grid.width + p.x]
 }
+
+grid_get_mut_i16 :: proc(grid: ^Grid, x, y: i32) -> ^Tile {
+    assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
+    return &grid.data[y * grid.width + x]
+}
+
+grid_get_mut_vec2i :: proc(grid: ^Grid, p: vec2i) -> ^Tile {
+    assert(p.x >= 0 && p.x < grid.width && p.y >= 0 && p.y < grid.height)
+    return &grid.data[p.y * grid.width + p.x]
+}
+
+grid_get_mut :: proc{grid_get_mut_i16, grid_get_mut_vec2i}
 
 //Set the scale of the level to always match the size of the floor
 //So lets say you have a 3 x 3 grid but a 90 x 90 level, 1 grid block is 30
@@ -101,7 +126,8 @@ path_is_walkable :: proc(p : vec2i, goal : vec2i, grid: Grid) -> bool {
     if path_pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !path_in_bounds(p, grid) { return false }
     t := grid_get(grid,p)
-    return .Blank in t || .Weapon in t
+    // return .Blank in t || .Weapon in t
+    return .Blank in t || t == {} || .Weapon in t
 }
 
 path_abs_i :: proc(x : int) -> int {
@@ -221,12 +247,12 @@ path_is_walkable_internal :: proc(p : vec2i, goal : vec2i, allow_through_walls :
     if path_pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !path_in_bounds(p, grid) { return false }
     t := grid_get(grid,p)
-    if .Blank in t || .Weapon in t { return true }
+    if .Blank in t || {} in t || .Weapon in t { return true }
     if allow_through_walls && .Wall in t { return true }
     return false
 }
 
-path_set_walkable_runnable :: proc(pos, goal : vec2i, grid : ^Grid, walkable, runable : ^map[vec2i]bool)
+path_set_walkable_runnable :: proc(pos, goal : vec2i, grid : ^Grid, walkable, runnable : ^map[vec2i]bool)
 {
     dirs := [4]vec2i{ vec2i{1,0}, vec2i{-1,0}, vec2i{0,1}, vec2i{0,-1} }
     for d in dirs {
@@ -236,8 +262,44 @@ path_set_walkable_runnable :: proc(pos, goal : vec2i, grid : ^Grid, walkable, ru
 
             two_step := vec2i{ pos[0] + d[0]*2, pos[1] + d[1]*2 }
             if path_is_walkable(two_step, goal, grid^) {
-                runable[two_step] = true
+                runnable[two_step] = true
             }
         }
     }
+}
+four_dirs := [4]vec2i{
+    { 1,  0},  // right
+    {-1,  0},  // left
+    { 0,  1},  // up
+    { 0, -1},  // down
+}
+
+refresh_player_reachability :: proc(grid: ^Grid, pos: vec2i) {
+    // Step 1: Clear old reachability flags everywhere
+    for y in 0..<grid.height {
+        for x in 0..<grid.width {
+            pos := vec2i{x, y}
+            t := grid_get_mut(grid, pos)
+            t^ -= {.Walkable, .Runnable}
+        }
+    }
+
+    for d in four_dirs {
+        // 1 step away
+        one := pos + d
+        if path_in_bounds(one, grid^) && path_is_walkable(one, pos, grid^) {
+            t_one := grid_get_mut(grid, one)
+            t_one^ += {.Walkable}
+
+            // 2 steps away (same direction)
+            two := pos + d * 2
+            if path_in_bounds(two, grid^) && path_is_walkable(two, pos, grid^) {
+                t_two := grid_get_mut(grid, two)
+                t_two^ += {.Runnable}
+            }
+        }
+    }
+
+    t_player := grid_get_mut(grid, pos)
+    t_player^ += {.Walkable}
 }

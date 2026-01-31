@@ -33,8 +33,6 @@ Battle :: struct
 
     // Per - Turn data
     curr_sel : BattleSelection,
-    walkable : map[vec2i]bool,
-    runable : map[vec2i]bool,
 }
 
 //----------------------------------------------------------------------------\\
@@ -72,6 +70,7 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
     switch state
     {
         case .Start:
+            refresh_player_reachability(grid, player.pos)
         	if check_end_condition(battle) do break
          	state = .Continue
         case .Continue:
@@ -378,15 +377,6 @@ PlayerInputState :: enum
    Action,
    DiceRoll,
 }
-
-TileFlag :: enum
-{
-    Blank,
-    Wall,
-    Weapon,
-    Entity
-}
-Tile :: bit_set[TileFlag; u8]
 
 Player :: struct{
     using base : Character,
@@ -891,8 +881,16 @@ GameFlag :: enum
 GameFlags :: bit_set[GameFlag; u32]
 move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState)
 {
-    bounds := p.pos + axis.as_vec.i
-    if path_is_walkable(p.pos, bounds, g.battle.grid^) {
+    bounds := p.pos + axis.as_int
+    if controller_held(.AnalogL){
+        bounds = p.pos + 2 * axis.as_int
+        if .Runnable in grid_get(g.battle.grid, bounds){
+            p.target = bounds
+            p.c_flags = {.Run}
+            p.added += {.Animate}
+        }
+    }
+    else if .Walkable in grid_get(g.battle.grid, bounds) {
         //Animate Player
         p.target = bounds
         p.c_flags = {.Walk}

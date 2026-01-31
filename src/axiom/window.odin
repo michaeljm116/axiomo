@@ -169,6 +169,8 @@ ButtonType :: enum
 
    MenuL,
    MenuR,
+
+   //Typically a Sprint
    AnalogL,
    AnalogR,
 }
@@ -205,7 +207,7 @@ AxisDir :: enum u8 {
 Button :: struct // 16bytes
 {
     key: i32,
-    val: i16,
+    val: i32,
     action: ButtonActions,
     time: CurrMax,
 }
@@ -213,7 +215,7 @@ Button :: struct // 16bytes
 // Axis value + moving flag
 Axis :: struct {
     using _: vec2f,
-    as_vec : vec2fi,
+    as_int : vec2i,
     isMoving : bool,
     dir : AxisDir,
 }
@@ -273,7 +275,7 @@ controller_handle_keyboard :: proc(kb : ^Controller, dt: f32)
         false,
         {}
     }
-    kb.left_axis.as_vec.f = {kb.left_axis.x, kb.left_axis.y}
+    kb.left_axis.as_int = {i32(kb.left_axis.x), i32(kb.left_axis.y)}
     kb.left_axis.isMoving = !((kb.left_axis.x * kb.left_axis.x + kb.left_axis.y * kb.left_axis.y) == 0)
     if kb.left_axis.isMoving do controller_compute_axis_dir(&kb.left_axis)
 }
