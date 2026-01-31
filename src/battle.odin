@@ -1502,14 +1502,9 @@ hide_visuals :: proc(visuals : ^Cmp_Visual, flags : VisualFlags)
     // Remove the specified flags from the visual component
     visuals.flags -= flags
 }
+
 // curr_max_union
-CurrMax :: struct #raw_union{
-    using _: struct{
-        curr:f32,
-        max:f32,
-    },
-    _: [2]f32,
-}
+CurrMax :: axiom.CurrMax
 
 Dice :: struct {
     num : i8,

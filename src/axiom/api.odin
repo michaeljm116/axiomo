@@ -30,6 +30,15 @@ Iterator :: ecs.Iterator
 Table :: ecs.Table
 Error :: ecs.Error
 
+// curr_max_union
+CurrMax :: struct #raw_union{
+    using _: struct{
+        curr:f32,
+        max:f32,
+    },
+    _: [2]f32,
+}
+
 //----------------------------------------------------------------------------\\
 // /Globals for the engine
 //----------------------------------------------------------------------------\\
