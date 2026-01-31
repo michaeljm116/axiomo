@@ -76,6 +76,8 @@ is_key_just_released :: axiom.is_key_just_released
 is_key_just_pressed :: axiom.is_key_just_pressed
 is_key_pressed :: axiom.is_key_pressed
 
+Controller :: axiom.Controller
+MoveAxis :: axiom.Axis
 controller_update :: #force_inline proc(dt: f32) {
     axiom.controller_handle_keyboard(&axiom.g_controller, dt)
 }
@@ -88,13 +90,16 @@ controller_pressed :: #force_inline proc(btn: axiom.ButtonType) -> bool {
 controller_held :: #force_inline proc(btn: axiom.ButtonType) -> bool {
     return .Held in axiom.g_controller.buttons[btn].action
 }
+controller_released :: #force_inline proc(btn: axiom.ButtonType) -> bool {
+    return .Released in axiom.g_controller.buttons[btn].action
+}
 controller_just_released :: #force_inline proc(btn: axiom.ButtonType) -> bool {
     return .JustReleased in axiom.g_controller.buttons[btn].action
 }
 controller_button_action :: #force_inline proc(btn: axiom.ButtonType) -> axiom.ButtonActions {
     return axiom.g_controller.buttons[btn].action
 }
-controller_move_axis :: #force_inline proc() -> axiom.vec2f {
+controller_move_axis :: #force_inline proc() -> axiom.Axis {
     return axiom.g_controller.left_axis
 }
 controller_is_moving :: #force_inline proc() -> bool {

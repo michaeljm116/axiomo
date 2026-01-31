@@ -191,6 +191,14 @@ InputType :: enum
     AI,
 }
 
+AxisDir :: enum u8 {
+    None   = 0,
+    Up     = 1 << 0,   // 0001
+    Down   = 1 << 1,   // 0010
+    Left   = 1 << 2,   // 0100
+    Right  = 1 << 3,   // 1000
+}
+
 //----------------------------------------------------------------------------\\
 // /Structs
 //----------------------------------------------------------------------------\\
@@ -204,8 +212,10 @@ Button :: struct // 16bytes
 
 // Axis value + moving flag
 Axis :: struct {
-    using _ : vec2f,
+    using _: vec2f,
+    as_vec : vec2fi,
     isMoving : bool,
+    dir : AxisDir,
 }
 
 Controller :: struct
@@ -241,24 +251,35 @@ controller_handle_button :: proc(button: ^Button, dt: f32) {
     }
 }
 
-// Helper function matching C++ handle_epsilon for deadzone handling
-controller_handle_epsilon :: proc(val: f32) -> f32 {
+controller_handle_epsilon :: proc(val: f32) -> f32
+{
     return val * math.ceil(abs(val) - 0.05)
 }
-
-controller_handle_keyboard :: proc(kb : ^Controller, dt: f32) {
+controller_compute_axis_dir :: proc(axis: ^Axis)
+{
+    y_bits := (u8(axis.y > 0) << 0) | (u8(axis.y < 0) << 1)
+    x_bits := (u8(axis.x > 0) << 3) | (u8(axis.x < 0) << 2)
+    axis.dir = transmute(AxisDir)(y_bits | x_bits)
+}
+controller_handle_keyboard :: proc(kb : ^Controller, dt: f32)
+{
     for &b in kb.buttons{
         controller_handle_button(&b, dt)
     }
     kb.left_axis = {
         {f32(-kb.buttons[.PadL].val + kb.buttons[.PadR].val),
         f32(-kb.buttons[.PadD].val + kb.buttons[.PadU].val)},
-        false
+        {},
+        false,
+        {}
     }
+    kb.left_axis.as_vec.f = {kb.left_axis.x, kb.left_axis.y}
     kb.left_axis.isMoving = !((kb.left_axis.x * kb.left_axis.x + kb.left_axis.y * kb.left_axis.y) == 0)
+    if kb.left_axis.isMoving do controller_compute_axis_dir(&kb.left_axis)
 }
 
-controller_init_default_keyboard :: proc(kb : ^Controller) {
+controller_init_default_keyboard :: proc(kb : ^Controller)
+{
     using kb
 
     buttons[.PadU].key = glfw.KEY_W
@@ -283,13 +304,13 @@ controller_init_default_keyboard :: proc(kb : ^Controller) {
 
     for &b in buttons {
         b.val    = 0
-        b.action = {}
+        b.action = {.Released}
         b.time.curr = 0
         b.time.max  = 0.4
     }
 
     // Set initial input type if not already set elsewhere
     kb.type = .Keyboard
-    kb.left_axis  = {{0, 0}, false}
-    kb.right_axis = {{0, 0}, false}
+    kb.left_axis  = {{0, 0},{},false, {}}
+    kb.right_axis = {{0, 0},{},false, {}}
 }

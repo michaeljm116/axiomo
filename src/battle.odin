@@ -150,10 +150,9 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             else do battle_selection_update(&battle.curr_sel)
 	    case .Movement:
         	handle_back_button(&input_state, player.weapon, &curr_sel)
-            input, moved := get_input()
-            if moved
+            if controller_is_moving()
             {
-                move_player(&player, input, &input_state)
+                move_player(&player, controller_move_axis(), &input_state)
                 ves.curr_screen = .None
             }
             if ves.anim_state == .Finished
@@ -370,23 +369,6 @@ battle_selection_update :: proc(curr : ^BattleSelection)
 start_selection :: proc(battle : ^Battle)
 {
 	for c in battle.curr_sel.selectables do c.removed += {.PlayerSelected}
-}
-
-get_input :: proc() -> (string, bool)
-{
-     if controller_just_pressed(.PadU) {
-         return "w", true
-     }
-     else if controller_just_pressed(.PadD) {
-         return "s", true
-     }
-     else if controller_just_pressed(.PadL) {
-         return "a", true
-     }
-     else if controller_just_pressed(.PadR) {
-         return "d", true
-     }
-     return "", false
 }
 
 PlayerInputState :: enum
@@ -907,22 +889,9 @@ GameFlag :: enum
     Attack,
 }
 GameFlags :: bit_set[GameFlag; u32]
-move_player :: proc(p : ^Player, key : string, state : ^PlayerInputState)
+move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState)
 {
-    // display_level(g.battle)
-    dir : vec2i
-    switch (key)
-    {
-        case "w":
-            dir.y = 1
-        case "a":
-            dir.x = -1
-        case "s":
-            dir.y = -1
-        case "d":
-            dir.x = 1
-    }
-    bounds := p.pos + dir
+    bounds := p.pos + axis.as_vec.i
     if path_is_walkable(p.pos, bounds, g.battle.grid^) {
         //Animate Player
         p.target = bounds
@@ -980,7 +949,7 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
     best_path := make([dynamic]vec2i, context.temp_allocator)
     best_len := 999999
     for x in 0..<GRID_WIDTH do for y in 0..<GRID_HEIGHT{
-        p := vec2i{i16(x), i16(y)}
+        p := vec2i{i32(x), i32(y)}
         if path_dist_grid(p, player.pos) < min_dist { continue }
         if !path_is_walkable_internal(p, p, allow_through_walls, g.battle.grid^) { continue } // p must be a valid standable tile
         path := path_a_star_find(bee.pos, p, grid_size, g.battle.grid^)
@@ -996,7 +965,7 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
 
 // Sets a player on a tile in the Battle so that they are...
 // Flush with the floor and in center of that tile
-set_entity_on_tile :: proc(floor : Entity, entity : Entity, battle : Battle, x, y : i16)
+set_entity_on_tile :: proc(floor : Entity, entity : Entity, battle : Battle, x, y : i32)
 {
     ft := get_component(floor, Cmp_Transform)
     pt := get_component(entity, Cmp_Transform)

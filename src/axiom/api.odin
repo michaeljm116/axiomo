@@ -15,7 +15,12 @@ vec2f :: [2]f32
 vec3f :: [3]f32
 mat4f :: [4][4]f32
 vec4i :: [4]i32
-vec2i :: [2]i16
+vec2i :: [2]i32
+
+vec2fi :: struct #raw_union {
+    f : vec2f,
+    i : [2]i32,
+}
 
 quat :: math.Quaternionf32
 vec3 :: math.Vector3f32

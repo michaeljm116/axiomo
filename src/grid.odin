@@ -11,13 +11,13 @@ grid_size := vec2i{GRID_WIDTH, GRID_HEIGHT}
 
 Grid :: struct{
     data : []Tile,
-    width : i16,
-    height : i16,
+    width : i32,
+    height : i32,
     scale : vec2f,
     weapons : [dynamic]WeaponGrid
 }
 
-grid_create :: proc(size : [2]i16 , alloc : mem.Allocator , scale := vec2f{1.0, 1.0}) -> ^Grid
+grid_create :: proc(size : [2]i32 , alloc : mem.Allocator , scale := vec2f{1.0, 1.0}) -> ^Grid
 {
     grid := new(Grid, alloc)
     grid.width = size.x
@@ -31,15 +31,15 @@ grid_create :: proc(size : [2]i16 , alloc : mem.Allocator , scale := vec2f{1.0, 
 grid_set :: proc{grid_set_i16, grid_set_vec2i}
 grid_get :: proc{grid_get_i16, grid_get_vec2i, grid_get_int_p, grid_get_i16_p, grid_get_vec2i_p}
 
-grid_set_i16 :: proc(grid : ^Grid, x, y : i16, tile : Tile){
+grid_set_i16 :: proc(grid : ^Grid, x, y : i32, tile : Tile){
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
     grid.data[y * grid.width + x] = tile
 }
 grid_set_vec2i :: proc(grid : ^Grid, p : vec2i, tile : Tile){
-    assert(p.x >= 0 && p.x < i16(grid.width) && p.y >= 0 && p.y < i16(grid.height))
-    grid.data[p.y * i16(grid.width) + p.x] = tile
+    assert(p.x >= 0 && p.x < i32(grid.width) && p.y >= 0 && p.y < i32(grid.height))
+    grid.data[p.y * i32(grid.width) + p.x] = tile
 }
-grid_get_i16_p :: proc(grid : ^Grid, x, y : i16) -> Tile {
+grid_get_i16_p :: proc(grid : ^Grid, x, y : i32) -> Tile {
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
     return grid.data[y * grid.width + x]
 }
@@ -52,7 +52,7 @@ grid_get_vec2i_p :: proc(grid : ^Grid, p : vec2i) -> Tile {
     assert(p.x >= 0 && p.x < grid.width && p.y >= 0 && p.y < grid.height)
     return grid.data[p.y * grid.width + p.x]
 }
-grid_get_i16 :: proc(grid : Grid, x, y : i16) -> Tile {
+grid_get_i16 :: proc(grid : Grid, x, y : i32) -> Tile {
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
     return grid.data[y * grid.width + x]
 }
@@ -86,7 +86,7 @@ path_pos_to_index :: proc(p : vec2i, grid : Grid) -> int {
     return int(p.x + p.y * grid.width)
 }
 
-path_index_to_pos :: proc(i : i16, grid : Grid) -> vec2i {
+path_index_to_pos :: proc(i : i32, grid : Grid) -> vec2i {
     return vec2i{ i % grid.width, i / grid.width }
 }
 
@@ -166,7 +166,7 @@ path_a_star_find :: proc(start : vec2i, goal, size : vec2i, grid : Grid) -> [dyn
             return path
         }
 
-        current_pos := path_index_to_pos(i16(current_idx), grid)
+        current_pos := path_index_to_pos(i32(current_idx), grid)
 
         if current_idx == goal_idx {
             // reconstruct path
@@ -174,7 +174,7 @@ path_a_star_find :: proc(start : vec2i, goal, size : vec2i, grid : Grid) -> [dyn
             // backtrack
             node_idx := current_idx
             for {
-                append(&path, path_index_to_pos(i16(node_idx), grid))
+                append(&path, path_index_to_pos(i32(node_idx), grid))
                 if node_idx == start_idx { break }
                 parent := came_from[node_idx]
                 // if no parent, fail
