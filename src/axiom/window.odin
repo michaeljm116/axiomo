@@ -164,13 +164,13 @@ ButtonType :: enum
 
    ShoulderL,
    ShoulderR,
+
    TriggerL,
    TriggerR,
 
    MenuL,
    MenuR,
 
-   //Typically a Sprint
    AnalogL,
    AnalogR,
 }

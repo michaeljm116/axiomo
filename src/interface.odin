@@ -76,7 +76,6 @@ is_key_just_released :: axiom.is_key_just_released
 is_key_just_pressed :: axiom.is_key_just_pressed
 is_key_pressed :: axiom.is_key_pressed
 
-Controller :: axiom.Controller
 MoveAxis :: axiom.Axis
 controller_init :: #force_inline proc() {axiom.controller_init_default_keyboard(&axiom.g_controller)}
 controller_update :: #force_inline proc(dt: f32) {
@@ -105,4 +104,10 @@ controller_move_axis :: #force_inline proc() -> axiom.Axis {
 }
 controller_is_moving :: #force_inline proc() -> bool {
     return axiom.g_controller.left_axis.isMoving
+}
+
+
+GameController :: struct
+{
+
 }
