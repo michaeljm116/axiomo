@@ -109,4 +109,7 @@ check_move_options :: proc(pos : vec2i, dir : 2b, grid : [][]vec2i) -> ([2]vec2i
 		* not really that much less efficient
 	* Result:
 		* worked but like 40 mins
-	
+
+## Next steps: 
+* Fix movement bugs for both run and walk
+* 
