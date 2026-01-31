@@ -263,6 +263,7 @@ path_set_walkable_runnable :: proc(pos, goal : vec2i, grid : ^Grid, walkable, ru
         }
     }
 }
+
 four_dirs := [4]vec2i{
     { 1,  0},  // right
     {-1,  0},  // left

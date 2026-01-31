@@ -122,9 +122,6 @@ setup_battle :: proc() -> ^Battle {
     battle.grid.width = game.GRID_WIDTH
     battle.grid.height = game.GRID_HEIGHT
     battle.grid.data = make([]game.Tile, int(battle.grid.width * battle.grid.height))
-    for i in 0..<len(battle.grid.data) {
-        battle.grid.data[i] = game.Tile{ .Blank }
-    }
     battle.grid.scale = {1.0, 1.0}
 
     // States
@@ -228,7 +225,7 @@ Game_Continues_When_Player_Moves_Into_Item_Tile_And_Picks_Up_Item :: proc(t: ^te
     defer teardown_battle(battle)
 
     // Set an item tile
-    idx := int(battle.player.pos.y * i16(battle.grid.width) + battle.player.pos.x + 1)
+    idx := int(battle.player.pos.y * i32(battle.grid.width) + battle.player.pos.x + 1)
     battle.grid.data[idx] = game.Tile{ .Weapon }
 
     // Game should continue
@@ -386,13 +383,13 @@ Player_Cannot_Move_Outside_Grid_Bounds :: proc(t: ^testing.T) {
     out_of_bounds := vec2i{-1, 0}
     testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid left")
 
-    out_of_bounds = vec2i{i16(game.GRID_WIDTH), 0}
+    out_of_bounds = vec2i{i32(game.GRID_WIDTH), 0}
     testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid right")
 
     out_of_bounds = vec2i{0, -1}
     testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid bottom")
 
-    out_of_bounds = vec2i{0, i16(game.GRID_HEIGHT)}
+    out_of_bounds = vec2i{0, i32(game.GRID_HEIGHT)}
     testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid top")
 }
 
@@ -494,7 +491,7 @@ Item_Tile_Becomes_Blank_After_Player_Pickup :: proc(t: ^testing.T) {
 
     game.weap_check(vec2i{1, 0}, battle.grid) // This clears the tile
 
-    testing.expect(t, battle.grid.data[idx] == game.Tile{ .Blank }, "Item tile becomes blank after pickup")
+    testing.expect(t, battle.grid.data[idx] == {}, "Item tile becomes blank after pickup")
 }
 
 // ===========================================================================
