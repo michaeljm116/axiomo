@@ -19,11 +19,11 @@ kanban-plugin: board
 
 ## In Progress
 
-- [ ] Run option: Shift + WASD
 
 
 ## Complete
 
+- [ ] Run option: Shift + WASD
 
 
 

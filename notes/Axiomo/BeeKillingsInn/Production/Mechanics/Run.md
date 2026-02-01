@@ -111,5 +111,7 @@ check_move_options :: proc(pos : vec2i, dir : 2b, grid : [][]vec2i) -> ([2]vec2i
 		* worked but like 40 mins
 
 ## Next steps: 
-* Fix movement bugs for both run and walk
-* 
+* ~~Fix movement bugs for both run and walk~~
+* AlertAllBee's need to include visiblity but visibility isn't happening yet soooo
+	* i guess fix it using global state
+	* move_player itsefl is kinda janky
