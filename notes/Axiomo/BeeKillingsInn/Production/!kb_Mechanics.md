@@ -6,6 +6,7 @@ kanban-plugin: board
 
 ## Todo
 
+- [ ] Bee: Grounded vs Flying
 - [ ] Dodge: Action Oriented
 - [ ] Attack: Action Oriented
 - [ ] Line of Sight
@@ -18,7 +19,6 @@ kanban-plugin: board
 
 ## In Progress
 
-- [ ] Bee: Grounded vs Flying
 
 
 ## Complete

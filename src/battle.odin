@@ -149,9 +149,10 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             else do battle_selection_update(&battle.curr_sel)
 	    case .Movement:
         	handle_back_button(&input_state, player.weapon, &curr_sel)
-            if game_controller_is_moving()
+         	// TODO: THIS IS BAD CODE WITH ALL TEHSE &&'S
+            if game_controller_is_moving() && .Animate not_in player.flags && .Animate not_in player.removed
             {
-                move_player(&player, game_controller_move_axis(), &input_state)
+                move_player(&player, game_controller_move_axis(), &input_state, grid)
                 ves.curr_screen = .None
             }
             if ves.anim_state == .Finished
@@ -524,6 +525,11 @@ set_dead_bee :: proc(bee : ^Bee)
     tc.local.rot = linalg.quaternion_angle_axis_f32(179, {0,0,1})
 }
 
+// TODO: THIS USES GLOBAL STATE. BAAD
+alert_all_bees :: proc()
+{
+	for &bee in g.battle.bees do bee.added += {.Alert}
+}
 //----------------------------------------------------------------------------\\
 // /Deck
 //----------------------------------------------------------------------------\\
@@ -737,7 +743,8 @@ Weapon :: struct
     icon : string
 }
 
-WeaponGrid :: struct{
+WeaponGrid :: struct
+{
    pos : vec2i,
    chest : Entity,
 }
@@ -759,7 +766,8 @@ pick_up_weapon :: proc(player : ^Player, weaps : []Weapon, db := WeaponsDB)
     player.weapon = db[wt]
 }
 
-adjust_acc_y :: #force_inline proc(n: i8) -> f32 {
+adjust_acc_y :: #force_inline proc(n: i8) -> f32
+{
     return -0.82 + 0.1 * f32(n - 3)
 }
 
@@ -880,33 +888,29 @@ GameFlag :: enum
     Attack,
 }
 GameFlags :: bit_set[GameFlag; u32]
-move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState)
+
+move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState, grid : ^Grid)
 {
     bounds := p.pos + axis.as_int
-    if !path_in_bounds(bounds, g.battle.grid^) do return
+    if !path_in_bounds(bounds, grid^) do return
 
     if game_controller_held(.Run){
         bounds = p.pos + 2 * axis.as_int
-        if !path_in_bounds(bounds, g.battle.grid^) do return
-        if .Runnable in grid_get(g.battle.grid, bounds){
+        if !path_in_bounds(bounds, grid^) do return
+        if .Runnable in grid_get(grid, bounds){
             p.target = bounds
             p.c_flags = {.Run}
             p.added += {.Animate}
+            alert_all_bees()
         }
     }
-    else if .Walkable in grid_get(g.battle.grid, bounds) {
+    else if .Walkable in grid_get(grid, bounds) {
         //Animate Player
         p.target = bounds
         p.c_flags = {.Walk}
         p.added += {.Animate}
     }
 }
-
-// Checks where player position is and shows where you can walk/run to
-// Walkable = anything 1 square away
-// Runable = anything 2 squares away
-
-
 
 weap_check :: proc(p : vec2i, grid : ^Grid) -> bool{
     // Tile is a bitset; check membership
@@ -918,7 +922,6 @@ weap_check :: proc(p : vec2i, grid : ^Grid) -> bool{
 }
 
 bee_check :: proc(p : Player, bees : [dynamic]Bee) -> (bool, int) {
-
     for bee, i in bees{
         diff_x := math.abs(bee.pos.x - p.pos.x)
         diff_y := math.abs(bee.pos.y - p.pos.y)
@@ -1083,7 +1086,8 @@ get_top_of_entity :: proc(e : Entity) -> f32
     return max_y
 }
 
-find_player_entity :: proc() {
+find_player_entity :: proc()
+{
     table_nodes := get_table(Cmp_Node)
     for node, i in table_nodes.rows{
         if node.name == "Froku" {
@@ -1107,7 +1111,8 @@ find_floor_entities :: proc() {
 
 // Find the first light entity in the scene and cache it for orbit updates.
 // Looks for entities with Light, Transform, and Node components.
-find_light_entity :: proc() {
+find_light_entity :: proc()
+{
     table_light := get_table(Cmp_Light)
     for light, i in table_light.rows{
         g.light_entity = table_light.rid_to_eid[i]
@@ -1774,7 +1779,7 @@ ves_animate_bee_end :: #force_inline proc(bee : ^Bee)
 }
 
 ves_animate_player :: #force_inline proc(p : ^Player, dt : f32) -> bool{
-    if p.anim.timer > 0 && .Walk in p.c_flags {
+	if p.anim.timer > 0 && (.Walk in p.c_flags || .Run in p.c_flags) {
         slerp_character_to_tile(p, dt)
         slerp_character_angle(p,dt)
         return true
@@ -1784,7 +1789,7 @@ ves_animate_player :: #force_inline proc(p : ^Player, dt : f32) -> bool{
 }
 
 ves_animate_player_start :: #force_inline proc(p : ^Player){
-    if .Walk in p.c_flags{
+    if (.Walk in p.c_flags || .Run in p.c_flags){
         p.anim.timer = 1
         p.anim.rot_timer = .5
         ac := get_component(p.entity, Cmp_Animation)
