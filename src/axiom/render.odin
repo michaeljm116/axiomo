@@ -2380,7 +2380,7 @@ start_up_raytracer :: proc(alloc: mem.Allocator)
    map_models_to_gpu(alloc)
    map_materials_to_gpu(alloc)
    // Initialize font system for compute raytracer
-   bake_font_atlas("../../assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
+   bake_font_atlas("assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
    log.info("Font system initialized for compute raytracer")
 }
 
