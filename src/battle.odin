@@ -61,6 +61,67 @@ destroy_level1 :: proc() {
     // assert(axiom.entity_exists(g.floor))
 }
 
+battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
+    g.battle.state = .Start
+    g.battle.current_bee = 0
+	load_scene("BeeKillingsInn")
+	g.player = axiom.load_prefab("Froku", g.mem_game.alloc)
+	find_camera_entity()
+    find_light_entity()
+    find_player_entity()
+    face_left(g.player)
+
+    axiom.sys_trans_process_ecs()
+}
+
+start_game :: proc(){
+    g.battle.state = .Start //NOTE: Why is this in repeat?
+    g.ves.curr_screen = .SelectCharacter
+
+    battle_setup_1(&g.battle,g.mem_game.alloc) //NOTE: The actual initialize of the battle
+    g.battle.player.entity = g.player
+    init_battle(&g.battle, g.mem_game.alloc)
+    init_battle_visuals(&g.battle)
+
+    find_floor_entities()
+    grid_set_scale(g.floor, g.battle.grid)
+    set_entity_on_tile(g.floor, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y)
+    for bee in g.battle.bees{
+        set_entity_on_tile(g.floor, bee.entity, g.battle, bee.pos.x, bee.pos.y)
+        face_right(bee.entity)
+    }
+
+    place_chest_on_grid(vec2i{2,0}, &g.battle)
+    place_chest_on_grid(vec2i{4,3}, &g.battle)
+        add_animations()
+}
+
+set_game_over :: proc(){
+	g.battle.player.health = 0
+    // fmt.println("destroying game")
+    // g.app_state = .GameOver
+    // destroy_level1()
+    // load_scene("Empty")
+	// ToggleMenuUI(&g.app_state)
+}
+
+set_game_victory :: proc(){
+	clear(&g.battle.bees)
+	// fmt.println("destroying game")
+	//     g.app_state = .Victory
+	//     destroy_level1()
+	//     overworld_start()
+	//     load_scene("Overworld")
+	// ToggleMenuUI(&g.app_state)
+}
+
+set_game_start :: proc(){
+    fmt.println("starting game")
+    g.app_state = .Game
+    ToggleMenuUI(&g.app_state)
+    start_game()
+}
+
 //----------------------------------------------------------------------------\\
 // /Run Game
 //----------------------------------------------------------------------------\\
@@ -397,7 +458,7 @@ Character :: struct
     target : vec2i,
     entity : Entity,
 
-    //Animation related
+    // Animation related
     c_flags : CharacterFlags,
     anim : CharacterAnimation,
     move_anim : MovementTimes,
@@ -622,12 +683,12 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player)
         case .CrawlTowards:
             // crawl towards player, if path overlaps player, alert!
             bee.removed += {.Flying}
-            bee.added += {.Animate, .Moving}
+            bee.added += {.Crawling,.Animate, .Moving}
             bee_action_move_towards(bee, player, 1)
         case .CrawlAway:
             // crawl away from player, if path overlaps player, alert!
             bee.removed += {.Flying}
-            bee.added += {.Animate, .Moving}
+            bee.added += {.Crawling,.Animate, .Moving}
             bee_action_move_away(bee, player, 1)
         case .Sting:
             // If player is near, attack! else do nuffin
@@ -737,7 +798,7 @@ Weapon :: struct
 {
     type : WeaponType,
     flying : Attack,
-    ground : Attack,
+    crawling : Attack,
     range : i8,
     effect : StatusEffects,
     icon : string
@@ -750,12 +811,12 @@ WeaponGrid :: struct
 }
 
 WeaponsDB :: [WeaponType]Weapon{
- .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 50}, ground = Attack{accuracy = 9, power = 100}, range = 1, effect = {.None}, icon = "IconHand"},
- .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 50}, ground = Attack{accuracy = 9, power = 100}, range = 1, effect = {.None}, icon = "IconShoe"},
- .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 50}, ground = Attack{accuracy = 5, power = 100}, range = 2, effect = {.None}, icon = "IconBugspray"},
- .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 50}, ground = Attack{accuracy = 8, power = 100}, range = 1, effect = {.None}, icon = "IconNewspaper"},
- .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 100}, ground = Attack{accuracy = 7, power = 100}, range = 1, effect = {.None}, icon = "IconSwatter"},
- .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 100}, ground = Attack{accuracy = 7, power = 100}, range = 1, effect = {.None}, icon = "IconSwatter"},
+ .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 50}, crawling = Attack{accuracy = 9, power = 100}, range = 1, effect = {.None}, icon = "IconHand"},
+ .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 50}, crawling = Attack{accuracy = 9, power = 100}, range = 1, effect = {.None}, icon = "IconShoe"},
+ .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 50}, crawling = Attack{accuracy = 5, power = 100}, range = 2, effect = {.None}, icon = "IconBugspray"},
+ .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 50}, crawling = Attack{accuracy = 8, power = 100}, range = 1, effect = {.None}, icon = "IconNewspaper"},
+ .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 100}, crawling = Attack{accuracy = 7, power = 100}, range = 1, effect = {.None}, icon = "IconSwatter"},
+ .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 100}, crawling = Attack{accuracy = 7, power = 100}, range = 1, effect = {.None}, icon = "IconSwatter"},
 }
 
 pick_up_weapon :: proc(player : ^Player, weaps : []Weapon, db := WeaponsDB)
@@ -814,6 +875,7 @@ player_attack :: proc(player : Player, bee : ^Bee, acc : i8){
         bee.health -= player.weapon.flying.power
         if bee.health <= 0 do bee.added += {.Dead}
     }
+
     // luck := acc + focus_level
     // if .Flying in bee.flags{
     //    if player.weapon.flying.accuracy < luck {
@@ -822,8 +884,8 @@ player_attack :: proc(player : Player, bee : ^Bee, acc : i8){
     //    }
     // }
     // else {
-    //    if player.weapon.ground.accuracy < luck {
-    //        bee.health -= player.weapon.ground.power
+    //    if player.weapon.crawling.accuracy < luck {
+    //        bee.health -= player.weapon.crawling.power
     //        if bee.health <= 0 do bee.flags += {.Dead}
     //    }
     // }
@@ -875,6 +937,7 @@ place_chest_on_grid :: proc(pos : vec2i, battle : ^Battle)
 //----------------------------------------------------------------------------\\
 GameFlag :: enum
 {
+	Crawling,
     Flying,
     Moving,
     Alert,
@@ -905,7 +968,7 @@ move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState, gr
         }
     }
     else if .Walkable in grid_get(grid, bounds) {
-        //Animate Player
+        // Animate Player
         p.target = bounds
         p.c_flags = {.Walk}
         p.added += {.Animate}
@@ -1248,6 +1311,15 @@ slerp_character_to_tile :: proc(cha : ^Character, dt : f32){
     ct.local.pos = linalg.lerp(cha.anim.start, cha.anim.end, f32(eased_t))
 }
 
+slerp_character_above_tile :: proc(cha : ^Character, height, dt : f32){
+    if dt < 1 do cha.anim.timer -= dt
+    ct := get_component(cha.entity, Cmp_Transform)
+    if ct == nil do return
+    t := f64(1.0 - cha.anim.timer)
+    eased_t := math.smoothstep(0.0,1.0,t)
+    ct.local.pos = linalg.lerp(cha.anim.start, cha.anim.end, f32(eased_t))
+}
+
 slerp_character_angle :: proc(cha : ^Character, dt : f32){
     if cha.anim.rot_timer <= 0 do return
     cha.anim.rot_timer -= dt
@@ -1259,67 +1331,6 @@ slerp_character_angle :: proc(cha : ^Character, dt : f32){
     eased_t := math.smoothstep(0.0, 1.0, t)
     // Interpolate rotation (assumes vec4 quaternions; adjust if using quat128)
     ct.local.rot = linalg.quaternion_slerp(cha.anim.start_rot, cha.anim.end_rot, f32(eased_t))
-}
-
-battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
-    g.battle.state = .Start
-    g.battle.current_bee = 0
-	load_scene("BeeKillingsInn")
-	g.player = axiom.load_prefab("Froku", g.mem_game.alloc)
-	find_camera_entity()
-    find_light_entity()
-    find_player_entity()
-    face_left(g.player)
-
-    axiom.sys_trans_process_ecs()
-}
-
-start_game :: proc(){
-    g.battle.state = .Start //NOTE: Why is this in repeat?
-    g.ves.curr_screen = .SelectCharacter
-
-    battle_setup_1(&g.battle,g.mem_game.alloc) //NOTE: The actual initialize of the battle
-    g.battle.player.entity = g.player
-    init_battle(&g.battle, g.mem_game.alloc)
-    init_battle_visuals(&g.battle)
-
-    find_floor_entities()
-    grid_set_scale(g.floor, g.battle.grid)
-    set_entity_on_tile(g.floor, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y)
-    for bee in g.battle.bees{
-        set_entity_on_tile(g.floor, bee.entity, g.battle, bee.pos.x, bee.pos.y)
-        face_right(bee.entity)
-    }
-
-    place_chest_on_grid(vec2i{2,0}, &g.battle)
-    place_chest_on_grid(vec2i{4,3}, &g.battle)
-        add_animations()
-}
-
-set_game_over :: proc(){
-	g.battle.player.health = 0
-    // fmt.println("destroying game")
-    // g.app_state = .GameOver
-    // destroy_level1()
-    // load_scene("Empty")
-	// ToggleMenuUI(&g.app_state)
-}
-
-set_game_victory :: proc(){
-	clear(&g.battle.bees)
-	// fmt.println("destroying game")
-	//     g.app_state = .Victory
-	//     destroy_level1()
-	//     overworld_start()
-	//     load_scene("Overworld")
-	// ToggleMenuUI(&g.app_state)
-}
-
-set_game_start :: proc(){
-    fmt.println("starting game")
-    g.app_state = .Game
-    ToggleMenuUI(&g.app_state)
-    start_game()
 }
 
 //----------------------------------------------------------------------------\\

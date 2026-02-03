@@ -6,7 +6,6 @@
       {
         "id": "bac501f670c3d87b",
         "type": "tabs",
-        "dimension": 47.61321909424724,
         "children": [
           {
             "id": "522da18b77ea95a3",
@@ -14,39 +13,26 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Production/Mechanics/Run.md",
+                "file": "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Run"
+              "title": "Fly_Ground_Obstacles"
             }
-          }
-        ]
-      },
-      {
-        "id": "53ad210fee8adff0",
-        "type": "tabs",
-        "dimension": 52.38678090575275,
-        "children": [
+          },
           {
-            "id": "0e2877b445f321da",
+            "id": "eab76c6719881d89",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Production/!kb_Mechanics.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false
-                  ]
-                }
+                "file": "BeeKillingsInn/Production/Prototype.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-trello",
-              "title": "!kb_Mechanics"
+              "icon": "lucide-file",
+              "title": "Prototype"
             }
           }
         ]
@@ -199,13 +185,18 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "0e2877b445f321da",
+  "active": "522da18b77ea95a3",
   "lastOpenFiles": [
-    "BeeKillingsInn/Production/List of Levels-Features.md",
+    "DailyNotes/February 02, 2026, Mon.md",
+    "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
     "BeeKillingsInn/Production/!kb_Mechanics.md",
+    "BeeKillingsInn/Production/Reminders.md",
+    "BeeKillingsInn/Production/Prototype.md",
+    "BeeKillingsInn/Production/Mechanics/Run.md",
+    "DailyNotes/February 01, 2026, Sun.md",
+    "BeeKillingsInn/Production/List of Levels-Features.md",
     "BeeKillingsInn/Production/!kb_Showcase.md",
     "BeeKillingsInn/Production/Pre Production.md",
-    "BeeKillingsInn/Production/Mechanics/Run.md",
     "DailyNotes/January 31, 2026, Sat.md",
     "DailyNotes/January 30, 2026, Fri.md",
     "DailyNotes/January 27, 2026, Tue.md",
@@ -213,7 +204,6 @@
     "BeeKillingsInn/GameDesign/UI-UX thoughts.md",
     "DailyNotes/January 24, 2026, Sat.md",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143017.png",
-    "BeeKillingsInn/Production/Prototype.md",
     "BeeKillingsInn/Production/Mechanics",
     "BeeKillingsInn/Production/Epics.md",
     "BeeKillingsInn/Production/!kb_demo.md",
@@ -227,15 +217,11 @@
     "BeeKillingsInn/Art/Inspo - Art.md",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151208.png",
     "BeeKillingsInn/GameDesign/!!! Rules !!!.md",
-    "BeeKillingsInn/Art/Inspo-TItle.md",
-    "BeeKillingsInn/Art/tactics insop.md",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151050.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143937.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143455.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143326.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143138.png",
-    "BeeKillingsInn/GameDesign/Grok.md",
-    "BeeKillingsInn/GameDesign/Future.md",
     "Pasted image 20260124191542.png",
     "Pasted image 20260124190313.png",
     "BeeKillingsInn/Art/UIInspo",

@@ -51,17 +51,17 @@ test_grid_set_get_i16 :: proc(t: ^testing.T) {
         free(grid, allocator)
     }
 
-    game.grid_set(grid, i32(1), i32(1), game.Tile{ .Weapon })
+    game.grid_set(grid, i32(1), i32(1), game.TileFlags{ .Weapon })
 
     val00 := game.grid_get(grid^, i32(0), i32(0))
     val11 := game.grid_get(grid^, i32(1), i32(1))
     val01 := game.grid_get(grid^, i32(0), i32(1))
     val10 := game.grid_get(grid^, i32(1), i32(0))
 
-    testing.expect(t, val00 == game.Tile{  }, "Position (0,0) should be Blank after set")
-    testing.expect(t, val11 == game.Tile{ .Weapon }, "Position (1,1) should be Weapon after set")
-    testing.expect(t, val01 == game.Tile{}, "Unset position (0,1) should be default Tile")  // Assuming default is zero/empty
-    testing.expect(t, val10 == game.Tile{}, "Unset position (1,0) should be default Tile")
+    testing.expect(t, val00 == game.TileFlags{  }, "Position (0,0) should be Blank after set")
+    testing.expect(t, val11 == game.TileFlags{ .Weapon }, "Position (1,1) should be Weapon after set")
+    testing.expect(t, val01 == game.TileFlags{}, "Unset position (0,1) should be default Tile")  // Assuming default is zero/empty
+    testing.expect(t, val10 == game.TileFlags{}, "Unset position (1,0) should be default Tile")
 }
 
 @(test)
@@ -77,14 +77,14 @@ test_grid_set_get_vec2i :: proc(t: ^testing.T) {
 
     p00 := game.vec2i{0, 0}
     p11 := game.vec2i{1, 1}
-    game.grid_set(grid, p00, game.Tile{  })
-    game.grid_set(grid, p11, game.Tile{ .Weapon })
+    game.grid_set(grid, p00, game.TileFlags{  })
+    game.grid_set(grid, p11, game.TileFlags{ .Weapon })
 
     val00 := game.grid_get(grid^, p00)
     val11 := game.grid_get(grid^, p11)
 
-    testing.expect(t, val00 == game.Tile{  }, "Position {0,0} should be Blank after set")
-    testing.expect(t, val11 == game.Tile{ .Weapon }, "Position {1,1} should be Weapon after set")
+    testing.expect(t, val00 == game.TileFlags{  }, "Position {0,0} should be Blank after set")
+    testing.expect(t, val11 == game.TileFlags{ .Weapon }, "Position {1,1} should be Weapon after set")
 }
 
 @(test)
@@ -99,15 +99,15 @@ test_grid_set_get_pointer_variants :: proc(t: ^testing.T) {
     }
 
     p00 := game.vec2i{0, 0}
-    game.grid_set(grid, p00, game.Tile{  })
+    game.grid_set(grid, p00, game.TileFlags{  })
 
     val_i16_p := game.grid_get_i16_p(grid, 0, 0)
     val_int_p := game.grid_get_int_p(grid, 0, 0)
     val_vec2i_p := game.grid_get_vec2i_p(grid, p00)
 
-    testing.expect(t, val_i16_p == game.Tile{  }, "grid_get_i16_p should return Blank")
-    testing.expect(t, val_int_p == game.Tile{  }, "grid_get_int_p should return Blank")
-    testing.expect(t, val_vec2i_p == game.Tile{  }, "grid_get_vec2i_p should return Blank")
+    testing.expect(t, val_i16_p == game.TileFlags{  }, "grid_get_i16_p should return Blank")
+    testing.expect(t, val_int_p == game.TileFlags{  }, "grid_get_int_p should return Blank")
+    testing.expect(t, val_vec2i_p == game.TileFlags{  }, "grid_get_vec2i_p should return Blank")
 }
 
 @(test)
@@ -174,10 +174,10 @@ test_path_is_walkable :: proc(t: ^testing.T) {
     }
 
     goal := game.vec2i{1, 1}
-    game.grid_set(grid, game.vec2i{0, 0}, game.Tile{  })
-    game.grid_set(grid, game.vec2i{0, 1}, game.Tile{ .Weapon })
-    game.grid_set(grid, game.vec2i{1, 0}, game.Tile{ .Wall })  // Assuming Wall is not walkable
-    game.grid_set(grid, goal, game.Tile{ .Wall })  // But goal is always walkable
+    game.grid_set(grid, game.vec2i{0, 0}, game.TileFlags{  })
+    game.grid_set(grid, game.vec2i{0, 1}, game.TileFlags{ .Weapon })
+    game.grid_set(grid, game.vec2i{1, 0}, game.TileFlags{ .Wall })  // Assuming Wall is not walkable
+    game.grid_set(grid, goal, game.TileFlags{ .Wall })  // But goal is always walkable
 
     out_pos := game.vec2i{3, 3}
 
@@ -227,7 +227,7 @@ test_path_a_star_find_simple_path :: proc(t: ^testing.T) {
 
     // Set all to Blank
     for &tile in grid.data {
-        tile = game.Tile{  }
+        tile = game.TileFlags{  }
     }
 
     start := game.vec2i{0, 0}
@@ -253,12 +253,12 @@ test_path_a_star_find_no_path :: proc(t: ^testing.T) {
 
     // Set all to Blank, then block with walls
     for &tile in grid.data {
-        tile = game.Tile{  }
+        tile = game.TileFlags{  }
     }
     // Vertical wall in middle column
-    game.grid_set(grid, game.vec2i{1, 0}, game.Tile{ .Wall })
-    game.grid_set(grid, game.vec2i{1, 1}, game.Tile{ .Wall })
-    game.grid_set(grid, game.vec2i{1, 2}, game.Tile{ .Wall })
+    game.grid_set(grid, game.vec2i{1, 0}, game.TileFlags{ .Wall })
+    game.grid_set(grid, game.vec2i{1, 1}, game.TileFlags{ .Wall })
+    game.grid_set(grid, game.vec2i{1, 2}, game.TileFlags{ .Wall })
 
     start := game.vec2i{0, 0}
     goal := game.vec2i{2, 0}
@@ -279,10 +279,10 @@ test_path_a_star_find_goal_is_walkable :: proc(t: ^testing.T) {
     }
 
     // Set goal to Wall, but should still be reachable if adjacent
-    game.grid_set(grid, game.vec2i{0, 0}, game.Tile{  })
-    game.grid_set(grid, game.vec2i{1, 0}, game.Tile{  })
-    game.grid_set(grid, game.vec2i{0, 1}, game.Tile{  })
-    game.grid_set(grid, game.vec2i{1, 1}, game.Tile{ .Wall })  // Goal
+    game.grid_set(grid, game.vec2i{0, 0}, game.TileFlags{  })
+    game.grid_set(grid, game.vec2i{1, 0}, game.TileFlags{  })
+    game.grid_set(grid, game.vec2i{0, 1}, game.TileFlags{  })
+    game.grid_set(grid, game.vec2i{1, 1}, game.TileFlags{ .Wall })  // Goal
 
     start := game.vec2i{0, 0}
     goal := game.vec2i{1, 1}
@@ -304,49 +304,12 @@ test_path_is_walkable_internal :: proc(t: ^testing.T) {
     }
 
     goal := game.vec2i{1, 1}
-    game.grid_set(grid, game.vec2i{0, 0}, game.Tile{  })
-    game.grid_set(grid, game.vec2i{0, 1}, game.Tile{ .Wall })
+    game.grid_set(grid, game.vec2i{0, 0}, game.TileFlags{  })
+    game.grid_set(grid, game.vec2i{0, 1}, game.TileFlags{ .Wall })
 
     testing.expect(t, game.path_is_walkable_internal(game.vec2i{0, 0}, goal, false, grid^), "Blank should be walkable without through walls")
     testing.expect(t, !game.path_is_walkable_internal(game.vec2i{0, 1}, goal, false, grid^), "Wall not walkable without through walls")
     testing.expect(t, game.path_is_walkable_internal(game.vec2i{0, 1}, goal, true, grid^), "Wall walkable with allow_through_walls")
-}
-
-@(test)
-test_path_get_walkable_runnable :: proc(t: ^testing.T) {
-    allocator := context.allocator
-    size := game.vec2i{3, 3}
-    grid := game.grid_create(size, allocator)
-    defer {
-        delete(grid.data, allocator)
-        delete(grid.weapons)
-        free(grid, allocator)
-    }
-
-    // Make a center position with mixed neighbors
-    for &tile in grid.data {
-        tile = game.Tile{  }
-    }
-    // North is wall, East is weapon (walkable), West is blank (walkable)
-    game.grid_set(grid, game.vec2i{1, 0}, game.Tile{ .Wall })
-    game.grid_set(grid, game.vec2i{2, 1}, game.Tile{ .Weapon })
-
-    pos := game.vec2i{1, 1}
-    goal := game.vec2i{2, 2}
-
-    walkable := make(map[game.vec2i]bool, 0, context.temp_allocator)
-    runable := make(map[game.vec2i]bool, 0, context.temp_allocator)
-
-    game.path_set_walkable_runnable(pos, goal, grid, &walkable, &runable)
-
-    // West (0,1) should be walkable
-    testing.expect(t, walkable[game.vec2i{0, 1}], "West neighbor should be marked walkable")
-    // East (2,1) should be walkable (weapon)
-    testing.expect(t, walkable[game.vec2i{2, 1}], "East neighbor (weapon) should be marked walkable")
-    // North (1,0) is wall and should not be walkable (unless goal)
-    testing.expect(t, !walkable[game.vec2i{1, 0}], "North neighbor (wall) should not be walkable")
-    // Two-step runable checks: position two steps east (3,1) is out of bounds -> not runable
-    testing.expect(t, !runable[game.vec2i{3, 1}], "Out-of-bounds two-step should not be runable")
 }
 
 @(test)
@@ -363,7 +326,7 @@ test_refresh_player_reachability_basic :: proc(t: ^testing.T) {
     // Clear all tiles to default (empty / walkable)
     for y in 0..<grid.height {
         for x in 0..<grid.width {
-            game.grid_set(grid, x, y, game.Tile{})
+            game.grid_set(grid, x, y, game.TileFlags{})
         }
     }
 
@@ -404,7 +367,7 @@ test_refresh_player_reachability_basic :: proc(t: ^testing.T) {
     // Non-adjacent positions should NOT have flags
     non_adjacent := game.vec2i{4, 4}
     tile := game.grid_get(grid^, non_adjacent)
-    testing.expect(t, tile == game.Tile{}, "Non-reachable position should have no reachability flags")
+    testing.expect(t, tile == game.TileFlags{}, "Non-reachable position should have no reachability flags")
 }
 
 @(test)
@@ -421,17 +384,17 @@ test_refresh_player_reachability_with_wall :: proc(t: ^testing.T) {
     // Clear all to default
     for y in 0..<grid.height {
         for x in 0..<grid.width {
-            game.grid_set(grid, x, y, game.Tile{})
+            game.grid_set(grid, x, y, game.TileFlags{})
         }
     }
 
     player_pos := game.vec2i{2, 2}
 
     // Block right direction with Wall at 1-step
-    game.grid_set(grid, game.vec2i{3, 2}, game.Tile{.Wall})
+    game.grid_set(grid, game.vec2i{3, 2}, game.TileFlags{.Wall})
 
     // Block down direction at 2-step (but 1-step open)
-    game.grid_set(grid, game.vec2i{2, 0}, game.Tile{.Wall})
+    game.grid_set(grid, game.vec2i{2, 0}, game.TileFlags{.Wall})
 
     game.refresh_player_reachability(grid, player_pos)
 
@@ -484,7 +447,7 @@ test_refresh_player_reachability_clears_old_flags :: proc(t: ^testing.T) {
 
     // Check a non-reachable position (corner, not adjacent)
     corner := game.grid_get(grid^, game.vec2i{0, 0})
-    testing.expect(t, corner == game.Tile{}, "Old flags should have been cleared from non-reachable tiles")
+    testing.expect(t, corner == game.TileFlags{}, "Old flags should have been cleared from non-reachable tiles")
 
     // Current pos should have Walkable
     current := game.grid_get(grid^, player_pos)
@@ -506,7 +469,7 @@ test_refresh_player_reachability_current_pos :: proc(t: ^testing.T) {
     // Clear all
     for y in 0..<grid.height {
         for x in 0..<grid.width {
-            game.grid_set(grid, x, y, game.Tile{})
+            game.grid_set(grid, x, y, game.TileFlags{})
         }
     }
 

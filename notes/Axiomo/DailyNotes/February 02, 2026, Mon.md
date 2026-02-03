@@ -31,8 +31,14 @@
 * So there's actually with grounded vs flying yeah a simple and medium and complex
 * Priority then might be...
 	* Simple Obstacle
+		* Add an obstacle flag
+		* maybe have a data driven obstacle visible object
 	* Simple Ground/Fly
+		* Make sure the flags exist and are set via cards
+		* Make sure player weapons respond to them
 	* MediumObstacle
+		* alll about visibility?
 	* Medium Ground/Fly
 	* idk lets laptop switch
-	* 
+* 
+

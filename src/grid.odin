@@ -12,20 +12,20 @@ grid_size := vec2i{GRID_WIDTH, GRID_HEIGHT}
 TileFlag :: enum
 {
     Wall,
+    Obstacle,
     Weapon,
     Entity,
-
     Walkable,
     Runnable,
 }
-Tile :: bit_set[TileFlag; u8]
+TileFlags :: bit_set[TileFlag; u8]
 
 Grid :: struct{
-    data : []Tile,
+    data : []TileFlags,
     width : i32,
     height : i32,
     scale : vec2f,
-    weapons : [dynamic]WeaponGrid
+    weapons : [dynamic]WeaponGrid,
 }
 
 grid_create :: proc(size : [2]i32 , alloc : mem.Allocator , scale := vec2f{1.0, 1.0}) -> ^Grid
@@ -33,7 +33,7 @@ grid_create :: proc(size : [2]i32 , alloc : mem.Allocator , scale := vec2f{1.0, 
     grid := new(Grid, alloc)
     grid.width = size.x
     grid.height = size.y
-    grid.data = make([]Tile, grid.width * grid.height, alloc)
+    grid.data = make([]TileFlags, grid.width * grid.height, alloc)
     grid.scale = scale
     grid.weapons = make([dynamic]WeaponGrid, alloc)
     grid_size = size
@@ -43,43 +43,43 @@ grid_create :: proc(size : [2]i32 , alloc : mem.Allocator , scale := vec2f{1.0, 
 grid_set :: proc{grid_set_i16, grid_set_vec2i}
 grid_get :: proc{grid_get_i16, grid_get_vec2i, grid_get_int_p, grid_get_i16_p, grid_get_vec2i_p}
 
-grid_set_i16 :: proc(grid : ^Grid, x, y : i32, tile : Tile){
+grid_set_i16 :: proc(grid : ^Grid, x, y : i32, tile : TileFlags){
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
     grid.data[y * grid.width + x] = tile
 }
-grid_set_vec2i :: proc(grid : ^Grid, p : vec2i, tile : Tile){
+grid_set_vec2i :: proc(grid : ^Grid, p : vec2i, tile : TileFlags){
     assert(p.x >= 0 && p.x < i32(grid.width) && p.y >= 0 && p.y < i32(grid.height))
     grid.data[p.y * i32(grid.width) + p.x] = tile
 }
-grid_get_i16_p :: proc(grid : ^Grid, x, y : i32) -> Tile {
+grid_get_i16_p :: proc(grid : ^Grid, x, y : i32) -> TileFlags {
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
     return grid.data[y * grid.width + x]
 }
 
-grid_get_int_p :: proc(grid : ^Grid, x, y : int) -> Tile {
+grid_get_int_p :: proc(grid : ^Grid, x, y : int) -> TileFlags {
     assert(x >= 0 && x < int(grid.width) && y >= 0 && y < int(grid.height))
     return grid.data[y * int(grid.width) + x]
 }
-grid_get_vec2i_p :: proc(grid : ^Grid, p : vec2i) -> Tile {
+grid_get_vec2i_p :: proc(grid : ^Grid, p : vec2i) -> TileFlags {
     assert(p.x >= 0 && p.x < grid.width && p.y >= 0 && p.y < grid.height)
     return grid.data[p.y * grid.width + p.x]
 }
-grid_get_i16 :: proc(grid : Grid, x, y : i32) -> Tile {
+grid_get_i16 :: proc(grid : Grid, x, y : i32) -> TileFlags {
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
     return grid.data[y * grid.width + x]
 }
 
-grid_get_vec2i :: proc(grid : Grid, p : vec2i) -> Tile {
+grid_get_vec2i :: proc(grid : Grid, p : vec2i) -> TileFlags {
     assert(p.x >= 0 && p.x < grid.width && p.y >= 0 && p.y < grid.height)
     return grid.data[p.y * grid.width + p.x]
 }
 
-grid_get_mut_i16 :: proc(grid: ^Grid, x, y: i32) -> ^Tile {
+grid_get_mut_i16 :: proc(grid: ^Grid, x, y: i32) -> ^TileFlags {
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
     return &grid.data[y * grid.width + x]
 }
 
-grid_get_mut_vec2i :: proc(grid: ^Grid, p: vec2i) -> ^Tile {
+grid_get_mut_vec2i :: proc(grid: ^Grid, p: vec2i) -> ^TileFlags {
     assert(p.x >= 0 && p.x < grid.width && p.y >= 0 && p.y < grid.height)
     return &grid.data[p.y * grid.width + p.x]
 }
@@ -246,22 +246,6 @@ path_is_walkable_internal :: proc(p : vec2i, goal : vec2i, allow_through_walls :
     if t == nil || .Weapon in t { return true }
     if allow_through_walls && .Wall in t { return true }
     return false
-}
-
-path_set_walkable_runnable :: proc(pos, goal : vec2i, grid : ^Grid, walkable, runnable : ^map[vec2i]bool)
-{
-    dirs := [4]vec2i{ vec2i{1,0}, vec2i{-1,0}, vec2i{0,1}, vec2i{0,-1} }
-    for d in dirs {
-        one_step := vec2i{ pos[0] + d[0], pos[1] + d[1] }
-        if path_is_walkable(one_step, goal, grid^) {
-            walkable[one_step] = true
-
-            two_step := vec2i{ pos[0] + d[0]*2, pos[1] + d[1]*2 }
-            if path_is_walkable(two_step, goal, grid^) {
-                runnable[two_step] = true
-            }
-        }
-    }
 }
 
 four_dirs := [4]vec2i{

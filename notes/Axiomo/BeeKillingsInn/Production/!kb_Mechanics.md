@@ -10,7 +10,6 @@ kanban-plugin: board
 - [ ] Dodge: Action Oriented
 - [ ] Attack: Action Oriented
 - [ ] Line of Sight
-- [ ] Obstacles - Simple
 - [ ] Obstacles - Medium
 - [ ] Obstacles - Complex
 - [ ] Status Effects - Simple
@@ -19,6 +18,8 @@ kanban-plugin: board
 
 ## In Progress
 
+- [ ] Obstacles - Simple
+- [ ] Fly/Ground Simple
 
 
 ## Complete
