@@ -121,7 +121,7 @@ setup_battle :: proc() -> ^Battle {
     battle.grid = new(Grid)
     battle.grid.width = game.GRID_WIDTH
     battle.grid.height = game.GRID_HEIGHT
-    battle.grid.data = make([]game.TileFlags, int(battle.grid.width * battle.grid.height))
+    battle.grid.tiles = make([]game.Tile, int(battle.grid.width * battle.grid.height))
     battle.grid.scale = {1.0, 1.0}
 
     // States
@@ -226,7 +226,7 @@ Game_Continues_When_Player_Moves_Into_Item_Tile_And_Picks_Up_Item :: proc(t: ^te
 
     // Set an item tile
     idx := int(battle.player.pos.y * i32(battle.grid.width) + battle.player.pos.x + 1)
-    battle.grid.data[idx] = game.TileFlags{ .Weapon }
+    battle.grid.tiles[idx].flags = game.TileFlags{ .Weapon }
 
     // Game should continue
     testing.expect(t, !game.check_win_condition(battle), "Game continues after item tile")
@@ -399,7 +399,7 @@ Player_Cannot_Move_Into_Wall_Tile :: proc(t: ^testing.T) {
     defer teardown_battle(battle)
 
     // Set a wall tile
-    battle.grid.data[1] = game.TileFlags{ .Wall } // Position {1, 0}
+    battle.grid.tiles[1].flags = game.TileFlags{ .Wall } // Position {1, 0}
 
     testing.expect(t, !game.path_is_walkable(vec2i{1, 0}, battle.player.pos, battle.grid^), "Cannot move into wall tile")
 }
@@ -426,7 +426,7 @@ Player_Can_Move_Onto_Item_Tile :: proc(t: ^testing.T) {
     defer teardown_battle(battle)
 
     // Set weapon tile
-    battle.grid.data[1] = game.TileFlags{ .Weapon }
+    battle.grid.tiles[1].flags = game.TileFlags{ .Weapon }
 
     // Weapon tiles are walkable
     testing.expect(t, game.path_is_walkable(vec2i{1, 0}, battle.player.pos, battle.grid^), "Can move onto item tile")
@@ -475,7 +475,7 @@ Player_Automatically_Picks_Up_Item_When_Landing_On_Item_Tile :: proc(t: ^testing
 
     // Set weapon tile
     idx := 1 // Position {1, 0}
-    battle.grid.data[idx] = game.TileFlags{ .Weapon }
+    battle.grid.tiles[idx].flags = game.TileFlags{ .Weapon }
 
     // weap_check returns true if there's a weapon and clears it
     testing.expect(t, game.weap_check(vec2i{1, 0}, battle.grid), "Picks up item on weapon tile")
@@ -487,11 +487,11 @@ Item_Tile_Becomes_Blank_After_Player_Pickup :: proc(t: ^testing.T) {
     defer teardown_battle(battle)
 
     idx := 1 // Position {1, 0}
-    battle.grid.data[idx] = game.TileFlags{ .Weapon }
+    battle.grid.tiles[idx].flags = game.TileFlags{ .Weapon }
 
     game.weap_check(vec2i{1, 0}, battle.grid) // This clears the tile
 
-    testing.expect(t, battle.grid.data[idx] == {}, "Item tile becomes blank after pickup")
+    testing.expect(t, battle.grid.tiles[idx] == {}, "Item tile becomes blank after pickup")
 }
 
 // ===========================================================================
@@ -683,7 +683,7 @@ Bee_Cannot_Move_Into_Wall_Tile :: proc(t: ^testing.T) {
     defer teardown_battle(battle)
 
     // Set a wall
-    battle.grid.data[1] = game.TileFlags{ .Wall }
+    battle.grid.tiles[1].flags = game.TileFlags{ .Wall }
 
     testing.expect(t, !game.path_is_walkable(vec2i{1, 0}, battle.bees[0].pos, battle.grid^), "Bee cannot move into wall tile")
 }

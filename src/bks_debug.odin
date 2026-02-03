@@ -43,7 +43,7 @@ display_level :: proc(battle : Battle)
     // Initialize chars from tiles
     for x in 0..<GRID_WIDTH do for y in 0..<GRID_HEIGHT
     {
-        tile := grid_get(battle.grid, x, y)
+        tile := grid_get(battle.grid, x, y).flags
         if tile == nil {
             chars[x][y] = '.'
         } else if .Wall in tile {

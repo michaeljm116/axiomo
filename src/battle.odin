@@ -960,14 +960,14 @@ move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState, gr
     if game_controller_held(.Run){
         bounds = p.pos + 2 * axis.as_int
         if !path_in_bounds(bounds, grid^) do return
-        if .Runnable in grid_get(grid, bounds){
+        if .Runnable in grid_get(grid, bounds).flags{
             p.target = bounds
             p.c_flags = {.Run}
             p.added += {.Animate}
             alert_all_bees()
         }
     }
-    else if .Walkable in grid_get(grid, bounds) {
+    else if .Walkable in grid_get(grid, bounds).flags {
         // Animate Player
         p.target = bounds
         p.c_flags = {.Walk}
@@ -977,7 +977,7 @@ move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState, gr
 
 weap_check :: proc(p : vec2i, grid : ^Grid) -> bool{
     // Tile is a bitset; check membership
-    if .Weapon in grid_get(grid,p) {
+    if .Weapon in grid_get(grid,p).flags {
         grid_set(grid,p, {})
         return true
     }
@@ -1303,15 +1303,6 @@ set_up_character_anim :: proc(cha : ^Character){
 }
 
 slerp_character_to_tile :: proc(cha : ^Character, dt : f32){
-    if dt < 1 do cha.anim.timer -= dt
-    ct := get_component(cha.entity, Cmp_Transform)
-    if ct == nil do return
-    t := f64(1.0 - cha.anim.timer)
-    eased_t := math.smoothstep(0.0,1.0,t)
-    ct.local.pos = linalg.lerp(cha.anim.start, cha.anim.end, f32(eased_t))
-}
-
-slerp_character_above_tile :: proc(cha : ^Character, height, dt : f32){
     if dt < 1 do cha.anim.timer -= dt
     ct := get_component(cha.entity, Cmp_Transform)
     if ct == nil do return

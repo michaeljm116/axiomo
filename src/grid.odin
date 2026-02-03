@@ -19,9 +19,14 @@ TileFlag :: enum
     Runnable,
 }
 TileFlags :: bit_set[TileFlag; u8]
+Tile :: struct
+{
+	flags : TileFlags,
+	center : vec2f
+}
 
 Grid :: struct{
-    data : []TileFlags,
+    tiles : []Tile,
     width : i32,
     height : i32,
     scale : vec2f,
@@ -33,7 +38,7 @@ grid_create :: proc(size : [2]i32 , alloc : mem.Allocator , scale := vec2f{1.0, 
     grid := new(Grid, alloc)
     grid.width = size.x
     grid.height = size.y
-    grid.data = make([]TileFlags, grid.width * grid.height, alloc)
+    grid.tiles = make([]Tile, grid.width * grid.height, alloc)
     grid.scale = scale
     grid.weapons = make([dynamic]WeaponGrid, alloc)
     grid_size = size
@@ -42,46 +47,56 @@ grid_create :: proc(size : [2]i32 , alloc : mem.Allocator , scale := vec2f{1.0, 
 
 grid_set :: proc{grid_set_i16, grid_set_vec2i}
 grid_get :: proc{grid_get_i16, grid_get_vec2i, grid_get_int_p, grid_get_i16_p, grid_get_vec2i_p}
+grid_set_flags :: proc{grid_set_flags_i16, grid_set_flags_vec2i}
 
-grid_set_i16 :: proc(grid : ^Grid, x, y : i32, tile : TileFlags){
+grid_set_i16 :: proc(grid : ^Grid, x, y : i32, tile : Tile){
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
-    grid.data[y * grid.width + x] = tile
+    grid.tiles[y * grid.width + x] = tile
 }
-grid_set_vec2i :: proc(grid : ^Grid, p : vec2i, tile : TileFlags){
+grid_set_vec2i :: proc(grid : ^Grid, p : vec2i, tile : Tile){
     assert(p.x >= 0 && p.x < i32(grid.width) && p.y >= 0 && p.y < i32(grid.height))
-    grid.data[p.y * i32(grid.width) + p.x] = tile
+    grid.tiles[p.y * i32(grid.width) + p.x] = tile
 }
-grid_get_i16_p :: proc(grid : ^Grid, x, y : i32) -> TileFlags {
+grid_set_flags_i16 :: proc(grid : ^Grid, x, y : i32, flags : TileFlags){
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
-    return grid.data[y * grid.width + x]
+    grid.tiles[y * grid.width + x].flags = flags
+}
+grid_set_flags_vec2i :: proc(grid : ^Grid, p : vec2i, flags : TileFlags){
+    assert(p.x >= 0 && p.x < i32(grid.width) && p.y >= 0 && p.y < i32(grid.height))
+    grid.tiles[p.y * i32(grid.width) + p.x].flags = flags
 }
 
-grid_get_int_p :: proc(grid : ^Grid, x, y : int) -> TileFlags {
+grid_get_i16_p :: proc(grid : ^Grid, x, y : i32) -> Tile {
+    assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
+    return grid.tiles[y * grid.width + x]
+}
+
+grid_get_int_p :: proc(grid : ^Grid, x, y : int) -> Tile {
     assert(x >= 0 && x < int(grid.width) && y >= 0 && y < int(grid.height))
-    return grid.data[y * int(grid.width) + x]
+    return grid.tiles[y * int(grid.width) + x]
 }
-grid_get_vec2i_p :: proc(grid : ^Grid, p : vec2i) -> TileFlags {
+grid_get_vec2i_p :: proc(grid : ^Grid, p : vec2i) -> Tile {
     assert(p.x >= 0 && p.x < grid.width && p.y >= 0 && p.y < grid.height)
-    return grid.data[p.y * grid.width + p.x]
+    return grid.tiles[p.y * grid.width + p.x]
 }
-grid_get_i16 :: proc(grid : Grid, x, y : i32) -> TileFlags {
+grid_get_i16 :: proc(grid : Grid, x, y : i32) -> Tile {
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
-    return grid.data[y * grid.width + x]
+    return grid.tiles[y * grid.width + x]
 }
 
-grid_get_vec2i :: proc(grid : Grid, p : vec2i) -> TileFlags {
+grid_get_vec2i :: proc(grid : Grid, p : vec2i) -> Tile {
     assert(p.x >= 0 && p.x < grid.width && p.y >= 0 && p.y < grid.height)
-    return grid.data[p.y * grid.width + p.x]
+    return grid.tiles[p.y * grid.width + p.x]
 }
 
-grid_get_mut_i16 :: proc(grid: ^Grid, x, y: i32) -> ^TileFlags {
+grid_get_mut_i16 :: proc(grid: ^Grid, x, y: i32) -> ^Tile {
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
-    return &grid.data[y * grid.width + x]
+    return &grid.tiles[y * grid.width + x]
 }
 
-grid_get_mut_vec2i :: proc(grid: ^Grid, p: vec2i) -> ^TileFlags {
+grid_get_mut_vec2i :: proc(grid: ^Grid, p: vec2i) -> ^Tile {
     assert(p.x >= 0 && p.x < grid.width && p.y >= 0 && p.y < grid.height)
-    return &grid.data[p.y * grid.width + p.x]
+    return &grid.tiles[p.y * grid.width + p.x]
 }
 
 grid_get_mut :: proc{grid_get_mut_i16, grid_get_mut_vec2i}
@@ -122,7 +137,7 @@ path_in_bounds :: proc(p : vec2i, grid : Grid) -> bool {
 path_is_walkable :: proc(p : vec2i, goal : vec2i, grid: Grid) -> bool {
     if path_pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !path_in_bounds(p, grid) { return false }
-    t := grid_get(grid,p)
+    t := grid_get(grid,p).flags
     return  t == nil || .Weapon in t
 }
 
@@ -146,7 +161,7 @@ path_heuristic :: proc(a : vec2i, b : vec2i) -> int {
 // If no path found, returned array length == 0
 path_a_star_find :: proc(start : vec2i, goal, size : vec2i, grid : Grid) -> [dynamic]vec2i {
     // Static arrays sized for grid
-    total_cells := len(grid.data)
+    total_cells := len(grid.tiles)
     g_score := make([]int, total_cells, context.temp_allocator)
     f_score := make([]int, total_cells, context.temp_allocator)
     came_from := make([]vec2i, total_cells, context.temp_allocator)
@@ -242,7 +257,7 @@ path_a_star_find :: proc(start : vec2i, goal, size : vec2i, grid : Grid) -> [dyn
 path_is_walkable_internal :: proc(p : vec2i, goal : vec2i, allow_through_walls : bool, grid : Grid) -> bool {
     if path_pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !path_in_bounds(p, grid) { return false }
-    t := grid_get(grid,p)
+    t := grid_get(grid,p).flags
     if t == nil || .Weapon in t { return true }
     if allow_through_walls && .Wall in t { return true }
     return false
@@ -260,7 +275,7 @@ refresh_player_reachability :: proc(grid: ^Grid, pos: vec2i) {
     for y in 0..<grid.height {
         for x in 0..<grid.width {
             pos := vec2i{x, y}
-            t := grid_get_mut(grid, pos)
+            t := &grid_get_mut(grid, pos).flags
             t^ -= {.Walkable, .Runnable}
         }
     }
@@ -269,18 +284,18 @@ refresh_player_reachability :: proc(grid: ^Grid, pos: vec2i) {
         // 1 step away
         one := pos + d
         if path_in_bounds(one, grid^) && path_is_walkable(one, pos, grid^) {
-            t_one := grid_get_mut(grid, one)
+            t_one := &grid_get_mut(grid, one).flags
             t_one^ += {.Walkable}
 
             // 2 steps away (same direction)
             two := pos + d * 2
             if path_in_bounds(two, grid^) && path_is_walkable(two, pos, grid^) {
-                t_two := grid_get_mut(grid, two)
+                t_two := &grid_get_mut(grid, two).flags
                 t_two^ += {.Runnable}
             }
         }
     }
 
-    t_player := grid_get_mut(grid, pos)
+    t_player := &grid_get_mut(grid, pos).flags
     t_player^ += {.Walkable}
 }
