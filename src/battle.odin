@@ -77,17 +77,17 @@ battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
 start_game :: proc(){
     g.battle.state = .Start //NOTE: Why is this in repeat?
     g.ves.curr_screen = .SelectCharacter
-
     battle_setup_1(&g.battle,g.mem_game.alloc) //NOTE: The actual initialize of the battle
     g.battle.player.entity = g.player
     init_battle(&g.battle, g.mem_game.alloc)
     init_battle_visuals(&g.battle)
 
     find_floor_entities()
-    grid_set_scale(g.floor, g.battle.grid)
-    set_entity_on_tile(g.floor, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y)
+    grid_init_floor(g.battle.grid, find_floor_transform()^)
+
+    set_entity_on_tile(g.battle.grid^, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y)
     for bee in g.battle.bees{
-        set_entity_on_tile(g.floor, bee.entity, g.battle, bee.pos.x, bee.pos.y)
+        set_entity_on_tile(g.battle.grid^, bee.entity, g.battle, bee.pos.x, bee.pos.y)
         face_right(bee.entity)
     }
 
@@ -924,7 +924,7 @@ place_chest_on_grid :: proc(pos : vec2i, battle : ^Battle)
 {
     chest := load_prefab("Chest")
     context.allocator = g.mem_game.alloc
-    set_entity_on_tile(g.floor, chest, battle^, pos.x, pos.y)
+    set_entity_on_tile(battle.grid^, chest, battle^, pos.x, pos.y)
     append(&battle.grid_weapons, WeaponGrid{pos, chest})
 }
 
@@ -1033,56 +1033,31 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
 
 // Sets a player on a tile in the Battle so that they are...
 // Flush with the floor and in center of that tile
-set_entity_on_tile :: proc(floor : Entity, entity : Entity, battle : Battle, x, y : i32)
+set_entity_on_tile :: proc(grid : Grid, entity : Entity, battle : Battle, x, y : i32)
 {
-    ft := get_component(floor, Cmp_Transform)
     pt := get_component(entity, Cmp_Transform)
-    if ft == nil || pt == nil do return
-
-    // Determine tile center in world space.
-    // Note: `ft.global.sca` is treated consistently with primitives in the renderer (half-extents).
-    full_cell_x := 2.0 * battle.grid.scale.x
-    full_cell_z := 2.0 * battle.grid.scale.y
-
-    // left / bottom world edges (x and z) of the floor
-    left_x := ft.global.pos.x - ft.global.sca.x
-    bottom_z := ft.global.pos.z - ft.global.sca.z
-
-    tile_center_x := left_x + full_cell_x * (f32(x) + 0.5)
-    tile_center_z := bottom_z + full_cell_z * (f32(y) + 0.5)
 
     // Set entity's horizontal position to tile center (preserve w component)
-    pt.local.pos.x = tile_center_x
-    pt.local.pos.z = tile_center_z
+    tile := grid_get(grid,x,y)
+    pt.local.pos.x = tile.center.x
+    pt.local.pos.z = tile.center.y
 
     // Now align vertically so the entity's bottom is flush with the floor top.
-    floor_top := get_top_of_entity(floor)
     entity_bottom := get_bottom_of_entity(entity)
 
-    if entity_bottom == -999999.0 { return }
-
-    dy := floor_top - entity_bottom
+    dy := grid.floor_height - entity_bottom
     pt.local.pos.y += dy
 }
 
 // Move pLayer to block
-move_entity_to_tile :: proc(entity : Entity, scale : vec2f, pos : vec2i)
+move_entity_to_tile :: proc(grid : Grid, entity : Entity, pos : vec2i)
 {
     pt := get_component(entity, Cmp_Transform)
-    ft := get_component(g.floor, Cmp_Transform)
-    if pt == nil || ft == nil do return
+    assert(pt != nil)
+    tile := grid_get(grid, pos.x, pos.y)
 
-    full_cell_x := 2.0 * scale.x
-    full_cell_z := 2.0 * scale.y
-
-    left_x := ft.global.pos.x - ft.global.sca.x
-    bottom_z := ft.global.pos.z - ft.global.sca.z
-
-    tile_center_x := left_x + full_cell_x * (f32(pos.x) + 0.5)
-    tile_center_z := bottom_z + full_cell_z * (f32(pos.y) + 0.5)
-
-    pt.local.pos.x = tile_center_x
-    pt.local.pos.z = tile_center_z
+    pt.local.pos.x = tile.center.x
+    pt.local.pos.z = tile.center.y
 }
 
 // Finds the lowest part of an entity in a scene hierarchy
@@ -1114,7 +1089,7 @@ get_bottom_of_entity :: proc(e : Entity) -> f32
         children := axiom.get_children(curr)
         for c in children do queue.push_front(&stackq, c)
     }
-    if min_y == 999999.0 do return -999999.0
+    assert(min_y != 999999.0)
     return min_y
 }
 
@@ -1170,6 +1145,18 @@ find_floor_entities :: proc() {
         }
     }
     log.error("No floor found")
+}
+
+find_floor_transform :: proc() -> ^Cmp_Transform
+{
+	table_nodes := get_table(Cmp_Node)
+    for node, i in table_nodes.rows{
+        if node.name == "Floor"{
+            g.floor = table_nodes.rid_to_eid[i]
+            return get_component(table_nodes.rid_to_eid[i], Cmp_Transform)
+        }
+    }
+    log.panicf("No floor found")
 }
 
 // Find the first light entity in the scene and cache it for orbit updates.
@@ -1266,28 +1253,19 @@ add_animations :: proc(){
 }
 
 // Similar to move_entity_to_tile but just sets the vectors up
-set_up_character_anim :: proc(cha : ^Character){
-    scale := g.battle.grid.scale
+set_up_character_anim :: proc(cha : ^Character, grid : Grid){
     pt := get_component(cha.entity, Cmp_Transform)
-    ft := get_component(g.floor, Cmp_Transform)
-    if pt == nil || ft == nil do return
+    assert(pt != nil)
 
-    full_cell_x := 2.0 * scale.x
-    full_cell_z := 2.0 * scale.y
-
-    left_x := ft.global.pos.x - ft.global.sca.x
-    bottom_z := ft.global.pos.z - ft.global.sca.z
-
-    tile_center_x := left_x + full_cell_x * (f32(cha.target.x) + 0.5)
-    tile_center_z := bottom_z + full_cell_z * (f32(cha.target.y) + 0.5)
+    target_tile := grid_get(grid, cha.target.x, cha.target.y)
 
     cha.anim.start = pt.local.pos
     cha.anim.end.yw = cha.anim.start.yw
-    cha.anim.end.xz = {tile_center_x, tile_center_z}
+    cha.anim.end.xz = target_tile.center
 
     // Compute target rotation to face the movement direction
     ct := get_component(cha.entity, Cmp_Transform)
-    if ct == nil do return
+    assert(ct != nil)
 
     cha.anim.start_rot = ct.local.rot
 
@@ -1770,12 +1748,12 @@ ves_animate_bee_start :: proc(bee: ^Bee){
     bee.c_flags = {.Walk}
     bee.flags += {.Animate}
     // bee.state = .Moving
-    set_up_character_anim(bee)
+    set_up_character_anim(bee, g.battle.grid^)
 }
 
 ves_animate_bee_end :: #force_inline proc(bee : ^Bee)
 {
-    move_entity_to_tile(bee.entity, g.battle.grid.scale, bee.target)
+    move_entity_to_tile(g.battle.grid^, bee.entity, bee.target)
     bee.pos = bee.target
     bee.anim.timer = 0
 }
@@ -1797,11 +1775,11 @@ ves_animate_player_start :: #force_inline proc(p : ^Player){
         ac := get_component(p.entity, Cmp_Animation)
         animate_walk(ac, "Froku", p.move_anim)
     }
-    set_up_character_anim(&p.base)
+    set_up_character_anim(&p.base, g.battle.grid^)
 }
 
 ves_animate_player_end :: #force_inline proc(p : ^Player){
-    move_entity_to_tile(p.entity, g.battle.grid.scale, p.target)
+    move_entity_to_tile(g.battle.grid^, p.entity, p.target)
     p.pos = p.target
     p.anim.timer = 0
     ac := get_component(p.entity, Cmp_Animation)

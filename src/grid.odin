@@ -27,6 +27,8 @@ Tile :: struct
 
 Grid :: struct{
     tiles : []Tile,
+    floor_height : f32,
+
     width : i32,
     height : i32,
     scale : vec2f,
@@ -43,6 +45,27 @@ grid_create :: proc(size : [2]i32 , alloc : mem.Allocator , scale := vec2f{1.0, 
     grid.weapons = make([dynamic]WeaponGrid, alloc)
     grid_size = size
     return grid
+}
+
+// Create tiles from floor
+// This will be done by taking the floor's size and dividing it by grid size and calculating fo each
+// if floor x = 10 and grid size = 5, each tile is 2 long and center is at 1 aka 0 + .5 tile.size.x
+// lets say you're at 3rd tile you'd be at 1..3..5 you'd be at 5 which is (3 - 1) * tile.size.x + .5 tile.size.x
+// or maybe 3 * tilesize.x - .5 tile.size.x ?? ultimately just depends where the index starts
+// use grid sets to get the actual grid spot since you'll be 0 - size.x then.... yeah
+grid_init_floor :: proc(grid : ^Grid, floor_transform : Cmp_Transform)
+{
+    grid.floor_height = floor_transform.global.pos.y + floor_transform.global.sca.y
+    grid.scale = vec2f{floor_transform.global.sca.x, floor_transform.global.sca.z} / vec2f{f32(grid.width), f32(grid.height)}
+    tile_interval := grid.scale * 0.5
+
+    for r in 0..<grid.width {
+    	for c in 0..<grid.height {
+     		rc := vec2f{f32(r),f32(c)}
+     		center := rc * grid.scale + tile_interval
+     		grid_set(grid, r,c, Tile{center = center})
+	    }
+    }
 }
 
 grid_set :: proc{grid_set_i16, grid_set_vec2i}
@@ -103,15 +126,7 @@ grid_get_mut :: proc{grid_get_mut_i16, grid_get_mut_vec2i}
 
 //Set the scale of the level to always match the size of the floor
 //So lets say you have a 3 x 3 grid but a 90 x 90 level, 1 grid block is 30
-grid_set_scale :: proc(floor : Entity, grid : ^Grid)
-{
-    assert(grid.width > 0 && grid.height > 0)
-    tc := get_component(floor, Cmp_Transform)
-    if tc == nil do return
 
-    grid.scale.x = tc.global.sca.x / f32(grid.width)
-    grid.scale.y = tc.global.sca.z / f32(grid.height)
-}
 grid_in_bounds :: path_in_bounds
 
 //----------------------------------------------------------------------------\\
