@@ -84,11 +84,13 @@ start_game :: proc(){
 
     grid_init_floor(g.battle.grid, find_floor_prim()^)
 
-    set_entity_on_tile(g.battle.grid^, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y)
-    for bee in g.battle.bees{
-        set_entity_on_tile(g.battle.grid^, bee.entity, g.battle, bee.pos.x, bee.pos.y)
+    set_entity_on_tile(g.battle.grid^, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y, &g.battle.player.ground)
+    for &bee in g.battle.bees{
+        set_entity_on_tile(g.battle.grid^, bee.entity, g.battle, bee.pos.x, bee.pos.y, &bee.ground)
         face_right(bee.entity)
     }
+
+
 
     place_chest_on_grid(vec2i{2,0}, &g.battle)
     place_chest_on_grid(vec2i{4,3}, &g.battle)
@@ -455,6 +457,7 @@ Character :: struct
     pos : vec2i,
     health : i8,
     target : vec2i,
+    ground : f32,
     entity : Entity,
 
     // Animation related
@@ -923,7 +926,8 @@ place_chest_on_grid :: proc(pos : vec2i, battle : ^Battle)
 {
     chest := load_prefab("Chest")
     context.allocator = g.mem_game.alloc
-    set_entity_on_tile(battle.grid^, chest, battle^, pos.x, pos.y)
+    f : f32
+    set_entity_on_tile(battle.grid^, chest, battle^, pos.x, pos.y, &f)
     append(&battle.grid_weapons, WeaponGrid{pos, chest})
 }
 
@@ -1032,7 +1036,7 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
 
 // Sets a player on a tile in the Battle so that they are...
 // Flush with the floor and in center of that tile
-set_entity_on_tile :: proc(grid : Grid, entity : Entity, battle : Battle, x, y : i32)
+set_entity_on_tile :: proc(grid : Grid, entity : Entity, battle : Battle, x, y : i32, ground : ^f32)
 {
     pt := get_component(entity, Cmp_Transform)
 
@@ -1046,6 +1050,7 @@ set_entity_on_tile :: proc(grid : Grid, entity : Entity, battle : Battle, x, y :
 
     dy := grid.floor_height - entity_bottom
     pt.local.pos.y += dy
+    ground^ = pt.local.pos.y
 }
 
 // Move pLayer to block
@@ -1264,20 +1269,17 @@ add_animations :: proc(){
 
 // Similar to move_entity_to_tile but just sets the vectors up
 set_up_character_anim :: proc(cha : ^Character, grid : Grid){
-    pt := get_component(cha.entity, Cmp_Transform)
-    assert(pt != nil)
-
-    target_tile := grid_get(grid, cha.target.x, cha.target.y)
-
-    cha.anim.start = pt.local.pos
-    cha.anim.end.yw = cha.anim.start.yw
-    cha.anim.end.xz = target_tile.center
-
-    // Compute target rotation to face the movement direction
     ct := get_component(cha.entity, Cmp_Transform)
     assert(ct != nil)
 
+    target_tile := grid_get(grid, cha.target.x, cha.target.y)
+
+    cha.anim.start = ct.local.pos
+    cha.anim.end.yw = {cha.ground, cha.anim.start.w}
+    cha.anim.end.xz = target_tile.center
     cha.anim.start_rot = ct.local.rot
+
+    if .Flying in cha.flags do cha.anim.end.y = cha.ground + 2.0
 
     dir_xz := vec3{cha.anim.end.x - cha.anim.start.x, 0, cha.anim.end.z - cha.anim.start.z}
     dir_len := linalg.length(dir_xz)
