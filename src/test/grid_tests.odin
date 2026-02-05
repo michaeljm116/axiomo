@@ -2,7 +2,9 @@ package game_tests
 
 import "core:testing"
 import "core:mem"
+import math "core:math/linalg"
 import game".."
+import ax "../axiom"
 
 // Assuming Tile is defined in game as something like:
 // Tile :: enum { Blank, Weapon, Wall, ... }
@@ -293,6 +295,88 @@ test_path_a_star_find_goal_is_walkable :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_grid_init_floor_tile_centers :: proc(t: ^testing.T) {
+    allocator := context.allocator
+    size := game.vec2i{3, 2}  // Small grid for easier verification
+    grid := game.grid_create(size, allocator)
+    defer {
+        delete(grid.tiles, allocator)
+        delete(grid.weapons)
+        free(grid, allocator)
+    }
+
+    // Create a fake floor primitive - floor is 6 units wide, 4 units deep
+    floor_transform := game.Cmp_Primitive{
+        world = math.MATRIX4F32_IDENTITY,  // Identity matrix (position at origin)
+        extents = {3.0, 0.5, 2.0}  // Half-extents: Width=6 (3*2), Height=1 (0.5*2), Depth=4 (2*2)
+    }
+
+    // Initialize the grid with the fake floor
+    game.grid_init_floor(grid, floor_transform)
+
+    // Verify scale calculation: floor_sca.xz / grid_size = {6,4} / {3,2} = {2,2}
+    testing.expect(t, grid.scale.x == 2.0, "Grid scale x should be 6/3 = 2.0")
+    testing.expect(t, grid.scale.y == 2.0, "Grid scale y should be 4/2 = 2.0")
+
+    // Verify tile centers are calculated correctly
+    // For a 3x2 grid with scale 2.0, centers should be:
+    // x positions: 1.0, 3.0, 5.0 (0*2+0.5*2, 1*2+0.5*2, 2*2+0.5*2)
+    // z positions: 1.0, 3.0 (same logic)
+
+    // Check corner tiles
+    tile_00 := game.grid_get(grid^, 0, 0)  // bottom-left
+    tile_20 := game.grid_get(grid^, 2, 0)  // bottom-right
+    tile_01 := game.grid_get(grid^, 0, 1)  // top-left
+    tile_21 := game.grid_get(grid^, 2, 1)  // top-right
+
+    testing.expect(t, tile_00.center.x == -2.0, "Tile (0,0) center x should be 0*2 + 1.0 - 3.0 = -2.0")
+    testing.expect(t, tile_00.center.y == -1.0, "Tile (0,0) center y should be 0*2 + 1.0 - 2.0 = -1.0")
+
+    testing.expect(t, tile_20.center.x == 2.0, "Tile (2,0) center x should be 2*2 + 1.0 - 3.0 = 2.0")
+    testing.expect(t, tile_20.center.y == -1.0, "Tile (2,0) center y should be 0*2 + 1.0 - 2.0 = -1.0")
+
+    testing.expect(t, tile_01.center.x == -2.0, "Tile (0,1) center x should be 0*2 + 1.0 - 3.0 = -2.0")
+    testing.expect(t, tile_01.center.y == 1.0, "Tile (0,1) center y should be 1*2 + 1.0 - 2.0 = 1.0")
+
+    testing.expect(t, tile_21.center.x == 2.0, "Tile (2,1) center x should be 2*2 + 1.0 - 3.0 = 2.0")
+    testing.expect(t, tile_21.center.y == 1.0, "Tile (2,1) center y should be 1*2 + 1.0 - 2.0 = 1.0")
+}
+
+@(test)
+test_grid_init_floor_center_position :: proc(t: ^testing.T) {
+    allocator := context.allocator
+    size := game.vec2i{7, 5}  // Match actual game grid
+    grid := game.grid_create(size, allocator)
+    defer {
+        delete(grid.tiles, allocator)
+        delete(grid.weapons)
+        free(grid, allocator)
+    }
+
+    // Create a fake floor primitive - floor is 7 units wide, 5 units deep
+    floor_transform := game.Cmp_Primitive{
+        world = math.MATRIX4F32_IDENTITY,  // Identity matrix (position at origin)
+        extents = {3.5, 0.5, 2.5}  // Half-extents: Width=7 (3.5*2), Height=1 (0.5*2), Depth=5 (2.5*2)
+    }
+
+    game.grid_init_floor(grid, floor_transform)
+
+    // Player position (0,2) should map to world center at (-3.0, 0.0)
+    player_tile := game.grid_get(grid^, 0, 2)
+    testing.expect(t, player_tile.center.x == -3.0, "Player at (0,2) should have world x = -3.0 (left side)")
+    testing.expect(t, player_tile.center.y == 0.0, "Player at (0,2) should have world y = 0.0")
+
+    // Center of grid (3,2) should be at world (0.0, 0.0)
+    center_tile := game.grid_get(grid^, 3, 2)
+    testing.expect(t, center_tile.center.x == 0.0, "Center tile (3,2) should have world x = 0.0")
+    testing.expect(t, center_tile.center.y == 0.0, "Center tile (3,2) should have world y = 0.0")
+
+    // Rightmost tile (6,2) should be at world (3.0, 0.0)
+    right_tile := game.grid_get(grid^, 6, 2)
+    testing.expect(t, right_tile.center.x == 3.0, "Rightmost tile (6,2) should have world x = 3.0")
+    testing.expect(t, right_tile.center.y == 0.0, "Rightmost tile (6,2) should have world y = 0.0")
+}
+
 test_path_is_walkable_internal :: proc(t: ^testing.T) {
     allocator := context.allocator
     size := game.vec2i{2, 2}

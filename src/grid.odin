@@ -53,17 +53,22 @@ grid_create :: proc(size : [2]i32 , alloc : mem.Allocator , scale := vec2f{1.0, 
 // lets say you're at 3rd tile you'd be at 1..3..5 you'd be at 5 which is (3 - 1) * tile.size.x + .5 tile.size.x
 // or maybe 3 * tilesize.x - .5 tile.size.x ?? ultimately just depends where the index starts
 // use grid sets to get the actual grid spot since you'll be 0 - size.x then.... yeah
-grid_init_floor :: proc(grid : ^Grid, floor_transform : Cmp_Transform)
+grid_init_floor :: proc(grid : ^Grid, floor_transform : Cmp_Primitive)
 {
-    grid.floor_height = floor_transform.global.pos.y + floor_transform.global.sca.y
-    grid.scale = vec2f{floor_transform.global.sca.x, floor_transform.global.sca.z} / vec2f{f32(grid.width), f32(grid.height)}
+	floor_pos := floor_transform.world[3].xyz
+	floor_ext := floor_transform.extents
+    grid.floor_height = floor_pos.y + floor_ext.y
+    grid.scale = vec2f{floor_ext.x * 2, floor_ext.z * 2} / vec2f{f32(grid.width), f32(grid.height)}
     tile_interval := grid.scale * 0.5
 
-    for r in 0..<grid.width {
-    	for c in 0..<grid.height {
-     		rc := vec2f{f32(r),f32(c)}
-     		center := rc * grid.scale + tile_interval
-     		grid_set(grid, r,c, Tile{center = center})
+    // Calculate floor bottom-left corner (floor center - floor extents)
+    floor_bottom_left := vec2f{floor_pos.x - floor_ext.x, floor_pos.z - floor_ext.z}
+
+    for x in 0..<grid.width {
+    	for y in 0..<grid.height {
+      		rc := vec2f{f32(x),f32(y)}
+      		center := rc * grid.scale + tile_interval + floor_bottom_left
+      		grid_set(grid, x,y, Tile{center = center})
 	    }
     }
 }

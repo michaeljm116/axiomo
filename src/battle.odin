@@ -82,8 +82,7 @@ start_game :: proc(){
     init_battle(&g.battle, g.mem_game.alloc)
     init_battle_visuals(&g.battle)
 
-    find_floor_entities()
-    grid_init_floor(g.battle.grid, find_floor_transform()^)
+    grid_init_floor(g.battle.grid, find_floor_prim()^)
 
     set_entity_on_tile(g.battle.grid^, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y)
     for bee in g.battle.bees{
@@ -1154,6 +1153,17 @@ find_floor_transform :: proc() -> ^Cmp_Transform
         if node.name == "Floor"{
             g.floor = table_nodes.rid_to_eid[i]
             return get_component(table_nodes.rid_to_eid[i], Cmp_Transform)
+        }
+    }
+    log.panicf("No floor found")
+}
+find_floor_prim :: proc() -> ^Cmp_Primitive
+{
+	table_nodes := get_table(Cmp_Node)
+    for node, i in table_nodes.rows{
+        if node.name == "Floor"{
+            g.floor = table_nodes.rid_to_eid[i]
+            return get_component(table_nodes.rid_to_eid[i], Cmp_Primitive)
         }
     }
     log.panicf("No floor found")
