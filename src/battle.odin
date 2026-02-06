@@ -709,7 +709,7 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int,
     dist := path_dist_grid(bee.pos, player.pos)
     if dist > target_dist
     {
-        path := path_a_star_find(bee.pos, player.pos, grid_size, grid)
+        path := path_a_star_find(bee.pos, player.pos, {grid.width, grid.height}, grid)
         // TODO: possibly insecure and bug prone if there's no valid distance due to walls
         if len(path) > target_dist do bee.target = path[target_dist]
         else {if len(path) == target_dist do bee.target = path[target_dist - 1]}
@@ -721,7 +721,7 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int,
         bee.flags |= {.Alert}
 
         if dist == target_dist {
-            path := path_a_star_find(bee.pos, player.pos, grid_size, grid)
+            path := path_a_star_find(bee.pos, player.pos, {grid.width, grid.height}, grid)
             if len(path) > 1 do bee.target = path[1]
         }
     }
@@ -729,7 +729,9 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int,
 
 bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int, grid: Grid){
     assert(target_dist > 0)
-    target_path := find_best_target_away(bee, player, target_dist, true, grid)
+    current_dist := path_dist_grid(bee.pos, player.pos)
+    required_dist := current_dist + target_dist
+    target_path := find_best_target_away(bee, player, required_dist, true, grid)
     if len(target_path) > 0 do bee.target = target_path[len(target_path) - 1]
     else{
        best := bee.pos
@@ -1019,11 +1021,11 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
     // iterate all possible tiles, pick reachable tile with dist to player >= min_dist and shortest path length from bee
     best_path := make([dynamic]vec2i, context.temp_allocator)
     best_len := 999999
-    for x in 0..<GRID_WIDTH do for y in 0..<GRID_HEIGHT{
+    for x in 0..<grid.width do for y in 0..<grid.height {
         p := vec2i{i32(x), i32(y)}
         if path_dist_grid(p, player.pos) < min_dist { continue }
         if !path_is_walkable_internal(p, p, allow_through_walls, grid) { continue } // p must be a valid standable tile
-        path := path_a_star_find(bee.pos, p, grid_size, grid)
+        path := path_a_star_find(bee.pos, p, {grid.width, grid.height}, grid)
         if len(path) == 0 { continue }
         if len(path) < best_len {
             best_len = len(path)

@@ -43,7 +43,6 @@ grid_create :: proc(size : [2]i32 , alloc : mem.Allocator , scale := vec2f{1.0, 
     grid.tiles = make([]Tile, grid.width * grid.height, alloc)
     grid.scale = scale
     grid.weapons = make([dynamic]WeaponGrid, alloc)
-    grid_size = size
     return grid
 }
 
