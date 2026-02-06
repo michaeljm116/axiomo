@@ -35,7 +35,8 @@
               "title": "Prototype"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -185,10 +186,10 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "522da18b77ea95a3",
+  "active": "eab76c6719881d89",
   "lastOpenFiles": [
-    "DailyNotes/February 02, 2026, Mon.md",
     "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
+    "DailyNotes/February 02, 2026, Mon.md",
     "BeeKillingsInn/Production/!kb_Mechanics.md",
     "BeeKillingsInn/Production/Reminders.md",
     "BeeKillingsInn/Production/Prototype.md",

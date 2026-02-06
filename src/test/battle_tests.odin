@@ -118,11 +118,8 @@ setup_battle :: proc() -> ^Battle {
     battle.grid_weapons = make([dynamic]game.WeaponGrid)
 
     // Mock grid (7x5 as per grid.odin)
-    battle.grid = new(Grid)
-    battle.grid.width = game.GRID_WIDTH
-    battle.grid.height = game.GRID_HEIGHT
-    battle.grid.tiles = make([]game.Tile, int(battle.grid.width * battle.grid.height))
-    battle.grid.scale = {1.0, 1.0}
+    battle.grid = game.grid_create({game.GRID_WIDTH, game.GRID_HEIGHT}, test_arena.alloc)
+
 
     // States
     battle.state = .Continue
@@ -728,6 +725,212 @@ Game_Ends_When_Player_Moves_Onto_Last_Bee_And_Kills_It_With_Overlap_Attack :: pr
     battle.bees[0].flags += {.Dead}
 
     testing.expect(t, game.check_win_condition(battle), "Game ends when last bee killed")
+}
+
+// ===========================================================================
+// Bee Movement Action Tests
+// ===========================================================================
+
+@(test)
+FlyTowards_Moves_Bee_2_Blocks_Closer_To_Player :: proc(t: ^testing.T) {
+    battle := setup_battle()
+    defer teardown_battle(battle)
+
+    // Set up positions: bee at (5,2), player at (0,2) - distance 5
+    battle.bees[0].pos = {5, 2}
+    battle.player.pos = {0, 2}
+    original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
+
+    // Perform FlyTowards action (should move 2 blocks closer)
+    game.bee_action_perform(.FlyTowards, &battle.bees[0], &battle.player, battle.grid^)
+
+    // Calculate new distance after movement
+    new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
+
+    testing.expect(t, original_distance == 5, "Original distance should be 5")
+    testing.expect(t, new_distance == 3, "Should be 2 blocks closer (distance 3)")
+    testing.expect(t, .Flying in battle.bees[0].added, "Bee should have flying flag")
+    testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
+}
+
+@(test)
+FlyAway_Moves_Bee_2_Blocks_Away_From_Player :: proc(t: ^testing.T) {
+    battle := setup_battle()
+    defer teardown_battle(battle)
+
+    // Set up positions: bee at (3,2), player at (0,2) - distance 3
+    battle.bees[0].pos = {3, 2}
+    battle.player.pos = {0, 2}
+    original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
+
+    // Perform FlyAway action (should move 2 blocks away)
+    game.bee_action_perform(.FlyAway, &battle.bees[0], &battle.player, battle.grid^)
+
+    // Calculate new distance after movement
+    new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
+
+    testing.expect(t, original_distance == 3, "Original distance should be 3")
+    testing.expect(t, new_distance >= 5, "Should be at least 2 blocks further away")
+    testing.expect(t, .Flying in battle.bees[0].added, "Bee should have flying flag")
+    testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
+}
+
+@(test)
+CrawlTowards_Moves_Bee_1_Block_Closer_To_Player :: proc(t: ^testing.T) {
+    battle := setup_battle()
+    defer teardown_battle(battle)
+
+    // Set up positions: bee at (4,2), player at (0,2) - distance 4
+    battle.bees[0].pos = {4, 2}
+    battle.player.pos = {0, 2}
+    original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
+
+    // Perform CrawlTowards action (should move 1 block closer)
+    game.bee_action_perform(.CrawlTowards, &battle.bees[0], &battle.player, battle.grid^)
+
+    // Calculate new distance after movement
+    new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
+
+    testing.expect(t, original_distance == 4, "Original distance should be 4")
+    testing.expect(t, new_distance == 3, "Should be 1 block closer (distance 3)")
+    testing.expect(t, .Crawling in battle.bees[0].added, "Bee should have crawling flag")
+    testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
+    testing.expect(t, .Flying not_in battle.bees[0].added, "Bee should not have flying flag")
+}
+
+@(test)
+CrawlAway_Moves_Bee_1_Block_Away_From_Player :: proc(t: ^testing.T) {
+    battle := setup_battle()
+    defer teardown_battle(battle)
+
+    // Set up positions: bee at (2,2), player at (0,2) - distance 2
+    battle.bees[0].pos = {2, 2}
+    battle.player.pos = {0, 2}
+    original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
+
+    // Perform CrawlAway action (should move 1 block away)
+    game.bee_action_perform(.CrawlAway, &battle.bees[0], &battle.player, battle.grid^)
+
+    // Calculate new distance after movement
+    new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
+
+    testing.expect(t, original_distance == 2, "Original distance should be 2")
+    testing.expect(t, new_distance == 3, "Should be 1 block further away (distance 3)")
+    testing.expect(t, .Crawling in battle.bees[0].added, "Bee should have crawling flag")
+    testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
+    testing.expect(t, .Flying not_in battle.bees[0].added, "Bee should not have flying flag")
+}
+
+@(test)
+FlyTowards_Alerts_Bee_When_Getting_Within_Range :: proc(t: ^testing.T) {
+    battle := setup_battle()
+    defer teardown_battle(battle)
+
+    // Set up positions: bee at (2,2), player at (0,2) - distance 2
+    battle.bees[0].pos = {2, 2}
+    battle.player.pos = {0, 2}
+    battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
+
+    // Perform FlyTowards - should get within range and alert
+    game.bee_action_perform(.FlyTowards, &battle.bees[0], &battle.player, battle.grid^)
+
+    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted when getting close")
+}
+
+@(test)
+CrawlTowards_Alerts_Bee_When_Getting_Within_Range :: proc(t: ^testing.T) {
+    battle := setup_battle()
+    defer teardown_battle(battle)
+
+    // Set up positions: bee at (1,2), player at (0,2) - distance 1
+    battle.bees[0].pos = {1, 2}
+    battle.player.pos = {0, 2}
+    battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
+
+    // Perform CrawlTowards - should get within range and alert
+    game.bee_action_perform(.CrawlTowards, &battle.bees[0], &battle.player, battle.grid^)
+
+    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted when getting close")
+}
+
+@(test)
+FlyAway_Does_Not_Alert_Bee :: proc(t: ^testing.T) {
+    battle := setup_battle()
+    defer teardown_battle(battle)
+
+    // Set up positions: bee at (1,1), player at (0,0) - distance 2
+    battle.bees[0].pos = {1, 1}
+    battle.player.pos = {0, 0}
+    battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
+
+    // Perform FlyAway - should not alert since moving away
+    game.bee_action_perform(.FlyAway, &battle.bees[0], &battle.player, battle.grid^)
+
+    testing.expect(t, .Alert not_in battle.bees[0].flags, "Bee should not be alerted when flying away")
+}
+
+@(test)
+Discard_Action_Does_Nothing :: proc(t: ^testing.T) {
+    battle := setup_battle()
+    defer teardown_battle(battle)
+
+    // Set up initial state
+    original_pos := battle.bees[0].pos
+    original_target := battle.bees[0].target
+    original_flags := battle.bees[0].flags
+    original_added := battle.bees[0].added
+
+    // Perform Discard action
+    game.bee_action_perform(.Discard, &battle.bees[0], &battle.player, battle.grid^)
+
+    // Everything should remain unchanged
+    testing.expect(t, battle.bees[0].pos == original_pos, "Position should not change")
+    testing.expect(t, battle.bees[0].target == original_target, "Target should not change")
+    testing.expect(t, battle.bees[0].flags == original_flags, "Flags should not change")
+    testing.expect(t, battle.bees[0].added == original_added, "Added flags should not change")
+}
+
+@(test)
+Bee_Movement_Avoids_Walls :: proc(t: ^testing.T) {
+    battle := setup_battle()
+    defer teardown_battle(battle)
+
+    // Set up positions: bee at (3,2), player at (0,2)
+    battle.bees[0].pos = {3, 2}
+    battle.player.pos = {0, 2}
+
+    // Create a wall at (2,2) to block direct path
+    wall_idx := int(2 + 2 * battle.grid.width)
+    battle.grid.tiles[wall_idx].flags = game.TileFlags{.Wall}
+
+    // Perform FlyTowards - should navigate around wall
+    game.bee_action_perform(.FlyTowards, &battle.bees[0], &battle.player, battle.grid^)
+
+    // Target should not be the wall position
+    testing.expect(t, battle.bees[0].target != vec2i{2, 2}, "Target should not be wall position")
+    testing.expect(t, battle.bees[0].target.x < 3, "Target should be closer to player")
+}
+
+@(test)
+Sting_Action_Only_When_Alerted_And_In_Range :: proc(t: ^testing.T) {
+    battle := setup_battle()
+    defer teardown_battle(battle)
+
+    // Set up positions: bee right next to player
+    battle.bees[0].pos = {1, 0}
+    battle.player.pos = {0, 0}
+    battle.player.weapon.range = 1 // Set weapon range for bee_near check
+
+    // Test without alert - should not attack
+    battle.bees[0].flags -= {.Alert}
+    game.bee_action_perform(.Sting, &battle.bees[0], &battle.player, battle.grid^)
+    testing.expect(t, .Attack not_in battle.bees[0].added, "Should not attack without alert")
+
+    // Test with alert - should attack
+    battle.bees[0].flags += {.Alert}
+    battle.bees[0].added = {} // Reset added flags
+    game.bee_action_perform(.Sting, &battle.bees[0], &battle.player, battle.grid^)
+    testing.expect(t, .Attack in battle.bees[0].added, "Should attack when alerted and in range")
 }
 
 // ===========================================================================

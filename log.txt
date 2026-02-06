@@ -1,6 +1,9 @@
-[INFO ] --- [2026-02-02 12:40:22] [render.odin:379:score_physical_device()] vulkan: device "NVIDIA GeForce RTX 3080 Laptop GPU" scored 332768
-[INFO ] --- [2026-02-02 12:40:22] [render.odin:227:init_vulkan()] vulkan: bindless descriptor indexing supported
-[INFO ] --- [2026-02-02 12:40:23] [render.odin:1458:bake_font_atlas()] Font atlas created: 512x512, texture index: 19
-[INFO ] --- [2026-02-02 12:40:23] [render.odin:2384:start_up_raytracer()] Font system initialized for compute raytracer
+[0m[INFO ] --- [0m[2026-02-06 00:51:34] [render.odin:379:score_physical_device()] vulkan: device "NVIDIA GeForce RTX 3050 Laptop GPU" scored 332768
+[0m[INFO ] --- [0m[2026-02-06 00:51:34] [render.odin:379:score_physical_device()] vulkan: device "Intel(R) Iris(R) Xe Graphics" scored 216384
+[0m[INFO ] --- [0m[2026-02-06 00:51:34] [render.odin:227:init_vulkan()] vulkan: bindless descriptor indexing supported
+[0m[INFO ] --- [0m[2026-02-06 00:51:36] [render.odin:1458:bake_font_atlas()] Font atlas created: 512x512, texture index: 19
+[0m[INFO ] --- [0m[2026-02-06 00:51:36] [render.odin:2384:start_up_raytracer()] Font system initialized for compute raytracer
 Found Player
 Player facing left
+Chosen 🎴: Sting
+Chosen 🎴: FlyAway
