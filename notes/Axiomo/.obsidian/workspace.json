@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Production/Prototype.md",
+                "file": "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Prototype"
+              "title": "Fly_Ground_Obstacles"
             }
           }
         ],
@@ -188,11 +188,12 @@
   },
   "active": "eab76c6719881d89",
   "lastOpenFiles": [
-    "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
+    "DailyNotes/February 06, 2026, Fri.md",
     "DailyNotes/February 02, 2026, Mon.md",
+    "BeeKillingsInn/Production/Prototype.md",
+    "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
     "BeeKillingsInn/Production/!kb_Mechanics.md",
     "BeeKillingsInn/Production/Reminders.md",
-    "BeeKillingsInn/Production/Prototype.md",
     "BeeKillingsInn/Production/Mechanics/Run.md",
     "DailyNotes/February 01, 2026, Sun.md",
     "BeeKillingsInn/Production/List of Levels-Features.md",
@@ -217,7 +218,6 @@
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143121.png",
     "BeeKillingsInn/Art/Inspo - Art.md",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151208.png",
-    "BeeKillingsInn/GameDesign/!!! Rules !!!.md",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151050.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143937.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143455.png",

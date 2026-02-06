@@ -55,3 +55,19 @@
 * g.floor should never be called anymore except on the creation
 * no more recalculating the diffreent things every time just cache the grid and do the things
 * Then simplify the things on battle
+
+# Walls and Obstacles
+* There should be a way to dynamically generate walls and obstacles based on... things
+* also maybe dynamically generate grids
+* Transparency might be needed
+	* Maybe fix that rendering issue too while youre at it with the foveation
+	* speaking of rendering... lol 
+* But yeah ultimately, you should be able to see a wall which will be a square block at the start
+	* having the new grid allows for this more easily
+	* question is do you want los to be raycast or grid based
+	* grid based seems more... tight and as intended
+	* raycast might just be a simpler solution
+	* you also already have a physics engine albiet 2d inside... hmmm
+	* yep b2 supports it
+	* wait so are you done with flying?
+	* did you do the weapons yet?

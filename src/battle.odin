@@ -246,7 +246,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                 fmt.println("Dice Num 1: ", dice[0].num, " Dice Num 2: ", dice[1].num)
                 acc := dice[0].num + dice[1].num
                 bee := curr_sel.character.variant.(^Bee)
-                player_attack(player, bee, acc)
+                player_attack(&player, bee, acc)
                 input_state = .SelectCharacter
                 state = .End
                 return
@@ -813,12 +813,12 @@ WeaponGrid :: struct
 }
 
 WeaponsDB :: [WeaponType]Weapon{
- .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 50}, crawling = Attack{accuracy = 9, power = 100}, range = 1, effect = {.None}, icon = "IconHand"},
- .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 50}, crawling = Attack{accuracy = 9, power = 100}, range = 1, effect = {.None}, icon = "IconShoe"},
- .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 50}, crawling = Attack{accuracy = 5, power = 100}, range = 2, effect = {.None}, icon = "IconBugspray"},
- .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 50}, crawling = Attack{accuracy = 8, power = 100}, range = 1, effect = {.None}, icon = "IconNewspaper"},
- .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 100}, crawling = Attack{accuracy = 7, power = 100}, range = 1, effect = {.None}, icon = "IconSwatter"},
- .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 100}, crawling = Attack{accuracy = 7, power = 100}, range = 1, effect = {.None}, icon = "IconSwatter"},
+ .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 5}, crawling = Attack{accuracy = 9, power = 10}, range = 1, effect = {.None}, icon = "IconHand"},
+ .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 5}, crawling = Attack{accuracy = 9, power = 10}, range = 1, effect = {.None}, icon = "IconShoe"},
+ .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 5}, crawling = Attack{accuracy = 5, power = 10}, range = 2, effect = {.None}, icon = "IconBugspray"},
+ .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 5}, crawling = Attack{accuracy = 8, power = 10}, range = 1, effect = {.None}, icon = "IconNewspaper"},
+ .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 10}, crawling = Attack{accuracy = 7, power = 10}, range = 1, effect = {.None}, icon = "IconSwatter"},
+ .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 10}, crawling = Attack{accuracy = 7, power = 10}, range = 1, effect = {.None}, icon = "IconSwatter"},
 }
 
 pick_up_weapon :: proc(player : ^Player, weaps : []Weapon, db := WeaponsDB)
@@ -862,35 +862,33 @@ hide_weapon :: proc(w : Weapon)
     ToggleUI("WeaponStatsPower", false)
 }
 
-player_attack :: proc(player : Player, bee : ^Bee, acc : i8){
+player_attack :: proc(player : ^Player, bee : ^Bee, acc : i8){
     //begin Animation
-    ac := get_component(player.entity, Cmp_Animation)
-    animate_attack(ac, "Froku", player.attack_anim)
-
+    player.added += {.Attack}
     // Player rolls a dice, if its higher than their weapons accuracy, do weapon.damage to the bee
     focus_level := i8(.PlayerFocused in bee.flags) + i8(.PlayerHyperFocused in bee.flags)
     fmt.println("Dice val: ", acc, " Weapon val: ", player.weapon.flying.accuracy , " Focus Val: ", focus_level, " Will Kill: ", acc + focus_level > player.weapon.flying.accuracy)
     bee.added |= {.Alert}
 
-    if acc + focus_level > player.weapon.flying.accuracy
-    {
-        bee.health -= player.weapon.flying.power
-        if bee.health <= 0 do bee.added += {.Dead}
-    }
+    // if acc + focus_level > player.weapon.flying.accuracy
+    // {
+    //     bee.health -= player.weapon.flying.power
+    //     if bee.health <= 0 do bee.added += {.Dead}
+    // }
 
-    // luck := acc + focus_level
-    // if .Flying in bee.flags{
-    //    if player.weapon.flying.accuracy < luck {
-    //        bee.health -= player.weapon.flying.power
-    //        if bee.health <= 0 do bee.flags += {.Dead}
-    //    }
-    // }
-    // else {
-    //    if player.weapon.crawling.accuracy < luck {
-    //        bee.health -= player.weapon.crawling.power
-    //        if bee.health <= 0 do bee.flags += {.Dead}
-    //    }
-    // }
+    luck := acc + focus_level
+    if .Flying in bee.flags{
+       if player.weapon.flying.accuracy < luck {
+           bee.health -= player.weapon.flying.power
+           if bee.health <= 0 do bee.flags += {.Dead}
+       }
+    }
+    else {
+       if player.weapon.crawling.accuracy < luck {
+           bee.health -= player.weapon.crawling.power
+           if bee.health <= 0 do bee.flags += {.Dead}
+       }
+    }
 }
 
 dice_rolls :: proc() -> i8 {
@@ -1786,6 +1784,12 @@ ves_animate_player_start :: #force_inline proc(p : ^Player){
         p.anim.rot_timer = .5
         ac := get_component(p.entity, Cmp_Animation)
         animate_walk(ac, "Froku", p.move_anim)
+    }
+    else if (.Attack in p.c_flags){
+	    p.anim.timer = 1
+        p.anim.rot_timer = .5
+    	ac := get_component(p.entity, Cmp_Animation)
+	   	animate_attack(ac, "Froku", p.attack_anim)
     }
     set_up_character_anim(&p.base, g.battle.grid^)
 }

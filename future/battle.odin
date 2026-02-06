@@ -813,12 +813,12 @@ WeaponGrid :: struct{
 }
 
 WeaponsDB :: [WeaponType]Weapon{
- .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 50}, ground = Attack{accuracy = 9, power = 100}, range = 1, effect = {.None}, icon = "IconHand"},
- .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 50}, ground = Attack{accuracy = 9, power = 100}, range = 1, effect = {.None}, icon = "IconShoe"},
- .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 50}, ground = Attack{accuracy = 5, power = 100}, range = 2, effect = {.None}, icon = "IconBugspray"},
- .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 50}, ground = Attack{accuracy = 8, power = 100}, range = 1, effect = {.None}, icon = "IconNewspaper"},
- .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 100}, ground = Attack{accuracy = 7, power = 100}, range = 1, effect = {.None}, icon = "IconSwatter"},
- .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 100}, ground = Attack{accuracy = 7, power = 100}, range = 1, effect = {.None}, icon = "IconSwatter"},
+ .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 5}, ground = Attack{accuracy = 9, power = 10}, range = 1, effect = {.None}, icon = "IconHand"},
+ .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 5}, ground = Attack{accuracy = 9, power = 10}, range = 1, effect = {.None}, icon = "IconShoe"},
+ .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 5}, ground = Attack{accuracy = 5, power = 10}, range = 2, effect = {.None}, icon = "IconBugspray"},
+ .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 5}, ground = Attack{accuracy = 8, power = 10}, range = 1, effect = {.None}, icon = "IconNewspaper"},
+ .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 10}, ground = Attack{accuracy = 7, power = 10}, range = 1, effect = {.None}, icon = "IconSwatter"},
+ .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 10}, ground = Attack{accuracy = 7, power = 10}, range = 1, effect = {.None}, icon = "IconSwatter"},
 }
 
 pick_up_weapon :: proc(player : ^Player, weaps : []Weapon, db := WeaponsDB)
