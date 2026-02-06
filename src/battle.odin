@@ -716,8 +716,6 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int,
     }
     else // Less than or equal to target distance, alert!
     {
-        vc := get_component(bee.entity, Cmp_Visual)
-        vc.flags |= {.Alert}
         bee.flags |= {.Alert}
 
         if dist == target_dist {
