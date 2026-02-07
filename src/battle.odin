@@ -93,7 +93,7 @@ start_game :: proc(){
     place_chest_on_grid(vec2i{2,0}, &g.battle)
     place_chest_on_grid(vec2i{4,3}, &g.battle)
     add_animations()
-    create_all_pillars(g.battle.grid^)
+    create_grid_entities(g.battle.grid^)
 }
 
 set_game_over :: proc(){
@@ -706,9 +706,10 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player, gri
 bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int, grid: Grid){
     assert(target_dist > 0)
     dist := path_dist_grid(bee.pos, player.pos)
+    fly_over_obstacles := .Flying in bee.flags
     if dist > target_dist
     {
-        path := path_a_star_find(bee.pos, player.pos, {grid.width, grid.height}, grid)
+        path := path_a_star_find(bee.pos, player.pos, {grid.width, grid.height}, grid, fly_over_obstacles)
         // TODO: possibly insecure and bug prone if there's no valid distance due to walls
         if len(path) > target_dist do bee.target = path[target_dist]
         else {if len(path) == target_dist do bee.target = path[target_dist - 1]}
@@ -718,7 +719,7 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int,
         bee.flags |= {.Alert}
 
         if dist == target_dist {
-            path := path_a_star_find(bee.pos, player.pos, {grid.width, grid.height}, grid)
+            path := path_a_star_find(bee.pos, player.pos, {grid.width, grid.height}, grid, fly_over_obstacles)
             if len(path) > 1 do bee.target = path[1]
         }
     }
@@ -728,7 +729,8 @@ bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int, gr
     assert(target_dist > 0)
     current_dist := path_dist_grid(bee.pos, player.pos)
     required_dist := current_dist + target_dist
-    target_path := find_best_target_away(bee, player, required_dist, true, grid)
+    fly_over_obstacles := .Flying in bee.flags
+    target_path := find_best_target_away(bee, player, required_dist, fly_over_obstacles, grid)
     if len(target_path) > 0 do bee.target = target_path[len(target_path) - 1]
     else{
        best := bee.pos
@@ -737,7 +739,7 @@ bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int, gr
        for d in dirs {
             n := vec2i{ bee.pos[0] + d[0], bee.pos[1] + d[1] }
             if !path_in_bounds(n, grid) { continue }
-            if !path_is_walkable_internal(n, n, true, grid) { continue }
+            if !path_is_walkable_internal(n, n, fly_over_obstacles, grid) { continue }
             nd := path_dist_grid(n, player.pos)
             if nd > bestd {
                 best = n
@@ -1015,7 +1017,7 @@ BattleState :: enum
     End
 }
 
-find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allow_through_walls : bool, grid: Grid) -> [dynamic]vec2i
+find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, fly_over_obstacles : bool, grid: Grid) -> [dynamic]vec2i
 {
     // iterate all possible tiles, pick reachable tile with dist to player >= min_dist and shortest path length from bee
     best_path := make([dynamic]vec2i, context.temp_allocator)
@@ -1023,8 +1025,8 @@ find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, allo
     for x in 0..<grid.width do for y in 0..<grid.height {
         p := vec2i{i32(x), i32(y)}
         if path_dist_grid(p, player.pos) < min_dist { continue }
-        if !path_is_walkable_internal(p, p, allow_through_walls, grid) { continue } // p must be a valid standable tile
-        path := path_a_star_find(bee.pos, p, {grid.width, grid.height}, grid)
+        if !path_is_walkable_internal(p, p, fly_over_obstacles, grid) { continue } // p must be a valid standable tile
+        path := path_a_star_find(bee.pos, p, {grid.width, grid.height}, grid, fly_over_obstacles)
         if len(path) == 0 { continue }
         if len(path) < best_len {
             best_len = len(path)
@@ -1797,20 +1799,22 @@ ves_animate_player_end :: #force_inline proc(p : ^Player){
 //----------------------------------------------------------------------------\\
 // /gen GENERATION SYSTEMS
 //----------------------------------------------------------------------------\\
-create_pillar :: proc(grid : Grid, tile : Tile)
+create_grid_entity :: proc(name : string, grid: Grid, tile : Tile)
 {
-    e := load_prefab("WoodPillar")
+    e := load_prefab(name)
     t := get_component(e, Cmp_Transform)
     bot := get_bottom_of_entity(e)
     dy := grid.floor_height - bot
-
     t.local.pos.y += dy
     t.local.pos.xz = tile.center.xy
-    t.local.pos.y = grid.floor_height
-    // t.local.sca.xy = grid.scale.xy
 }
 
-create_all_pillars :: proc(grid : Grid)
+create_grid_entities :: proc(grid : Grid)
 {
-    for t in grid.tiles do if .Wall in t.flags do create_pillar(grid, t)
+    //TODO CHest
+    for t in grid.tiles
+    {
+        if .Wall in t.flags do create_grid_entity("WoodPillar", grid, t)
+        else if .Obstacle in t.flags do create_grid_entity("Barrel", grid, t)
+    }
 }

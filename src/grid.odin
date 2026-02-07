@@ -180,7 +180,7 @@ path_heuristic :: proc(a : vec2i, b : vec2i) -> int {
 
 // Returns path from start to goal as dynamic array of vec2i (start .. goal).
 // If no path found, returned array length == 0
-path_a_star_find :: proc(start : vec2i, goal, size : vec2i, grid : Grid) -> [dynamic]vec2i {
+path_a_star_find :: proc(start : vec2i, goal, size : vec2i, grid : Grid, allow_over_obstacles : bool) -> [dynamic]vec2i {
     // Static arrays sized for grid
     total_cells := len(grid.tiles)
     g_score := make([]int, total_cells, context.temp_allocator)
@@ -259,7 +259,7 @@ path_a_star_find :: proc(start : vec2i, goal, size : vec2i, grid : Grid) -> [dyn
         for dir in dirs {
             neighbor := vec2i{ current_pos[0] + dir[0], current_pos[1] + dir[1] }
             if !path_in_bounds(neighbor, grid) { continue }
-            if !path_is_walkable(neighbor, goal, grid) { continue }
+            if !path_is_walkable_internal(neighbor, goal, allow_over_obstacles, grid) { continue }
             neighbor_idx := path_pos_to_index(neighbor, grid)
             if closed[neighbor_idx] { continue }
 
