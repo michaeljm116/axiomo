@@ -208,6 +208,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             }
             else do battle_selection_update(&battle.curr_sel)
 	    case .Movement:
+			// TODO can go back when animating???
         	handle_back_button(&input_state, player.weapon, &curr_sel)
          	// TODO: THIS IS BAD CODE WITH ALL TEHSE &&'S
             if game_controller_is_moving() && .Animate not_in player.flags && .Animate not_in player.removed
@@ -445,8 +446,7 @@ Player :: struct{
     weapon : Weapon,
 }
 
-CharacterFlag :: enum { Walk, Run, Attack, Dodge, Focus,}
-CharacterFlags :: bit_set[CharacterFlag; u16]
+AnimationFlag :: enum { Walk, Run, Attack, Dodge, Focus,}
 CharacterVariant :: union {^Player, ^Bee}
 
 Character :: struct
@@ -459,7 +459,7 @@ Character :: struct
     entity : Entity,
 
     // Animation related
-    c_flags : CharacterFlags,
+    anim_flag : AnimationFlag,
     anim : CharacterAnimation,
     move_anim : MovementTimes,
     attack_anim : AttackTimes,
@@ -586,10 +586,9 @@ set_dead_bee :: proc(bee : ^Bee)
     tc.local.rot = linalg.quaternion_angle_axis_f32(179, {0,0,1})
 }
 
-// TODO: THIS USES GLOBAL STATE. BAAD
-alert_all_bees :: proc()
+alert_all_bees :: proc(battle : ^Battle)
 {
-	for &bee in g.battle.bees do bee.added += {.Alert}
+	for &bee in battle.bees do bee.added += {.Alert}
 }
 //----------------------------------------------------------------------------\\
 // /Deck
@@ -948,6 +947,7 @@ GameFlag :: enum
     PlayerSelected,
     Animate,
     Attack,
+    Running,
 }
 GameFlags :: bit_set[GameFlag; u32]
 
@@ -961,15 +961,14 @@ move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState, gr
         if !path_in_bounds(bounds, grid^) do return
         if .Runnable in grid_get(grid, bounds).flags{
             p.target = bounds
-            p.c_flags = {.Run}
-            p.added += {.Animate}
-            alert_all_bees()
+            p.anim_flag = .Run
+            p.added += {.Animate, .Running}
         }
     }
     else if .Walkable in grid_get(grid, bounds).flags {
         // Animate Player
         p.target = bounds
-        p.c_flags = {.Walk}
+        p.anim_flag = .Walk
         p.added += {.Animate}
     }
 }
@@ -1554,12 +1553,13 @@ VisualEventData :: struct
    anim_state : VES_State
 }
 
-ves_update_all :: proc(dt : f32)
+ves_update_all :: proc(battle : ^Battle, dt : f32)
 {
-    ves_update_dice(&g.battle.dice)
-    ves_update_screen(&g.battle)
-    ves_update_visuals(&g.battle)
-    ves_update_animations(&g.battle, dt)
+    ves_update_event(battle)
+    ves_update_dice(&battle.dice)
+    ves_update_screen(battle)
+    ves_update_visuals(battle)
+    ves_update_animations(battle, dt)
 }
 
 // When a screen is turned off or on, update it accordingly
@@ -1675,64 +1675,40 @@ ves_update_visuals :: proc(battle : ^Battle)
 	for c in battle.curr_sel.selectables{
 	    // c := queue.get(&battle.battle_queue, i)
         if .PlayerFocused in c.added{
-	        c.added -= {.PlayerFocused}
-	        c.flags += {.PlayerFocused}
-
 	        vc := get_component(c.entity, Cmp_Visual)
 			assert(vc != nil)
             vc.flags += {.Focus}
         }
         if .PlayerFocused in c.removed{
-            c.removed -= {.PlayerFocused}
-            c.flags -= {.PlayerFocused}
-
             vc := get_component(c.entity, Cmp_Visual)
             assert(vc != nil)
             vc.flags -= {.Focus}
         }
         if .PlayerDodge in c.added{
-            c.added -= {.PlayerDodge}
-            c.flags += {.PlayerDodge}
-
             vc := get_component(c.entity, Cmp_Visual)
             assert(vc != nil)
             vc.flags += {.Dodge}
         }
         if .PlayerDodge  in c.removed{
-            c.removed -= {.PlayerDodge}
-            c.flags -= {.PlayerDodge}
-
             vc := get_component(c.entity, Cmp_Visual)
             assert(vc != nil)
             vc.flags -= {.Dodge}
         }
         if .Alert in c.added{
-            c.added -= {.Alert}
-            c.flags += {.Alert}
-
             vc := get_component(c.entity, Cmp_Visual)
             assert(vc != nil)
             vc.flags += {.Alert}
         }
         if .Alert in c.removed{
-            c.removed -= {.Alert}
-            c.flags -= {.Alert}
-
             vc := get_component(c.entity, Cmp_Visual)
             vc.flags -= {.Alert}
         }
         if .PlayerSelected in c.added{
-            c.added -= {.PlayerSelected}
-            c.flags += {.PlayerSelected}
-
             vc := get_component(c.entity, Cmp_Visual)
             assert(vc != nil)
             vc.flags += {.Select}
         }
         if .PlayerSelected in c.removed{
-            c.removed -= {.PlayerSelected}
-            c.flags -= {.PlayerSelected}
-
             vc := get_component(c.entity, Cmp_Visual)
             assert(vc != nil)
             vc.flags -= {.Select}
@@ -1740,9 +1716,14 @@ ves_update_visuals :: proc(battle : ^Battle)
     }
 }
 
+ves_update_event :: proc(battle : ^Battle)
+{
+    if .Running in battle.player.added do alert_all_bees(battle)
+}
+
 ves_animate_bee :: #force_inline proc(bee : ^Bee, dt : f32) -> bool
 {
-    if bee.anim.timer > 0 && .Walk in bee.c_flags {
+    if bee.anim.timer > 0 && .Walk == bee.anim_flag {
         slerp_character_to_tile(bee, dt)
         slerp_character_angle(bee,dt)
         return true
@@ -1754,7 +1735,7 @@ ves_animate_bee :: #force_inline proc(bee : ^Bee, dt : f32) -> bool
 ves_animate_bee_start :: proc(bee: ^Bee){
     bee.anim.timer = 1
     bee.anim.rot_timer = .5
-    bee.c_flags = {.Walk}
+    bee.anim_flag = .Walk
     bee.flags += {.Animate}
     // bee.state = .Moving
     set_up_character_anim(bee, g.battle.grid^)
@@ -1768,7 +1749,7 @@ ves_animate_bee_end :: #force_inline proc(bee : ^Bee)
 }
 
 ves_animate_player :: #force_inline proc(p : ^Player, dt : f32) -> bool{
-	if p.anim.timer > 0 && (.Walk in p.c_flags || .Run in p.c_flags) {
+    if p.anim.timer > 0 && (.Walk == p.anim_flag || .Run == p.anim_flag) {
         slerp_character_to_tile(p, dt)
         slerp_character_angle(p,dt)
         return true
@@ -1778,13 +1759,18 @@ ves_animate_player :: #force_inline proc(p : ^Player, dt : f32) -> bool{
 }
 
 ves_animate_player_start :: #force_inline proc(p : ^Player){
-    if (.Walk in p.c_flags || .Run in p.c_flags){
+    if (.Walk == p.anim_flag || .Run == p.anim_flag){
         p.anim.timer = 1
         p.anim.rot_timer = .5
         ac := get_component(p.entity, Cmp_Animation)
-        animate_walk(ac, "Froku", p.move_anim)
+        if .Walk == p.anim_flag{
+            animate_walk(ac, "Froku", p.move_anim)
+        }
+        else if .Run == p.anim_flag{
+            animate_run(ac, "Froku", p.move_anim)
+        }
     }
-    else if (.Attack in p.c_flags){
+    else if (.Attack == p.anim_flag){
 	    p.anim.timer = 1
         p.anim.rot_timer = .5
     	ac := get_component(p.entity, Cmp_Animation)
@@ -1799,4 +1785,6 @@ ves_animate_player_end :: #force_inline proc(p : ^Player){
     p.anim.timer = 0
     ac := get_component(p.entity, Cmp_Animation)
     animate_idle(ac, "Froku", p.move_anim)
+    p.removed +=  {.Running}
+    p.removed += {.Attack}
 }

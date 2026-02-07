@@ -108,7 +108,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
         }
 	case .Game:
 		run_battle(&g.battle, &g.ves)
-		ves_update_all(dt)
+		ves_update_all(&g.battle, dt)
 		if (g.battle.player.health <= 0){
 			state^ = .GameOver
  			ToggleMenuUI(state)
