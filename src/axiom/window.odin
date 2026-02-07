@@ -238,17 +238,17 @@ controller_handle_button :: proc(button: ^Button, dt: f32) {
         button.val = 1
     }
     else if is_key_pressed(button.key){
-        button.action -= {.JustPressed}
+        button.action = {.Pressed}
         button.time.curr += dt
-        if button.time.curr >= button.time.max do button.action += {.Held}
+        if button.time.curr >= button.time.max do button.action = {.Held}
     }
     else if is_key_just_released(button.key){
         button.time.curr = 0
         button.val = 0
-        button.action = {.JustReleased, .Released}
+        button.action = {.JustReleased,.Released}
     }
     else {
-        button.action -= {.JustReleased}
+        button.action = {.Released}
         button.time.curr += dt
     }
 }

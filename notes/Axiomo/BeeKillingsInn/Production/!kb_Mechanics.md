@@ -15,6 +15,11 @@ kanban-plugin: board
 - [ ] Obstacles - Complex
 - [ ] Status Effects - Simple
 - [ ] Status Effects - Medium
+- [ ] BUG: BEE NOT ALERTED ON OVERLAP
+- [ ] BUG: CAN'T KILL BEES
+- [ ] BUG: BEE'S CAN SUPER JUMP
+- [ ] BUG: SELECTED ARROW ON PLAYER DISAPPEARING
+- [ ] BUG: SELECTED ARROW DOESN'T START ON PLAYER
 
 
 ## In Progress

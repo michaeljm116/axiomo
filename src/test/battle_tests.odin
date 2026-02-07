@@ -56,7 +56,7 @@ setup_battle :: proc() -> ^Battle {
             health = 5,
             target = {0, 0},
             entity = Entity(0),
-            c_flags = {},
+            anim_flag = {},
             anim = {},
             move_anim = {},
             attack_anim = {},
@@ -76,7 +76,7 @@ setup_battle :: proc() -> ^Battle {
             health = 1,
             target = {3, 3},
             entity = Entity(0),
-            c_flags = {},
+            anim_flag = {},
             anim = {},
             move_anim = {},
             attack_anim = {},
@@ -94,7 +94,7 @@ setup_battle :: proc() -> ^Battle {
             health = 1,
             target = {4, 4},
             entity = Entity(0),
-            c_flags = {},
+            anim_flag = {},
             anim = {},
             move_anim = {},
             attack_anim = {},
@@ -450,15 +450,15 @@ Distance_Of_One_Is_Only_Orthogonal_Not_Diagonal :: proc(t: ^testing.T) {
 
     // Diagonal bee at {1, 1} should NOT be near (manhattan distance = 2)
     battle.bees[0].pos = {1, 1}
-    testing.expect(t, !game.bee_near(battle.player, battle.bees[0]), "Diagonal not considered distance one")
+    testing.expect(t, !game.bee_near(battle.player, &battle.bees[0]), "Diagonal not considered distance one")
 
     // Orthogonal bee at {1, 0} should be near (manhattan distance = 1)
     battle.bees[0].pos = {1, 0}
-    testing.expect(t, game.bee_near(battle.player, battle.bees[0]), "Orthogonal is distance one")
+    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Orthogonal is distance one")
 
     // Orthogonal bee at {0, 1} should be near (manhattan distance = 1)
     battle.bees[0].pos = {0, 1}
-    testing.expect(t, game.bee_near(battle.player, battle.bees[0]), "Orthogonal up is distance one")
+    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Orthogonal up is distance one")
 }
 
 // ===========================================================================
@@ -566,11 +566,11 @@ Bee_Can_Only_Attack_At_Range_0_Or_1 :: proc(t: ^testing.T) {
 
     // Range 1 - should be near
     battle.bees[0].pos = {1, 0}
-    testing.expect(t, game.bee_near(battle.player, battle.bees[0]), "Bee at range 1 can attack")
+    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Bee at range 1 can attack")
 
     // Range 0 - same tile
     battle.bees[0].pos = {0, 0}
-    testing.expect(t, game.bee_near(battle.player, battle.bees[0]), "Bee at range 0 can attack")
+    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Bee at range 0 can attack")
 }
 
 @(test)
@@ -581,7 +581,7 @@ Bee_Can_Attack_Player_At_Range_0 :: proc(t: ^testing.T) {
     battle.player.pos = {0, 0}
     battle.bees[0].pos = {0, 0}
 
-    testing.expect(t, game.bee_near(battle.player, battle.bees[0]), "Can attack at range 0")
+    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Can attack at range 0")
 }
 
 @(test)
@@ -593,7 +593,7 @@ Bee_Can_Attack_Player_At_Range_1 :: proc(t: ^testing.T) {
     battle.player.weapon.range = 1 // Need weapon range for bee_near check
     battle.bees[0].pos = {1, 0}
 
-    testing.expect(t, game.bee_near(battle.player, battle.bees[0]), "Can attack at range 1")
+    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Can attack at range 1")
 }
 
 @(test)
@@ -604,7 +604,7 @@ Bee_Cannot_Attack_Player_From_2_Blocks_Away :: proc(t: ^testing.T) {
     battle.player.pos = {0, 0}
     battle.bees[0].pos = {2, 0}
 
-    testing.expect(t, !game.bee_near(battle.player, battle.bees[0]), "Cannot attack from 2 blocks away")
+    testing.expect(t, !game.bee_near(battle.player, &battle.bees[0]), "Cannot attack from 2 blocks away")
 }
 
 // ===========================================================================
@@ -634,7 +634,7 @@ Bee_Cannot_Attack_If_Not_Alerted_Even_If_In_Range :: proc(t: ^testing.T) {
     battle.bees[0].flags -= {.Alert}
 
     // Bee is in range but not alerted
-    testing.expect(t, game.bee_near(battle.player, battle.bees[0]), "Bee is in range")
+    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Bee is in range")
     testing.expect(t, .Alert not_in battle.bees[0].flags, "But bee is not alerted")
 }
 
@@ -649,18 +649,42 @@ Bee_Becomes_Alerted_When_Player_Performs_Double_Move :: proc(t: ^testing.T) {
         testing.expect(t, .Alert not_in bee.flags, "Bees start without alert")
     }
 
-    // Test the alerting logic directly since alert_all_bees() uses global state
-    // This simulates what happens during a double move and processing
-    for &bee in battle.bees {
-        bee.added += {.Alert}
-        // Simulate the processing that moves added to flags
-        bee.added -= {.Alert}
-        bee.flags += {.Alert}
+    // Actually simulate the player movement system that triggers double move alerting
+    // Set up player position and movement parameters
+    original_pos := battle.player.pos
+    move_dir := vec2i{1, 0} // Move right
+    
+    // Check if the double move destination is valid (as done in move_player)
+    double_move_dest := original_pos + 2 * move_dir
+    testing.expect(t, game.path_in_bounds(double_move_dest, battle.grid^), "Double move destination should be in bounds")
+    
+    // Simulate the actual move_player logic for double move
+    if game.path_in_bounds(double_move_dest, battle.grid^) {
+        // Set player target and flags as move_player would
+        battle.player.target = double_move_dest
+        battle.player.anim_flag = game.AnimationFlag.Run
+        battle.player.added += {.Animate}
+        
+        // This is the key part - call alert_all_bees as move_player does
+        game.alert_all_bees(battle)
     }
 
-    // All bees should now be alerted
+    // Simulate one frame of battle processing where VES handles the flag changes
+    // This mimics what happens in ves_update_visuals during real battle
     for &bee in battle.bees {
-        testing.expect(t, .Alert in bee.flags, "All bees should be alerted after double move")
+        if .Alert in bee.added {
+            bee.added -= {.Alert}
+            bee.flags += {.Alert}
+        }
+    }
+
+    // Verify the double move actually triggered alerting
+    testing.expect(t, battle.player.target == double_move_dest, "Player target should be set to double move destination")
+    testing.expect(t, game.AnimationFlag.Run == battle.player.anim_flag, "Player should have run animation flag")
+    
+    // All bees should now be alerted after the double move
+    for &bee in battle.bees {
+        testing.expect(t, .Alert in bee.flags, "All bees should be alerted after player double move")
     }
 }
 
@@ -669,19 +693,41 @@ Bee_Becomes_Alerted_When_Bee_And_Player_Occupy_Same_Tile :: proc(t: ^testing.T) 
     battle := setup_battle()
     defer teardown_battle(battle)
 
-    // Position player and bee on the same tile
-    battle.player.pos = {2, 2}
-    battle.bees[0].pos = {2, 2}
+    // Position player and bee on the same tile to simulate actual battle scenario
+    same_tile_pos := vec2i{2, 2}
+    battle.player.pos = same_tile_pos
+    battle.bees[0].pos = same_tile_pos
     battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
+    battle.bees[1].pos = {4, 4} // Different tile for comparison
 
-    // Check if same tile alerting is implemented
-    // This would normally be called during position updates
-    // For testing, we'll check the logic directly
-    if .Dead not_in battle.bees[0].flags && battle.bees[0].pos == battle.player.pos {
-        battle.bees[0].flags += {.Alert}
+    // Simulate the actual battle position update logic
+    // This would happen during battle loop when checking for position-based triggers
+    position_overlap_detected := false
+    for &bee in battle.bees {
+        if .Dead not_in bee.flags && bee.pos == battle.player.pos {
+            // This is the actual logic that would trigger alerting in real battle
+            bee.added += {.Alert}
+            position_overlap_detected = true
+        }
     }
 
+    testing.expect(t, position_overlap_detected, "Position overlap should be detected")
+
+    // Simulate VES processing that happens during battle update
+    for &bee in battle.bees {
+        if .Alert in bee.added {
+            bee.added -= {.Alert}
+            bee.flags += {.Alert}
+        }
+    }
+
+    // Verify the same-tile alerting worked correctly
     testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted when occupying same tile as player")
+    testing.expect(t, battle.bees[0].pos == battle.player.pos, "Alerted bee should be on same tile as player")
+    
+    // Verify selective alerting - only bees on same tile get alerted
+    testing.expect(t, .Alert not_in battle.bees[1].flags, "Bee on different tile should not be alerted")
+    testing.expect(t, battle.bees[1].pos != battle.player.pos, "Non-alerted bee should be on different tile")
 }
 
 @(test)

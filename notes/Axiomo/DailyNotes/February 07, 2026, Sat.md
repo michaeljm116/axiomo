@@ -13,4 +13,9 @@
 	* I think when character is running you should just give them a run game flag
 	* and when the animation end the flag ends...
 		* the flag should be handled in the player code itself?
-		* 
+
+## Next mechanic
+* Just log eveyrthing as bugs and figure out the next mechanic hmmm
+* I'd really like the attack system revamped dice are horribad
+* but no lets think about LOS or Obstacles
+* 

@@ -201,7 +201,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
 		                input_state = .Movement
                         ves.curr_screen = .Movement
                		case ^Bee:
-						bee_is_near = bee_near(player, c^)
+						bee_is_near = bee_near(player, c)
 		                input_state = .Action
 		                show_weapon(player.weapon)
 	            }
@@ -691,7 +691,7 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player, gri
             bee_action_move_away(bee, player, 1, grid)
         case .Sting:
             // If player is near, attack! else do nuffin
-            if bee_near(player^, bee^) && .Alert in bee.flags{
+            if bee_near(player^, bee) && .Alert in bee.flags{
                 bee.added += {.Attack}
             }
             else do bee.state = .Finishing
@@ -948,6 +948,7 @@ GameFlag :: enum
     Animate,
     Attack,
     Running,
+    Overlapping,
 }
 GameFlags :: bit_set[GameFlag; u32]
 
@@ -996,10 +997,12 @@ bee_check :: proc(p : Player, bees : [dynamic]Bee) -> (bool, int) {
     return false,0
 }
 
-bee_near :: proc(p : Player, bee : Bee) -> bool{
+bee_near :: proc(p : Player, bee : ^Bee) -> bool{
     diff_x := math.abs(bee.pos.x - p.pos.x)
     diff_y := math.abs(bee.pos.y - p.pos.y)
     total := i8(diff_x + diff_y)
+    if total == 0 {
+        bee.added += {.Overlapping}}
     return total <= p.weapon.range
 }
 
@@ -1694,7 +1697,7 @@ ves_update_visuals :: proc(battle : ^Battle)
             assert(vc != nil)
             vc.flags -= {.Dodge}
         }
-        if .Alert in c.added{
+        if .Alert in c.added || .Overlapping in c.added{
             vc := get_component(c.entity, Cmp_Visual)
             assert(vc != nil)
             vc.flags += {.Alert}
