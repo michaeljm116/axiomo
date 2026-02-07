@@ -27,12 +27,20 @@
             "state": {
               "type": "markdown",
               "state": {
+<<<<<<< Updated upstream
                 "file": "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
+=======
+                "file": "DailyNotes/February 02, 2026, Mon.md",
+>>>>>>> Stashed changes
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
+<<<<<<< Updated upstream
               "title": "Fly_Ground_Obstacles"
+=======
+              "title": "February 02, 2026, Mon"
+>>>>>>> Stashed changes
             }
           }
         ],

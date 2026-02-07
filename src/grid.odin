@@ -157,7 +157,8 @@ path_is_walkable :: proc(p : vec2i, goal : vec2i, grid: Grid) -> bool {
     if path_pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !path_in_bounds(p, grid) { return false }
     t := grid_get(grid,p).flags
-    return  t == nil || .Weapon in t
+    // return  t == nil || .Weapon in t
+    return .Wall not_in t && .Obstacle not_in t
 }
 
 path_abs_i :: proc(x : int) -> int {
