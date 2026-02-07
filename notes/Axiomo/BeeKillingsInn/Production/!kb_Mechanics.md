@@ -6,9 +6,8 @@ kanban-plugin: board
 
 ## Todo
 
-- [ ] Bee: Grounded vs Flying
+- [ ] Attack:Camera
 - [ ] Dodge: Action Oriented
-- [ ] Attack: Action Oriented
 - [ ] Line of Sight
 - [ ] Obstacles - Medium
 - [ ] Obstacles - Complex
@@ -23,13 +22,16 @@ kanban-plugin: board
 
 ## In Progress
 
-- [ ] Obstacles - Simple
+- [ ] Attack: Action Oriented
+- [ ] Attack: UI
 
 
 ## Complete
 
+- [ ] Bee: Grounded vs Flying
 - [ ] Run option: Shift + WASD
 - [ ] Fly/Ground Simple
+- [ ] Obstacles - Simple
 
 
 

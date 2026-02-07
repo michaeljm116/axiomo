@@ -13,26 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
+                "file": "BeeKillingsInn/Production/Mechanics/Action - Attack.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Fly_Ground_Obstacles"
-            }
-          },
-          {
-            "id": "d623b1c1d05d84a1",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "BeeKillingsInn/Production/Prototype.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Prototype"
+              "title": "Action - Attack"
             }
           }
         ]
@@ -188,13 +174,14 @@
   "active": "8880c06db2b2ecd1",
   "lastOpenFiles": [
     "BeeKillingsInn/Production/!kb_Mechanics.md",
+    "BeeKillingsInn/Production/Mechanics/Action - Attack.md",
     "BeeKillingsInn/Production/Prototype.md",
+    "BeeKillingsInn/Production/Mechanics/Run.md",
     "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
     "BeeKillingsInn/Production/Mechanics/Walls and Obstacles.md",
     "DailyNotes/February 07, 2026, Sat.md",
     "BeeKillingsInn/Production/Steam Next Fest 2026.md",
     "BeeKillingsInn/Production/Epics.md",
-    "BeeKillingsInn/Production/Mechanics/Run.md",
     "DailyNotes/February 06, 2026, Fri.md",
     "DailyNotes/February 02, 2026, Mon.md",
     "BeeKillingsInn/Production/Reminders.md",
@@ -214,7 +201,6 @@
     "BeeKillingsInn/Production/!kb_Kanban.md",
     "BeeKillingsInn/Art/UI Design notes.md",
     "BeeKillingsInn/GameDesign/KillerBee prototype.md",
-    "DailyNotes/January 29, 2026, Thu.md",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143121.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151208.png",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151050.png",

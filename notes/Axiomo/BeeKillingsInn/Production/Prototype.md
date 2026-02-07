@@ -96,6 +96,12 @@ As a developer, I'd like a working prototype of the game in which I can go from 
 			* Add new animation and sound
 	* HIGHER COMPLEXITY:
 		* If Player next to obstacle && IsAbleToPull || IsAbleToPickUp || IsAbleToThrow
+	* So one thing I just considered is... what exactly is the point of obstacles?
+		* right now they can exist to make the game harder for the player but easier for the bee
+		* if you can move obstacles... what's the purpose in that?
+		* there's like... just no purpose in it right now or anything planned for tbh...
+		* might be useful if you plan on hiding a special weapon?
+		* honestly this is super low priority for now
 * Action Dodge:
 	* There's already a .Dodge flag
 	* So when bee attack if .Dodge flag then...
