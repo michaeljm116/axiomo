@@ -157,7 +157,6 @@ path_is_walkable :: proc(p : vec2i, goal : vec2i, grid: Grid) -> bool {
     if path_pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !path_in_bounds(p, grid) { return false }
     t := grid_get(grid,p).flags
-    // return  t == nil || .Weapon in t
     return .Wall not_in t && .Obstacle not_in t
 }
 
@@ -274,12 +273,12 @@ path_a_star_find :: proc(start : vec2i, goal, size : vec2i, grid : Grid) -> [dyn
     }
 }
 
-path_is_walkable_internal :: proc(p : vec2i, goal : vec2i, allow_through_walls : bool, grid : Grid) -> bool {
+path_is_walkable_internal :: proc(p : vec2i, goal : vec2i, allow_through_obstacles : bool, grid : Grid) -> bool {
     if path_pos_equal(p, goal) { return true } // always allow stepping on the goal
     if !path_in_bounds(p, grid) { return false }
     t := grid_get(grid,p).flags
-    if t == nil || .Weapon in t { return true }
-    if allow_through_walls && .Wall in t { return true }
+    if .Wall not_in t && .Obstacle not_in t { return true }
+    if allow_through_obstacles && .Obstacle in t { return true }
     return false
 }
 
