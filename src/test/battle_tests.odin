@@ -1099,6 +1099,7 @@ Player_Attack_Crawling_Bee_With_HyperFocus_Bonus_Hits_When_Dice_Plus_Focus_Excee
 
     // Set bee as crawling with PlayerHyperFocused status and full health
     battle.bees[0].flags -= {.Flying}
+    battle.bees[0].flags += {.PlayerFocused}
     battle.bees[0].flags += {.PlayerHyperFocused}
     battle.bees[0].health = 10
 

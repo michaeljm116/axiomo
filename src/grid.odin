@@ -67,7 +67,9 @@ grid_init_floor :: proc(grid : ^Grid, floor_transform : Cmp_Primitive)
     	for y in 0..<grid.height {
       		rc := vec2f{f32(x),f32(y)}
       		center := rc * grid.scale + tile_interval + floor_bottom_left
-      		grid_set(grid, x,y, Tile{center = center})
+            grid_get_mut(grid, x, y).center = center
+
+      		// grid_set(grid, x,y, Tile{center = center})
 	    }
     }
 }
@@ -86,11 +88,11 @@ grid_set_vec2i :: proc(grid : ^Grid, p : vec2i, tile : Tile){
 }
 grid_set_flags_i16 :: proc(grid : ^Grid, x, y : i32, flags : TileFlags){
     assert(x >= 0 && x < grid.width && y >= 0 && y < grid.height)
-    grid.tiles[y * grid.width + x].flags = flags
+    grid.tiles[y * grid.width + x].flags += flags
 }
 grid_set_flags_vec2i :: proc(grid : ^Grid, p : vec2i, flags : TileFlags){
     assert(p.x >= 0 && p.x < i32(grid.width) && p.y >= 0 && p.y < i32(grid.height))
-    grid.tiles[p.y * i32(grid.width) + p.x].flags = flags
+    grid.tiles[p.y * i32(grid.width) + p.x].flags += flags
 }
 
 grid_get_i16_p :: proc(grid : ^Grid, x, y : i32) -> Tile {

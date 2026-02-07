@@ -70,5 +70,9 @@ init_battle_queue :: proc(battle : ^Battle, alloc : mem.Allocator)
    count := len(battle.bees) + 1
    queue.init(&battle.battle_queue, count, alloc)
    queue.push(&battle.battle_queue, &battle.player.base)
-   for &b in battle.bees do queue.push(&battle.battle_queue, &b)
+   queue.push(&battle.battle_queue, &battle.player.base)
+   for &b in battle.bees{
+       queue.push(&battle.battle_queue, &b)
+       queue.push(&battle.battle_queue, &b)
+   }
 }

@@ -565,3 +565,45 @@ test_refresh_player_reachability_current_pos :: proc(t: ^testing.T) {
     testing.expect(t, .Walkable in current_tile, "Player's current position should be marked Walkable")
     testing.expect(t, .Runnable not_in current_tile, "Current position should not be Runnable")
 }
+
+@(test)
+test_path_is_walkable_ignores_reachability_flags :: proc(t: ^testing.T) {
+    grid := game.grid_create({5, 5}, context.allocator)
+    defer { /* cleanup */ }
+
+    goal := game.vec2i{0, 0}
+    pos  := game.vec2i{2, 2}
+
+    // These flags are set by refresh_player_reachability
+    game.grid_set_flags(grid, pos, {.Walkable})
+    game.grid_set_flags(grid, vec2i{3,2}, {.Runnable})
+
+    testing.expect(t, game.path_is_walkable(pos, goal, grid^), "Walkable flag should NOT block movement")
+    testing.expect(t, game.path_is_walkable(vec2i{3,2}, goal, grid^), "Runnable flag should NOT block movement")
+
+    // Still block real obstacles
+    game.grid_set_flags(grid, vec2i{4,2}, {.Wall})
+    testing.expect(t, !game.path_is_walkable(vec2i{4,2}, goal, grid^), "Wall should still block")
+}
+
+@(test)
+test_a_star_respects_reachability_flags_but_allows_them :: proc(t: ^testing.T) {
+    grid := game.grid_create({5, 5}, context.allocator)
+    defer { /* cleanup */ }
+
+    // Make a clean grid
+    for &tile in grid.tiles { tile.flags = {} }
+
+    start := game.vec2i{0, 0}
+    goal  := game.vec2i{4, 0}
+
+    // Simulate player reachability from goal (common real-world case)
+    game.refresh_player_reachability(grid, goal)
+
+    path := game.path_a_star_find(start, goal, {5,5}, grid^)
+
+    testing.expect(t, len(path) > 0, "A* should still find path despite .Walkable/.Runnable flags")
+    testing.expect(t, path[0] == start)
+    testing.expect(t, path[len(path)-1] == goal)
+    testing.expect(t, len(path) == 5, "Should be Manhattan distance + 1 (4 steps)")
+}

@@ -90,11 +90,9 @@ start_game :: proc(){
         face_right(bee.entity)
     }
 
-
-
     place_chest_on_grid(vec2i{2,0}, &g.battle)
     place_chest_on_grid(vec2i{4,3}, &g.battle)
-        add_animations()
+    add_animations()
 }
 
 set_game_over :: proc(){
@@ -978,7 +976,8 @@ move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState, gr
 
 weap_check :: proc(p : vec2i, grid : ^Grid) -> bool{
     // Tile is a bitset; check membership
-    if .Weapon in grid_get(grid,p).flags {
+    tile := grid_get(grid, p)
+    if .Weapon in tile.flags {
         grid_set(grid,p, {})
         return true
     }
