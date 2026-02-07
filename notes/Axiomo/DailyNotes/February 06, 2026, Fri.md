@@ -3,7 +3,6 @@
 	* you were stuck in a permanent move state
 	* what could cause that?
 	* some kind of lack of refresh between kills
-* Also chests no longer open
 * bee is not alerted when on top of player... why?
 	* nvm, they are alerted but the visual isn't there
 * Chest don't activate 
