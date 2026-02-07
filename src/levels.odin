@@ -10,8 +10,9 @@ battle_setup_1 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocat
     battle.grid = grid_create({7, 5}, alloc)
     grid_set_flags(grid,2,0,{.Weapon})
     grid_set_flags(grid,4,3,{.Weapon})
-    grid_set_flags(grid,5,0,{.Wall})
-
+    grid_set_flags(grid,3,2,{.Wall})
+    grid_set_flags(grid,1,0,{.Wall})
+    grid_set_flags(grid,5,4,{.Wall})
     // Initialize Player and Bee
     bees = make([dynamic]Bee, 2, alloc)
     player = {name ='p', pos = vec2i{0,2}, health = 1, weapon = WeaponsDB[.Hand]}

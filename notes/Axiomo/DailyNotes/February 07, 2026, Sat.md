@@ -18,4 +18,5 @@
 * Just log eveyrthing as bugs and figure out the next mechanic hmmm
 * I'd really like the attack system revamped dice are horribad
 * but no lets think about LOS or Obstacles
+* Okay Lets get a wall in now
 * 

@@ -71,3 +71,57 @@
 	* yep b2 supports it
 	* wait so are you done with flying?
 	* did you do the weapons yet?
+
+## Wall Generation
+* Quesiton is... where do you want this function?
+	* This will be a temporary thing that generates a block on create
+	* now eventually, this will be changed to an individual object
+	* in which case you'd want the wall to load a model and not a shape
+	* or you can edit it to switch but lets say it is changed to a model... other than an enum is anything needed?
+	* no you basically just need... everything in the c++
+* So this is something that generates walls based on grid info
+	* will the final product have this?
+	* who cares, put it in battle
+* so you have a wall but it doesn't scale well thanks to crappy engine also its a pillar done by load_prefab
+* its hard to like see the grid blocks too sooo hmm
+* 
+* ``` rust
+  create_wall :: proc(grid: ^?Grid, x, y) -> Maybe(Entity)
+  {
+	 // 1. Get the tile of the grid
+	 get_grid_mut(grid,x,y) 
+	 
+	 // 2. Create the transform and prim
+	  
+  }
+  ```
+  
+ ``` c++
+ artemis::Entity* Scene::createShape(std::string name, glm::vec3 pos, glm::vec3 scale, int matID, int type, bool dynamic)
+{
+	artemis::Entity* e = &em->create();
+	NodeComponent*		parent = new NodeComponent(e, name, COMPONENT_MATERIAL | COMPONENT_TRANSFORM | COMPONENT_PRIMITIVE);
+	TransformComponent* trans  = new TransformComponent(pos, glm::vec3(0.f), scale);
+	if(type == 1)
+		e->addComponent(new CollisionComponent(trans->local.position, trans->local.scale, CollisionType::Sphere));
+	if(type == 2)
+		e->addComponent(new CollisionComponent(trans->local.position, trans->local.scale, CollisionType::Box));
+	if (type == 3)
+		e->addComponent(new CollisionComponent(trans->local.position, trans->local.scale, CollisionType::Capsule));
+	dynamic ? e->addComponent(new DynamicComponent()) : e->addComponent(new StaticComponent());
+	e->addComponent(new PrimitiveComponent(-type));
+	e->addComponent(new MaterialComponent(matID));
+	e->addComponent(new RenderComponent(RenderType::RENDER_PRIMITIVE));
+	e->addComponent(trans);
+	e->addComponent(parent);
+
+	parent->isDynamic = dynamic;
+	e->refresh();
+	//rs->addNode(parent);
+	parents.push_back(parent);
+	ts->recursiveTransform(parent);
+	rs->updateObjectMemory();
+
+	return e;
+}
+ ``` 

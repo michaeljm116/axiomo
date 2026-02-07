@@ -93,6 +93,7 @@ start_game :: proc(){
     place_chest_on_grid(vec2i{2,0}, &g.battle)
     place_chest_on_grid(vec2i{4,3}, &g.battle)
     add_animations()
+    create_all_pillars(g.battle.grid^)
 }
 
 set_game_over :: proc(){
@@ -375,6 +376,7 @@ handle_back_button :: proc(state : ^PlayerInputState, weapon : Weapon, selected 
             break
     }
 }
+
 BattleSelection :: struct
 {
 	index : int,
@@ -1790,4 +1792,25 @@ ves_animate_player_end :: #force_inline proc(p : ^Player){
     animate_idle(ac, "Froku", p.move_anim)
     p.removed +=  {.Running}
     p.removed += {.Attack}
+}
+
+//----------------------------------------------------------------------------\\
+// /gen GENERATION SYSTEMS
+//----------------------------------------------------------------------------\\
+create_pillar :: proc(grid : Grid, tile : Tile)
+{
+    e := load_prefab("WoodPillar")
+    t := get_component(e, Cmp_Transform)
+    bot := get_bottom_of_entity(e)
+    dy := grid.floor_height - bot
+
+    t.local.pos.y += dy
+    t.local.pos.xz = tile.center.xy
+    t.local.pos.y = grid.floor_height
+    // t.local.sca.xy = grid.scale.xy
+}
+
+create_all_pillars :: proc(grid : Grid)
+{
+    for t in grid.tiles do if .Wall in t.flags do create_pillar(grid, t)
 }

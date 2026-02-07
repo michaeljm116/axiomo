@@ -6,7 +6,6 @@ kanban-plugin: board
 
 ## Todo
 
-- [ ] Obstacles - Simple
 - [ ] Bee: Grounded vs Flying
 - [ ] Dodge: Action Oriented
 - [ ] Attack: Action Oriented
@@ -24,6 +23,7 @@ kanban-plugin: board
 
 ## In Progress
 
+- [ ] Obstacles - Simple
 
 
 ## Complete
