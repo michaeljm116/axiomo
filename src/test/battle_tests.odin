@@ -981,7 +981,7 @@ Player_Attack_Flying_Bee_Hits_When_Dice_Plus_Focus_Exceeds_Flying_Accuracy :: pr
 
     testing.expect(t, battle.bees[0].health == 15, "Flying bee should take flying damage when hit")
     testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead with remaining health")
-    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted after attack")
+    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
 }
 
@@ -1006,7 +1006,7 @@ Player_Attack_Flying_Bee_Misses_When_Dice_Plus_Focus_Below_Flying_Accuracy :: pr
 
     testing.expect(t, battle.bees[0].health == 20, "Flying bee should take no damage when missed")
     testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead")
-    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted even on miss")
+    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted even on miss")
     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
 }
 
@@ -1031,7 +1031,7 @@ Player_Attack_Crawling_Bee_Hits_When_Dice_Plus_Focus_Exceeds_Crawling_Accuracy :
 
     testing.expect(t, battle.bees[0].health == 0, "Crawling bee should take crawling damage when hit")
     testing.expect(t, .Dead in battle.bees[0].flags, "Bee should be dead when health reaches 0")
-    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted after attack")
+    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
 }
 
@@ -1056,7 +1056,7 @@ Player_Attack_Crawling_Bee_Misses_When_Dice_Plus_Focus_Below_Crawling_Accuracy :
 
     testing.expect(t, battle.bees[0].health == 10, "Crawling bee should take no damage when missed")
     testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead")
-    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted even on miss")
+    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted even on miss")
     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
 }
 
@@ -1076,12 +1076,12 @@ Player_Attack_Flying_Bee_With_Focus_Bonus_Hits_When_Dice_Plus_Focus_Exceeds_Accu
     battle.bees[0].flags += {.Flying, .PlayerFocused}
     battle.bees[0].health = 20
 
-    // Attack with dice roll that would miss without focus but hits with focus (7 + 1 focus > 8 accuracy)
-    game.player_attack(&battle.player, &battle.bees[0], 7)
+    // Attack with dice roll that would miss without focus but hits with focus (8 + 1 focus > 8 accuracy)
+    game.player_attack(&battle.player, &battle.bees[0], 8)
 
     testing.expect(t, battle.bees[0].health == 15, "Flying bee should take flying damage when hit with focus bonus")
     testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead with remaining health")
-    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted after attack")
+    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
 }
 
@@ -1102,12 +1102,12 @@ Player_Attack_Crawling_Bee_With_HyperFocus_Bonus_Hits_When_Dice_Plus_Focus_Excee
     battle.bees[0].flags += {.PlayerHyperFocused}
     battle.bees[0].health = 10
 
-    // Attack with dice roll that would miss without hyperfocus but hits with hyperfocus (5 + 2 focus > 7 accuracy)
-    game.player_attack(&battle.player, &battle.bees[0], 5)
+    // Attack with dice roll that would miss without hyperfocus but hits with hyperfocus (6 + 2 focus > 7 accuracy)
+    game.player_attack(&battle.player, &battle.bees[0], 6)
 
     testing.expect(t, battle.bees[0].health == 0, "Crawling bee should take crawling damage when hit with hyperfocus bonus")
     testing.expect(t, .Dead in battle.bees[0].flags, "Bee should be dead when health reaches 0")
-    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted after attack")
+    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
 }
 
@@ -1132,7 +1132,7 @@ Player_Attack_Flying_Bee_Kills_When_Damage_Exceeds_Health :: proc(t: ^testing.T)
 
     testing.expect(t, battle.bees[0].health <= 0, "Flying bee health should be <= 0 after high damage")
     testing.expect(t, .Dead in battle.bees[0].flags, "Flying bee should be dead when damage exceeds health")
-    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted after attack")
+    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
 }
 
@@ -1157,6 +1157,6 @@ Player_Attack_Crawling_Bee_Kills_When_Damage_Exceeds_Health :: proc(t: ^testing.
 
     testing.expect(t, battle.bees[0].health <= 0, "Crawling bee health should be <= 0 after high damage")
     testing.expect(t, .Dead in battle.bees[0].flags, "Crawling bee should be dead when damage exceeds health")
-    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted after attack")
+    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
 }
