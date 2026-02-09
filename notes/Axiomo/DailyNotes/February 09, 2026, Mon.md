@@ -34,3 +34,8 @@
 		* should ves also detect button presses though?
 			* thats the gooood question
 			* wait... why does battle control  button presses and not the ves anyways???!
+		* Another thing to consider... should there be a generic VES.BLocked that happens once something is started
+			* else large ifthen statements
+			* but it also adds another layer of complexity 
+			* yoooo what if i added a flag at run battle then only run players turn if not in .ves state
+			* 
