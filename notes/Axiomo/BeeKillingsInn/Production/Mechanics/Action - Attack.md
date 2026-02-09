@@ -29,3 +29,18 @@
 	* BOX
 	* BEE
 	* HAND
+* Soooo You have a Bee, a bar and now you need to get the bee's X to be along side the bar
+	* and also the size, everything needs perfectionish but for now its okay
+	* simple box to point collision if box.x lower is < than point but > then box.x + len then do stuff
+	* but also keep box position in mind
+	* Sooo there's actually several ways you can do this... it could be like.... 
+		1. bar moves bee dont
+		2. bee moves bar dont
+		3. both move
+	* I like the idea of bee moving and focus controls the speed of the move
+	* another control could be the type of bee
+		* a dodgy bee vs a slow lazy bee
+	* so in general... bee's moving does sound like a necessity
+	* question is bar also moving or static 
+		* idk but lets get that bar up and that bee moving
+		* Ne

@@ -1,4 +1,4 @@
-[[Excalidraw/Refactor|Refactor]]
+[[Excalidraw/Refactor|VES]]
 
 eg.
 ``` go INPUT STATE

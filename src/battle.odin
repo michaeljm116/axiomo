@@ -10,7 +10,7 @@ import "base:intrinsics"
 import "vendor:glfw"
 import xxh2"axiom/extensions/xxhash2"
 import queue2 "axiom/extensions/queue2"
-
+import "constants"
 import "axiom"
 
 Battle :: struct
@@ -907,7 +907,7 @@ start_dice_roll :: proc(dice : ^[2]Dice) {
         gc := get_component(d.entity, Cmp_Gui)
         if gc != nil {
             gc.alpha = 1.0  // Show dice
-            gc.align_min = f32(ONE_SIXTH * f64(d.num - 1))  // Set initial face
+            gc.align_min = f32(constants.ONE_SIXTH * f64(d.num - 1))  // Set initial face
             update_gui(gc)
         }
     }
@@ -1475,6 +1475,9 @@ hide_visuals :: proc(visuals : ^Cmp_Visual, flags : VisualFlags)
 // curr_max_union
 CurrMax :: axiom.CurrMax
 
+//----------------------------------------------------------------------------\\
+// /Attack SYSTEM
+//----------------------------------------------------------------------------\\
 Dice :: struct {
     num : i8,
     time : CurrMax,
@@ -1503,7 +1506,6 @@ init_dice_entities :: proc(dice : ^[2]Dice)
     }
 }
 
-ONE_SIXTH :: 1.0/6.0
 dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
     for &d in dice{
         d.time.curr += dt
@@ -1526,7 +1528,7 @@ dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
             assert(d.num > 0 && d.num <= 6)
             //set dice face
             icon := get_component(d.entity, Cmp_Gui)
-            icon.align_min.x = f32(ONE_SIXTH * f64(d.num - 1))
+            icon.align_min.x = f32(constants.ONE_SIXTH * f64(d.num - 1))
             icon.align_min.y = 0.0
             update_gui(icon)
         }

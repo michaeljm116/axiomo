@@ -63,7 +63,7 @@ app_update :: proc(delta_time: f32) {
     if !ax.entity_exists(g.camera_entity) do find_camera_entity()
     if !ax.entity_exists(g.player) do find_player_entity()
 
-    // handle_ui_edit_mode()
+    handle_ui_edit_mode()
     // handle_player_edit_mode()
     handle_destroy_mode()
     if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode{

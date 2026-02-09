@@ -1,0 +1,7 @@
+package constants
+
+F32_SIXTEENTH :: f32(0.0625)
+F32_EIGHTH :: f32(0.125)
+F32_FOURTH :: f32(0.25)
+
+ONE_SIXTH :: 1.0/6.0

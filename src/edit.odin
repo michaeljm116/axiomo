@@ -13,13 +13,14 @@ edit_mode: bool = false
 selected_ui_index: int = 0
 // New separate function in gameplay.odin
 // F1 - Enter/Exit Edit Mode
-// Tab - Select Ui Index
-// CTRL + S - Save
-// Z = Adjust Position
-// Shift = Adjist Extents
-// Alt = Adjust Algign extents
-// None = Adjust align min
-// +/- = Adjust alpha
+// Tab - Select UI Index
+// CTRL + 5 - Save (not CTRL+S)
+// WASD - Base movement for adjustments
+// No modifier - Adjust min position
+// CTRL - Adjust align_min
+// SHIFT - Adjust extents
+// ALT - Adjust align_extents
+// +/- - Adjust alpha
 handle_ui_edit_mode :: proc() {
     // Toggle edit mode
     if is_key_just_pressed(glfw.KEY_F1) {  // Or any special key
@@ -78,7 +79,7 @@ handle_ui_edit_mode :: proc() {
     }
 
     // Save selected UI to JSON (CTRL+S)
-    if is_key_pressed(glfw.KEY_LEFT_CONTROL) && is_key_just_pressed(glfw.KEY_INSERT) {
+    if is_key_pressed(glfw.KEY_LEFT_CONTROL) && is_key_just_pressed(glfw.KEY_5) {
         if len(g.ui_keys) > 0 {
             selected_key := g.ui_keys[selected_ui_index]
             selected_ent := g_gui[selected_key]

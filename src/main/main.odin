@@ -27,13 +27,10 @@ main :: proc() {
 
 	logh, logh_err := os.open("log.txt", (os.O_CREATE | os.O_TRUNC | os.O_RDWR), mode)
 
-	if logh_err == os.ERROR_NONE {
-		os.stdout = logh
-		os.stderr = logh
-	}
+
 
 	logger_alloc := context.allocator
-	logger := logh_err == os.ERROR_NONE ? log.create_file_logger(logh, allocator = logger_alloc) : log.create_console_logger(allocator = logger_alloc)
+	logger := log.create_console_logger(allocator = logger_alloc)
 	context.logger = logger
 
 	when USE_TRACKING_ALLOCATOR {
@@ -60,10 +57,6 @@ main :: proc() {
 		}
 
 		mem.tracking_allocator_destroy(&tracking_allocator)
-	}
-
-	if logh_err == os.ERROR_NONE {
-		log.destroy_file_logger(logger, logger_alloc)
 	}
 }
 
