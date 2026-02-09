@@ -301,3 +301,20 @@ handle_destroy_mode :: proc()
     if is_key_just_pressed(glfw.KEY_W) do grid_pos_y += 1
     if is_key_just_pressed(glfw.KEY_S) do grid_pos_y -= 1
 }
+
+battle_cheat_mode: bool = false
+handle_battle_cheat_mode :: proc()
+{
+    if is_key_just_pressed(glfw.KEY_F2) {  // Or any special key
+        battle_cheat_mode = !battle_cheat_mode
+        if battle_cheat_mode do fmt.println("Entered Battle Cheat Edit Mode")
+        else do fmt.println("Exited Battle Cheat Edit Mode")
+    }
+    if !battle_cheat_mode do return
+
+    if is_key_just_pressed(glfw.KEY_SPACE) {
+        g.ves.curr_screen = .None
+        g.battle.input_state = .Attacking
+        g.ves.attack_state = .Start
+    }
+}

@@ -66,7 +66,8 @@ app_update :: proc(delta_time: f32) {
     handle_ui_edit_mode()
     // handle_player_edit_mode()
     handle_destroy_mode()
-    if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode{
+    handle_battle_cheat_mode()
+    if !edit_mode && !chest_mode && !player_edit_mode && !destroy_mode && !battle_cheat_mode{
        app_run(delta_time, &g.app_state)
     }
     // Clear just pressed/released states

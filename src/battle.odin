@@ -10,7 +10,7 @@ import "base:intrinsics"
 import "vendor:glfw"
 import xxh2"axiom/extensions/xxhash2"
 import queue2 "axiom/extensions/queue2"
-import "constants"
+
 import "axiom"
 
 Battle :: struct
@@ -26,7 +26,7 @@ Battle :: struct
     input_state : PlayerInputState,
 
     current_bee: int,
-    dice :  [2]Dice,
+    attack_bar : AttackBar,
     // bee_selection : int,
     bee_is_near : bool,
     battle_queue : queue.Queue(^Character),
@@ -236,17 +236,16 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             if check_action_attack(battle, ves) do return
             else if check_action_focused(battle) do return
             else if check_action_dodged(battle) do return
-        case .DiceRoll:
-            ves.curr_screen = .DiceRoll
-            if ves.dice_state == .Update do return
-            if ves.dice_state == .Finished
+        case .Attacking:
+            ves.curr_screen = .PlayerAttack
+            if ves.attack_state == .Update do return
+            if ves.attack_state == .Finished
             {
-                ves.dice_state = .None
+                ves.attack_state = .None
                 ves.curr_screen = .None
-                fmt.println("Dice Num 1: ", dice[0].num, " Dice Num 2: ", dice[1].num)
-                acc := dice[0].num + dice[1].num
                 bee := curr_sel.character.variant.(^Bee)
-                player_attack(&player, bee, acc)
+                player_attack(&player, bee, 1) //TODOYO WHAT DIS
+                attack_bar_finish(&battle.attack_bar)
                 input_state = .SelectCharacter
                 state = .End
                 return
@@ -263,8 +262,8 @@ check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
     // player_attack(player, &curr_sel.character)
     // input_state = .SelectCharacter
     // state^ = .BeesTurn
-    input_state = .DiceRoll
-    ves.dice_state = .Start
+    input_state = .Attacking
+    ves.attack_state = .Start
     if .Dead in curr_sel.character.flags
     {
         fmt.printfln("Bee %v is dead", curr_sel.character.name)
@@ -339,16 +338,16 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
             // if player dodge, first roll dice, if dice is finished then do player attack
             if .PlayerDodge in bee.flags {
                 bee.removed += {.PlayerDodge}
-                g.ves.dice_state = .Start
+                // g.ves.dice_state = .Start
             }
-            if g.ves.dice_state == .Finished {
-                bee_action_attack(bee, &player, dice.x.num + dice.y.num)
-                bee.state = .Finishing
-            }
-            if g.ves.dice_state == .None {
-                bee_action_attack(bee, &player, 20)
-                bee.state = .Finishing
-            }
+            // if g.ves.dice_state == .Finished {
+            //     bee_action_attack(bee, &player, dice.x.num + dice.y.num)
+            //     bee.state = .Finishing
+            // }
+            // if g.ves.dice_state == .None {
+            //     bee_action_attack(bee, &player, 20)
+            //     bee.state = .Finishing
+            // }
         }
     case .Moving:
     case .Finishing:
@@ -356,7 +355,7 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
         bee.removed += {.Animate, .Attack, .Moving}
         state = .End
         g.ves.anim_state = .None
-        g.ves.dice_state = .None
+        // g.ves.dice_state = .None
     }
 }
 
@@ -440,7 +439,7 @@ PlayerInputState :: enum
    SelectCharacter,
    Movement,
    Action,
-   DiceRoll,
+   Attacking,
 }
 
 Player :: struct{
@@ -889,35 +888,6 @@ player_attack :: proc(player : ^Player, bee : ^Bee, acc : i8){
            bee.health -= player.weapon.crawling.power
            if bee.health <= 0 do bee.flags += {.Dead}
        }
-    }
-}
-
-dice_rolls :: proc() -> i8 {
-   d1 := rand.int31() % 6 + 1
-   d2 := rand.int31() % 6 + 1
-   fmt.printf("Dice rolls: %d + %d = %d\n", d1, d2, d1 + d2)
-   return i8(d1 + d2)
-}
-
-start_dice_roll :: proc(dice : ^[2]Dice) {
-    for &d in dice {
-        d.time.curr = 0
-        d.interval.curr = 0
-        d.num = i8(rand.int31() % 6) + 1  // Initial random
-        gc := get_component(d.entity, Cmp_Gui)
-        if gc != nil {
-            gc.alpha = 1.0  // Show dice
-            gc.align_min = f32(constants.ONE_SIXTH * f64(d.num - 1))  // Set initial face
-            update_gui(gc)
-        }
-    }
-}
-
-hide_dice :: proc(dice : ^[2]Dice) {
-    for &d in dice {
-        gc := get_component(d.entity, Cmp_Gui)
-        if gc != nil { gc.alpha = 0.0 }
-        update_gui(gc)
     }
 }
 
@@ -1475,64 +1445,111 @@ hide_visuals :: proc(visuals : ^Cmp_Visual, flags : VisualFlags)
 // curr_max_union
 CurrMax :: axiom.CurrMax
 
+
 //----------------------------------------------------------------------------\\
-// /Attack SYSTEM
+// /Attack Bar System
 //----------------------------------------------------------------------------\\
-Dice :: struct {
+AttackBar :: struct {
     num : i8,
     time : CurrMax,
     interval : CurrMax,
-    entity : Entity,
+    bar : ^Cmp_Gui,
+    bee : ^Cmp_Gui,
+    box : ^Cmp_Gui,
+    speed : f32
 }
 
-init_dice :: proc(dice_ptr : ^[2]Dice)
+attack_bar_init :: proc(ab : ^AttackBar, gui_map : ^map[string]Entity)
 {
-    for &dice, i in dice_ptr{
-        dice.num = i8(i)
-        dice.time.max = 1.0
-        dice.interval.max = 0.16
-    }
+    ab.bar = get_component(gui_map["AttackBar"], Cmp_Gui)
+    ab.bee = get_component(gui_map["AttackBarBee"], Cmp_Gui)
+    ab.box = get_component(gui_map["AttackBarSlider"], Cmp_Gui)
+    ab.speed = 1
+    assert(ab.bar != nil && ab.bar != nil && ab.box != nil)
+
+    // Init position and default values
 }
 
-init_dice_entities :: proc(dice : ^[2]Dice)
+attack_bar_start :: proc(bar : ^AttackBar)
 {
-    dice.x.entity = g_gui["Dice1"]
-    dice.y.entity = g_gui["Dice2"]
-    for &d, i in dice {
-        gc := get_component(d.entity, Cmp_Gui)
-        gc.alpha = 0.0
-        gc.min.x += (f32(i) * 0.16)
-        update_gui(gc)
-    }
+    // Set the Bee at a random distance to the right max = right most bar width
+    // Set the Box at a random distance to the left, max = left most bar width
+    bar_min := bar.bar.min.x - bar.bar.extents.x
+    bar_max := bar.bar.min.x + bar.bar.extents.x
+
+    bee_range := rand.float32_range(bar.bar.min.x, bar_max)
+    box_range := rand.float32_range(bar_min, bar.bar.min.x)
+
+    bar.box.min.x = box_range
+    bar.bee.min.x = bee_range
+
+    update_gui(bar.box)
+    update_gui(bar.bee)
 }
 
-dice_roll_vis :: proc(dice: ^[2]Dice, dt : f32){
-    for &d in dice{
-        d.time.curr += dt
-        d.interval.curr += dt
+attack_bar_update :: proc(bar : ^AttackBar, dt : f32)
+{
+    bar.bee.min.x -= dt * bar.speed
+    update_gui(bar.box)
+    update_gui(bar.bee)
+}
 
-        // if(d.time.curr > d.time.max)
-        // {
-        //     // Exit out change state etc...
-        //     d.time.curr = 0
-        //     return
-        // }
-        if(d.time.curr > d.time.max) do return
-        if(d.interval.curr > d.interval.max)
-        {
-            //reset interval... switch dice num
-            d.interval.curr = 0
-            prev_num := d.num
-            d.num = i8(rand.int31() % 6 + 1)
-            if d.num == prev_num do d.num = ((d.num + 1) % 6) + 1
-            assert(d.num > 0 && d.num <= 6)
-            //set dice face
-            icon := get_component(d.entity, Cmp_Gui)
-            icon.align_min.x = f32(constants.ONE_SIXTH * f64(d.num - 1))
-            icon.align_min.y = 0.0
-            update_gui(icon)
-        }
+attack_bar_finish :: proc(bar : ^AttackBar)
+{
+    using bar
+    if bee.min.x > box.min.x && bee.min.x < (box.min.x + box.extents.x) do fmt.println("YOU KILLT IT!")
+}
+
+attack_bar_hide :: proc()
+{
+    ToggleUI("AttackBar",false)
+    ToggleUI("AttackBarBee",false)
+    ToggleUI("AttackBarSlider",false)
+}
+attack_bar_show :: proc()
+{
+    ToggleUI("AttackBar",true)
+    ToggleUI("AttackBarBee",true)
+    ToggleUI("AttackBarSlider",true)
+}
+
+attack_bar_vis :: proc(ab : ^AttackBar, dt : f32)
+{
+    if ab == nil { return }
+    if ab.bar == nil || ab.box == nil || ab.bee == nil { return }
+
+    // Ensure sensible defaults
+    if ab.time.max <= 0.0 { ab.time.max = 1.0 } // seconds to traverse full width
+    if ab.num == 0 { ab.num = 1 } // direction sign: 1 -> right, -1 -> left
+
+    // Compute movement bounds inside the bar
+    bar_min := ab.bar.min.x
+    bar_width := ab.bar.extents.x
+    box_width := ab.box.extents.x
+
+    min_x := bar_min
+    max_x := bar_min + (bar_width - box_width)
+    if max_x < min_x { max_x = min_x }
+
+    // Speed so the slider traverses from min to max in ab.time.max seconds
+    speed := (max_x - min_x) / ab.time.max
+
+    // Move the box and clamp / flip direction when hitting bounds
+    ab.box.min.x += f32(ab.num) * speed * dt
+    if ab.box.min.x <= min_x {
+        ab.box.min.x = min_x
+        ab.num = 1
+    } else if ab.box.min.x >= max_x {
+        ab.box.min.x = max_x
+        ab.num = -1
     }
+
+    // Keep bee synced with slider (same X); you can offset Y if you want it above the slider
+    ab.bee.min.x = ab.box.min.x
+
+    // Push updates to renderer
+    update_gui(ab.box)
+    update_gui(ab.bee)
 }
 
 //----------------------------------------------------------------------------\\
@@ -1544,7 +1561,7 @@ VES_Screen :: enum
     SelectCharacter,
     Movement,
     Action,
-    DiceRoll,
+    PlayerAttack,
 }
 
 VES_State :: enum{
@@ -1558,14 +1575,14 @@ VisualEventData :: struct
 {
    curr_screen : VES_Screen,
    prev_screen : VES_Screen,
-   dice_state : VES_State,
+   attack_state : VES_State,
    anim_state : VES_State
 }
 
 ves_update_all :: proc(battle : ^Battle, dt : f32)
 {
     ves_update_event(battle)
-    ves_update_dice(&battle.dice)
+    ves_update_attack(battle, dt)
     ves_update_screen(battle)
     ves_update_visuals(battle)
     ves_update_animations(battle, dt)
@@ -1589,8 +1606,8 @@ ves_update_screen :: proc(battle: ^Battle){
                 ToggleUI("Attack", false)
                 ToggleUI("Focus", false)
                 ToggleUI("Dodge", false)
-            case .DiceRoll:
-                hide_dice(&battle.dice)// ToggleUI("Dice", false)
+            case .PlayerAttack:
+                attack_bar_hide()
         }
         //Then turn new screen
         switch g.ves.curr_screen{
@@ -1607,27 +1624,24 @@ ves_update_screen :: proc(battle: ^Battle){
                 ToggleUI("Attack", true)
                 ToggleUI("Focus", true)
                 ToggleUI("Dodge", true)
-            case .DiceRoll:
-                break// ToggleUI("Dice", true)
+            case .PlayerAttack:
+                attack_bar_show()
         }
         // Finally, make them equal
         g.ves.prev_screen = g.ves.curr_screen
     }
 }
 
-ves_update_dice :: proc(dice : ^[2]Dice){
-    #partial switch g.ves.dice_state{
+ves_update_attack :: proc(battle : ^Battle, dt : f32){
+    switch g.ves.attack_state{
     case .Start:
-        start_dice_roll(dice)
-        g.ves.dice_state = .Update
+        attack_bar_start(&battle.attack_bar)
+        g.ves.attack_state = .Update
     case .Update:
-        dice_roll_vis(dice, f32(g.frame.physics_time_step))
-        for &d in dice {
-            if d.time.curr >= d.time.max + 1 do g.ves.dice_state = .Finished
-        }
-    case .Finished:
-        hide_dice(dice)
-        break;
+        // attack_bar_vis(&battle.attack_bar, dt)
+        attack_bar_update(&battle.attack_bar, dt)
+    case .None, .Finished:
+        break
     }
 }
 
