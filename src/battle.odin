@@ -1456,7 +1456,10 @@ AttackBar :: struct {
     bar : ^Cmp_Gui,
     bee : ^Cmp_Gui,
     box : ^Cmp_Gui,
-    speed : f32
+    speed : f32,
+    min : f32,
+    max : f32,
+    center : f32,
 }
 
 attack_bar_init :: proc(ab : ^AttackBar, gui_map : ^map[string]Entity)
@@ -1467,24 +1470,25 @@ attack_bar_init :: proc(ab : ^AttackBar, gui_map : ^map[string]Entity)
     ab.speed = 1
     assert(ab.bar != nil && ab.bar != nil && ab.box != nil)
 
+    ab.min = ab.bar.min.x
+    ab.max = ab.bar.min.x + ab.bar.extents.x
+    ab.center = ab.bar.extents.x * f32(0.5) + ab.min
     // Init position and default values
 }
 
 attack_bar_start :: proc(bar : ^AttackBar)
 {
+    using bar
     // Set the Bee at a random distance to the right max = right most bar width
     // Set the Box at a random distance to the left, max = left most bar width
-    bar_min := bar.bar.min.x - bar.bar.extents.x
-    bar_max := bar.bar.min.x + bar.bar.extents.x
+    bee_range := rand.float32_range(min, max)
+    box_range := rand.float32_range(min, max)
 
-    bee_range := rand.float32_range(bar.bar.min.x, bar_max)
-    box_range := rand.float32_range(bar_min, bar.bar.min.x)
+    box.min.x = box_range
+    bee.min.x = bee_range
 
-    bar.box.min.x = box_range
-    bar.bee.min.x = bee_range
-
-    update_gui(bar.box)
-    update_gui(bar.bee)
+    update_gui(box)
+    update_gui(bee)
 }
 
 attack_bar_update :: proc(bar : ^AttackBar, dt : f32)
