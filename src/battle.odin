@@ -238,7 +238,12 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             else if check_action_dodged(battle) do return
         case .Attacking:
             ves.curr_screen = .PlayerAttack
-            if ves.attack_state == .Update do return
+            if ves.attack_state == .Update
+            {
+                if game_controller_just_pressed(.Select){
+                   ves.attack_state = .Finished
+                }
+            }
             if ves.attack_state == .Finished
             {
                 ves.attack_state = .None
@@ -1481,12 +1486,13 @@ attack_bar_start :: proc(bar : ^AttackBar)
     using bar
     // Set the Bee at a random distance to the right max = right most bar width
     // Set the Box at a random distance to the left, max = left most bar width
-    bee_range := rand.float32_range(min, max)
-    box_range := rand.float32_range(min, max)
+    bee_range := rand.float32_range(center, max)
+    box_range := rand.float32_range(min, center)
 
     box.min.x = box_range
     bee.min.x = bee_range
 
+    // box.extents.x = box.extents.x
     update_gui(box)
     update_gui(bee)
 }

@@ -154,24 +154,25 @@ game_update :: proc(){
 
 	//perform initial update
 	controller_update(g.frame.delta_time)
-	// app_update(g.frame.delta_time)
-	// sys_visual_process_ecs(g.frame.delta_time)
+	app_update(g.frame.delta_time)
+	sys_visual_process_ecs(g.frame.delta_time)
 
 	// only iterate physics at a certain timestep
 	g.frame.physics_acc_time += f32(frame_time)
 	for g.frame.physics_acc_time >= f32(g.frame.physics_time_step) {
-
-    	app_update(g.frame.delta_time)
-		sys_visual_process_ecs(g.frame.delta_time)
+	    // Toggle for edit mode:
+		// app_update(g.frame.delta_time)
+		// sys_visual_process_ecs(g.frame.delta_time)
 
 		ax.sys_anim_process_ecs(f32(g.frame.physics_time_step))
 		ax.sys_physics_update(ax.g_physics, f32(g.frame.physics_time_step))
 		g.frame.physics_acc_time -= f32(g.frame.physics_time_step)
+		ax.sys_bvh_process_ecs(ax.g_bvh, g.mem_frame.alloc)
 	}
 
 	ax.sys_trans_process_ecs()
 	ax.sys_text_process_ecs()
-	ax.sys_bvh_process_ecs(ax.g_bvh, g.mem_frame.alloc)
+	// ax.sys_bvh_process_ecs(ax.g_bvh, g.mem_frame.alloc)
 
 	ax.update_buffers()
 	ax.update_descriptors()
