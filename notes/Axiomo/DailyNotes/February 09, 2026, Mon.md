@@ -38,4 +38,21 @@
 			* else large ifthen statements
 			* but it also adds another layer of complexity 
 			* yoooo what if i added a flag at run battle then only run players turn if not in .ves state
-			* 
+
+
+| Time  | Turn Queue (WHO)        | Animation Queue (HOW)        | Communication                                  | State                         |
+| ----- | ----------------------- | ---------------------------- | ---------------------------------------------- | ----------------------------- |
+| T=0   | Player's turn           | -                            | Battle → VES: start_turn(player)               | ves.global_state = .TurnStart |
+| T=0.5 | Player selects "Attack" | -                            | Battle → VES: enqueue_attack_animation(target) | -                             |
+| T=1.0 | Waiting...              | Attack animation: START      | VES → Battle: animation_started()              | ves.anim_state = .Start       |
+| T=1.5 | Waiting...              | Attack animation: QTE WINDOW | VES shows button prompt                        | -                             |
+| T=1.8 | Waiting...              | Attack animation: QTE ACTIVE | Battle detects input, calculates result        | -                             |
+| T=2.0 | Waiting...              | Attack animation: UPDATE     | VES shows hit/miss effect                      | ves.anim_state = .Update      |
+| T=2.5 | Waiting...              | Attack animation: FINISHED   | VES → Battle: animation_complete(results)      | ves.anim_state = .Finished    |
+| T=2.5 | Turn complete           | -                            | Battle processes damage, next turn             | ves.global_state = .None      |
+| T=3.0 | Bee1's turn             | -                            | Battle → VES: start_turn(bee1)                 | ves.global_state = .TurnStart |
+| T=3.5 | Bee1 auto-attacks       | Dodge animation: START       | Battle → VES: enqueue_dodge_animation()        | -                             |
+| T=4.0 | Waiting...              | Dodge animation: QTE WINDOW  | VES shows dodge prompt                         | -                             |
+| T=4.3 | Waiting...              | Dodge animation: QTE ACTIVE  | Battle detects dodge input                     | -                             |
+| T=4.5 | Waiting...              | Dodge animation: FINISHED    | VES → Battle: dodge_complete(success?)         | ves.anim_state = .Finished    |
+| T=5.0 | Turn complete           | -                            | Battle processes dodge result, next turn       | ves.global_state = .None      |

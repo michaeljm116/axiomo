@@ -12,6 +12,7 @@ import xxh2"axiom/extensions/xxhash2"
 import queue2 "axiom/extensions/queue2"
 
 import "axiom"
+import lex"lexicon"
 
 Battle :: struct
 {
@@ -64,8 +65,8 @@ destroy_level1 :: proc() {
 battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
     g.battle.state = .Start
     g.battle.current_bee = 0
-	load_scene("BeeKillingsInn")
-	g.player = axiom.load_prefab("Froku", g.mem_game.alloc)
+	load_scene(lex.BEE_KILLINGS_INN)
+	g.player = axiom.load_prefab(lex.PREFAB_FROKU, g.mem_game.alloc)
 	find_camera_entity()
     find_light_entity()
     find_player_entity()
@@ -116,7 +117,7 @@ set_game_victory :: proc(){
 }
 
 set_game_start :: proc(){
-    fmt.println("starting game")
+    fmt.println(lex.MSG_STARTING_GAME)
     g.app_state = .Game
     ToggleMenuUI(&g.app_state)
     start_game()
@@ -515,12 +516,12 @@ BeeType :: enum
 init_bee_entity :: proc(bee: ^Bee)
 {
     switch bee.type {
-        case .Normal:
-            bee.entity = load_prefab("Bee")
+case .Normal:
+            bee.entity = load_prefab(lex.PREFAB_BEE)
         case .Aggressive:
-            bee.entity = load_prefab("AggressiveBee")
+            bee.entity = load_prefab(lex.PREFAB_AGGRESSIVE_BEE)
         case .Passive:
-            bee.entity = load_prefab("Bee")
+            bee.entity = load_prefab(lex.PREFAB_BEE)
     }
     add_component(bee.entity, Cmp_Visual)
 }
@@ -761,13 +762,13 @@ bee_action_attack :: proc(bee : ^Bee, player : ^Player, tot : i8){
             acc := 7 + 2 * i8(.PlayerHyperAlert in bee.flags)
             if acc < tot{
                 player.health -= 1
-                fmt.println("Player Died")
+                fmt.println(lex.MSG_PLAYER_DIED)
             }
-            else do fmt.println("Player Dodged")
+            else do fmt.println(lex.MSG_PLAYER_DODGED)
         }
-        else {
+else {
             player.health -= 1
-            fmt.println("PLAYER DIED")
+            fmt.println(lex.MSG_PLAYER_DIED_CAPS)
         }
     }
 }
@@ -818,12 +819,12 @@ WeaponGrid :: struct
 }
 
 WeaponsDB :: [WeaponType]Weapon{
- .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 5}, crawling = Attack{accuracy = 9, power = 10}, range = 1, effect = {.None}, icon = "IconHand"},
- .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 5}, crawling = Attack{accuracy = 9, power = 10}, range = 1, effect = {.None}, icon = "IconShoe"},
- .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 5}, crawling = Attack{accuracy = 5, power = 10}, range = 2, effect = {.None}, icon = "IconBugspray"},
- .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 5}, crawling = Attack{accuracy = 8, power = 10}, range = 1, effect = {.None}, icon = "IconNewspaper"},
- .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 10}, crawling = Attack{accuracy = 7, power = 10}, range = 1, effect = {.None}, icon = "IconSwatter"},
- .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 10}, crawling = Attack{accuracy = 7, power = 10}, range = 1, effect = {.None}, icon = "IconSwatter"},
+ .Hand =            Weapon{type = .Hand,            flying = Attack{accuracy = 10, power = 5}, crawling = Attack{accuracy = 9, power = 10}, range = 1, effect = {.None}, icon = lex.ICON_HAND},
+ .Shoe =            Weapon{type = .Shoe,            flying = Attack{accuracy =  8, power = 5}, crawling = Attack{accuracy = 9, power = 10}, range = 1, effect = {.None}, icon = lex.ICON_SHOE},
+ .SprayCan =        Weapon{type = .SprayCan,        flying = Attack{accuracy =  6, power = 5}, crawling = Attack{accuracy = 5, power = 10}, range = 2, effect = {.None}, icon = lex.ICON_BUGSPRAY},
+ .NewsPaper =       Weapon{type = .NewsPaper,       flying = Attack{accuracy =  8, power = 5}, crawling = Attack{accuracy = 8, power = 10}, range = 1, effect = {.None}, icon = lex.ICON_NEWSPAPER},
+ .FlySwatter =      Weapon{type = .FlySwatter,      flying = Attack{accuracy =  7, power = 10}, crawling = Attack{accuracy = 7, power = 10}, range = 1, effect = {.None}, icon = lex.ICON_SWATTER},
+ .ElectricSwatter = Weapon{type = .ElectricSwatter, flying = Attack{accuracy =  7, power = 10}, crawling = Attack{accuracy = 7, power = 10}, range = 1, effect = {.None}, icon = lex.ICON_SWATTER},
 }
 
 pick_up_weapon :: proc(player : ^Player, weaps : []Weapon, db := WeaponsDB)
@@ -842,16 +843,16 @@ adjust_acc_y :: #force_inline proc(n: i8) -> f32
 show_weapon :: proc(w : Weapon)
 {
     ToggleUI(w.icon, true)
-    ToggleUI("WeaponStatsFlying", true)
-    ToggleUI("WeaponStatsAccuracy", true)
-    ToggleUI("WeaponStatsPower", true)
+    ToggleUI(lex.WEAPON_STATS_FLYING, true)
+    ToggleUI(lex.WEAPON_STATS_ACCURACY, true)
+    ToggleUI(lex.WEAPON_STATS_POWER, true)
 
-    gc := get_component(g_gui["WeaponStatsAccuracy"], Cmp_Gui)
+    gc := get_component(g_gui[lex.WEAPON_STATS_ACCURACY], Cmp_Gui)
     if gc != nil {
         gc.align_min.y = adjust_acc_y(w.flying.accuracy)
         update_gui(gc)
     }
-    ac := get_component(g_gui["WeaponStatsPower"], Cmp_Gui)
+    ac := get_component(g_gui[lex.WEAPON_STATS_POWER], Cmp_Gui)
     if ac != nil {
         ac.align_min.y = .4
         if w.flying.power == 100 do ac.align_min.y = .3
@@ -862,9 +863,9 @@ show_weapon :: proc(w : Weapon)
 hide_weapon :: proc(w : Weapon)
 {
     ToggleUI(w.icon, false)
-    ToggleUI("WeaponStatsFlying", false)
-    ToggleUI("WeaponStatsAccuracy", false)
-    ToggleUI("WeaponStatsPower", false)
+    ToggleUI(lex.WEAPON_STATS_FLYING, false)
+    ToggleUI(lex.WEAPON_STATS_ACCURACY, false)
+    ToggleUI(lex.WEAPON_STATS_POWER, false)
 }
 
 player_attack :: proc(player : ^Player, bee : ^Bee, acc : i8){
@@ -898,7 +899,7 @@ player_attack :: proc(player : ^Player, bee : ^Bee, acc : i8){
 
 place_chest_on_grid :: proc(pos : vec2i, battle : ^Battle)
 {
-    chest := load_prefab("Chest")
+    chest := load_prefab(lex.PREFAB_CHEST)
     context.allocator = g.mem_game.alloc
     f : f32
     set_entity_on_tile(battle.grid^, chest, battle^, pos.x, pos.y, &f)
@@ -1110,9 +1111,9 @@ find_player_entity :: proc()
 {
     table_nodes := get_table(Cmp_Node)
     for node, i in table_nodes.rows{
-        if node.name == "Froku" {
+        if node.name == lex.ENTITY_FROKU {
             g.player = table_nodes.rid_to_eid[i]
-            fmt.println("Found Player")
+            fmt.println(lex.DEBUG_FOUND_PLAYER)
             return
         }
     }
@@ -1121,35 +1122,35 @@ find_player_entity :: proc()
 find_floor_entities :: proc() {
     table_nodes := get_table(Cmp_Node)
     for node, i in table_nodes.rows{
-        if node.name == "Floor"{
+        if node.name == lex.ENTITY_FLOOR{
             g.floor = table_nodes.rid_to_eid[i]
             return
         }
     }
-    log.error("No floor found")
+    log.error(lex.DEBUG_NO_FLOOR)
 }
 
 find_floor_transform :: proc() -> ^Cmp_Transform
 {
 	table_nodes := get_table(Cmp_Node)
     for node, i in table_nodes.rows{
-        if node.name == "Floor"{
+        if node.name == lex.ENTITY_FLOOR{
             g.floor = table_nodes.rid_to_eid[i]
             return get_component(table_nodes.rid_to_eid[i], Cmp_Transform)
         }
     }
-    log.panicf("No floor found")
+    log.panicf(lex.DEBUG_NO_FLOOR)
 }
 find_floor_prim :: proc() -> ^Cmp_Primitive
 {
 	table_nodes := get_table(Cmp_Node)
     for node, i in table_nodes.rows{
-        if node.name == "Floor"{
+        if node.name == lex.ENTITY_FLOOR{
             g.floor = table_nodes.rid_to_eid[i]
             return get_component(table_nodes.rid_to_eid[i], Cmp_Primitive)
         }
     }
-    log.panicf("No floor found")
+    log.panicf(lex.DEBUG_NO_FLOOR)
 }
 
 // Find the first light entity in the scene and cache it for orbit updates.
@@ -1161,7 +1162,7 @@ find_light_entity :: proc()
         g.light_entity = table_light.rid_to_eid[i]
         return
     }
-    log.error("No light found")
+    log.error(lex.DEBUG_NO_LIGHT)
 }
 
 //----------------------------------------------------------------------------\\
@@ -1203,20 +1204,20 @@ set_animation :: proc(ac : ^Cmp_Animation, time : f32, name : string, start : st
 }
 
 animate_walk :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
-    set_animation(ac, m.walk_time, prefab_name, "walkStart", "walkEnd", axiom.AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, m.walk_time, prefab_name, lex.WALK_START, lex.WALK_END, axiom.AnimFlags{loop = true, force_start = true, force_end = false});
 }
 animate_idle :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
-    set_animation(ac, m.idle_time, prefab_name, "idleStart", "idleEnd", axiom.AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, m.idle_time, prefab_name, lex.IDLE_START, lex.IDLE_END, axiom.AnimFlags{loop = true, force_start = true, force_end = false});
 }
 animate_run :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
-    set_animation(ac, m.run_time, prefab_name, "runStart", "runEnd", axiom.AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, m.run_time, prefab_name, lex.RUN_START, lex.RUN_END, axiom.AnimFlags{loop = true, force_start = true, force_end = false});
 }
 animate_attack :: proc(ac : ^Cmp_Animation, prefab_name : string, a : AttackTimes ){
-    set_animation(ac, a.stab_time, prefab_name, "stabStart", "stabEnd", axiom.AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, a.stab_time, prefab_name, lex.STAB_START, lex.STAB_END, axiom.AnimFlags{loop = true, force_start = true, force_end = false});
 }
 animate_chest :: proc(chest : Entity){
    axiom.flatten_entity(chest)
-   ac := axiom.animation_component_with_names(1,"Chest","","Open", axiom.AnimFlags{active = 1, loop = false, force_start = true, force_end = true})
+   ac := axiom.animation_component_with_names(1,lex.PREFAB_CHEST,"",lex.CHEST_OPEN, axiom.AnimFlags{active = 1, loop = false, force_start = true, force_end = true})
    add_component(chest, ac)
    axiom.sys_anim_add(chest)
 }
@@ -1233,16 +1234,16 @@ add_animation :: proc(c : ^Character, prefab : string){
     }
 
     axiom.flatten_entity(c.entity)
-    ac := axiom.animation_component_with_names(2,prefab, "idleStart", "idleEnd", axiom.AnimFlags{ active = 1, loop = true, force_start = true, force_end = true})
+    ac := axiom.animation_component_with_names(2,prefab, lex.IDLE_START, lex.IDLE_END, axiom.AnimFlags{ active = 1, loop = true, force_start = true, force_end = true})
     add_component(c.entity, ac)
     axiom.sys_anim_add(c.entity)
     // animate_idle(&ac, prefab, c.move_anim)
 }
 
 add_animations :: proc(){
-    add_animation(&g.battle.player.base, "Froku")
-    add_animation(&g.battle.bees[0].base, "AggressiveBee")
-    add_animation(&g.battle.bees[1].base, "Bee")
+    add_animation(&g.battle.player.base, lex.PREFAB_FROKU)
+    add_animation(&g.battle.bees[0].base, lex.PREFAB_AGGRESSIVE_BEE)
+    add_animation(&g.battle.bees[1].base, lex.PREFAB_BEE)
 }
 
 // Similar to move_entity_to_tile but just sets the vectors up
@@ -1359,7 +1360,7 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
 
     // First, handle creation and visibility (show/hide based on flags)
     if .Alert in vc.flags {
-        if !axiom.entity_exists(vc.alert) do vc.alert = load_prefab("IconAlert")
+        if !axiom.entity_exists(vc.alert) do vc.alert = load_prefab(lex.ICON_ALERT)
         at := get_component(vc.alert, Cmp_Transform)
         if at != nil do at.local.sca = 1 // Assume original scale is 1; adjust if needed
     } else if axiom.entity_exists(vc.alert) {
@@ -1367,7 +1368,7 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
     }
 
     if .Focus in vc.flags {
-        if !axiom.entity_exists(vc.focus) do vc.focus = load_prefab("IconFocus")
+        if !axiom.entity_exists(vc.focus) do vc.focus = load_prefab(lex.ICON_FOCUS)
         at := get_component(vc.focus, Cmp_Transform)
         if at != nil do at.local.sca = 1
     } else if axiom.entity_exists(vc.focus) {
@@ -1375,7 +1376,7 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
     }
 
     if .Dodge in vc.flags {
-        if !axiom.entity_exists(vc.dodge) do vc.dodge = load_prefab("IconDodge")
+        if !axiom.entity_exists(vc.dodge) do vc.dodge = load_prefab(lex.ICON_DODGE)
         at := get_component(vc.dodge, Cmp_Transform)
         if at != nil do at.local.sca = 1
     } else if axiom.entity_exists(vc.dodge) {
@@ -1383,7 +1384,7 @@ sys_visual_update :: proc(vc : ^Cmp_Visual, tc : Cmp_Transform, dt : f32)
     }
 
     if .Select in vc.flags {
-        if !axiom.entity_exists(vc.select) do vc.select = load_prefab("IconArrow")
+        if !axiom.entity_exists(vc.select) do vc.select = load_prefab(lex.ICON_ARROW)
         at := get_component(vc.select, Cmp_Transform)
         if at != nil do at.local.sca = 1
     } else if axiom.entity_exists(vc.select) {
@@ -1469,9 +1470,9 @@ AttackBar :: struct {
 
 attack_bar_init :: proc(ab : ^AttackBar, gui_map : ^map[string]Entity)
 {
-    ab.bar = get_component(gui_map["AttackBar"], Cmp_Gui)
-    ab.bee = get_component(gui_map["AttackBarBee"], Cmp_Gui)
-    ab.box = get_component(gui_map["AttackBarSlider"], Cmp_Gui)
+    ab.bar = get_component(gui_map[lex.ATTACK_BAR], Cmp_Gui)
+    ab.bee = get_component(gui_map[lex.ATTACK_BAR_BEE], Cmp_Gui)
+    ab.box = get_component(gui_map[lex.ATTACK_BAR_SLIDER], Cmp_Gui)
     ab.speed = 1
     assert(ab.bar != nil && ab.bar != nil && ab.box != nil)
 
@@ -1507,20 +1508,20 @@ attack_bar_update :: proc(bar : ^AttackBar, dt : f32)
 attack_bar_finish :: proc(bar : ^AttackBar)
 {
     using bar
-    if bee.min.x > box.min.x && bee.min.x < (box.min.x + box.extents.x) do fmt.println("YOU KILLT IT!")
+    if bee.min.x > box.min.x && bee.min.x < (box.min.x + box.extents.x) do fmt.println(lex.MSG_YOU_KILLT_IT)
 }
 
 attack_bar_hide :: proc()
 {
-    ToggleUI("AttackBar",false)
-    ToggleUI("AttackBarBee",false)
-    ToggleUI("AttackBarSlider",false)
+    ToggleUI(lex.ATTACK_BAR,false)
+    ToggleUI(lex.ATTACK_BAR_BEE,false)
+    ToggleUI(lex.ATTACK_BAR_SLIDER,false)
 }
 attack_bar_show :: proc()
 {
-    ToggleUI("AttackBar",true)
-    ToggleUI("AttackBarBee",true)
-    ToggleUI("AttackBarSlider",true)
+    ToggleUI(lex.ATTACK_BAR,true)
+    ToggleUI(lex.ATTACK_BAR_BEE,true)
+    ToggleUI(lex.ATTACK_BAR_SLIDER,true)
 }
 
 attack_bar_vis :: proc(ab : ^AttackBar, dt : f32)
@@ -1605,17 +1606,17 @@ ves_update_screen :: proc(battle: ^Battle){
         switch g.ves.prev_screen{
             case .None: break
             case .SelectCharacter:
-                ToggleUI("Move", false)
-                ToggleUI("EnemySelect", false)
+                ToggleUI(lex.UI_MOVE, false)
+                ToggleUI(lex.UI_ENEMY_SELECT, false)
             // case .SelectEnemy:
-                ToggleUI("ChooseBee", false)
-                ToggleUI("SelectAction", false)
+                ToggleUI(lex.UI_CHOOSE_BEE, false)
+                ToggleUI(lex.UI_SELECT_ACTION, false)
             case .Movement:
-                ToggleUI("MoveWASD", false)
+                ToggleUI(lex.UI_MOVE_WASD, false)
             case .Action:
-                ToggleUI("Attack", false)
-                ToggleUI("Focus", false)
-                ToggleUI("Dodge", false)
+                ToggleUI(lex.UI_ATTACK, false)
+                ToggleUI(lex.UI_FOCUS, false)
+                ToggleUI(lex.UI_DODGE, false)
             case .PlayerAttack:
                 attack_bar_hide()
         }
@@ -1623,17 +1624,17 @@ ves_update_screen :: proc(battle: ^Battle){
         switch g.ves.curr_screen{
             case .None: break
             case .SelectCharacter:
-                ToggleUI("Move", true)
-                ToggleUI("EnemySelect", true)
+                ToggleUI(lex.UI_MOVE, true)
+                ToggleUI(lex.UI_ENEMY_SELECT, true)
             // case .SelectEnemy:
-                ToggleUI("ChooseBee", true)
-                ToggleUI("SelectAction", true)
+                ToggleUI(lex.UI_CHOOSE_BEE, true)
+                ToggleUI(lex.UI_SELECT_ACTION, true)
             case .Movement:
-                ToggleUI("MoveWASD", true)
+                ToggleUI(lex.UI_MOVE_WASD, true)
             case .Action:
-                ToggleUI("Attack", true)
-                ToggleUI("Focus", true)
-                ToggleUI("Dodge", true)
+                ToggleUI(lex.UI_ATTACK, true)
+                ToggleUI(lex.UI_FOCUS, true)
+                ToggleUI(lex.UI_DODGE, true)
             case .PlayerAttack:
                 attack_bar_show()
         }
@@ -1797,17 +1798,17 @@ ves_animate_player_start :: #force_inline proc(p : ^Player){
         p.anim.rot_timer = .5
         ac := get_component(p.entity, Cmp_Animation)
         if .Walk == p.anim_flag{
-            animate_walk(ac, "Froku", p.move_anim)
+            animate_walk(ac, lex.PREFAB_FROKU, p.move_anim)
         }
         else if .Run == p.anim_flag{
-            animate_run(ac, "Froku", p.move_anim)
+            animate_run(ac, lex.PREFAB_FROKU, p.move_anim)
         }
     }
     else if (.Attack == p.anim_flag){
 	    p.anim.timer = 1
         p.anim.rot_timer = .5
     	ac := get_component(p.entity, Cmp_Animation)
-	   	animate_attack(ac, "Froku", p.attack_anim)
+	   	animate_attack(ac, lex.PREFAB_FROKU, p.attack_anim)
     }
     set_up_character_anim(&p.base, g.battle.grid^)
 }
@@ -1817,7 +1818,7 @@ ves_animate_player_end :: #force_inline proc(p : ^Player){
     p.pos = p.target
     p.anim.timer = 0
     ac := get_component(p.entity, Cmp_Animation)
-    animate_idle(ac, "Froku", p.move_anim)
+    animate_idle(ac, lex.PREFAB_FROKU, p.move_anim)
     p.removed +=  {.Running}
     p.removed += {.Attack}
 }
@@ -1840,7 +1841,7 @@ create_grid_entities :: proc(grid : Grid)
     //TODO CHest
     for t in grid.tiles
     {
-        if .Wall in t.flags do create_grid_entity("WoodPillar", grid, t)
-        else if .Obstacle in t.flags do create_grid_entity("Barrel", grid, t)
+if .Wall in t.flags do create_grid_entity(lex.WOOD_PILLAR, grid, t)
+else if .Obstacle in t.flags do create_grid_entity(lex.BARREL, grid, t)
     }
 }

@@ -7,6 +7,7 @@ import "vendor:glfw"
 import ax"axiom"
 import "axiom/resource"
 import "core:log"
+import lex"lexicon"
 
 //----------------------------------------------------------------------------\\
 // /APP - Things needed globally
@@ -24,11 +25,11 @@ AppState :: enum{
 app_start :: proc() {
     ax.g_world = create_world()
     sys_visual_init(g.mem_game.alloc)
-    load_scene("Empty")
+    load_scene(lex.SCENE_EMPTY)
 
     g.app_state = .TitleScreen
     init_game_ui(&g_gui, g_mem_core.alloc)
-    ToggleUI("Title", true)
+    ToggleUI(lex.UI_TITLE, true)
 }
 
 app_restart :: proc(){
@@ -160,7 +161,7 @@ MenuAnimStatus :: enum{
 
 menu_show_title :: proc()
 {
-   g.title = g_gui["Title"]
+   g.title = g_gui[lex.UI_TITLE]
    gc := get_component(g.title, Cmp_Gui)
    gc.alpha = 0.0
    g.titleAnim = MenuAnimation{timer = 0.0, duration = 1.0}
@@ -170,7 +171,7 @@ menu_show_title :: proc()
 
 menu_show_main :: proc()
 {
-    g.main_menu = g_gui["MainMenu"]
+    g.main_menu = g_gui[lex.UI_MAIN_MENU]
     gc := get_component(g.main_menu, Cmp_Gui)
     gc.alpha = 0.0
     g.main_menuAnim = MenuAnimation{timer = 0.0, duration = 1.0}
@@ -261,9 +262,9 @@ init_game_ui :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
         update = true
     }
 
-    text_entity := ax.add_ui(text_cmp, "HighLayerText")
-    game_ui["HighLayerText"] = text_entity
-    append(&g.ui_keys, "HighLayerText")
+    text_entity := ax.add_ui(text_cmp, lex.UI_HIGH_LAYER_TEXT)
+    game_ui[lex.UI_HIGH_LAYER_TEXT] = text_entity
+    append(&g.ui_keys, lex.UI_HIGH_LAYER_TEXT)
 }
 
 ToggleUI :: proc(name : string, on : bool)
@@ -278,26 +279,26 @@ ToggleMenuUI :: proc(state : ^AppState)
 {
     switch state^
     {
-    case .TitleScreen:
-        ToggleUI("Title", true)
-    case .MainMenu:
-        ToggleUI("Title", true)
+case .TitleScreen:
+        ToggleUI(lex.UI_TITLE, true)
+case .MainMenu:
+        ToggleUI(lex.UI_TITLE, true)
         // ToggleUI("BeeKillinsInn", true)
-        ToggleUI("Background", true)
-        ToggleUI("StartGame", true)
-        ToggleUI ("GameOver", false)
-        ToggleUI("Victory", false)
-        ToggleUI("Paused", false)
-    case .Game, .Overworld:
-        ToggleUI("Title", false)
-        ToggleUI("Background", false)
-        ToggleUI("StartGame", false)
-        ToggleUI("Paused", false)
-    case .Pause:
-        ToggleUI("Paused", true)
+        ToggleUI(lex.UI_BACKGROUND, true)
+        ToggleUI(lex.UI_START_GAME, true)
+        ToggleUI (lex.UI_GAME_OVER, false)
+        ToggleUI(lex.UI_VICTORY, false)
+        ToggleUI(lex.UI_PAUSED, false)
+case .Game, .Overworld:
+        ToggleUI(lex.UI_TITLE, false)
+        ToggleUI(lex.UI_BACKGROUND, false)
+        ToggleUI(lex.UI_START_GAME, false)
+        ToggleUI(lex.UI_PAUSED, false)
+case .Pause:
+        ToggleUI(lex.UI_PAUSED, true)
     case .GameOver:
-        ToggleUI ("GameOver", true)
+        ToggleUI (lex.UI_GAME_OVER, true)
     case .Victory:
-        ToggleUI("Victory", true)
+        ToggleUI(lex.UI_VICTORY, true)
     }
 }
