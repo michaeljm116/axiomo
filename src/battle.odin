@@ -6,10 +6,10 @@ import "core:math/linalg"
 import "core:math"
 import "core:math/rand"
 import "core:container/queue"
+
 import "base:intrinsics"
 import "vendor:glfw"
 import xxh2"axiom/extensions/xxhash2"
-import queue2 "axiom/extensions/queue2"
 
 import "axiom"
 import lex"lexicon"
@@ -77,7 +77,7 @@ battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
 
 start_game :: proc(){
     g.battle.state = .Start //NOTE: Why is this in repeat?
-    g.ves.curr_screen = .SelectCharacter
+    ves_screen_push(&g.ves,.SelectCharacter)
     battle_setup_1(&g.battle,g.mem_game.alloc) //NOTE: The actual initialize of the battle
     g.battle.player.entity = g.player
     init_battle(&g.battle, g.mem_game.alloc)
@@ -187,13 +187,13 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
     if victory
     {
         clear(&bees)
-        ves.curr_screen = .None
+        ves_clear_screens(ves)
     }
 
     switch input_state
     {
 	    case .SelectCharacter:
-	        ves.curr_screen = .SelectCharacter
+			ves_screen_push(ves, .SelectCharacter)
             if game_controller_just_pressed(.Select)
             {
 				switch c in curr_sel.character.variant
@@ -201,7 +201,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
              		case ^Player:
 			            ves.anim_state = .Start
 		                input_state = .Movement
-                        ves.curr_screen = .Movement
+                        ves_screen_push(ves, .Movement)
                		case ^Bee:
 						bee_is_near = bee_near(player, c)
 		                input_state = .Action
@@ -211,12 +211,12 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             else do battle_selection_update(&battle.curr_sel)
 	    case .Movement:
 			// TODO can go back when animating???
-        	handle_back_button(&input_state, player.weapon, &curr_sel)
+        	handle_back_button_2(ves)
          	// TODO: THIS IS BAD CODE WITH ALL TEHSE &&'S
             if game_controller_is_moving() && .Animate not_in player.flags && .Animate not_in player.removed
             {
                 move_player(&player, game_controller_move_axis(), &input_state, grid)
-                ves.curr_screen = .None
+                ves_clear_screens(ves)
             }
             if ves.anim_state == .Finished
             {
@@ -232,13 +232,13 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                 }
             }
         case .Action:
-            ves.curr_screen = .Action
-            handle_back_button(&input_state, player.weapon, &curr_sel)
+            ves_screen_push(ves, .Action)
+            handle_back_button_2(ves)
             if check_action_attack(battle, ves) do return
             else if check_action_focused(battle) do return
             else if check_action_dodged(battle) do return
         case .Attacking:
-            ves.curr_screen = .PlayerAttack
+            ves_screen_push(ves, .PlayerAttack)
             if ves.attack_state == .Update
             {
                 if game_controller_just_pressed(.Select){
@@ -248,7 +248,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             if ves.attack_state == .Finished
             {
                 ves.attack_state = .None
-                ves.curr_screen = .None
+                ves_clear_screens(ves)
                 bee := curr_sel.character.variant.(^Bee)
                 player_attack(&player, bee, 1) //TODOYO WHAT DIS
                 attack_bar_finish(&battle.attack_bar)
@@ -264,7 +264,7 @@ check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
 
 	using battle
 	hide_weapon(player.weapon)
-    ves.curr_screen = .None
+    ves_clear_screens(ves)
     // player_attack(player, &curr_sel.character)
     // input_state = .SelectCharacter
     // state^ = .BeesTurn
@@ -366,22 +366,26 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
 }
 
 // If B button is pressed, go back to previous menu
-handle_back_button :: proc(state : ^PlayerInputState, weapon : Weapon, selected : ^BattleSelection){
+// handle_back_button :: proc(state : ^PlayerInputState, weapon : Weapon, selected : ^BattleSelection){
+//     if(!game_controller_just_pressed(.Back)) do return
+//     ves_screen_pop()
+//     hide_weapon(weapon)
+//     selected.character.removed |= {.PlayerSelected}
+//     #partial switch state^ {
+//         case .Movement:
+//             state^ = .SelectCharacter
+//             g.ves.curr_screen = .SelectCharacter
+//             break
+//         case .Action:
+//             state^ = .SelectCharacter
+//             g.ves.curr_screen = .SelectCharacter
+//             break
+//     }
+// }
+handle_back_button_2 :: proc(ves : ^VisualEventData){
     if(!game_controller_just_pressed(.Back)) do return
-    hide_weapon(weapon)
-    selected.character.removed |= {.PlayerSelected}
-    #partial switch state^ {
-        case .Movement:
-            state^ = .SelectCharacter
-            g.ves.curr_screen = .SelectCharacter
-            break
-        case .Action:
-            state^ = .SelectCharacter
-            g.ves.curr_screen = .SelectCharacter
-            break
-    }
+    ves_screen_pop(ves)
 }
-
 BattleSelection :: struct
 {
 	index : int,
@@ -1584,63 +1588,17 @@ VES_State :: enum{
 
 VisualEventData :: struct
 {
-   curr_screen : VES_Screen,
-   prev_screen : VES_Screen,
    attack_state : VES_State,
-   anim_state : VES_State
+   anim_state : VES_State,
+   screen_stack : [dynamic]VES_Screen
 }
 
 ves_update_all :: proc(battle : ^Battle, dt : f32)
 {
     ves_update_event(battle)
     ves_update_attack(battle, dt)
-    ves_update_screen(battle)
     ves_update_visuals(battle)
     ves_update_animations(battle, dt)
-}
-
-// When a screen is turned off or on, update it accordingly
-ves_update_screen :: proc(battle: ^Battle){
-    if g.ves.prev_screen != g.ves.curr_screen{
-        //First turn off all screen
-        switch g.ves.prev_screen{
-            case .None: break
-            case .SelectCharacter:
-                ToggleUI(lex.UI_MOVE, false)
-                ToggleUI(lex.UI_ENEMY_SELECT, false)
-            // case .SelectEnemy:
-                ToggleUI(lex.UI_CHOOSE_BEE, false)
-                ToggleUI(lex.UI_SELECT_ACTION, false)
-            case .Movement:
-                ToggleUI(lex.UI_MOVE_WASD, false)
-            case .Action:
-                ToggleUI(lex.UI_ATTACK, false)
-                ToggleUI(lex.UI_FOCUS, false)
-                ToggleUI(lex.UI_DODGE, false)
-            case .PlayerAttack:
-                attack_bar_hide()
-        }
-        //Then turn new screen
-        switch g.ves.curr_screen{
-            case .None: break
-            case .SelectCharacter:
-                ToggleUI(lex.UI_MOVE, true)
-                ToggleUI(lex.UI_ENEMY_SELECT, true)
-            // case .SelectEnemy:
-                ToggleUI(lex.UI_CHOOSE_BEE, true)
-                ToggleUI(lex.UI_SELECT_ACTION, true)
-            case .Movement:
-                ToggleUI(lex.UI_MOVE_WASD, true)
-            case .Action:
-                ToggleUI(lex.UI_ATTACK, true)
-                ToggleUI(lex.UI_FOCUS, true)
-                ToggleUI(lex.UI_DODGE, true)
-            case .PlayerAttack:
-                attack_bar_show()
-        }
-        // Finally, make them equal
-        g.ves.prev_screen = g.ves.curr_screen
-    }
 }
 
 ves_update_attack :: proc(battle : ^Battle, dt : f32){
@@ -1823,6 +1781,69 @@ ves_animate_player_end :: #force_inline proc(p : ^Player){
     p.removed += {.Attack}
 }
 
+// Push proc (your #3–5)
+ves_screen_push :: proc(ves: ^VisualEventData, new_screen: VES_Screen) {
+    if len(ves.screen_stack) > 0 {
+    prev := ves.screen_stack[len(ves.screen_stack)-1]
+        if prev == new_screen { return } // No-op if same
+        ves_screen_on_exit(ves, prev) // Hide prev UIs (your switch)
+    }
+    append(&ves.screen_stack, new_screen)
+    ves_screen_on_enter(ves, new_screen) // Show new UIs (your switch)
+}
+
+// Pop for back (add this)
+ves_screen_pop :: proc(ves: ^VisualEventData) {
+    if len(ves.screen_stack) <= 1 { return } // Don't pop base
+    popped := pop(&ves.screen_stack)
+    ves_screen_on_exit(ves, popped)
+    top := ves.screen_stack[len(ves.screen_stack)-1]
+    ves_screen_on_enter(ves, top) // Re-show previous
+}
+
+// on_enter switch (your current "turn new screen" switch)
+ves_screen_on_enter :: proc(ves: ^VisualEventData, screen: VES_Screen) {
+    #partial switch screen {
+    case .None: // Nothing
+    case .SelectCharacter:
+        ToggleUI(lex.UI_MOVE, true)
+        ToggleUI(lex.UI_ENEMY_SELECT, true)
+    case .Movement:
+        ToggleUI(lex.UI_MOVE_WASD, true)
+    case .Action:
+        ToggleUI(lex.UI_ATTACK, true)
+        ToggleUI(lex.UI_FOCUS, true)
+        ToggleUI(lex.UI_DODGE, true)
+    case .PlayerAttack:
+        attack_bar_show()
+    }
+}
+
+// on_exit switch (your current "turn off all screen" switch)
+ves_screen_on_exit :: proc(ves: ^VisualEventData, screen: VES_Screen) {
+    #partial switch screen {
+    case .None: // Nothing
+    case .SelectCharacter:
+        ToggleUI(lex.UI_MOVE, false)
+        ToggleUI(lex.UI_ENEMY_SELECT, false)
+    case .Movement:
+        ToggleUI(lex.UI_MOVE_WASD, false)
+    case .Action:
+        ToggleUI(lex.UI_ATTACK, false)
+        ToggleUI(lex.UI_FOCUS, false)
+        ToggleUI(lex.UI_DODGE, false)
+    case .PlayerAttack:
+        attack_bar_hide()
+    }
+}
+
+ves_clear_screens :: proc(ves : ^VisualEventData){
+	if len(ves.screen_stack) > 0 {
+		ves_screen_on_exit(ves, ves.screen_stack[0])
+		clear(&ves.screen_stack)
+	}
+}
+
 //----------------------------------------------------------------------------\\
 // /gen GENERATION SYSTEMS
 //----------------------------------------------------------------------------\\
@@ -1841,7 +1862,7 @@ create_grid_entities :: proc(grid : Grid)
     //TODO CHest
     for t in grid.tiles
     {
-if .Wall in t.flags do create_grid_entity(lex.WOOD_PILLAR, grid, t)
-else if .Obstacle in t.flags do create_grid_entity(lex.BARREL, grid, t)
+        if .Wall in t.flags do create_grid_entity("WoodPillar", grid, t)
+        else if .Obstacle in t.flags do create_grid_entity("Barrel", grid, t)
     }
 }
