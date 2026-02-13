@@ -292,17 +292,17 @@ controller_init_default_keyboard :: proc(kb : ^Controller)
     buttons[.ActionD].key = glfw.KEY_SPACE
     buttons[.ActionU].key = glfw.KEY_ENTER
     buttons[.ActionL].key = glfw.KEY_Q
-    buttons[.ActionR].key = glfw.KEY_F
+    buttons[.ActionR].key = glfw.KEY_E
 
-    buttons[.ShoulderL].key = glfw.KEY_Q
-    buttons[.ShoulderR].key = glfw.KEY_E
-    buttons[.TriggerL].key  = glfw.KEY_LEFT_SHIFT
-    buttons[.TriggerR].key  = glfw.KEY_RIGHT_SHIFT
+    buttons[.ShoulderL].key = glfw.KEY_1
+    buttons[.ShoulderR].key = glfw.KEY_2
+    buttons[.TriggerL].key  = glfw.KEY_3
+    buttons[.TriggerR].key  = glfw.KEY_4
 
     buttons[.MenuL].key  = glfw.KEY_TAB
     buttons[.MenuR].key  = glfw.KEY_ESCAPE
     buttons[.AnalogL].key = glfw.KEY_LEFT_SHIFT
-    buttons[.AnalogR].key = glfw.KEY_2
+    buttons[.AnalogR].key = glfw.KEY_RIGHT_SHIFT
 
     for &b in buttons {
         b.val    = 0

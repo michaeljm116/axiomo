@@ -24,7 +24,7 @@ Battle :: struct
     grid_weapons : [dynamic]WeaponGrid,
 
     state : BattleState,
-    input_state : PlayerInputState,
+    // input_state : PlayerInputState,
 
     current_bee: int,
     attack_bar : AttackBar,
@@ -77,7 +77,7 @@ battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
 
 start_game :: proc(){
     g.battle.state = .Start //NOTE: Why is this in repeat?
-    ves_screen_push(&g.ves,.SelectCharacter)
+    ves_screen_push(&g.ves, .None)
     battle_setup_1(&g.battle,g.mem_game.alloc) //NOTE: The actual initialize of the battle
     g.battle.player.entity = g.player
     init_battle(&g.battle, g.mem_game.alloc)
@@ -190,21 +190,22 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
         ves_clear_screens(ves)
     }
 
-    switch input_state
+    top := ves_top_screen(ves)
+    #partial switch top
     {
+    	case .None:
+	   		ves_screen_push(ves, .SelectCharacter)
 	    case .SelectCharacter:
-			ves_screen_push(ves, .SelectCharacter)
             if game_controller_just_pressed(.Select)
             {
 				switch c in curr_sel.character.variant
 				{
              		case ^Player:
 			            ves.anim_state = .Start
-		                input_state = .Movement
                         ves_screen_push(ves, .Movement)
                		case ^Bee:
 						bee_is_near = bee_near(player, c)
-		                input_state = .Action
+		                ves_screen_push(ves, .Action)
 		                show_weapon(player.weapon)
 	            }
             }
@@ -215,13 +216,13 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
          	// TODO: THIS IS BAD CODE WITH ALL TEHSE &&'S
             if game_controller_is_moving() && .Animate not_in player.flags && .Animate not_in player.removed
             {
-                move_player(&player, game_controller_move_axis(), &input_state, grid)
+                move_player(&player, game_controller_move_axis(), grid)
                 ves_clear_screens(ves)
             }
             if ves.anim_state == .Finished
             {
                 ves.anim_state = .None
-                input_state = .SelectCharacter
+                ves_clear_screens(ves)
                 state = .End
 
                 if weap_check(player.target, g.battle.grid)
@@ -232,13 +233,11 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                 }
             }
         case .Action:
-            ves_screen_push(ves, .Action)
-            handle_back_button_2(ves)
+	        handle_back_button_2(ves)
             if check_action_attack(battle, ves) do return
-            else if check_action_focused(battle) do return
-            else if check_action_dodged(battle) do return
-        case .Attacking:
-            ves_screen_push(ves, .PlayerAttack)
+            else if check_action_focused(battle,ves) do return
+            else if check_action_dodged(battle,ves) do return
+        case .PlayerAttack:
             if ves.attack_state == .Update
             {
                 if game_controller_just_pressed(.Select){
@@ -252,7 +251,6 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                 bee := curr_sel.character.variant.(^Bee)
                 player_attack(&player, bee, 1) //TODOYO WHAT DIS
                 attack_bar_finish(&battle.attack_bar)
-                input_state = .SelectCharacter
                 state = .End
                 return
             }
@@ -264,11 +262,10 @@ check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
 
 	using battle
 	hide_weapon(player.weapon)
-    ves_clear_screens(ves)
     // player_attack(player, &curr_sel.character)
     // input_state = .SelectCharacter
     // state^ = .BeesTurn
-    input_state = .Attacking
+    ves_screen_push(ves,.PlayerAttack)
     ves.attack_state = .Start
     if .Dead in curr_sel.character.flags
     {
@@ -278,25 +275,25 @@ check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
     return true
 }
 
-check_action_focused :: proc(battle : ^Battle) -> bool{
+check_action_focused :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
     if !game_controller_just_pressed(.Focus) do return false
 
 	using battle
 	hide_weapon(player.weapon)
     if .PlayerFocused in curr_sel.character.flags do curr_sel.character.flags |= {.PlayerHyperFocused}
     curr_sel.character.added |= {.PlayerFocused}
-    input_state = .SelectCharacter
+    ves_clear_screens(ves)
     battle.state = .End
     return true
 }
-check_action_dodged :: proc(battle : ^Battle) -> bool{
+check_action_dodged :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
     if !game_controller_just_pressed(.Dodge) do return false
 
 	using battle
 	hide_weapon(player.weapon)
     if .PlayerDodge in curr_sel.character.flags do curr_sel.character.flags |= {.PlayerHyperAlert}
     curr_sel.character.added |= {.PlayerDodge}
-    input_state = .SelectCharacter
+    ves_clear_screens(ves)
     battle.state = .End
     return true
 }
@@ -936,7 +933,7 @@ GameFlag :: enum
 }
 GameFlags :: bit_set[GameFlag; u32]
 
-move_player :: proc(p : ^Player, axis : MoveAxis , state : ^PlayerInputState, grid : ^Grid)
+move_player :: proc(p : ^Player, axis : MoveAxis , grid : ^Grid)
 {
     bounds := p.pos + axis.as_int
     if !path_in_bounds(bounds, grid^) do return
@@ -1842,6 +1839,12 @@ ves_clear_screens :: proc(ves : ^VisualEventData){
 		ves_screen_on_exit(ves, ves.screen_stack[0])
 		clear(&ves.screen_stack)
 	}
+	ves_screen_push(ves,.None)
+}
+
+ves_top_screen :: #force_inline proc (ves: ^VisualEventData) -> VES_Screen{
+	if len(ves.screen_stack) == 0 { return .None }
+    return ves.screen_stack[len(ves.screen_stack)-1]
 }
 
 //----------------------------------------------------------------------------\\

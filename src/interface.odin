@@ -131,9 +131,9 @@ init_game_controller :: proc(c : ^Controller)
     g.controller.look_axis = &c.right_axis
 
     g.controller.buttons[.Select] = {.ActionD, .ActionU}
-    g.controller.buttons[.Back] = {.ActionL, .ActionR}
-    g.controller.buttons[.Dodge] = {.ShoulderL, .ShoulderR}
-    g.controller.buttons[.Focus] = {.TriggerL, .TriggerR}
+    g.controller.buttons[.Back] = {.MenuL, .MenuR}
+    g.controller.buttons[.Focus] = {.ActionL}
+    g.controller.buttons[.Dodge] = {.ActionR}
     g.controller.buttons[.Walk] = {.PadU, .PadD, .PadL, .PadR}
     g.controller.buttons[.Run] = {.AnalogL}
 }
