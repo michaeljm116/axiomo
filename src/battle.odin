@@ -201,7 +201,6 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
 				switch c in curr_sel.character.variant
 				{
              		case ^Player:
-			            ves.anim_state = .Start
                         ves_screen_push(ves, .Movement)
                		case ^Bee:
 						bee_is_near = bee_near(player, c)
@@ -217,6 +216,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             if game_controller_is_moving() && .Animate not_in player.flags && .Animate not_in player.removed
             {
                 move_player(&player, game_controller_move_axis(), grid)
+                ves.anim_state = .Start
                 ves_clear_screens(ves)
             }
             if ves.anim_state == .Finished
@@ -1621,7 +1621,7 @@ ves_update_animations :: proc(battle : ^Battle, dt : f32)
         if .Animate in b.flags do if ves_animate_bee(&b,dt){
             g.ves.anim_state = .Update
         }
-        else if .Animate in b.removed{
+        if .Animate in b.removed{
             g.ves.anim_state = .Finished
             ves_animate_bee_end(&b)
         }
@@ -1636,7 +1636,7 @@ ves_update_animations :: proc(battle : ^Battle, dt : f32)
        if .Animate in battle.player.flags do if ves_animate_player(&battle.player, dt){
            g.ves.anim_state = .Update
        }
-       else if .Animate in battle.player.removed {
+       if .Animate in battle.player.removed {
            g.ves.anim_state = .Finished
            ves_animate_player_end(&battle.player)
        }
