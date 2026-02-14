@@ -659,14 +659,14 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player, gri
     }
     // move_entity_to_tile(bee.entity, g.battle.grid_scale, bee.pos)
     // if bee is hovering player, turn on alert
-    if .Moving not_in bee.added do return
-    ev := VisualEvent{
-        type = .AnimateMove, state = .Pending, character = &bee.variant,
-        on_finish = proc(ev: ^VisualEvent, b: ^Battle){
-
-        }
+    if .Moving in bee.added{
+        ev := VisualEvent{type = .AnimateMove, state = .Pending, character = &bee.variant}
+        queue.push(&g.ves.event_queue, ev)
     }
-    queue.push(&g.ves.event_queue, ev)
+    if .Attack in bee.added{
+        ev := VisualEvent{type = .DodgeQTE, state = .Pending, character = &bee.variant}
+        queue.push(&g.ves.event_queue, ev)
+    }
 }
 
 bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int, grid: Grid){
@@ -1544,6 +1544,100 @@ attack_qte_vis :: proc(ab : ^AttackBar, dt : f32)
     // Push updates to renderer
     update_gui(ab.box)
     update_gui(ab.bee)
+}
+
+//----------------------------------------------------------------------------\\
+// /Dodge qte System
+// Desc, Player presses left or right button to dodge bee
+// so it randomly chooses which one to target
+//----------------------------------------------------------------------------\\
+DodgeQTE :: struct{
+   time : CurrMax,
+   interval : CurrMax,
+   left_arrow : ^Cmp_Gui,
+   right_arrow : ^Cmp_Gui,
+   count : i32,
+   dodges : [dynamic]DodgeDir,
+   success : bool
+
+}
+DodgeDir :: enum{Left = 0,Right = 1}
+
+dodge_qte_init :: proc(qte : ^DodgeQTE, gui_map : ^map[string]Entity){
+    qte.left_arrow = get_component(gui_map[lex.QTE_DODGE_LEFT], Cmp_Gui)
+    qte.right_arrow = get_component(gui_map[lex.QTE_DODGE_RIGHT], Cmp_Gui)
+
+    assert(qte.left_arrow != nil && qte.right_arrow != nil)
+}
+
+dodge_qte_start :: proc(qte : ^DodgeQTE){
+    qte.success = false
+    // 1. Create a stack of random lefts or rights for dodges based on count
+    for c in 0..<qte.count{
+        dir := transmute(DodgeDir)rand.int_range(0,1)
+        append(&qte.dodges, dir)
+    }
+    dodge_qte_pop(qte, rand.float32_range(0, 1))
+}
+
+// 2. Pop the first one, set the interval, update_gui
+dodge_qte_pop :: proc(qte : ^DodgeQTE, new_interval : f32) -> bool{
+    if len(qte.dodges) <= 0 do return false
+    dir := pop_front(&qte.dodges)
+    dodge_qte_show(dir)
+    qte.interval.curr = 0
+    qte.interval.max = new_interval
+    switch dir{
+    case .Left:
+        update_gui(qte.left_arrow)
+    case .Right:
+        update_gui(qte.right_arrow)
+    }
+    return true
+}
+
+dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you still want to update
+{
+    // Detect player controls if match continue, if fail dont
+    d := qte.dodges[0]
+    if game_controller_is_moving(){
+        axis := game_controller_move_axis()
+        if d == .Left && axis.as_int.x != i32(-1) do return false
+        else if d == .Right && axis.as_int.x != i32(1) do return false
+
+        if !dodge_qte_pop(qte, rand.float32_range(0, 1)){
+            qte.success = true
+            return false
+        }
+    }
+
+    // No controller presses, just increment
+    qte.interval.curr += dt
+    if qte.interval.curr > qte.interval.max{
+        return false
+    }
+    return true
+}
+
+dodge_qte_finish :: proc(qte : ^DodgeQTE)
+{
+
+}
+
+dodge_qte_hide :: proc(){
+   ToggleUI(lex.QTE_DODGE_LEFT, false)
+   ToggleUI(lex.QTE_DODGE_RIGHT, false)
+}
+dodge_qte_show :: proc(dir : DodgeDir)
+{
+    switch dir{
+    case .Left:
+        ToggleUI(lex.QTE_DODGE_RIGHT, false)
+        ToggleUI(lex.QTE_DODGE_LEFT, true)
+    case .Right:
+        ToggleUI(lex.QTE_DODGE_LEFT, false)
+        ToggleUI(lex.QTE_DODGE_RIGHT, true)
+    }
 }
 
 //----------------------------------------------------------------------------\\

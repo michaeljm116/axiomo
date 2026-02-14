@@ -1,0 +1,86 @@
+{
+  "Transform": {
+    "Position": {
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Rotation": {
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0,
+      "_w": 1.0
+    },
+    "Scale": {
+      "_x": 1.0,
+      "_y": 1.0,
+      "_z": 1.0
+    }
+  },
+  "_Name": "DodgeArrowRight",
+  "_hasChildren": false,
+  "Node": [],
+  "_eFlags": 262144,
+  "_gFlags": 0,
+  "_Dynamic": false,
+  "AspectRatio": {
+    "_ratio": 0.0
+  },
+  "FOV": {
+    "_fov": 0.0
+  },
+  "Color": {
+    "_r": 0.0,
+    "_g": 0.0,
+    "_b": 0.0
+  },
+  "Intensity": {
+    "_i": 0.0
+  },
+  "ID": {
+    "_id": 0
+  },
+  "Material": {
+    "_ID": 0
+  },
+  "Object": {
+    "_ID": 0
+  },
+  "Rigid": {
+    "_Rigid": false
+  },
+  "Collider": {
+    "Local": {
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "Extents": {
+      "_x": 0.0,
+      "_y": 0.0,
+      "_z": 0.0
+    },
+    "_Type": 0
+  },
+  "GUI": {
+    "AlignExt": {
+      "_x": 0.21205038,
+      "_y": 0.19130865
+    },
+    "Alignment": {
+      "_x": 0.78447884,
+      "_y": -0.60017526
+    },
+    "Extent": {
+      "_x": 0.36000049,
+      "_y": 0.51000035
+    },
+    "Position": {
+      "_x": 0.32999995,
+      "_y": 0.24000002
+    },
+    "Texture": {
+      "_name": "BKS_AttackUI.png"
+    }
+  }
+}

@@ -25,6 +25,8 @@ WEAPON_STATS_POWER :: "WeaponStatsPower"
 ATTACK_BAR :: "AttackBar"
 ATTACK_BAR_BEE :: "AttackBarBee"
 ATTACK_BAR_SLIDER :: "AttackBarSlider"
+QTE_DODGE_LEFT :: "DodgeArrowLeft"
+QTE_DODGE_RIGHT :: "DodgeArrowRight"
 
 // Environment strings
 WOOD_PILLAR :: "WoodPillar"
