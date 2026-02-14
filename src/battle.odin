@@ -1499,11 +1499,15 @@ attack_bar_start :: proc(bar : ^AttackBar)
     update_gui(bee)
 }
 
-attack_bar_update :: proc(bar : ^AttackBar, dt : f32)
+attack_bar_update :: proc(bar : ^AttackBar, dt : f32) -> bool
 {
     bar.bee.min.x -= dt * bar.speed
     update_gui(bar.box)
     update_gui(bar.bee)
+
+    if game_controller_just_pressed(.Select) do return true
+    if bar.bee.min.x < bar.bar.min.x - bar.bar.extents.x do return true
+    return false
 }
 
 attack_bar_finish :: proc(bar : ^AttackBar)
@@ -1574,21 +1578,134 @@ VES_Screen :: enum
     Movement,
     Action,
     PlayerAttack,
+    Animating,
 }
 
-VES_State :: enum{
-    None,
+VES_State :: enum
+{
+    Pending,
     Start,
     Update,
     Finished,
+}
+
+VES_Type :: enum
+{
+    AnimateMove, AttackQTE, DodgeQTE, VisualEffect
+}
+
+VisualEvent :: struct
+{
+    type : VES_Type,
+    state : VES_State,
+    timer : f32,
+    character : ^CharacterVariant,
+    on_finish : proc(^VisualEvent, ^Battle),
 }
 
 VisualEventData :: struct
 {
    attack_state : VES_State,
    anim_state : VES_State,
-   screen_stack : [dynamic]VES_Screen
+   screen_stack : [dynamic]VES_Screen,
+   event_queue : queue.Queue(VisualEvent)
 }
+
+ves_process_queue :: proc(battle: ^Battle, ves : ^VisualEventData, dt: f32){
+    if queue.len(ves.event_queue) == 0 do return
+    event := queue.front(&ves.event_queue)
+    switch event.state{
+    case .Pending:
+        ves_event_start(event, battle)
+        event.state = .Start
+    case .Start:
+        event.state = .Update
+    case .Update:
+        if !ves_event_update(event, battle, dt){
+            ves_event_finish(event, battle)
+            event.state = .Finished
+            queue.pop_front(&ves.event_queue)
+        }
+    }
+}
+
+ves_event_start :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Battle) {
+    switch event.type {
+    case .AnimateMove:
+        ves_screen_push(ves,.Animating)
+        switch c in Character{
+      		case ^Player:
+                ves_animate_player_start(c)
+      		case ^Bee:
+                ves_animate_bee_start(c)
+        event.character.added |= {.Animate}  // set flag for your loops
+    case .AttackQTE:
+        attack_bar_start(&battle.attack_bar)
+    case .DodgeQTE:
+    case .VisualEffect:
+        break
+    }
+}
+
+ves_event_update :: proc(event: ^VisualEvent, battle: ^Battle, dt: f32) -> bool {
+    event.timer -= dt
+    if event.timer <= 0 do return false  // optional timeout
+
+    switch event.type
+    {
+    case .AnimateMove:
+        animating := ves_animate_player(event.character.(^Player), dt)  // or bee
+        if !animating {
+            event.character.removed |= {.Animate}  // cleanup flag
+            return false  // done
+        }
+        return true  // still going
+
+    case .AnimateMove:
+        ves_screen_push(ves,.Animating)
+        switch c in event.character
+        {
+  		case ^Player:
+            animating := ves_animate_player(c, dt)
+            if !animating {
+                c.removed |= {.Animate}
+                return false
+            }
+            return true
+  		case ^Bee:
+            animating := ves_animate_bee(c, dt)
+            if !animating {
+                c.removed |= {.Animate}
+                return false
+            }
+            return true  // still going
+        }
+
+        case .AttackQTE:
+            return attack_bar_update(&battle.attack_bar, dt){
+        case .DodgeQTE:
+        case .VisualEffect:
+            break
+    }
+
+    return false
+}
+
+ves_event_finish :: proc(event: ^VisualEvent, battle: ^Battle) {
+    switch event.type {
+    case .AnimateMove:
+        ves_animate_player_end(event.character.(^Player))  // or bee_end
+        // re-show UIs (e.g., push prev or default)
+        ves_screen_push(&g.ves, .SelectCharacter)  // or pop if you pushed .Animating in start
+
+    // case .AttackQTE: attack_bar_hide(); attack_bar_finish(...)
+
+    // etc.
+    }
+
+    if event.on_finish != nil do event.on_finish(event, battle)  // e.g., state = .End
+}
+
 
 ves_update_all :: proc(battle : ^Battle, dt : f32)
 {
@@ -1606,7 +1723,7 @@ ves_update_attack :: proc(battle : ^Battle, dt : f32){
     case .Update:
         // attack_bar_vis(&battle.attack_bar, dt)
         attack_bar_update(&battle.attack_bar, dt)
-    case .None, .Finished:
+    case .Pending, .Finished:
         break
     }
 }
