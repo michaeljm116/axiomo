@@ -27,7 +27,7 @@ Battle :: struct
     // input_state : PlayerInputState,
 
     current_bee: int,
-    attack_bar : AttackBar,
+    attack_qte : AttackBar,
     // bee_selection : int,
     bee_is_near : bool,
     battle_queue : queue.Queue(^Character),
@@ -250,7 +250,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
                 ves_clear_screens(ves)
                 bee := curr_sel.character.variant.(^Bee)
                 player_attack(&player, bee, 1) //TODOYO WHAT DIS
-                attack_bar_finish(&battle.attack_bar)
+                attack_qte_finish(&battle.attack_qte)
                 state = .End
                 return
             }
@@ -1469,7 +1469,7 @@ AttackBar :: struct {
     center : f32,
 }
 
-attack_bar_init :: proc(ab : ^AttackBar, gui_map : ^map[string]Entity)
+attack_qte_init :: proc(ab : ^AttackBar, gui_map : ^map[string]Entity)
 {
     ab.bar = get_component(gui_map[lex.ATTACK_BAR], Cmp_Gui)
     ab.bee = get_component(gui_map[lex.ATTACK_BAR_BEE], Cmp_Gui)
@@ -1483,7 +1483,7 @@ attack_bar_init :: proc(ab : ^AttackBar, gui_map : ^map[string]Entity)
     // Init position and default values
 }
 
-attack_bar_start :: proc(bar : ^AttackBar)
+attack_qte_start :: proc(bar : ^AttackBar)
 {
     using bar
     // Set the Bee at a random distance to the right max = right most bar width
@@ -1499,7 +1499,7 @@ attack_bar_start :: proc(bar : ^AttackBar)
     update_gui(bee)
 }
 
-attack_bar_update :: proc(bar : ^AttackBar, dt : f32) -> bool
+attack_qte_update :: proc(bar : ^AttackBar, dt : f32) -> bool
 {
     bar.bee.min.x -= dt * bar.speed
     update_gui(bar.box)
@@ -1510,26 +1510,26 @@ attack_bar_update :: proc(bar : ^AttackBar, dt : f32) -> bool
     return false
 }
 
-attack_bar_finish :: proc(bar : ^AttackBar)
+attack_qte_finish :: proc(bar : ^AttackBar)
 {
     using bar
     if bee.min.x > box.min.x && bee.min.x < (box.min.x + box.extents.x) do fmt.println(lex.MSG_YOU_KILLT_IT)
 }
 
-attack_bar_hide :: proc()
+attack_qte_hide :: proc()
 {
     ToggleUI(lex.ATTACK_BAR,false)
     ToggleUI(lex.ATTACK_BAR_BEE,false)
     ToggleUI(lex.ATTACK_BAR_SLIDER,false)
 }
-attack_bar_show :: proc()
+attack_qte_show :: proc()
 {
     ToggleUI(lex.ATTACK_BAR,true)
     ToggleUI(lex.ATTACK_BAR_BEE,true)
     ToggleUI(lex.ATTACK_BAR_SLIDER,true)
 }
 
-attack_bar_vis :: proc(ab : ^AttackBar, dt : f32)
+attack_qte_vis :: proc(ab : ^AttackBar, dt : f32)
 {
     if ab == nil { return }
     if ab.bar == nil || ab.box == nil || ab.bee == nil { return }
@@ -1640,7 +1640,7 @@ ves_event_start :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Bat
                 ves_animate_bee_start(c)
         event.character.added |= {.Animate}  // set flag for your loops
     case .AttackQTE:
-        attack_bar_start(&battle.attack_bar)
+        attack_qte_start(&battle.attack_qte)
     case .DodgeQTE:
     case .VisualEffect:
         break
@@ -1653,14 +1653,6 @@ ves_event_update :: proc(event: ^VisualEvent, battle: ^Battle, dt: f32) -> bool 
 
     switch event.type
     {
-    case .AnimateMove:
-        animating := ves_animate_player(event.character.(^Player), dt)  // or bee
-        if !animating {
-            event.character.removed |= {.Animate}  // cleanup flag
-            return false  // done
-        }
-        return true  // still going
-
     case .AnimateMove:
         ves_screen_push(ves,.Animating)
         switch c in event.character
@@ -1682,7 +1674,7 @@ ves_event_update :: proc(event: ^VisualEvent, battle: ^Battle, dt: f32) -> bool 
         }
 
         case .AttackQTE:
-            return attack_bar_update(&battle.attack_bar, dt){
+            return attack_qte_update(&battle.attack_qte, dt)
         case .DodgeQTE:
         case .VisualEffect:
             break
@@ -1691,16 +1683,21 @@ ves_event_update :: proc(event: ^VisualEvent, battle: ^Battle, dt: f32) -> bool 
     return false
 }
 
-ves_event_finish :: proc(event: ^VisualEvent, battle: ^Battle) {
+ves_event_finish :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Battle) {
     switch event.type {
     case .AnimateMove:
-        ves_animate_player_end(event.character.(^Player))  // or bee_end
-        // re-show UIs (e.g., push prev or default)
-        ves_screen_push(&g.ves, .SelectCharacter)  // or pop if you pushed .Animating in start
-
-    // case .AttackQTE: attack_bar_hide(); attack_bar_finish(...)
-
-    // etc.
+    	switch c in event.character {
+	    case ^Player:
+		    ves_animate_player_end(c)
+	    case ^Bee:
+		    ves_animate_bee_end(c)
+	    }
+		ves_clear_screens(ves)
+    case .AttackQTE:
+	   	attack_qte_finish(&battle.attack_qte)
+    case .DodgeQTE:
+    case .VisualEffect:
+	    break
     }
 
     if event.on_finish != nil do event.on_finish(event, battle)  // e.g., state = .End
@@ -1718,11 +1715,11 @@ ves_update_all :: proc(battle : ^Battle, dt : f32)
 ves_update_attack :: proc(battle : ^Battle, dt : f32){
     switch g.ves.attack_state{
     case .Start:
-        attack_bar_start(&battle.attack_bar)
+        attack_qte_start(&battle.attack_qte)
         g.ves.attack_state = .Update
     case .Update:
-        // attack_bar_vis(&battle.attack_bar, dt)
-        attack_bar_update(&battle.attack_bar, dt)
+        // attack_qte_vis(&battle.attack_qte, dt)
+        attack_qte_update(&battle.attack_qte, dt)
     case .Pending, .Finished:
         break
     }
@@ -1929,7 +1926,7 @@ ves_screen_on_enter :: proc(ves: ^VisualEventData, screen: VES_Screen) {
         ToggleUI(lex.UI_FOCUS, true)
         ToggleUI(lex.UI_DODGE, true)
     case .PlayerAttack:
-        attack_bar_show()
+        attack_qte_show()
     }
 }
 
@@ -1947,7 +1944,7 @@ ves_screen_on_exit :: proc(ves: ^VisualEventData, screen: VES_Screen) {
         ToggleUI(lex.UI_FOCUS, false)
         ToggleUI(lex.UI_DODGE, false)
     case .PlayerAttack:
-        attack_bar_hide()
+        attack_qte_hide()
     }
 }
 
