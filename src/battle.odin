@@ -219,7 +219,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             else if check_action_dodged(battle,ves) do return
         case .PlayerAttack:
         case .Animating:
-            ves_screen_push(ves,.None)
+            ves_clear_screens(ves)
             return
     }
 }
@@ -1482,9 +1482,9 @@ attack_qte_update :: proc(bar : ^AttackBar, dt : f32) -> bool
     update_gui(bar.box)
     update_gui(bar.bee)
 
-    if game_controller_just_pressed(.Select) do return true
-    if bar.bee.min.x < bar.bar.min.x - bar.bar.extents.x do return true
-    return false
+    if game_controller_just_pressed(.Select) do return false
+    if bar.bee.min.x < (bar.bar.min.x - bar.bar.extents.x) do return false
+    return true
 }
 
 attack_qte_finish :: proc(bar : ^AttackBar)
@@ -1499,6 +1499,7 @@ attack_qte_hide :: proc()
     ToggleUI(lex.ATTACK_BAR_BEE,false)
     ToggleUI(lex.ATTACK_BAR_SLIDER,false)
 }
+
 attack_qte_show :: proc()
 {
     ToggleUI(lex.ATTACK_BAR,true)
@@ -1622,6 +1623,7 @@ ves_event_start :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Bat
             ves_animate_bee_start(c)
         }
     case .AttackQTE:
+        ves_screen_push(ves, .PlayerAttack)
         attack_qte_start(&battle.attack_bar)
     case .DodgeQTE:
     case .VisualEffect:
@@ -1658,6 +1660,7 @@ ves_event_finish :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Ba
 	    }
 		ves_clear_screens(ves)
     case .AttackQTE:
+        ves_screen_pop(ves)
 	   	attack_qte_finish(&battle.attack_bar)
     case .DodgeQTE:
     case .VisualEffect:
