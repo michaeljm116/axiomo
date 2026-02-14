@@ -1,5 +1,6 @@
 package game
 import "core:mem"
+import "vendor:wasm/WebGL"
 import "core:fmt"
 import "core:log"
 import "core:math/linalg"
@@ -28,6 +29,7 @@ Battle :: struct
 
     current_bee: int,
     attack_bar : AttackBar,
+    dodge_qte : DodgeQTE,
     // bee_selection : int,
     bee_is_near : bool,
     battle_queue : queue.Queue(^Character),
@@ -218,6 +220,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             else if check_action_focused(battle,ves) do return
             else if check_action_dodged(battle,ves) do return
         case .PlayerAttack:
+        case .BeeAttack:
         case .Animating:
             ves_clear_screens(ves)
             return
@@ -576,6 +579,29 @@ deck_init :: proc(deck : ^BeeDeck, size : int = 36)
         queue.push_front(&deck.deck, c)
     }
 }
+deck_init_attacky :: proc(deck : ^BeeDeck, size : int = 36)
+{
+    deck.FlyTowards = BeeActionDeckData{type = .FlyTowards, freq =  2}
+    deck.FlyAway = BeeActionDeckData{type = .FlyAway, freq =  2}
+    deck.CrawlTowards = BeeActionDeckData{type = .CrawlTowards, freq =  2}
+    deck.CrawlAway = BeeActionDeckData{type = .CrawlAway, freq =  2}
+    deck.Sting = BeeActionDeckData{type = .Sting, freq =  28}
+
+    temp_deck := make([dynamic]BeeAction, 0, size, context.temp_allocator)
+
+    for i in 0..<deck.FlyTowards.freq do append(&temp_deck, BeeAction.FlyTowards)
+    for i in 0..<deck.FlyAway.freq do append(&temp_deck, BeeAction.FlyAway)
+    for i in 0..<deck.CrawlTowards.freq do append(&temp_deck, BeeAction.CrawlTowards)
+    for i in 0..<deck.CrawlAway.freq do append(&temp_deck, BeeAction.CrawlAway)
+    for i in 0..<deck.Sting.freq do append(&temp_deck, BeeAction.Sting)
+
+    queue.init(&deck.deck, size, g.mem_game.alloc)
+    queue.init(&deck.discard, size, g.mem_game.alloc)
+    deck_shuffle(&temp_deck)
+    for c in temp_deck{
+        queue.push_front(&deck.deck, c)
+    }
+}
 
 deck_shuffle :: proc(deck : ^[dynamic]BeeAction)
 {
@@ -607,7 +633,7 @@ deck_refesh :: proc(bd : ^BeeDeck){
     queue.destroy(&bd.deck)
     queue.clear(&bd.discard)
     queue.destroy(&bd.discard)
-    deck_init(bd, 36)
+    deck_init_attacky (bd, 36)
 }
 
 deck_choose_card :: proc(cards : [dynamic]BeeAction, priority : [BeeAction]int) -> BeeAction
@@ -1561,7 +1587,7 @@ DodgeQTE :: struct{
    success : bool
 
 }
-DodgeDir :: enum{Left = 0,Right = 1}
+DodgeDir :: enum{Left = 0,Right = 1,Pause=2}
 
 dodge_qte_init :: proc(qte : ^DodgeQTE, gui_map : ^map[string]Entity){
     qte.left_arrow = get_component(gui_map[lex.QTE_DODGE_LEFT], Cmp_Gui)
@@ -1572,10 +1598,12 @@ dodge_qte_init :: proc(qte : ^DodgeQTE, gui_map : ^map[string]Entity){
 
 dodge_qte_start :: proc(qte : ^DodgeQTE){
     qte.success = false
+    qte.count = rand.int32_range(2,5)
     // 1. Create a stack of random lefts or rights for dodges based on count
     for c in 0..<qte.count{
         dir := transmute(DodgeDir)rand.int_range(0,1)
         append(&qte.dodges, dir)
+        append(&qte.dodges,DodgeDir.Pause)
     }
     dodge_qte_pop(qte, rand.float32_range(0, 1))
 }
@@ -1583,14 +1611,19 @@ dodge_qte_start :: proc(qte : ^DodgeQTE){
 // 2. Pop the first one, set the interval, update_gui
 dodge_qte_pop :: proc(qte : ^DodgeQTE, new_interval : f32) -> bool{
     if len(qte.dodges) <= 0 do return false
+
     dir := pop_front(&qte.dodges)
     dodge_qte_show(dir)
     qte.interval.curr = 0
     qte.interval.max = new_interval
+
     switch dir{
     case .Left:
         update_gui(qte.left_arrow)
     case .Right:
+        update_gui(qte.right_arrow)
+    case .Pause:
+        update_gui(qte.left_arrow)
         update_gui(qte.right_arrow)
     }
     return true
@@ -1599,6 +1632,7 @@ dodge_qte_pop :: proc(qte : ^DodgeQTE, new_interval : f32) -> bool{
 dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you still want to update
 {
     // Detect player controls if match continue, if fail dont
+    assert(len(qte.dodges) > 0)
     d := qte.dodges[0]
     if game_controller_is_moving(){
         axis := game_controller_move_axis()
@@ -1612,8 +1646,22 @@ dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you
     }
 
     // No controller presses, just increment
+    // TODO THIS IS CONFUUSING AND BAD PLEAASE REFACTOR
     qte.interval.curr += dt
     if qte.interval.curr > qte.interval.max{
+        if d == .Pause do return dodge_qte_handle_pause(qte)
+        else { //The time is up so you fail
+           qte.success = false
+           return false
+        }
+    }
+    return true
+}
+
+dodge_qte_handle_pause :: proc(qte : ^DodgeQTE) -> bool
+{
+    if !dodge_qte_pop(qte, rand.float32_range(0,1)){
+        qte.success = true
         return false
     }
     return true
@@ -1621,13 +1669,15 @@ dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you
 
 dodge_qte_finish :: proc(qte : ^DodgeQTE)
 {
-
+    if qte.success do fmt.println("DODGED")
+    clear(&qte.dodges)
 }
 
 dodge_qte_hide :: proc(){
    ToggleUI(lex.QTE_DODGE_LEFT, false)
    ToggleUI(lex.QTE_DODGE_RIGHT, false)
 }
+
 dodge_qte_show :: proc(dir : DodgeDir)
 {
     switch dir{
@@ -1637,6 +1687,8 @@ dodge_qte_show :: proc(dir : DodgeDir)
     case .Right:
         ToggleUI(lex.QTE_DODGE_LEFT, false)
         ToggleUI(lex.QTE_DODGE_RIGHT, true)
+    case .Pause:
+        dodge_qte_hide()
     }
 }
 
@@ -1651,6 +1703,7 @@ VES_Screen :: enum
     Action,
     PlayerAttack,
     Animating,
+    BeeAttack,
 }
 
 VES_State :: enum
@@ -1720,6 +1773,8 @@ ves_event_start :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Bat
         ves_screen_push(ves, .PlayerAttack)
         attack_qte_start(&battle.attack_bar)
     case .DodgeQTE:
+        ves_screen_push(ves, .BeeAttack)
+        dodge_qte_start(&battle.dodge_qte)
     case .VisualEffect:
         break
     }
@@ -1737,6 +1792,7 @@ ves_event_update :: proc(event: ^VisualEvent, battle: ^Battle, dt: f32) -> bool 
     case .AttackQTE:
         return attack_qte_update(&battle.attack_bar, dt)
     case .DodgeQTE:
+        return dodge_qte_update(&battle.dodge_qte, dt)
     case .VisualEffect:
         break
     }
@@ -1757,6 +1813,8 @@ ves_event_finish :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Ba
         ves_screen_pop(ves)
 	   	attack_qte_finish(&battle.attack_bar)
     case .DodgeQTE:
+        ves_screen_pop(ves)
+        dodge_qte_finish(&battle.dodge_qte)
     case .VisualEffect:
 	    break
     }

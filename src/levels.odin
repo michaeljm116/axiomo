@@ -40,7 +40,7 @@ battle_setup_2 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocat
 init_battle :: proc(battle : ^Battle, alloc : mem.Allocator)
 {
 	//Shuffle bee BeeDeck
-    deck_init(&battle.deck, 36)
+    deck_init_attacky(&battle.deck, 36)
 
     init_weapons(battle)
     init_variants(battle)
@@ -52,6 +52,7 @@ init_battle_visuals :: proc(battle : ^Battle){
 	for &bee in battle.bees do init_bee_entity(&bee)
     add_component(battle.player.entity, Cmp_Visual)
     attack_qte_init(&battle.attack_bar, &g_gui)
+    dodge_qte_init(&battle.dodge_qte, &g_gui)
 }
 
 init_weapons :: #force_inline proc(battle : ^Battle){
