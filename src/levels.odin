@@ -51,7 +51,7 @@ init_battle :: proc(battle : ^Battle, alloc : mem.Allocator)
 init_battle_visuals :: proc(battle : ^Battle){
 	for &bee in battle.bees do init_bee_entity(&bee)
     add_component(battle.player.entity, Cmp_Visual)
-    attack_bar_init(&battle.attack_bar, &g_gui)
+    attack_qte_init(&battle.attack_bar, &g_gui)
 }
 
 init_weapons :: #force_inline proc(battle : ^Battle){

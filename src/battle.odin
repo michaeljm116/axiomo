@@ -27,7 +27,7 @@ Battle :: struct
     // input_state : PlayerInputState,
 
     current_bee: int,
-    attack_qte : AttackBar,
+    attack_bar : AttackBar,
     // bee_selection : int,
     bee_is_near : bool,
     battle_queue : queue.Queue(^Character),
@@ -82,7 +82,6 @@ start_game :: proc(){
     g.battle.player.entity = g.player
     init_battle(&g.battle, g.mem_game.alloc)
     init_battle_visuals(&g.battle)
-
     grid_init_floor(g.battle.grid, find_floor_prim()^)
 
     set_entity_on_tile(g.battle.grid^, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y, &g.battle.player.ground)
@@ -95,6 +94,8 @@ start_game :: proc(){
     place_chest_on_grid(vec2i{4,3}, &g.battle)
     add_animations()
     create_grid_entities(g.battle.grid^)
+
+    queue.init(&g.ves.event_queue, 16, g.mem_game.alloc)
 }
 
 set_game_over :: proc(){
@@ -181,18 +182,17 @@ check_status_effect_bee :: proc(bee : ^Bee)
 
 run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^PlayerInputState, battle_state : ^BattleState, player : ^Player, bees : ^[dynamic]Bee, bee_selection : ^int, bee_is_near : ^bool)
 {
+    if ves_is_busy(ves) do return
     using battle
     //Check if victory:
     victory := check_win_condition(battle)
-    if victory
-    {
+    if victory{
         clear(&bees)
         ves_clear_screens(ves)
     }
-
     top := ves_top_screen(ves)
-    #partial switch top
-    {
+
+    switch top{
     	case .None:
 	   		ves_screen_push(ves, .SelectCharacter)
 	    case .SelectCharacter:
@@ -210,50 +210,17 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             }
             else do battle_selection_update(&battle.curr_sel)
 	    case .Movement:
-			// TODO can go back when animating???
-        	handle_back_button_2(ves)
-         	// TODO: THIS IS BAD CODE WITH ALL TEHSE &&'S
-            if game_controller_is_moving() && .Animate not_in player.flags && .Animate not_in player.removed
-            {
-                move_player(&player, game_controller_move_axis(), grid)
-                ves.anim_state = .Start
-                ves_clear_screens(ves)
-            }
-            if ves.anim_state == .Finished
-            {
-                ves.anim_state = .None
-                ves_clear_screens(ves)
-                state = .End
-
-                if weap_check(player.target, g.battle.grid)
-                {
-                    pick_up_weapon(&player, g.battle.weapons)
-                    //check for chest
-                    for weap in g.battle.grid_weapons do if player.target == weap.pos do animate_chest(weap.chest)
-                }
-            }
+        	handle_back_button(ves)
+            if game_controller_is_moving() do move_player(&player, game_controller_move_axis(), grid)
         case .Action:
-	        handle_back_button_2(ves)
+	        handle_back_button(ves)
             if check_action_attack(battle, ves) do return
             else if check_action_focused(battle,ves) do return
             else if check_action_dodged(battle,ves) do return
         case .PlayerAttack:
-            if ves.attack_state == .Update
-            {
-                if game_controller_just_pressed(.Select){
-                   ves.attack_state = .Finished
-                }
-            }
-            if ves.attack_state == .Finished
-            {
-                ves.attack_state = .None
-                ves_clear_screens(ves)
-                bee := curr_sel.character.variant.(^Bee)
-                player_attack(&player, bee, 1) //TODOYO WHAT DIS
-                attack_qte_finish(&battle.attack_qte)
-                state = .End
-                return
-            }
+        case .Animating:
+            ves_screen_push(ves,.None)
+            return
     }
 }
 
@@ -265,13 +232,20 @@ check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
     // player_attack(player, &curr_sel.character)
     // input_state = .SelectCharacter
     // state^ = .BeesTurn
-    ves_screen_push(ves,.PlayerAttack)
-    ves.attack_state = .Start
-    if .Dead in curr_sel.character.flags
-    {
-        fmt.printfln("Bee %v is dead", curr_sel.character.name)
-        ordered_remove(&curr_sel.selectables, curr_sel.index)
+
+    ev := VisualEvent{
+        type = .AttackQTE,
+        state = .Pending,
+        character = &battle.player.variant,
+        on_finish = proc(ev:^VisualEvent, b: ^Battle){
+            b.state = .End
+            if .Dead in b.curr_sel.character.flags{
+                fmt.printfln("Bee %v is dead", b.curr_sel.character.name)
+                ordered_remove(&b.curr_sel.selectables, b.curr_sel.index)
+            }
+        }
     }
+    queue.push(&ves.event_queue, ev)
     return true
 }
 
@@ -318,6 +292,7 @@ run_bee_decision :: proc(bee : ^Bee, deck : ^BeeDeck) -> BeeAction{
 }
 
 run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f32) {
+    if ves_is_busy(ves) do return
     using battle
     if .Dead in bee.flags
     {
@@ -331,18 +306,14 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
         bee.state = .Acting
         bee_action_perform(card, bee, &player, grid^)
     case .Acting:
-        if .Animate in bee.flags do return
-        if g.ves.anim_state == .Finished{
-            g.ves.anim_state = .None
             bee.state = .Finishing
-            return
-        }
-        if .Attack in bee.flags {
+            if .Attack in bee.flags {
             // if player dodge, first roll dice, if dice is finished then do player attack
-            if .PlayerDodge in bee.flags {
-                bee.removed += {.PlayerDodge}
-                // g.ves.dice_state = .Start
-            }
+                if .PlayerDodge in bee.flags {
+                    bee.removed += {.PlayerDodge}
+                    // g.ves.dice_state = .Start
+                }
+            // qte stuff i guess?
             // if g.ves.dice_state == .Finished {
             //     bee_action_attack(bee, &player, dice.x.num + dice.y.num)
             //     bee.state = .Finishing
@@ -352,37 +323,19 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
             //     bee.state = .Finishing
             // }
         }
-    case .Moving:
     case .Finishing:
         bee.state = .Deciding
-        bee.removed += {.Animate, .Attack, .Moving}
+        bee.removed += {.Attack, .Moving}
         state = .End
-        g.ves.anim_state = .None
         // g.ves.dice_state = .None
     }
 }
 
-// If B button is pressed, go back to previous menu
-// handle_back_button :: proc(state : ^PlayerInputState, weapon : Weapon, selected : ^BattleSelection){
-//     if(!game_controller_just_pressed(.Back)) do return
-//     ves_screen_pop()
-//     hide_weapon(weapon)
-//     selected.character.removed |= {.PlayerSelected}
-//     #partial switch state^ {
-//         case .Movement:
-//             state^ = .SelectCharacter
-//             g.ves.curr_screen = .SelectCharacter
-//             break
-//         case .Action:
-//             state^ = .SelectCharacter
-//             g.ves.curr_screen = .SelectCharacter
-//             break
-//     }
-// }
-handle_back_button_2 :: proc(ves : ^VisualEventData){
+handle_back_button :: proc(ves : ^VisualEventData){
     if(!game_controller_just_pressed(.Back)) do return
     ves_screen_pop(ves)
 }
+
 BattleSelection :: struct
 {
 	index : int,
@@ -548,7 +501,6 @@ BeeState :: enum{
     Deciding,
     Acting,
     Finishing,
-    Moving
 }
 
 BeeActionPriority_Aggressive :: [BeeAction]int{
@@ -681,21 +633,21 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player, gri
         case .Discard: return
         case .FlyTowards:
             // Fly's 2 blocks towards player, if path overlaps player, alert!
-            bee.added += {.Flying, .Moving, .Animate}
+            bee.added += {.Flying, .Moving}
             bee_action_move_towards(bee, player, 2, grid)
         case .FlyAway:
             // Fly 2 blocks away from player, try to avoid walls
-            bee.added += {.Flying, .Moving, .Animate}
+            bee.added += {.Flying, .Moving}
             bee_action_move_away(bee, player, 2, grid)
         case .CrawlTowards:
             // crawl towards player, if path overlaps player, alert!
             bee.removed += {.Flying}
-            bee.added += {.Crawling,.Animate, .Moving}
+            bee.added += {.Crawling, .Moving}
             bee_action_move_towards(bee, player, 1, grid)
         case .CrawlAway:
             // crawl away from player, if path overlaps player, alert!
             bee.removed += {.Flying}
-            bee.added += {.Crawling,.Animate, .Moving}
+            bee.added += {.Crawling, .Moving}
             bee_action_move_away(bee, player, 1, grid)
         case .Sting:
             // If player is near, attack! else do nuffin
@@ -707,6 +659,14 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player, gri
     }
     // move_entity_to_tile(bee.entity, g.battle.grid_scale, bee.pos)
     // if bee is hovering player, turn on alert
+    if .Moving not_in bee.added do return
+    ev := VisualEvent{
+        type = .AnimateMove, state = .Pending, character = &bee.variant,
+        on_finish = proc(ev: ^VisualEvent, b: ^Battle){
+
+        }
+    }
+    queue.push(&g.ves.event_queue, ev)
 }
 
 bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int, grid: Grid){
@@ -926,7 +886,7 @@ GameFlag :: enum
     PlayerHyperFocused,
     PlayerHyperAlert,
     PlayerSelected,
-    Animate,
+    // Animate,
     Attack,
     Running,
     Overlapping,
@@ -944,15 +904,32 @@ move_player :: proc(p : ^Player, axis : MoveAxis , grid : ^Grid)
         if .Runnable in grid_get(grid, bounds).flags{
             p.target = bounds
             p.anim_flag = .Run
-            p.added += {.Animate, .Running}
+            p.added += {.Running}
         }
     }
     else if .Walkable in grid_get(grid, bounds).flags {
         // Animate Player
         p.target = bounds
         p.anim_flag = .Walk
-        p.added += {.Animate}
     }
+
+    ev := VisualEvent{
+        type = .AnimateMove,
+        state =.Pending,
+        character = &p.base.variant,
+        on_finish = proc(ev: ^VisualEvent, b: ^Battle){
+            player := b.player
+            b.state = .End
+            if weap_check(player.target, b.grid)
+            {
+                pick_up_weapon(&player, b.weapons)
+                //check for chest
+                for weap in b.grid_weapons do if player.target == weap.pos do animate_chest(weap.chest)
+            }
+        }
+    }
+
+    queue.push(&g.ves.event_queue, ev)
 }
 
 weap_check :: proc(p : vec2i, grid : ^Grid) -> bool{
@@ -1605,7 +1582,6 @@ VisualEvent :: struct
 
 VisualEventData :: struct
 {
-   attack_state : VES_State,
    anim_state : VES_State,
    screen_stack : [dynamic]VES_Screen,
    event_queue : queue.Queue(VisualEvent)
@@ -1613,34 +1589,40 @@ VisualEventData :: struct
 
 ves_process_queue :: proc(battle: ^Battle, ves : ^VisualEventData, dt: f32){
     if queue.len(ves.event_queue) == 0 do return
-    event := queue.front(&ves.event_queue)
+    event := queue.front_ptr(&ves.event_queue)
     switch event.state{
     case .Pending:
-        ves_event_start(event, battle)
+        ves_event_start(event, ves, battle)
         event.state = .Start
     case .Start:
         event.state = .Update
     case .Update:
         if !ves_event_update(event, battle, dt){
-            ves_event_finish(event, battle)
+            ves_event_finish(event, ves, battle)
             event.state = .Finished
-            queue.pop_front(&ves.event_queue)
         }
+    case .Finished:
+        queue.pop_front(&ves.event_queue)
+        if event.on_finish != nil do event.on_finish(event, battle)
     }
 }
 
+ves_is_busy :: #force_inline proc(ves: ^VisualEventData) -> bool{
+    return queue.len(ves.event_queue) > 0
+}
+
 ves_event_start :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Battle) {
-    switch event.type {
+    switch event.type{
     case .AnimateMove:
         ves_screen_push(ves,.Animating)
-        switch c in Character{
-      		case ^Player:
-                ves_animate_player_start(c)
-      		case ^Bee:
-                ves_animate_bee_start(c)
-        event.character.added |= {.Animate}  // set flag for your loops
+        switch c in event.character{
+  		case ^Player:
+            ves_animate_player_start(c)
+  		case ^Bee:
+            ves_animate_bee_start(c)
+        }
     case .AttackQTE:
-        attack_qte_start(&battle.attack_qte)
+        attack_qte_start(&battle.attack_bar)
     case .DodgeQTE:
     case .VisualEffect:
         break
@@ -1648,38 +1630,20 @@ ves_event_start :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Bat
 }
 
 ves_event_update :: proc(event: ^VisualEvent, battle: ^Battle, dt: f32) -> bool {
-    event.timer -= dt
-    if event.timer <= 0 do return false  // optional timeout
-
-    switch event.type
-    {
+    switch event.type{
     case .AnimateMove:
-        ves_screen_push(ves,.Animating)
-        switch c in event.character
-        {
+        switch c in event.character{
   		case ^Player:
-            animating := ves_animate_player(c, dt)
-            if !animating {
-                c.removed |= {.Animate}
-                return false
-            }
-            return true
+            return ves_animate_player(c, dt)
   		case ^Bee:
-            animating := ves_animate_bee(c, dt)
-            if !animating {
-                c.removed |= {.Animate}
-                return false
-            }
-            return true  // still going
+            return ves_animate_bee(c, dt)
         }
-
-        case .AttackQTE:
-            return attack_qte_update(&battle.attack_qte, dt)
-        case .DodgeQTE:
-        case .VisualEffect:
-            break
+    case .AttackQTE:
+        return attack_qte_update(&battle.attack_bar, dt)
+    case .DodgeQTE:
+    case .VisualEffect:
+        break
     }
-
     return false
 }
 
@@ -1694,67 +1658,19 @@ ves_event_finish :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Ba
 	    }
 		ves_clear_screens(ves)
     case .AttackQTE:
-	   	attack_qte_finish(&battle.attack_qte)
+	   	attack_qte_finish(&battle.attack_bar)
     case .DodgeQTE:
     case .VisualEffect:
 	    break
     }
-
-    if event.on_finish != nil do event.on_finish(event, battle)  // e.g., state = .End
 }
 
 
-ves_update_all :: proc(battle : ^Battle, dt : f32)
+ves_update_all :: proc(battle : ^Battle, ves : ^VisualEventData, dt : f32)
 {
+    ves_process_queue(battle, ves, dt)
     ves_update_event(battle)
-    ves_update_attack(battle, dt)
     ves_update_visuals(battle)
-    ves_update_animations(battle, dt)
-}
-
-ves_update_attack :: proc(battle : ^Battle, dt : f32){
-    switch g.ves.attack_state{
-    case .Start:
-        attack_qte_start(&battle.attack_qte)
-        g.ves.attack_state = .Update
-    case .Update:
-        // attack_qte_vis(&battle.attack_qte, dt)
-        attack_qte_update(&battle.attack_qte, dt)
-    case .Pending, .Finished:
-        break
-    }
-}
-
-ves_update_animations :: proc(battle : ^Battle, dt : f32)
-{
-    for &b in battle.bees{
-        if .Animate in b.added{
-            g.ves.anim_state = .Start
-            ves_animate_bee_start(&b)
-        }
-        if .Animate in b.flags do if ves_animate_bee(&b,dt){
-            g.ves.anim_state = .Update
-        }
-        if .Animate in b.removed{
-            g.ves.anim_state = .Finished
-            ves_animate_bee_end(&b)
-        }
-    }
-
-    // Animate Player
-    {
-       if .Animate in battle.player.added{
-           g.ves.anim_state = .Start
-           ves_animate_player_start(&battle.player)
-        }
-       if .Animate in battle.player.flags do if ves_animate_player(&battle.player, dt){
-           g.ves.anim_state = .Update
-       }
-       if .Animate in battle.player.removed {
-           g.ves.anim_state = .Finished
-           ves_animate_player_end(&battle.player)
-       }
-    }
 }
 
 ves_cleanup :: proc(battle : ^Battle)
@@ -1831,7 +1747,6 @@ ves_animate_bee :: #force_inline proc(bee : ^Bee, dt : f32) -> bool
         slerp_character_angle(bee,dt)
         return true
     }
-    bee.removed += {.Animate}
     return false
 }
 
@@ -1839,7 +1754,6 @@ ves_animate_bee_start :: proc(bee: ^Bee){
     bee.anim.timer = 1
     bee.anim.rot_timer = .5
     bee.anim_flag = .Walk
-    bee.flags += {.Animate}
     // bee.state = .Moving
     set_up_character_anim(bee, g.battle.grid^)
 }
@@ -1857,7 +1771,6 @@ ves_animate_player :: #force_inline proc(p : ^Player, dt : f32) -> bool{
         slerp_character_angle(p,dt)
         return true
     }
-    p.removed += {.Animate}
     return false
 }
 

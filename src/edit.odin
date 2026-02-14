@@ -315,6 +315,6 @@ handle_battle_cheat_mode :: proc()
     if is_key_just_pressed(glfw.KEY_SPACE) {
         // g.ves.curr_screen = .None
         // g.battle.input_state = .Attacking
-        g.ves.attack_state = .Start
+        // g.ves.attack_state = .Start
     }
 }
