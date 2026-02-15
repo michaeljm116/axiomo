@@ -5,6 +5,7 @@ import "core:math"
 import "core:math/linalg"
 import "vendor:glfw"
 import "axiom"
+import "core:container/queue"
 
 //----------------------------------------------------------------------------\\
 // /UI - Edit Mode
@@ -316,5 +317,7 @@ handle_battle_cheat_mode :: proc()
         // g.ves.curr_screen = .None
         // g.battle.input_state = .Attacking
         // g.ves.attack_state = .Start
+        ev := VisualEvent{type = .DodgeQTE, state = .Pending, character = &g.battle.bees[0].variant}
+        queue.push(&g.ves.event_queue, ev)
     }
 }
