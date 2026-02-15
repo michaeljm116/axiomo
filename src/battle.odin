@@ -1605,7 +1605,7 @@ dodge_qte_start :: proc(qte : ^DodgeQTE){
         append(&qte.dodges, dir)
         append(&qte.dodges,DodgeDir.Pause)
     }
-    dodge_qte_pop(qte, rand.float32_range(0, 1))
+    dodge_qte_pop(qte, 0.5)
 }
 
 // 2. Pop the first one, set the interval, update_gui
@@ -1632,35 +1632,39 @@ dodge_qte_pop :: proc(qte : ^DodgeQTE, new_interval : f32) -> bool{
 dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you still want to update
 {
     // Detect player controls if match continue, if fail dont
-    assert(len(qte.dodges) > 0)
-    d := qte.dodges[0]
-    if game_controller_is_moving(){
-        axis := game_controller_move_axis()
-        if d == .Left && axis.as_int.x != i32(-1) do return false
-        else if d == .Right && axis.as_int.x != i32(1) do return false
 
-        if !dodge_qte_pop(qte, rand.float32_range(0, 1)){
-            qte.success = true
-            return false
-        }
+    if len(qte.dodges) > 0 {
+	   	qte.success = true
+		dodge_qte_hide()
+	    return false
     }
 
-    // No controller presses, just increment
-    // TODO THIS IS CONFUUSING AND BAD PLEAASE REFACTOR
     qte.interval.curr += dt
-    if qte.interval.curr > qte.interval.max{
-        if d == .Pause do return dodge_qte_handle_pause(qte)
-        else { //The time is up so you fail
-           qte.success = false
-           return false
-        }
+    interval_over := qte.interval.curr > qte.interval.max
+
+    d := qte.dodges[0]
+    switch d
+    {
+    case .Left:
+        if game_controller_is_moving(){
+            axis := game_controller_move_axis()
+            if axis.as_int.x == i32(-1) do dodge_qte_pop(qte, 1.5)
+            else do return false}
+    case .Right:
+        if game_controller_is_moving(){
+            axis := game_controller_move_axis()
+            if axis.as_int.x == i32(1) do dodge_qte_pop(qte, 1.5)
+            else do return false}
+    case .Pause:
+	    if interval_over do return dodge_qte_handle_pause(qte)
     }
-    return true
+
+    return !interval_over
 }
 
 dodge_qte_handle_pause :: proc(qte : ^DodgeQTE) -> bool
 {
-    if !dodge_qte_pop(qte, rand.float32_range(0,1)){
+    if !dodge_qte_pop(qte, 1.5){
         qte.success = true
         return false
     }
