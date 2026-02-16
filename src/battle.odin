@@ -1617,31 +1617,25 @@ dodge_qte_start :: proc(qte : ^DodgeQTE){
 
 // 2. Pop the first one, set the interval, update_gui
 dodge_qte_pop :: proc(qte : ^DodgeQTE) -> bool{
-
     dodge, ok := pop_front_safe(&qte.dodges)
     if !ok do return false
+    dodge_qte_hide(dodge.dir, qte)
+    return dodge_qte_next(qte)
+}
 
-    dodge_qte_show(dodge.dir)
-    new_dir = qte.dodges
-    switch dodge.dir{
-    case .Left:
-        update_gui(qte.left_arrow)
-    case .Right:
-        update_gui(qte.right_arrow)
-    case .Pause:
-        update_gui(qte.left_arrow)
-        update_gui(qte.right_arrow)
-    }
+dodge_qte_next :: proc(qte : ^DodgeQTE) -> bool{
+    if len(&qte.dodges) <= 0 do return false
+    d := &qte.dodges[0]
+    dodge_qte_show(d.dir, qte)
     return true
 }
 
 dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you still want to update
 {
     // Detect player controls if match continue, if fail dont
-
     if len(qte.dodges) <= 0 {
 	   	qte.success = true
-		dodge_qte_hide()
+		dodge_qte_hide(.Pause, qte)
 	    return false
     }
 
@@ -1682,22 +1676,32 @@ dodge_qte_finish :: proc(qte : ^DodgeQTE)
     clear(&qte.dodges)
 }
 
-dodge_qte_hide :: proc(){
-   ToggleUI(lex.QTE_DODGE_LEFT, false)
-   ToggleUI(lex.QTE_DODGE_RIGHT, false)
+dodge_qte_hide :: proc(dir :DodgeDir, qte : ^DodgeQTE){
+    switch dir{
+    case .Left:
+        ToggleUI(lex.QTE_DODGE_LEFT, false)
+        update_gui(qte.left_arrow)
+    case. Right:
+        ToggleUI(lex.QTE_DODGE_RIGHT, false)
+        update_gui(qte.right_arrow)
+    case. Pause:
+        ToggleUI(lex.QTE_DODGE_LEFT, false)
+        ToggleUI(lex.QTE_DODGE_RIGHT, false)
+        update_gui(qte.left_arrow)
+        update_gui(qte.right_arrow)
+    }
 }
 
-dodge_qte_show :: proc(dir : DodgeDir)
+dodge_qte_show :: proc(dir : DodgeDir, qte : ^DodgeQTE)
 {
     switch dir{
     case .Left:
-        ToggleUI(lex.QTE_DODGE_RIGHT, false)
         ToggleUI(lex.QTE_DODGE_LEFT, true)
+        update_gui(qte.left_arrow)
     case .Right:
-        ToggleUI(lex.QTE_DODGE_LEFT, false)
         ToggleUI(lex.QTE_DODGE_RIGHT, true)
+        update_gui(qte.right_arrow)
     case .Pause:
-        dodge_qte_hide()
     }
 }
 
