@@ -1,5 +1,7 @@
+#+feature using-stmt
 package game
 import "core:mem"
+import "core:odin/printer"
 import "vendor:wasm/WebGL"
 import "core:fmt"
 import "core:log"
@@ -14,6 +16,7 @@ import xxh2"axiom/extensions/xxhash2"
 
 import "axiom"
 import lex"lexicon"
+
 
 Battle :: struct
 {
@@ -1579,15 +1582,19 @@ attack_qte_vis :: proc(ab : ^AttackBar, dt : f32)
 //----------------------------------------------------------------------------\\
 DodgeQTE :: struct{
    time : CurrMax,
-   interval : CurrMax,
    left_arrow : ^Cmp_Gui,
    right_arrow : ^Cmp_Gui,
    count : i32,
-   dodges : [dynamic]DodgeDir,
+   dodges : [dynamic]DodgeInterval,
    success : bool
 
 }
 DodgeDir :: enum{Left = 0,Right = 1,Pause=2}
+DodgeInterval :: struct
+{
+    dir : DodgeDir,
+    interval : CurrMax
+}
 
 dodge_qte_init :: proc(qte : ^DodgeQTE, gui_map : ^map[string]Entity){
     qte.left_arrow = get_component(gui_map[lex.QTE_DODGE_LEFT], Cmp_Gui)
@@ -1600,24 +1607,24 @@ dodge_qte_start :: proc(qte : ^DodgeQTE){
     qte.success = false
     qte.count = rand.int32_range(2,5)
     // 1. Create a stack of random lefts or rights for dodges based on count
+    append(&qte.dodges, DodgeInterval{.Pause, CurrMax{max = 1.5}})
     for c in 0..<qte.count{
         dir := transmute(DodgeDir)rand.int_range(0,2)
-        append(&qte.dodges, dir)
-        append(&qte.dodges,DodgeDir.Pause)
+        append(&qte.dodges, DodgeInterval{dir, CurrMax{max = 0.5}})
+        append(&qte.dodges, DodgeInterval{.Pause, CurrMax{max = 0.5}})
+        // append(&qte.dodges,DodgeDir.Pause)
     }
-    dodge_qte_pop(qte, 5)
+    dodge_qte_pop(qte)
 }
 
 // 2. Pop the first one, set the interval, update_gui
-dodge_qte_pop :: proc(qte : ^DodgeQTE, new_interval : f32) -> bool{
+dodge_qte_pop :: proc(qte : ^DodgeQTE) -> bool{
     if len(qte.dodges) <= 0 do return false
 
-    dir := pop_front(&qte.dodges)
-    dodge_qte_show(dir)
-    qte.interval.curr = 0
-    qte.interval.max = new_interval
+    dodge := pop_front(&qte.dodges)
+    dodge_qte_show(dodge.dir)
 
-    switch dir{
+    switch dodge.dir{
     case .Left:
         update_gui(qte.left_arrow)
     case .Right:
@@ -1639,20 +1646,20 @@ dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you
 	    return false
     }
 
-    qte.interval.curr += dt
-    interval_over := qte.interval.curr > qte.interval.max
-
     d := qte.dodges[0]
-    switch d {
+    d.interval.curr += dt
+    interval_over := d.interval.curr > d.interval.max
+
+    switch d.dir {
     case .Left:
         if game_controller_is_moving(){
             axis := game_controller_move_axis()
-            if axis.as_int.x == i32(-1) do dodge_qte_pop(qte, .5)
+            if axis.as_int.x == i32(-1) do dodge_qte_pop(qte)
             else do return false}
     case .Right:
         if game_controller_is_moving(){
             axis := game_controller_move_axis()
-            if axis.as_int.x == i32(1) do dodge_qte_pop(qte, .5)
+            if axis.as_int.x == i32(1) do dodge_qte_pop(qte)
             else do return false}
     case .Pause:
 	    if interval_over do return dodge_qte_handle_pause(qte)
@@ -1663,7 +1670,7 @@ dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you
 
 dodge_qte_handle_pause :: proc(qte : ^DodgeQTE) -> bool
 {
-    if !dodge_qte_pop(qte, .5){
+    if !dodge_qte_pop(qte){
         qte.success = true
         return false
     }

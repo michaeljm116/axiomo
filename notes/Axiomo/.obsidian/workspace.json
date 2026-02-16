@@ -11,14 +11,20 @@
             "id": "8880c06db2b2ecd1",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "kanban",
               "state": {
-                "file": "DailyNotes/February 14, 2026, Sat.md",
-                "mode": "source",
-                "source": false
+                "file": "BeeKillingsInn/Production/!kb_Mechanics.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false
+                  ]
+                }
               },
-              "icon": "lucide-file",
-              "title": "February 14, 2026, Sat"
+              "icon": "lucide-trello",
+              "title": "!kb_Mechanics"
             }
           },
           {
@@ -187,7 +193,10 @@
   },
   "active": "8880c06db2b2ecd1",
   "lastOpenFiles": [
+    "BeeKillingsInn/Production/!kb_Kanban.md",
+    "BeeKillingsInn/Production/Mechanics/Run.md",
     "DailyNotes/February 11, 2026, Wed.md",
+    "DailyNotes/February 16, 2026, Mon.md",
     "DailyNotes/February 14, 2026, Sat.md",
     "DailyNotes/February 10, 2026, Tue.md",
     "DailyNotes/February 07, 2026, Sat.md",
@@ -213,9 +222,6 @@
     "Excalidraw/Arenas.md",
     "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
     "BeeKillingsInn/Production/!kb_Mechanics.md",
-    "BeeKillingsInn/Production/Prototype.md",
-    "BeeKillingsInn/Production/Mechanics/Run.md",
-    "BeeKillingsInn/Production/Mechanics/Walls and Obstacles.md",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143017.png",
     "BeeKillingsInn/Production/Mechanics",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143121.png",

@@ -1,3 +1,4 @@
+#+feature using-stmt
 package resource
 import math "core:math/linalg"
 import "core:strings"

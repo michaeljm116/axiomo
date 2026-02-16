@@ -1,3 +1,6 @@
+
+#+feature using-stmt
+
 package axiom
 import "base:runtime"
 import "core:c"
@@ -1097,7 +1100,7 @@ sys_text_process_ecs :: proc() {
     it : Iterator
     err := iterator_init(&it, v_text)
     if err != nil do return
-    
+
     for iterator_next(&it) {
         entity := get_entity(&it)
         text_comp := get_component(get_table(Cmp_Text), entity)

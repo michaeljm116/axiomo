@@ -7,7 +7,6 @@ kanban-plugin: board
 ## Todo
 
 - [ ] Attack:Camera
-- [ ] Dodge: Action Oriented
 - [ ] Line of Sight
 - [ ] Obstacles - Medium
 - [ ] Obstacles - Complex
@@ -22,8 +21,7 @@ kanban-plugin: board
 
 ## In Progress
 
-- [ ] Attack: Action Oriented
-- [ ] Attack: UI
+- [ ] Dodge: Action Oriented
 
 
 ## Complete
@@ -32,6 +30,8 @@ kanban-plugin: board
 - [ ] Run option: Shift + WASD
 - [ ] Fly/Ground Simple
 - [ ] Obstacles - Simple
+- [ ] Attack: Action Oriented
+- [ ] Attack: UI
 
 
 
