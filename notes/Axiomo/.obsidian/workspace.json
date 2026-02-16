@@ -11,20 +11,14 @@
             "id": "8880c06db2b2ecd1",
             "type": "leaf",
             "state": {
-              "type": "kanban",
+              "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Production/!kb_Mechanics.md",
-                "kanbanViewState": {
-                  "kanban-plugin": "board",
-                  "list-collapse": [
-                    false,
-                    false,
-                    false
-                  ]
-                }
+                "file": "DailyNotes/February 16, 2026, Mon.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-trello",
-              "title": "!kb_Mechanics"
+              "icon": "lucide-file",
+              "title": "February 16, 2026, Mon"
             }
           },
           {

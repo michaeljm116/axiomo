@@ -1605,23 +1605,24 @@ dodge_qte_start :: proc(qte : ^DodgeQTE){
     qte.success = false
     qte.count = rand.int32_range(2,5)
     // 1. Create a stack of random lefts or rights for dodges based on count
-    append(&qte.dodges, DodgeInterval{.Pause, CurrMax{max = 1.5}})
+    append(&qte.dodges, DodgeInterval{.Pause, CurrMax{max = 0.75}})
     for c in 0..<qte.count{
         dir := transmute(DodgeDir)rand.int_range(0,2)
         append(&qte.dodges, DodgeInterval{dir, CurrMax{max = 0.5}})
         append(&qte.dodges, DodgeInterval{.Pause, CurrMax{max = 0.5}})
         // append(&qte.dodges,DodgeDir.Pause)
     }
-    dodge_qte_pop(qte)
+    // dodge_qte_pop(qte)
 }
 
 // 2. Pop the first one, set the interval, update_gui
 dodge_qte_pop :: proc(qte : ^DodgeQTE) -> bool{
-    if len(qte.dodges) <= 0 do return false
 
-    dodge := pop_front(&qte.dodges)
+    dodge, ok := pop_front_safe(&qte.dodges)
+    if !ok do return false
+
     dodge_qte_show(dodge.dir)
-
+    new_dir = qte.dodges
     switch dodge.dir{
     case .Left:
         update_gui(qte.left_arrow)
@@ -1644,7 +1645,7 @@ dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you
 	    return false
     }
 
-    d := qte.dodges[0]
+    d := &qte.dodges[0]
     d.interval.curr += dt
     interval_over := d.interval.curr > d.interval.max
 
