@@ -1,8 +1,6 @@
 #+feature using-stmt
 package game
 import "core:mem"
-import "core:odin/printer"
-import "vendor:wasm/WebGL"
 import "core:fmt"
 import "core:log"
 import "core:math/linalg"
