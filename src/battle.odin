@@ -1601,11 +1601,11 @@ dodge_qte_start :: proc(qte : ^DodgeQTE){
     qte.count = rand.int32_range(2,5)
     // 1. Create a stack of random lefts or rights for dodges based on count
     for c in 0..<qte.count{
-        dir := transmute(DodgeDir)rand.int_range(0,1)
+        dir := transmute(DodgeDir)rand.int_range(0,2)
         append(&qte.dodges, dir)
         append(&qte.dodges,DodgeDir.Pause)
     }
-    dodge_qte_pop(qte, 0.5)
+    dodge_qte_pop(qte, 5)
 }
 
 // 2. Pop the first one, set the interval, update_gui
@@ -1633,7 +1633,7 @@ dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you
 {
     // Detect player controls if match continue, if fail dont
 
-    if len(qte.dodges) > 0 {
+    if len(qte.dodges) <= 0 {
 	   	qte.success = true
 		dodge_qte_hide()
 	    return false
@@ -1643,17 +1643,16 @@ dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you
     interval_over := qte.interval.curr > qte.interval.max
 
     d := qte.dodges[0]
-    switch d
-    {
+    switch d {
     case .Left:
         if game_controller_is_moving(){
             axis := game_controller_move_axis()
-            if axis.as_int.x == i32(-1) do dodge_qte_pop(qte, 1.5)
+            if axis.as_int.x == i32(-1) do dodge_qte_pop(qte, .5)
             else do return false}
     case .Right:
         if game_controller_is_moving(){
             axis := game_controller_move_axis()
-            if axis.as_int.x == i32(1) do dodge_qte_pop(qte, 1.5)
+            if axis.as_int.x == i32(1) do dodge_qte_pop(qte, .5)
             else do return false}
     case .Pause:
 	    if interval_over do return dodge_qte_handle_pause(qte)
@@ -1664,7 +1663,7 @@ dodge_qte_update :: proc(qte : ^DodgeQTE, dt : f32) -> bool //Return true if you
 
 dodge_qte_handle_pause :: proc(qte : ^DodgeQTE) -> bool
 {
-    if !dodge_qte_pop(qte, 1.5){
+    if !dodge_qte_pop(qte, .5){
         qte.success = true
         return false
     }
