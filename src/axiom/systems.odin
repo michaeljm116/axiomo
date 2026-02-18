@@ -15,6 +15,7 @@ import b2 "vendor:box2d"
 import "resource/scene"
 import "gpu"
 import "resource"
+import sdl_mixer "vendor:sdl2/mixer"
 
 //----------------------------------------------------------------------------\\
 // /Transform System /ts
@@ -1214,5 +1215,50 @@ sys_physics_process_ecs :: proc(dt: f32)
         tran := get_component(trans, entity)
         pos := b2.Body_GetPosition(coli.bodyid)
         tran.local.pos.xz = pos.xy
+    }
+}
+
+//----------------------------------------------------------------------------\\
+// /Audio System
+//----------------------------------------------------------------------------\\
+
+v_audio : ^View
+sys_audio_init :: proc(alloc : mem.Allocator) -> bool
+{
+    v_audio, _ = new(View, alloc)
+    err := view_init(v_audio, g_world.db, {get_table(Cmp_Collision2D), get_table(Cmp_Transform)})
+    if err != nil do panic("Failed to initialize audio view")
+
+    if sdl_mixer.OpenAudio(44100, sdl_mixer.DEFAULT_FORMAT, 2, 2048) != 0 {
+        fmt.printf("Failed to initialize SDL_mixer: %s\n", sdl_mixer.GetError())
+        return false
+    }
+    return true
+}
+
+sys_audio_reset :: proc(){
+    view_rebuild(v_audio)
+}
+
+sys_audio_quit :: proc(){
+	sdl_mixer.CloseAudio()
+}
+
+sys_audio_process_ecs :: proc(dt: f32)
+{
+    // Set up iterator
+    it : Iterator
+    audio_table := get_table(Cmp_Audio)
+    err := iterator_init(&it, v_audio)
+    if err != nil do panic("Failed to init audio iterator")
+
+    // Update the entity to match the physics simulation
+    for iterator_next(&it){
+        entity := get_entity(&it)
+        sound := get_component(audio_table, entity)
+        if sound.play{
+	       	sdl_mixer.PlayChannel(-1, sound.chunk, 0)
+			sound.play = false;
+        }
     }
 }
