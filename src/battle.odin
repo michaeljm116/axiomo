@@ -79,13 +79,17 @@ battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
 battle_turn_start_visibility :: proc(btl: ^Battle) {
     for &bee in btl.bees {
         if .Dead in bee.flags { continue }
-        if can_see_target(btl.grid^, btl.player.pos, btl.player.facing, bee.pos) do bee.added += {.PlayerSeesMe}
-        if can_see_target(btl.grid^, bee.pos, bee.facing, btl.player.pos) do bee.added += {.ISeePlayer}
+        if can_see_target(btl.grid^, btl.player.pos, btl.player.facing, bee.pos){ bee.added += {.PlayerSeesMe}
+            log.info("Player sees Bee ", bee.name)
+        }
+        if can_see_target(btl.grid^, bee.pos, bee.facing, btl.player.pos){ bee.added += {.ISeePlayer}
+            log.info("Bee ", bee.name, " sees Player")
+        }
     }
 }
 
 battle_turn_end_visibility :: #force_inline proc(btl: ^Battle) {
-    // for &c in btl.curr_sel.selectables do c.removed |= {.PlayerSeesMe, .ISeePlayer}
+    for &c in btl.curr_sel.selectables do c.removed |= {.PlayerSeesMe, .ISeePlayer}
 }
 
 start_game :: proc(){
