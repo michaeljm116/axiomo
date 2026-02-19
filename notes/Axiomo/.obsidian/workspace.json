@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/February 16, 2026, Mon.md",
+                "file": "DailyNotes/February 18, 2026, Wed.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "February 16, 2026, Mon"
+              "title": "February 18, 2026, Wed"
             }
           },
           {
@@ -187,6 +187,7 @@
   },
   "active": "8880c06db2b2ecd1",
   "lastOpenFiles": [
+<<<<<<< HEAD
     "DailyNotes/February 18, 2026, Wed.md",
     "DailyNotes/February 16, 2026, Mon.md",
     "BeeKillingsInn/Production/Mechanics/Untitled.md",
@@ -197,6 +198,13 @@
     "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
     "BeeKillingsInn/Production/Mechanics/Run.md",
     "BeeKillingsInn/Production/!kb_Kanban.md",
+=======
+    "DailyNotes/February 16, 2026, Mon.md",
+    "DailyNotes/February 18, 2026, Wed.md",
+    "DailyNotes/February 17, 2026, Tue.md",
+    "BeeKillingsInn/Production/!kb_Kanban.md",
+    "BeeKillingsInn/Production/Mechanics/Run.md",
+>>>>>>> 21eac43e4d458eb2e5411b36a2ef8feb8767f350
     "DailyNotes/February 11, 2026, Wed.md",
     "DailyNotes/February 14, 2026, Sat.md",
     "DailyNotes/February 10, 2026, Tue.md",
@@ -216,6 +224,13 @@
     "Excalidraw/Untitled.canvas",
     "Excalidraw/VES.md",
     "Excalidraw/AnimationStates.excalidraw.md",
+<<<<<<< HEAD
+=======
+    "Excalidraw/Architecture.md",
+    "Excalidraw/Memory.md",
+    "Excalidraw/PlayersTUrn.excalidraw.md",
+    "Excalidraw/Arenas.md",
+>>>>>>> 21eac43e4d458eb2e5411b36a2ef8feb8767f350
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143017.png",
     "BeeKillingsInn/Production/Mechanics",
     "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143121.png",

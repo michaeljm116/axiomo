@@ -1534,19 +1534,6 @@ audio_set_volume :: proc(comp: ^Cmp_Audio, volume: i32) {
     }
 }
 
-// Initialize SDL mixer (call this once at startup)
-audio_system_init :: proc() -> bool {
-    if sdl_mixer.OpenAudio(44100, sdl_mixer.DEFAULT_FORMAT, 2, 2048) != 0 {
-        fmt.printf("Failed to initialize SDL_mixer: %s\n", sdl.GetError())
-        return false
-    }
-    return true
-}
-
-// Cleanup SDL mixer (call this at shutdown)
-audio_system_quit :: proc() {
-    sdl_mixer.CloseAudio()
-}
 
 vertex_equals :: proc(a: RenderVertex, b: RenderVertex) -> bool {
     return a.pos == b.pos && a.norm == b.norm && a.tang == b.tang && a.uv == b.uv
