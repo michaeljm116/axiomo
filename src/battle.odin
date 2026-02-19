@@ -73,9 +73,19 @@ battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
 	find_camera_entity()
     find_light_entity()
     find_player_entity()
-    face_left(g.player)
-
     axiom.sys_trans_process_ecs()
+}
+
+battle_turn_start_visibility :: proc(btl: ^Battle) {
+    for &bee in btl.bees {
+        if .Dead in bee.flags { continue }
+        if can_see_target(btl.grid^, btl.player.pos, btl.player.facing, bee.pos) do bee.added += {.PlayerSeesMe}
+        if can_see_target(btl.grid^, bee.pos, bee.facing, btl.player.pos) do bee.added += {.ISeePlayer}
+    }
+}
+
+battle_turn_end_visibility :: #force_inline proc(btl: ^Battle) {
+    // for &c in btl.curr_sel.selectables do c.removed |= {.PlayerSeesMe, .ISeePlayer}
 }
 
 start_game :: proc(){
@@ -83,6 +93,8 @@ start_game :: proc(){
     ves_screen_push(&g.ves, .None)
     battle_setup_1(&g.battle,g.mem_game.alloc) //NOTE: The actual initialize of the battle
     g.battle.player.entity = g.player
+    face_left(&g.battle.player)
+
     init_battle(&g.battle, g.mem_game.alloc)
     init_battle_visuals(&g.battle)
     grid_init_floor(g.battle.grid, find_floor_prim()^)
@@ -90,7 +102,7 @@ start_game :: proc(){
     set_entity_on_tile(g.battle.grid^, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y, &g.battle.player.ground)
     for &bee in g.battle.bees{
         set_entity_on_tile(g.battle.grid^, bee.entity, g.battle, bee.pos.x, bee.pos.y, &bee.ground)
-        face_right(bee.entity)
+        face_right(&bee)
     }
 
     place_chest_on_grid(vec2i{2,0}, &g.battle)
@@ -137,6 +149,7 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
     {
         case .Start:
             refresh_player_reachability(grid, player.pos)
+            battle_turn_start_visibility(battle)
         	if check_end_condition(battle) do break
          	state = .Continue
         case .Continue:
@@ -148,6 +161,7 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
              }
         case .End:
 	        if check_end_condition(battle) do break
+			battle_turn_end_visibility(battle)
 	        curr := queue.pop_front(&battle_queue)
 	        if .Dead not_in curr.flags do queue.push(&battle_queue, curr)
 			state = .Start
@@ -422,6 +436,7 @@ Character :: struct
     target : vec2i,
     ground : f32,
     entity : Entity,
+    facing : Direction,
 
     // Animation related
     anim_flag : AnimationFlag,
@@ -684,6 +699,11 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player, gri
             else do bee.state = .Finishing
             // bee_action_attack(bee, player)
     }
+
+    //Change direction of bee if it changed
+    new_dir  := compute_direction(bee.target - bee.pos)
+    if new_dir != .None do bee.facing = new_dir
+
     // move_entity_to_tile(bee.entity, g.battle.grid_scale, bee.pos)
     // if bee is hovering player, turn on alert
     if .Moving in bee.added{
@@ -917,12 +937,16 @@ GameFlag :: enum
     Attack,
     Running,
     Overlapping,
+    ISeePlayer,
+    PlayerSeesMe,
 }
 GameFlags :: bit_set[GameFlag; u32]
 
 move_player :: proc(p : ^Player, axis : MoveAxis , grid : ^Grid)
 {
+    //First do the actual move setup
     bounds := p.pos + axis.as_int
+    p.facing = transmute(Direction)axis.dir
     if !path_in_bounds(bounds, grid^) do return
 
     if game_controller_held(.Run){
@@ -940,6 +964,7 @@ move_player :: proc(p : ^Player, axis : MoveAxis , grid : ^Grid)
         p.anim_flag = .Walk
     }
 
+    // Then set the visual in place
     ev := VisualEvent{
         type = .AnimateMove,
         state =.Pending,

@@ -25,6 +25,20 @@ Tile :: struct
 	center : vec2f
 }
 
+Direction :: enum u8 {
+    None   = 0,
+    Up     = 1 << 0,
+    Down   = 1 << 1,
+    Left   = 1 << 2,
+    Right  = 1 << 3,
+}
+compute_direction :: proc(v : vec2i) -> Direction
+{
+    y_bits := (u8(v.y > 0) << 0) | (u8(v.y < 0) << 1)
+    x_bits := (u8(v.x > 0) << 3) | (u8(v.x < 0) << 2)
+    return transmute(Direction)(y_bits | x_bits)
+}
+
 Grid :: struct{
     tiles : []Tile,
     floor_height : f32,
@@ -319,4 +333,86 @@ refresh_player_reachability :: proc(grid: ^Grid, pos: vec2i) {
 
     t_player := &grid_get_mut(grid, pos).flags
     t_player^ += {.Walkable}
+}
+
+// Call this every time player or any bee moves
+refresh_visibility :: proc(battle: ^Battle) {
+    player_pos := battle.player.pos
+
+    for &bee in battle.bees {
+        if .Dead in bee.flags {
+            bee.flags -= {.Alert}
+            continue
+        }
+
+        if can_see_target(battle.grid^, bee.pos, bee.facing, player_pos) {
+            bee.added += {.Alert}
+        } else {
+            bee.removed += {.Alert}
+        }
+    }
+}
+
+// Returns true if (tx,ty) is inside the 90° cone of the viewer facing
+in_fov_cone :: proc(sx, sy, tx, ty: i32, facing: Direction, max_range: i32 = 12) -> bool {
+    dx := tx - sx
+    dy := ty - sy
+    manhattan := abs(dx) + abs(dy)
+    if manhattan == 0 do return true
+    if manhattan > max_range {
+        return false
+    }
+
+    switch facing {
+        case .Right: return dx >= 0 && abs(dy) <= dx      // 90° right quadrant
+        case .Left:  return dx <= 0 && abs(dy) <= -dx
+        case .Down:  return dy >= 0 && abs(dx) <= dy
+        case .Up:    return dy <= 0 && abs(dx) <= -dy
+        case .None: return true
+    }
+    return true
+}
+
+// Bresenham's Line Algorithm - Grid LOS
+has_clear_los :: proc(grid: Grid, sx, sy, tx, ty: i32) -> bool {
+    if sx == tx && sy == ty {
+        return true
+    }
+
+    dx := abs(tx - sx)
+    dy := abs(ty - sy)
+    x_step :i32= tx > sx ? 1 : -1
+    y_step :i32= ty > sy ? 1 : -1
+
+    err := dx - dy
+    x, y := sx, sy
+
+    for {
+        e2 := 2 * err
+
+        if e2 > -dy {
+            err -= dy
+            x += x_step
+        }
+        if e2 < dx {
+            err += dx
+            y += y_step
+        }
+
+        if x == tx && y == ty {
+            return true // Reached target
+        }
+
+        // Check blocking tile
+        tile := grid_get(grid, x, y)
+        if .Wall in tile.flags || .Obstacle in tile.flags {
+            return false
+        }
+    }
+}
+
+// Combined check
+can_see_target :: proc(grid: Grid, viewer_pos: vec2i, viewer_facing: Direction, target_pos: vec2i, max_range := i32(12)) -> bool {
+    return in_fov_cone(viewer_pos.x, viewer_pos.y, target_pos.x, target_pos.y, viewer_facing, max_range) &&
+           has_clear_los(grid, viewer_pos.x, viewer_pos.y, target_pos.x, target_pos.y)
 }

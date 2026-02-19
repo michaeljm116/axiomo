@@ -7,7 +7,6 @@ kanban-plugin: board
 ## Todo
 
 - [ ] Attack:Camera
-- [ ] Line of Sight
 - [ ] Obstacles - Medium
 - [ ] Obstacles - Complex
 - [ ] Status Effects - Simple
@@ -21,7 +20,7 @@ kanban-plugin: board
 
 ## In Progress
 
-- [ ] Dodge: Action Oriented
+- [ ] Line of Sight
 
 
 ## Complete
@@ -32,6 +31,7 @@ kanban-plugin: board
 - [ ] Obstacles - Simple
 - [ ] Attack: Action Oriented
 - [ ] Attack: UI
+- [ ] Dodge: Action Oriented
 
 
 

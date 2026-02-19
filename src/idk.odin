@@ -87,11 +87,16 @@ update_player_movement :: proc(delta_time: f32)
     }
 }
 
-face_left :: proc(entity : Entity)
+face_left :: proc{face_left_character, face_left_entity}
+face_left_entity :: proc(entity : Entity)
 {
     tc := get_component(entity, Cmp_Transform)
     tc.local.rot = linalg.quaternion_angle_axis_f32(89.5, {0,1,0})
-    fmt.println("Player facing left")
+}
+face_left_character :: proc(character : ^Character)
+{
+   character.facing = .Left
+   face_left_entity(character.entity)
 }
 
 face_180 :: proc(entity : Entity)
@@ -101,10 +106,16 @@ face_180 :: proc(entity : Entity)
     fmt.println(linalg.angle_axis_from_quaternion(tc.local.rot))
 }
 
-face_right :: proc(entity : Entity)
+face_right :: proc{face_right_character, face_right_entity}
+face_right_entity :: proc(entity : Entity)
 {
     tc := get_component(entity, Cmp_Transform)
     tc.local.rot = linalg.quaternion_angle_axis_f32(-89.5, {0,1,0})
+}
+face_right_character :: proc(character : ^Character)
+{
+   character.facing = .Right
+   face_right_entity(character.entity)
 }
 
 // Get camera forward vector

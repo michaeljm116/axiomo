@@ -37,12 +37,13 @@ AreaEntry :: struct
 
 AreaTrigger :: struct
 {
-	dir : AreaDirection,
+	dir : Direction,
 	can_enter : bool,
 	pos : vec2f,
 	len : f32,
 }
-AreaDirection :: enum{Up,Down,Left,Right}
+// Direction :: enum{Up,Down,Left,Right}
+
 AreaType :: enum{Inn, Floor, Room}
 
 overworld_detect_area_change :: proc(player_transform : Cmp_Transform, trigger : AreaTrigger) -> bool
@@ -59,6 +60,7 @@ overworld_detect_area_change :: proc(player_transform : Cmp_Transform, trigger :
 	    case .Down: return py < ty && px > tx && px < tx + tl
 	    case .Left: return px < tx && py > ty && py < ty + tl
 	    case .Right: return px > tx && py > ty && py < ty + tl
+		case .None: return false
     }
     return false
 }

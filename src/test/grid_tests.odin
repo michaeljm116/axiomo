@@ -607,3 +607,145 @@ test_a_star_respects_reachability_flags_but_allows_them :: proc(t: ^testing.T) {
     testing.expect(t, path[len(path)-1] == goal)
     testing.expect(t, len(path) == 5, "Should be Manhattan distance + 1 (4 steps)")
 }
+
+@(test)
+test_in_fov_cone_basic :: proc(t: ^testing.T) {
+    max_range : i32 = 10
+
+    // Test Right facing
+    testing.expect(t, in_fov_cone(0,0, 5,0, .Right, max_range), "Direct right should be in cone")
+    testing.expect(t, in_fov_cone(0,0, 5,2, .Right, max_range), "Right-up diagonal (|dy| <= dx) in cone")
+    testing.expect(t, in_fov_cone(0,0, 5,-2, .Right, max_range), "Right-down diagonal in cone")
+    testing.expect(t, !in_fov_cone(0,0, 5,6, .Right, max_range), "Steep up (|dy| > dx) out")
+    testing.expect(t, !in_fov_cone(0,0, -1,0, .Right, max_range), "Left out")
+    testing.expect(t, !in_fov_cone(0,0, 0,1, .Right, max_range), "Up out")
+    testing.expect(t, !in_fov_cone(0,0, 0,0, .Right, max_range), "Self (manhattan=0) out")
+
+    // Test Left facing
+    testing.expect(t, in_fov_cone(0,0, -5,0, .Left, max_range), "Direct left in cone")
+    testing.expect(t, in_fov_cone(0,0, -5,2, .Left, max_range), "Left-up in cone")
+    testing.expect(t, in_fov_cone(0,0, -5,-2, .Left, max_range), "Left-down in cone")
+    testing.expect(t, !in_fov_cone(0,0, -5,6, .Left, max_range), "Steep up out")
+    testing.expect(t, !in_fov_cone(0,0, 1,0, .Left, max_range), "Right out")
+
+    // Test Down facing (assume +Y down)
+    testing.expect(t, in_fov_cone(0,0, 0,5, .Down, max_range), "Direct down in cone")
+    testing.expect(t, in_fov_cone(0,0, 2,5, .Down, max_range), "Down-right in cone")
+    testing.expect(t, in_fov_cone(0,0, -2,5, .Down, max_range), "Down-left in cone")
+    testing.expect(t, !in_fov_cone(0,0, 6,5, .Down, max_range), "Steep right out")
+    testing.expect(t, !in_fov_cone(0,0, 0,-1, .Down, max_range), "Up out")
+
+    // Test Up facing
+    testing.expect(t, in_fov_cone(0,0, 0,-5, .Up, max_range), "Direct up in cone")
+    testing.expect(t, in_fov_cone(0,0, 2,-5, .Up, max_range), "Up-right in cone")
+    testing.expect(t, in_fov_cone(0,0, -2,-5, .Up, max_range), "Up-left in cone")
+    testing.expect(t, !in_fov_cone(0,0, 6,-5, .Up, max_range), "Steep right out")
+    testing.expect(t, !in_fov_cone(0,0, 0,1, .Up, max_range), "Down out")
+
+    // Range limit
+    testing.expect(t, !in_fov_cone(0,0, 11,0, .Right, 10), "Beyond max_range out")
+}
+
+@(test)
+test_in_fov_cone_manhattan_zero_and_max :: proc(t: ^testing.T) {
+    testing.expect(t, !in_fov_cone(0,0,0,0, .Right, 5), "manhattan=0 out")
+    testing.expect(t, in_fov_cone(0,0,5,0, .Right, 5), "Exactly max_range in")
+    testing.expect(t, !in_fov_cone(0,0,6,0, .Right, 5), "Over max_range out")
+}
+
+@(test)
+test_has_clear_los_basic :: proc(t: ^testing.T) {
+    allocator := context.allocator
+    size := vec2i{6, 6}
+    grid := grid_create(size, allocator)
+    defer {
+        delete(grid.tiles, allocator)
+        delete(grid.weapons)
+        free(grid, allocator)
+    }
+
+    // All open grid
+    for &tile in grid.tiles { tile.flags = {} }
+
+    testing.expect(t, has_clear_los(grid^, 0,0,0,0), "Self always true")
+    testing.expect(t, has_clear_los(grid^, 0,0,5,0), "Straight horizontal clear")
+    testing.expect(t, has_clear_los(grid^, 0,0,0,5), "Straight vertical clear")
+    testing.expect(t, has_clear_los(grid^, 0,0,3,3), "Diagonal clear")
+    testing.expect(t, has_clear_los(grid^, 0,0,2,5), "Steep diagonal clear")
+
+    // Add block in straight line
+    grid_set_flags(grid, vec2i{2,0}, {.Wall})
+    testing.expect(t, !has_clear_los(grid^, 0,0,5,0), "Blocked horizontal false")
+
+    // Block on diagonal
+    grid_set_flags(grid, vec2i{1,1}, {.Obstacle})
+    testing.expect(t, !has_clear_los(grid^, 0,0,3,3), "Blocked diagonal false")
+
+    // End on block? (skips end, so if target open, but intermediate blocked already tested)
+    grid_set_flags(grid, vec2i{5,0}, {.Wall})  // But since we skip end, and previous block already fails
+}
+
+@(test)
+test_has_clear_los_edge_cases :: proc(t: ^testing.T) {
+    allocator := context.allocator
+    size := vec2i{3, 3}
+    grid := grid_create(size, allocator)
+    defer {
+        delete(grid.tiles, allocator)
+        delete(grid.weapons)
+        free(grid, allocator)
+    }
+
+    for &tile in grid.tiles { tile.flags = {} }
+
+    // Adjacent
+    testing.expect(t, has_clear_los(grid^, 0,0,1,0), "Adjacent horizontal clear (no intermediate)")
+
+    // Block on start/end skipped
+    grid_set_flags(grid, vec2i{0,0}, {.Wall})  // Start blocked, but skipped
+    grid_set_flags(grid, vec2i{2,2}, {.Wall})  // End blocked, skipped
+    testing.expect(t, has_clear_los(grid^, 0,0,2,2), "Diagonal with start/end blocked but intermediates clear")
+
+    // Single intermediate block
+    grid_set_flags(grid, vec2i{1,1}, {.Wall})
+    testing.expect(t, !has_clear_los(grid^, 0,0,2,2), "Diagonal with intermediate block false")
+}
+
+@(test)
+test_can_see_target_combined :: proc(t: ^testing.T) {
+    allocator := context.allocator
+    size := vec2i{6, 6}
+    grid := grid_create(size, allocator)
+    defer {
+        delete(grid.tiles, allocator)
+        delete(grid.weapons)
+        free(grid, allocator)
+    }
+
+    for &tile in grid.tiles { tile.flags = {} }
+
+    viewer_pos := vec2i{0,0}
+    viewer_facing := Direction.Right
+    target_pos := vec2i{5,2}
+
+    // Clear LOS + in cone
+    testing.expect(t, can_see_target(grid^, viewer_pos, viewer_facing, target_pos), "In cone + clear LOS true")
+
+    // Out of cone
+    out_cone := vec2i{5,6}  // Steep
+    testing.expect(t, !can_see_target(grid^, viewer_pos, viewer_facing, out_cone), "Out of cone false")
+
+    // In cone but blocked
+    grid_set_flags(grid, vec2i{3,1}, {.Wall})  // On approx path to {5,2}
+    testing.expect(t, !can_see_target(grid^, viewer_pos, viewer_facing, target_pos), "In cone but blocked LOS false")
+
+    // Different facing
+    testing.expect(t, !can_see_target(grid^, viewer_pos, .Left, target_pos), "Wrong facing false")
+
+    // Self
+    testing.expect(t, !can_see_target(grid^, viewer_pos, viewer_facing, viewer_pos), "Self false (manhattan=0)")
+
+    // Range limit
+    far := vec2i{13,0}
+    testing.expect(t, !can_see_target(grid^, viewer_pos, viewer_facing, far, 12), "Beyond range false")
+}

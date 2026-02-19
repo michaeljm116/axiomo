@@ -653,18 +653,18 @@ Bee_Becomes_Alerted_When_Player_Performs_Double_Move :: proc(t: ^testing.T) {
     // Set up player position and movement parameters
     original_pos := battle.player.pos
     move_dir := vec2i{1, 0} // Move right
-    
+
     // Check if the double move destination is valid (as done in move_player)
     double_move_dest := original_pos + 2 * move_dir
     testing.expect(t, game.path_in_bounds(double_move_dest, battle.grid^), "Double move destination should be in bounds")
-    
+
     // Simulate the actual move_player logic for double move
     if game.path_in_bounds(double_move_dest, battle.grid^) {
         // Set player target and flags as move_player would
         battle.player.target = double_move_dest
         battle.player.anim_flag = game.AnimationFlag.Run
         battle.player.added += {.Animate}
-        
+
         // This is the key part - call alert_all_bees as move_player does
         game.alert_all_bees(battle)
     }
@@ -681,7 +681,7 @@ Bee_Becomes_Alerted_When_Player_Performs_Double_Move :: proc(t: ^testing.T) {
     // Verify the double move actually triggered alerting
     testing.expect(t, battle.player.target == double_move_dest, "Player target should be set to double move destination")
     testing.expect(t, game.AnimationFlag.Run == battle.player.anim_flag, "Player should have run animation flag")
-    
+
     // All bees should now be alerted after the double move
     for &bee in battle.bees {
         testing.expect(t, .Alert in bee.flags, "All bees should be alerted after player double move")
@@ -724,7 +724,7 @@ Bee_Becomes_Alerted_When_Bee_And_Player_Occupy_Same_Tile :: proc(t: ^testing.T) 
     // Verify the same-tile alerting worked correctly
     testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted when occupying same tile as player")
     testing.expect(t, battle.bees[0].pos == battle.player.pos, "Alerted bee should be on same tile as player")
-    
+
     // Verify selective alerting - only bees on same tile get alerted
     testing.expect(t, .Alert not_in battle.bees[1].flags, "Bee on different tile should not be alerted")
     testing.expect(t, battle.bees[1].pos != battle.player.pos, "Non-alerted bee should be on different tile")
