@@ -21,6 +21,7 @@ kanban-plugin: board
 ## In Progress
 
 - [ ] Line of Sight
+- [ ] Visual Grid
 
 
 ## Complete

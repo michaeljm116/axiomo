@@ -80,10 +80,10 @@ battle_turn_start_visibility :: proc(btl: ^Battle) {
     for &bee in btl.bees {
         if .Dead in bee.flags { continue }
         if can_see_target(btl.grid^, btl.player.pos, btl.player.facing, bee.pos){ bee.added += {.PlayerSeesMe}
-            log.info("Player sees Bee ", bee.name)
+            fmt.println("You face: ", btl.player.facing, " and see Bee: ", bee.name,)
         }
         if can_see_target(btl.grid^, bee.pos, bee.facing, btl.player.pos){ bee.added += {.ISeePlayer}
-            log.info("Bee ", bee.name, " sees Player")
+            fmt.println("Bee: ", bee.name, " face: ", bee.facing, " and see's you: ")
         }
     }
 }

@@ -2,7 +2,7 @@
 :: Build (and optionally run, debug, or attach) the game.
 set OUT_DIR=build\debug
 if not exist %OUT_DIR% mkdir %OUT_DIR%
-odin build src\main -debug -extra-linker-flags:"-DEFAULTLIB:ucrt.lib -DEFAULTLIB:msvcrt.lib -NODEFAULTLIB:libucrt.lib -NODEFAULTLIB:libcmt.lib" -out:%OUT_DIR%\axiomo_debug.exe
+odin build src\main -debug -subsystem:console -extra-linker-flags:"-DEFAULTLIB:ucrt.lib -DEFAULTLIB:msvcrt.lib -NODEFAULTLIB:libucrt.lib -NODEFAULTLIB:libcmt.lib" -out:%OUT_DIR%\axiomo_debug.exe
 ::odin build src\main -debug -subsystem:windows -extra-linker-flags:"-DEFAULTLIB:ucrt.lib -DEFAULTLIB:msvcrt.lib -NODEFAULTLIB:libucrt.lib -NODEFAULTLIB:libcmt.lib" -out:%OUT_DIR%\axiomo_debug.exe
 build\rcedit-x64.exe %OUT_DIR%\axiomo_debug.exe --set-icon assets/bird.ico
 IF %ERRORLEVEL% NEQ 0 exit /b 1
@@ -47,6 +47,16 @@ if "%~1"=="" (
     echo Usage: %~nx0 [run^|rad^|attach]
     exit /b 0
 )
+:: ---- New: Zed-friendly run mode ----
+if "%~1"=="run_zed" (
+    echo [Zed] Starting debug build in current terminal...
+    pushd %OUT_DIR%
+    axiomo_debug.exe
+    popd
+    echo [Zed] Debug session ended. Press any key to close...
+    pause >nul
+    exit /b 0
+)
 
 if "%~1"=="run" (
     echo Running axiomo_debug.exe...
@@ -56,12 +66,20 @@ if "%~1"=="run" (
     exit /b 0
 )
 
+set "RADDBG=c:dev/raddbg/raddbg.exe"
+
 if "%~1"=="rad" (
-    set "RADDBG=c:dev/raddbg/raddbg.exe"
     echo Launching new RAD Debugger session for axiomo_reload.exe...
-
     "c:/dev/raddbg/raddbg.exe" "%OUT_DIR%\axiomo_debug.exe"
-
     popd
+    exit /b 0
+)
+
+if "%~1"=="rad_console" (
+    echo Building debug with console subsystem for RAD output...
+    odin build src\main -debug -subsystem:console -extra-linker-flags:"-DEFAULTLIB:ucrt.lib -DEFAULTLIB:msvcrt.lib -NODEFAULTLIB:libucrt.lib -NODEFAULTLIB:libcmt.lib" -out:%OUT_DIR%\axiomo_debug_console.exe
+    :: Copy assets, dlls, etc. same as before...
+    echo Launching RAD Debugger with console-enabled exe...
+    "%RADDBG%" "%OUT_DIR%\axiomo_debug_console.exe"
     exit /b 0
 )

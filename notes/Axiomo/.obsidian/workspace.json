@@ -1,55 +1,56 @@
 {
   "main": {
-    "id": "b47a6f1070f52c0c",
+    "id": "cf8de7216fa81caf",
     "type": "split",
     "children": [
       {
-        "id": "bac501f670c3d87b",
+        "id": "71b09e051a9734d3",
         "type": "tabs",
         "children": [
           {
-            "id": "8880c06db2b2ecd1",
+            "id": "dbcd27ce01f742d2",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/February 18, 2026, Wed.md",
+                "file": "DailyNotes/February 19, 2026, Thu.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "February 18, 2026, Wed"
+              "title": "February 19, 2026, Thu"
             }
           },
           {
-            "id": "b6d182e23bb408f7",
+            "id": "428e6cd18bb93272",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Code/Architecture - Again.md",
+                "file": "BeeKillingsInn/Production/Mechanics/Visual Grid.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Architecture - Again"
+              "title": "Visual Grid"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
   },
   "left": {
-    "id": "5b6355ad2bd4a286",
+    "id": "8dc7d11b5b037166",
     "type": "split",
     "children": [
       {
-        "id": "ffeaeabc1f3898d0",
+        "id": "c2398f4aab40b7f3",
         "type": "tabs",
         "children": [
           {
-            "id": "18d3cae5fbb5e952",
+            "id": "ba34b9fe5af2d42a",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -62,7 +63,7 @@
             }
           },
           {
-            "id": "f143aa4eca9adcb6",
+            "id": "5eab7f65008f0f36",
             "type": "leaf",
             "state": {
               "type": "search",
@@ -79,7 +80,7 @@
             }
           },
           {
-            "id": "073c11c502cd12a1",
+            "id": "194d7883434421a8",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -92,23 +93,24 @@
       }
     ],
     "direction": "horizontal",
-    "width": 288.5
+    "width": 200,
+    "collapsed": true
   },
   "right": {
-    "id": "954f4e27756410bd",
+    "id": "c0dba331d38e27d5",
     "type": "split",
     "children": [
       {
-        "id": "873a1b9f6d057510",
+        "id": "9bb4e3564552658c",
         "type": "tabs",
         "children": [
           {
-            "id": "d5e880626cd30ae9",
+            "id": "923f204407f601b0",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Game Jam - 20 games challenge - JJ.md",
+                "file": "DailyNotes/February 19, 2026, Thu.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,25 +120,25 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Game Jam - 20 games challenge - JJ"
+              "title": "Backlinks for February 19, 2026, Thu"
             }
           },
           {
-            "id": "07b226ba04613c43",
+            "id": "53b2c3e3f1c2a053",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Game Jam - 20 games challenge - JJ.md",
+                "file": "DailyNotes/February 19, 2026, Thu.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Game Jam - 20 games challenge - JJ"
+              "title": "Outgoing links from February 19, 2026, Thu"
             }
           },
           {
-            "id": "50ee1f8bfe87ec08",
+            "id": "cca6cf26b7606012",
             "type": "leaf",
             "state": {
               "type": "tag",
@@ -151,18 +153,18 @@
             }
           },
           {
-            "id": "dc51959c10fd51f5",
+            "id": "945c897203d9474b",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
-                "file": "Game Jam - 20 games challenge - JJ.md",
+                "file": "DailyNotes/February 19, 2026, Thu.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Game Jam - 20 games challenge - JJ"
+              "title": "Outline of February 19, 2026, Thu"
             }
           }
         ]
@@ -174,81 +176,28 @@
   },
   "left-ribbon": {
     "hiddenItems": {
-      "bases:Create new base": false,
       "switcher:Open quick switcher": false,
       "graph:Open graph view": false,
       "canvas:Create new canvas": false,
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
+      "bases:Create new base": false,
       "obsidian-excalidraw-plugin:New drawing": false,
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "8880c06db2b2ecd1",
+  "active": "428e6cd18bb93272",
   "lastOpenFiles": [
-<<<<<<< HEAD
-    "DailyNotes/February 18, 2026, Wed.md",
-    "DailyNotes/February 16, 2026, Mon.md",
-    "BeeKillingsInn/Production/Mechanics/Untitled.md",
+    "05_Clash2.webp",
+    "09_Capes.webp",
+    "tales-tactics.avif",
+    "DailyNotes/February 19, 2026, Thu.md",
+    "BeeKillingsInn/Production/Mechanics/Visual Grid.md",
     "BeeKillingsInn/Production/!kb_Mechanics.md",
-    "BeeKillingsInn/Production/!kb_Showcase.md",
-    "BeeKillingsInn/GameDesign/!!! Rules !!!.md",
-    "BeeKillingsInn/Production/Mechanics/Action - Attack.md",
-    "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
-    "BeeKillingsInn/Production/Mechanics/Run.md",
     "BeeKillingsInn/Production/!kb_Kanban.md",
-=======
     "DailyNotes/February 16, 2026, Mon.md",
     "DailyNotes/February 18, 2026, Wed.md",
-    "DailyNotes/February 17, 2026, Tue.md",
-    "BeeKillingsInn/Production/!kb_Kanban.md",
-    "BeeKillingsInn/Production/Mechanics/Run.md",
->>>>>>> 21eac43e4d458eb2e5411b36a2ef8feb8767f350
-    "DailyNotes/February 11, 2026, Wed.md",
-    "DailyNotes/February 14, 2026, Sat.md",
-    "DailyNotes/February 10, 2026, Tue.md",
-    "DailyNotes/February 07, 2026, Sat.md",
-    "DailyNotes/February 06, 2026, Fri.md",
-    "DailyNotes/February 09, 2026, Mon.md",
-    "BeeKillingsInn/Code/Architecture - Again.md",
-    "BeeKillingsInn/Code/Architecture.md",
-    "BeeKillingsInn/Code/Refactor.md",
-    "BeeKillingsInn/Code/Physics.md",
-    "BeeKillingsInn/Code/Visualizations!.md",
-    "Untitled.base",
-    "Untitled.md",
-    "Excalidraw/VES Diagram.md",
-    "Excalidraw/Refactor.md",
-    "Excalidraw/VES.canvas",
-    "Excalidraw/Untitled.canvas",
-    "Excalidraw/VES.md",
-    "Excalidraw/AnimationStates.excalidraw.md",
-<<<<<<< HEAD
-=======
-    "Excalidraw/Architecture.md",
-    "Excalidraw/Memory.md",
-    "Excalidraw/PlayersTUrn.excalidraw.md",
-    "Excalidraw/Arenas.md",
->>>>>>> 21eac43e4d458eb2e5411b36a2ef8feb8767f350
-    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143017.png",
-    "BeeKillingsInn/Production/Mechanics",
-    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143121.png",
-    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151208.png",
-    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119151050.png",
-    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143937.png",
-    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143455.png",
-    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143326.png",
-    "BeeKillingsInn/Art/UIInspo/Pasted image 20260119143138.png",
-    "Pasted image 20260124191542.png",
-    "Pasted image 20260124190313.png",
-    "BeeKillingsInn/Art/UIInspo",
-    "DailyNotes/December",
-    "Untitled 1.base",
-    "BeeKillingsInn/Story",
-    "BeeKillingsInn/GameDesign",
-    "BeeKillingsInn/QA",
-    "BeeKillingsInn/Production",
-    "BeeKillingsInn/Code"
+    "DailyNotes/February 20, 2026, Fri.md"
   ]
 }

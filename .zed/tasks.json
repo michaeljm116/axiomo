@@ -7,30 +7,44 @@
     "allow_concurrent_runs": false,
     "reveal": "always",
     "hide": "never",
-    "show_summary": true
+    "show_summary": true,
   },
   {
     "label": "Run",
-    "command": "./build_debug.bat run",
-    "args": ["rad"],
-    "use_new_terminal": false,
-    "allow_concurrent_runs": true,
+    "command": "./build_debug.bat run_zed",
+    "args": ["run_zed"],
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false,
     "reveal": "always",
     "hide": "never",
-    "show_summary": true
+    "show_summary": true,
   },
   {
     "label": "RadDebug",
     "command": "./build_debug.bat rad",
-    "args": [],
-    "use_new_terminal": false
+    "args": ["rad_console"], // ← new arg to tell bat to use console mode
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "hide": "never",
+    "show_summary": true,
   },
   {
     "label": "HotReload",
     "command": "./build_hot_reload.bat",
     "args": [],
-    "use_new_terminal": false
-  }
+    "use_new_terminal": false,
+  },
+  {
+    "label": "Compile Raytrace Shader",
+    "command": "cmd /c \"cd /d C:\\dev\\axiomo\\assets\\shaders && .\\raytraceCompile.bat\"",
+    "args": [],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "hide": "never",
+    "show_summary": true,
+  },
   // {
   //     "label": "Test",
   //     "command": "odin test src/test -debug -define:ODIN_TEST_THREADS=1",

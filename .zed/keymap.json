@@ -21,7 +21,7 @@
     {
       "context": "Workspace",
       "bindings": {
-        "f7": ["task::Spawn", { "task_name": "HotReload" }]
+        "f7": ["task::Spawn", { "task_name": "Compile Raytrace Shader" }]
       }
     },
   {
