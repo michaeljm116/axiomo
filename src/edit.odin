@@ -314,29 +314,29 @@ handle_battle_cheat_mode :: proc()
     if !battle_cheat_mode do return
 
     // WASD controls for grid texture
-    cell_speed :: vec2f{0.05, 0.05}
-    line_speed :: 0.1
+    cell_speed :: vec2f{0.02, 0.02}
+    line_speed :: 0.2
     if is_key_pressed(glfw.KEY_W) {
-        g.battle.grid.texture.cell_size.x = min(5.0, g.battle.grid.texture.cell_size.x + cell_speed.x)
-        g.battle.grid.texture.cell_size.y = min(5.0, g.battle.grid.texture.cell_size.y + cell_speed.y)
+        if is_key_pressed(glfw.KEY_LEFT_SHIFT) do g.battle.grid.texture.cell_size.x = min(15.0, g.battle.grid.texture.cell_size.x + cell_speed.x)
+        else do g.battle.grid.texture.cell_size.y = min(15.0, g.battle.grid.texture.cell_size.y + cell_speed.y)
         grid_texture_sync_to_gpu(&g.battle.grid.texture)
         fmt.printf("cell_size: %v\n", g.battle.grid.texture.cell_size)
     }
     if is_key_pressed(glfw.KEY_S) {
-        g.battle.grid.texture.cell_size.x = max(1.0, g.battle.grid.texture.cell_size.x - cell_speed.x)
-        g.battle.grid.texture.cell_size.y = max(1.0, g.battle.grid.texture.cell_size.y - cell_speed.y)
+        if is_key_pressed(glfw.KEY_LEFT_SHIFT) do g.battle.grid.texture.cell_size.x = max(0.01, g.battle.grid.texture.cell_size.x - cell_speed.x)
+        else do g.battle.grid.texture.cell_size.y = max(0.01, g.battle.grid.texture.cell_size.y - cell_speed.y)
         grid_texture_sync_to_gpu(&g.battle.grid.texture)
         fmt.printf("cell_size: %v\n", g.battle.grid.texture.cell_size)
     }
     if is_key_pressed(glfw.KEY_D) {
-        g.battle.grid.texture.line_thickness = min(255.0, g.battle.grid.texture.line_thickness + line_speed)
+        g.battle.grid.texture.line_thickness = min(10.0, g.battle.grid.texture.line_thickness + line_speed)
         grid_texture_sync_to_gpu(&g.battle.grid.texture)
-        fmt.printf("line_thickness: %.0f\n", g.battle.grid.texture.line_thickness)
+        fmt.printf("line_thickness: %.1f\n", g.battle.grid.texture.line_thickness)
     }
     if is_key_pressed(glfw.KEY_A) {
         g.battle.grid.texture.line_thickness = max(0.0, g.battle.grid.texture.line_thickness - line_speed)
         grid_texture_sync_to_gpu(&g.battle.grid.texture)
-        fmt.printf("line_thickness: %.0f\n", g.battle.grid.texture.line_thickness)
+        fmt.printf("line_thickness: %.1f\n", g.battle.grid.texture.line_thickness)
     }
 
     if is_key_just_pressed(glfw.KEY_SPACE) {

@@ -487,7 +487,7 @@ grid_texture_sync_to_gpu :: proc(gt: ^GridTexture) {
     data_texture_set({0, 1}, {u8(gt.size.y), 0, 0, 0})
     data_texture_set({0, 2}, {u8(gt.cell_size.x), 0, 0, 0})
     data_texture_set({0, 3}, {u8(gt.cell_size.y), 0, 0, 0})
-    data_texture_set({0, 4}, {u8(gt.line_thickness * 255.0), 0, 0, 0})
+    data_texture_set({0, 4}, {u8(gt.line_thickness), 0, 0, 0})
     data_texture_set({0, 5}, {gt.line_color[0], gt.line_color[1], gt.line_color[2], gt.line_color[3]})
     data_texture_update()
 }
