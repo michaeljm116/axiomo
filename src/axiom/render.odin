@@ -2401,8 +2401,9 @@ map_materials_to_gpu :: proc(alloc : mem.Allocator)
 			reflective = m.reflective,
 			roughness = m.roughness,
 			transparency = m.transparency,
-			refractive_index = m.refractive_index,
-			texture_id = g_texture_indexes[m.texture]
+			// refractive_index = m.refractive_index,
+			texture_id = g_texture_indexes[m.texture],
+			flags = m.flags
 		}
         g_raytracer.materials[i] = gpu_mat
 	}
@@ -2736,8 +2737,9 @@ update_material :: proc(id: i32) {
     g_raytracer.materials[id].reflective = m.reflective
     g_raytracer.materials[id].roughness = m.roughness
     g_raytracer.materials[id].transparency = m.transparency
-    g_raytracer.materials[id].refractive_index = m.refractive_index
+    // g_raytracer.materials[id].refractive_index = m.refractive_index
     g_raytracer.materials[id].texture_id = g_texture_indexes[m.texture]
+    g_raytracer.materials[id].flags = m.flags
     gpu.vbuffer_update(&g_raytracer.compute.storage_buffers.materials, &g_renderbase.vma_allocator, g_raytracer.materials[:])
 }
 

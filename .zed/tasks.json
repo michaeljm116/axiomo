@@ -13,7 +13,7 @@
     "label": "Run",
     "command": "./build_debug.bat run_zed",
     "args": ["run_zed"],
-    "use_new_terminal": true,
+    "use_new_terminal": false,
     "allow_concurrent_runs": false,
     "reveal": "always",
     "hide": "never",

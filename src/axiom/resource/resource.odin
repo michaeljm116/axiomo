@@ -78,6 +78,7 @@ Material :: struct{
     refractive_index : f32,
     texture_id : i32,
     unique_id : i32,
+    flags : u32,
     texture : string,
     name : string
 }
@@ -367,6 +368,8 @@ load_materials :: proc(file : string, materials : ^[dynamic]Material)
         for i in 1..<len(temp_mat.name) {
             temp_mat.unique_id *= i32(temp_mat.name[i]) + i32(temp_mat.name[i - 1])
         }
+        temp_mat.flags = xml2.get_u32_attr(doc, mat_id, "Flags")
+
         append(materials, temp_mat)
     }
 }

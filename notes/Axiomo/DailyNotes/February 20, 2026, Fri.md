@@ -1,6 +1,7 @@
 so right now im ONLY asking about the idea of using a bitset in glsl and if something liek that is feesable and like how to do that in glsl syntax ill do the grid stuff later
 Yes, using a bitset/flags approach is completely feasible in GLSL and is a common pattern. Here's how:
 Syntax in GLSL:
+```glsl
 // Define flags as bit shifts
 #define MATERIAL_FLAG_GRID     (1u << 0)
 #define MATERIAL_FLAG_EMISSION  (1u << 1)
@@ -21,6 +22,7 @@ if ((f_mat.flags & MATERIAL_FLAG_GRID) != 0u) {
 }
 // Set flags
 f_mat.flags = MATERIAL_FLAG_GRID | MATERIAL_FLAG_EMISSION;
+```
 Key points:
 - Use uint for flags (32 bits = 32 possible flags)
 - Use 1u << n for individual bits (the u suffix makes it unsigned)

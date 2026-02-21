@@ -102,7 +102,7 @@ vec3 closest_hit_basic(HitInfo info, Ray ray, inout finalmaterial f_mat) {
 
     f_mat.color = color.xyz;
     f_mat.reflection = mat.reflective;
-    f_mat.refraction = mat.refractiveIndex;
+    f_mat.refraction = 0;//mat.refractiveIndex;
     f_mat.transparency = mat.transparency;
 
     return ray_pos;

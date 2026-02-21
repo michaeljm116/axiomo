@@ -20,7 +20,12 @@ get_i32_attr :: proc(doc: ^xml.Document, parent_id: xml.Element_ID, key: string)
     val, ok := strconv.parse_int(v)
     return i32(val)
 }
-
+get_u32_attr :: proc(doc: ^xml.Document, parent_id: xml.Element_ID, key: string) -> u32 {
+    v, f := xml.find_attribute_val_by_key(doc, parent_id, key)
+    if log_if_not_found(f, key) do return 0
+    val, ok := strconv.parse_uint(v)
+    return u32(val)
+}
 log_if_err :: proc(e : xml.Error, loc := #caller_location) -> bool{
     if e != xml.Error.None {
         fmt.eprintln("Error: ", e, " at location : ", loc)

@@ -75,8 +75,8 @@ Material :: struct {
     reflective : f32,
     roughness : f32,
     transparency : f32,
-    refractive_index : f32,
-    texture_id : i32
+    texture_id : i32,
+    flags : u32,
 }
 
 BvhNode :: struct {

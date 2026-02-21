@@ -4,6 +4,11 @@
 #define FLT_MAX 3.402823466e+38
 #define FLT_MIN 1.175494351e-38
 
+#define MATERIAL_FLAG_GRID     (1u << 0)
+#define MATERIAL_FLAG_EMISSION  (1u << 1)
+#define MATERIAL_FLAG_SSS       (1u << 2)
+#define MATERIAL_FLAG_ALPHA_CUT (1u << 3)
+
 struct Ray {
     vec3 o;
     float t;
@@ -62,11 +67,10 @@ struct Shape {
 struct Material {
     vec3 diffuse;
     float reflective;
-
     float roughness;
     float transparency;
-    float refractiveIndex;
     int textureID;
+    uint flags;
 };
 
 struct Light {
