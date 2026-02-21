@@ -3,6 +3,7 @@
 
 #include "normals.glsl"
 #include "pbr.glsl"
+#include "grid.glsl"
 #include "../structs.glsl"
 #include "../constants.glsl"
 #include "../intersect/main-intersect.glsl"
@@ -99,10 +100,12 @@ vec3 closest_hit_basic(HitInfo info, Ray ray, inout finalmaterial f_mat) {
     if (info.prim_type == TYPE_MESH) mat = materials[primitives[info.prim_id].matID];
     vec4 texture = get_texture(info, ray_pos, mat);
     vec4 color = perform_basic_lighting(info, ray_pos, mat, texture);
-
+    if ((mat.flags & MATERIAL_FLAG_GRID) != 0u) {
+        color.rgb = shadeGrid(info, ray_pos, color);
+    }
     f_mat.color = color.xyz;
     f_mat.reflection = mat.reflective;
-    f_mat.refraction = 0;//mat.refractiveIndex;
+    f_mat.refraction = 0; //mat.refractiveIndex;
     f_mat.transparency = mat.transparency;
 
     return ray_pos;
