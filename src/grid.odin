@@ -87,6 +87,7 @@ grid_init_floor :: proc(grid : ^Grid, floor_transform : Cmp_Primitive)
       		// grid_set(grid, x,y, Tile{center = center})
 	    }
     }
+    grid_texture_init(grid, 36, {0,255,255,255})
 }
 
 grid_set :: proc{grid_set_i16, grid_set_vec2i}

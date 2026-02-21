@@ -152,6 +152,7 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
     switch state
     {
         case .Start:
+            data_texture_update()
             refresh_player_reachability(grid, player.pos)
             battle_turn_start_visibility(battle)
         	if check_end_condition(battle) do break

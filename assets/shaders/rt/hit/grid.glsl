@@ -17,15 +17,25 @@ struct GridInfo
 
 GridInfo getGridInfo()
 {
+    float texelSize = 1.0 / 256.0;
+    vec2 uv00 = vec2(texelSize * 0.5);
+    vec2 uv01 = vec2(texelSize * 0.5, texelSize * 1.5);
+
+    vec4 pixel_00 = texture(data_texture, uv00);
+    vec4 pixel_01 = texture(data_texture, uv01);
+
     GridInfo info;
-    info.size = data_texture[0].rg
-    info.cell_size = data_texture[0].b
-    info.line_thickness = data_texture[0].a
-    info.line_color = data_texture[1].rgba
+    info.size = ivec2(pixel_00.rg);
+    info.cell_size = pixel_00.b / 25.0;
+    info.line_thickness = pixel_00.a / 1000.0;
+    info.line_color = pixel_01;
+    return info;
 }
 
 vec3 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color)
 {
+    GridInfo grid = getGridInfo();
+
     // ---- Build tangent basis from normal ----
     vec3 N = normalize(info.normal);
 
@@ -42,22 +52,25 @@ vec3 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color)
 
     vec2 coord = vec2(u, v);
 
-    // ---- Grid settings ----
-    float cellSize = 1.0;
-    float lineWidth = 0.03;
+    // ---- Grid settings from texture ----
+    coord /= grid.cell_size;
 
-    coord /= cellSize;
+    // ---- Sample cell color from texture ----
+    // Grid cells start at texture (1, 0)
+    float texelSize = 1.0 / 256.0;
+    vec2 cellBase = vec2(1.0, 0.0) + 0.5;
+    vec2 cellUV = (floor(coord) + cellBase) * texelSize;
+    cellUV = clamp(cellUV, texelSize * 0.5, 1.0 - texelSize * 0.5);
+    vec3 cellColor = texture(data_texture, cellUV).rgb;
 
     // ---- Core grid math ----
-    vec2 grid = abs(fract(coord) - 0.5);
+    vec2 gridCoord = abs(fract(coord) - 0.5);
 
-    float line = min(grid.x, grid.y);
+    float line = min(gridCoord.x, gridCoord.y);
 
-    float mask = step(line, lineWidth);
+    float mask = step(line, grid.line_thickness);
 
-    vec3 lineColor = vec3(0.9);
-
-    return mix(color.rgb, lineColor, mask);
+    return mix(mix(cellColor, color.rgb, 0.5), grid.line_color.rgb, mask * grid.line_color.a);
 }
 
 #endif

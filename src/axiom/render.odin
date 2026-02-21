@@ -1015,6 +1015,13 @@ transition_image_layout :: proc(image: vk.Image, format: vk.Format, old_layout: 
         barrier.dstAccessMask = {.TRANSFER_WRITE}
         src_stage = {.TOP_OF_PIPE}
         dst_stage = {.TRANSFER}
+
+    } else if old_layout == .SHADER_READ_ONLY_OPTIMAL && new_layout == .TRANSFER_DST_OPTIMAL {
+        barrier.srcAccessMask = {.SHADER_READ}
+        barrier.dstAccessMask = {.TRANSFER_WRITE}
+        src_stage = {.FRAGMENT_SHADER}
+        dst_stage = {.TRANSFER}
+
     } else if old_layout == .TRANSFER_DST_OPTIMAL && new_layout == .SHADER_READ_ONLY_OPTIMAL {
         barrier.srcAccessMask = {.TRANSFER_WRITE}
         barrier.dstAccessMask = {.SHADER_READ}

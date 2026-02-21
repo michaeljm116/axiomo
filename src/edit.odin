@@ -313,6 +313,34 @@ handle_battle_cheat_mode :: proc()
     }
     if !battle_cheat_mode do return
 
+    // WASD controls for grid texture
+    cell_speed :: 0.1
+    line_speed :: 0.02
+    if is_key_pressed(glfw.KEY_W) {
+        g.battle.grid.texture.cell_size += cell_speed
+        grid_texture_sync_to_gpu(&g.battle.grid.texture)
+        data_texture_update()
+        fmt.printf("cell_size: %.3f\n", g.battle.grid.texture.cell_size)
+    }
+    if is_key_pressed(glfw.KEY_S) {
+        g.battle.grid.texture.cell_size = max(0.1, g.battle.grid.texture.cell_size - cell_speed)
+        grid_texture_sync_to_gpu(&g.battle.grid.texture)
+        data_texture_update()
+        fmt.printf("cell_size: %.3f\n", g.battle.grid.texture.cell_size)
+    }
+    if is_key_pressed(glfw.KEY_D) {
+        g.battle.grid.texture.line_thickness += line_speed
+        grid_texture_sync_to_gpu(&g.battle.grid.texture)
+        data_texture_update()
+        fmt.printf("line_thickness: %.3f\n", g.battle.grid.texture.line_thickness)
+    }
+    if is_key_pressed(glfw.KEY_A) {
+        g.battle.grid.texture.line_thickness = max(0.001, g.battle.grid.texture.line_thickness - line_speed)
+        grid_texture_sync_to_gpu(&g.battle.grid.texture)
+        data_texture_update()
+        fmt.printf("line_thickness: %.3f\n", g.battle.grid.texture.line_thickness)
+    }
+
     if is_key_just_pressed(glfw.KEY_SPACE) {
         // g.ves.curr_screen = .None
         // g.battle.input_state = .Attacking
