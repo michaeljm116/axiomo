@@ -192,3 +192,18 @@ game_controller_move_axis :: #force_inline proc() -> MoveAxis {
 game_controller_is_running :: #force_inline proc() -> bool {
     return game_controller_held(.Run) || game_controller_pressed(.Run)
 }
+
+data_texture_set :: proc(pos: vec2i, pixel: [4]byte)
+{
+   axiom.data_texture_set(axiom.g_raytracer.data_texture, pos, pixel)
+}
+
+data_texture_get :: proc(pos: vec2i) -> [4]byte
+{
+   return axiom.data_texture_get(axiom.g_raytracer.data_texture, pos)
+}
+
+data_texture_update :: proc()
+{
+    axiom.data_texture_upload(axiom.g_raytracer.data_texture)
+}
