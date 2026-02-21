@@ -20,6 +20,20 @@
               "icon": "lucide-file",
               "title": "February 19, 2026, Thu"
             }
+          },
+          {
+            "id": "428e6cd18bb93272",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "DailyNotes/February 20, 2026, Fri.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "February 20, 2026, Fri"
+            }
           }
         ]
       }
