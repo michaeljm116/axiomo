@@ -46,7 +46,7 @@ layout(std430, binding = 10) buffer BvhNodes {
     BVHNode bvhNodes[];
 };
 
-layout(binding = 11) uniform sampler2D guiTest[5];
+layout(binding = 11) uniform sampler2D data_texture;
 
 layout(binding = 12) uniform sampler2D bindless_textures[];
 

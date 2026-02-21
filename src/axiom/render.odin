@@ -1080,6 +1080,9 @@ copy_buffer_to_image :: proc(buffer: vk.Buffer, image: vk.Image, width, height: 
     end_single_time_commands(&command_buffer)
 }
 
+//----------------------------------------------------------------------------\\
+// /TEXTURE /TX
+//----------------------------------------------------------------------------\\
 // Texture struct and related procedures
 Texture :: struct {
     image: vk.Image,
@@ -1229,7 +1232,95 @@ texture_update_descriptor :: proc(texture: ^Texture) {
     }
 }
 
+//----------------------------------------------------------------------------\\
+// /DATATEXTURE /DTX
+//----------------------------------------------------------------------------\\
+DATA_TEXTURE_SIZE :: 32
+DataTexture :: struct{
+    texture: Texture,
+    pixels: [^]byte,
+    staging_buffer:vk.Buffer,
+    staging_allocation: vma.Allocation,
+}
 
+
+data_texture_create :: proc(alloc: mem.Allocator) -> ^DataTexture {
+    data_texture := new(DataTexture)
+    data_texture.texture.height = DATA_TEXTURE_SIZE
+    data_texture.texture.width = DATA_TEXTURE_SIZE
+    data_texture.pixels = make([^]byte, DATA_TEXTURE_SIZE * DATA_TEXTURE_SIZE * 4, alloc)
+
+    // Create texture with default white
+    ok := texture_create_w_pixels(&data_texture.texture, data_texture.pixels)
+    if !ok do log.panic("ERROR CREATING DATA TEXTURE")
+
+    // Create persistent staging buffer
+    buffer_size := (DATA_TEXTURE_SIZE * DATA_TEXTURE_SIZE * 4)
+    staging_buffer_info := vk.BufferCreateInfo {
+        sType = .BUFFER_CREATE_INFO,
+        size = vk.DeviceSize(buffer_size),
+        usage = {.TRANSFER_SRC},
+        sharingMode = .EXCLUSIVE,
+    }
+    staging_alloc_info := vma.AllocationCreateInfo {
+        flags = {.HOST_ACCESS_SEQUENTIAL_WRITE},
+        usage = .AUTO,
+    }
+    result := vma.CreateBuffer(g_renderbase.vma_allocator, &staging_buffer_info, &staging_alloc_info, &data_texture.staging_buffer, &data_texture.staging_allocation, nil)
+    if result != .SUCCESS {
+        log.error("Failed to create data texture staging buffer!")
+    }
+
+    return data_texture
+}
+
+
+data_texture_set :: proc(dt: ^DataTexture, pos: vec2i, pixel: [4]byte) {
+    assert(pos.x >= 0 && pos.x < i32(DATA_TEXTURE_SIZE) && pos.y >= 0 && pos.y < i32(DATA_TEXTURE_SIZE))
+    idx := (pos.y * DATA_TEXTURE_SIZE + pos.x) * 4
+    dt.pixels[idx + 0] = pixel[0]  // R
+    dt.pixels[idx + 1] = pixel[1]  // G
+    dt.pixels[idx + 2] = pixel[2]  // B
+    dt.pixels[idx + 3] = pixel[3]  // A
+}
+
+data_texture_get :: proc(dt : ^DataTexture, pos : vec2i) -> [4]byte
+{
+    assert(pos.x >= 0 && pos.x < i32(DATA_TEXTURE_SIZE) && pos.y >= 0 && pos.y < i32(DATA_TEXTURE_SIZE))
+    return dt.pixels[pos.y * i32(DATA_TEXTURE_SIZE) + pos.x]
+}
+
+data_texture_upload :: proc(dt: ^DataTexture) {
+    // 1. Copy pixels to staging buffer
+    data: rawptr
+    vma.MapMemory(g_renderbase.vma_allocator, dt.staging_allocation, &data)
+    mem.copy(data, dt.pixels, DATA_TEXTURE_SIZE * DATA_TEXTURE_SIZE * 4)
+    vma.UnmapMemory(g_renderbase.vma_allocator, dt.staging_allocation)
+
+    // 2. Transition image to TRANSFER_DST
+    transition_image_layout(dt.texture.image, .R8G8B8A8_UNORM, .SHADER_READ_ONLY_OPTIMAL, .TRANSFER_DST_OPTIMAL)
+
+    // 3. Copy buffer to image
+    region := vk.BufferImageCopy {
+        bufferOffset      = 0,
+        bufferRowLength   = DATA_TEXTURE_SIZE,
+        bufferImageHeight = DATA_TEXTURE_SIZE,
+        imageSubresource  = {{.COLOR}, 0, 0, 1},
+        imageExtent      = {DATA_TEXTURE_SIZE, DATA_TEXTURE_SIZE, 1},
+    }
+
+    cmd := begin_single_time_commands()
+    vk.CmdCopyBufferToImage(cmd, dt.staging_buffer, dt.texture.image, .TRANSFER_DST_OPTIMAL, 1, &region)
+    end_single_time_commands(&cmd)
+
+    // 4. Transition back to SHADER_READ_ONLY
+    transition_image_layout(dt.texture.image, .R8G8B8A8_UNORM, .TRANSFER_DST_OPTIMAL, .SHADER_READ_ONLY_OPTIMAL)
+}
+
+data_texture_destroy :: proc(dt: ^DataTexture) {
+    vma.DestroyBuffer(g_renderbase.vma_allocator, dt.staging_buffer, dt.staging_allocation)
+    texture_destroy(&dt.texture, g_renderbase.device, &g_renderbase.vma_allocator)
+}
 //----------------------------------------------------------------------------\\
 // /TFONT
 //----------------------------------------------------------------------------\\
@@ -1496,7 +1587,7 @@ MAX_LIGHTS :: 32
 MAX_GUIS :: 96
 MAX_NODES :: 2048
 MAX_BINDLESS_TEXTURES :u32= 0
-MAX_TEXTURES :: 1
+MAX_DATA_TEXTURES :: 1
 
 // Update flags for tracking what needs to be updated
 UpdateFlag :: enum {
@@ -1571,9 +1662,9 @@ ComputeRaytracer :: struct {
     //shape_assigner: map[i32][2]int,
 
     compute_texture: Texture,
-    gui_textures: [MAX_TEXTURES]Texture,
+    data_textures: [MAX_DATA_TEXTURES]Texture,
     bindless_textures: [dynamic]Texture,
-
+    data_texture : ^DataTexture,
     compute_write_descriptor_sets: []vk.WriteDescriptorSet,
 
     ordered_prims_map: [dynamic]int,
@@ -1903,7 +1994,7 @@ create_graphics_pipeline :: proc() {
 create_descriptor_pool :: proc() {
     pool_sizes: [5]vk.DescriptorPoolSize
     pool_sizes[0] = { type = .UNIFORM_BUFFER, descriptorCount = 2 }
-    pool_sizes[1] = { type = .COMBINED_IMAGE_SAMPLER, descriptorCount = 3 + MAX_TEXTURES }
+    pool_sizes[1] = { type = .COMBINED_IMAGE_SAMPLER, descriptorCount = 3 + MAX_DATA_TEXTURES }
     pool_sizes[2] = { type = .STORAGE_IMAGE, descriptorCount = 1 }
     pool_sizes[3] = { type = .STORAGE_BUFFER, descriptorCount = 9 }
     pool_sizes[4] = { type = .COMBINED_IMAGE_SAMPLER, descriptorCount = MAX_BINDLESS_TEXTURES }
@@ -1954,7 +2045,7 @@ prepare_compute :: proc() {
     bindings[11] = {
         binding = 11,
         descriptorType = .COMBINED_IMAGE_SAMPLER,
-        descriptorCount = MAX_TEXTURES,
+        descriptorCount = MAX_DATA_TEXTURES,
         stageFlags = { .COMPUTE },
     }
     bindings[12] = {
@@ -2003,10 +2094,10 @@ prepare_compute :: proc() {
     }
     must(vk.AllocateDescriptorSets(g_renderbase.device, &alloc_info, &g_raytracer.compute.descriptor_set))
 
-    // Prepare image infos for gui_textures and bindless_textures
-    texture_image_infos: [MAX_TEXTURES]vk.DescriptorImageInfo
-    for i in 0..<MAX_TEXTURES {
-        texture_image_infos[i] = g_raytracer.gui_textures[i].descriptor
+    // Prepare image infos for texture and bindless_textures
+    texture_image_infos: [MAX_DATA_TEXTURES]vk.DescriptorImageInfo
+    for i in 0..<MAX_DATA_TEXTURES {
+        texture_image_infos[i] = g_raytracer.data_textures[i].descriptor
     }
     bindless_image_infos := make([]vk.DescriptorImageInfo, len(g_raytracer.bindless_textures))
     defer delete(bindless_image_infos)
@@ -2165,7 +2256,7 @@ prepare_compute :: proc() {
         dstSet = g_raytracer.compute.descriptor_set,
         dstBinding = 11,
         dstArrayElement = 0,
-        descriptorCount = MAX_TEXTURES,
+        descriptorCount = MAX_DATA_TEXTURES,
         descriptorType = .COMBINED_IMAGE_SAMPLER,
         pImageInfo = &texture_image_infos[0],
     })
@@ -2474,12 +2565,14 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
     os.file_info_slice_delete(files)
     MAX_BINDLESS_TEXTURES = u32(len(g_raytracer.bindless_textures)) + 1
 
-    // Similarly for gui_textures if needed, but since it's fixed array, perhaps initialize with a default texture or handle differently
-    // For now, assume gui_textures are critical, so check in loop
-    for &t, i in g_raytracer.gui_textures {
+    // Similarly for data_textures if needed, but since it's fixed array, perhaps initialize with a default texture or handle differently
+    // For now, assume data_textures are critical, so check in loop
+    for &t, i in g_raytracer.data_textures {
         t = Texture{path = g_raytracer.texture_paths[i]}
         if !texture_create(&t) do log.errorf("Failed to create GUI texture for path: %s", g_raytracer.texture_paths[i])
     }
+    g_raytracer.data_texture = data_texture_create(alloc)
+    g_raytracer.data_textures[0] = g_raytracer.data_texture.texture
 }
 
 init_staging_buf :: proc(vbuf: ^gpu.VBuffer($T), objects: [dynamic]T, size : int )
@@ -3212,7 +3305,8 @@ cleanup_vulkan :: proc() {
 
     // Destroy textures
     texture_destroy(&g_raytracer.compute_texture, g_renderbase.device, &g_renderbase.vma_allocator)
-    for &tex in g_raytracer.gui_textures do texture_destroy(&tex, g_renderbase.device, &g_renderbase.vma_allocator)
+    // for &tex in g_raytracer.data_textures do texture_destroy(&tex, g_renderbase.device, &g_renderbase.vma_allocator)
+    data_texture_destroy(g_raytracer.data_texture)
     for &tex in g_raytracer.bindless_textures do texture_destroy(&tex, g_renderbase.device, &g_renderbase.vma_allocator)
     texture_destroy(&g_raytracer.font.atlas_texture, g_renderbase.device, &g_renderbase.vma_allocator)
     delete(g_raytracer.font.char_data)
