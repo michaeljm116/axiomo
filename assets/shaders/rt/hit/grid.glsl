@@ -7,6 +7,23 @@
 #include "../constants.glsl"
 #include "../intersect/main-intersect.glsl"
 
+struct GridInfo
+{
+    ivec2 size;
+    float cell_size;
+    float line_thickness;
+    vec4 line_color;
+};
+
+GridInfo getGridInfo()
+{
+    GridInfo info;
+    info.size = data_texture[0].rg
+    info.cell_size = data_texture[0].b
+    info.line_thickness = data_texture[0].a
+    info.line_color = data_texture[1].rgba
+}
+
 vec3 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color)
 {
     // ---- Build tangent basis from normal ----

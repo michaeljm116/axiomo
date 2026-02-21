@@ -47,6 +47,7 @@ Grid :: struct{
     height : i32,
     scale : vec2f,
     weapons : [dynamic]WeaponGrid,
+    texture : GridTexture,
 }
 
 grid_create :: proc(size : [2]i32 , alloc : mem.Allocator , scale := vec2f{1.0, 1.0}) -> ^Grid
@@ -429,10 +430,8 @@ GridTexture :: struct {
     size: vec2i,
     cell_size: f32,
     line_thickness: f32,
-    line_color: [3]u8,
+    line_color: [4]u8,
 }
-
-grid_texture: GridTexture
 
 GridColor :: enum u8 {
     Empty   = 0,
@@ -456,43 +455,43 @@ GRID_COLOR_TABLE := [8][4]u8{
     {255, 255, 255, 255},  // White
 }
 
-grid_texture_init :: proc() {
-    grid_texture.size = {GRID_WIDTH, GRID_HEIGHT}
-    grid_texture.cell_size = 1.0
-    grid_texture.line_thickness = 0.03
-    grid_texture.line_color = {230, 230, 230}
-    grid_texture_sync_to_gpu()
+grid_texture_init :: proc(grid: ^Grid, line_thickness: f32, line_color: [4]u8) {
+    grid.texture.size = {grid.width, grid.height}
+    grid.texture.cell_size = grid.scale.x
+    grid.texture.line_thickness = line_thickness
+    grid.texture.line_color = line_color
+    grid_texture_sync_to_gpu(&grid.texture)
 }
 
-grid_texture_sync_to_gpu :: proc() {
-    cell_byte := u8(grid_texture.cell_size * 25.0)
-    line_byte := u8(grid_texture.line_thickness * 1000.0)
-    data_texture_set({0, 0}, {u8(grid_texture.size.x), u8(grid_texture.size.y), cell_byte, line_byte})
-    data_texture_set({0, 1}, {grid_texture.line_color[0], grid_texture.line_color[1], grid_texture.line_color[2], 0})
+grid_texture_sync_to_gpu :: proc(gt: ^GridTexture) {
+    cell_byte := u8(gt.cell_size * 25.0)
+    line_byte := u8(gt.line_thickness * 1000.0)
+    data_texture_set({0, 0}, {u8(gt.size.x), u8(gt.size.y), cell_byte, line_byte})
+    data_texture_set({0, 1}, {gt.line_color[0], gt.line_color[1], gt.line_color[2], gt.line_color[3]})
 }
 
-grid_texture_set_cell_size :: proc(cell_size: f32) {
-    grid_texture.cell_size = cell_size
-    grid_texture_sync_to_gpu()
+grid_texture_set_cell_size :: proc(gt: ^GridTexture, cell_size: f32) {
+    gt.cell_size = cell_size
+    grid_texture_sync_to_gpu(gt)
 }
 
-grid_texture_set_line_thickness :: proc(line_thickness: f32) {
-    grid_texture.line_thickness = line_thickness
-    grid_texture_sync_to_gpu()
+grid_texture_set_line_thickness :: proc(gt: ^GridTexture, line_thickness: f32) {
+    gt.line_thickness = line_thickness
+    grid_texture_sync_to_gpu(gt)
 }
 
-grid_texture_set_line_color :: proc(r, g, b: u8) {
-    grid_texture.line_color = {r, g, b}
-    grid_texture_sync_to_gpu()
+grid_texture_set_line_color :: proc(gt: ^GridTexture, color :[4]u8) {
+    gt.line_color = color
+    grid_texture_sync_to_gpu(gt)
 }
 
-grid_texture_set_cell :: proc(x, y: i32, color: GridColor) {
+grid_texture_set_cell :: proc(gt: ^GridTexture, x, y: i32, color: GridColor) {
     tex_x := 1 + x
     tex_y := y
     data_texture_set({tex_x, tex_y}, GRID_COLOR_TABLE[color])
 }
 
-grid_texture_get_cell :: proc(x, y: i32) -> GridColor {
+grid_texture_get_cell :: proc(gt: ^GridTexture, x, y: i32) -> GridColor {
     tex_x := 1 + x
     tex_y := y
     pixel := data_texture_get({tex_x, tex_y})
@@ -504,15 +503,15 @@ grid_texture_get_cell :: proc(x, y: i32) -> GridColor {
     return .Empty
 }
 
-grid_texture_clear :: proc() {
-    for y in 0..<GRID_HEIGHT {
-        for x in 0..<GRID_WIDTH {
-            grid_texture_set_cell(i32(x), i32(y), .Empty)
+grid_texture_clear :: proc(gt: ^GridTexture) {
+    for y in 0..<gt.size.y {
+        for x in 0..<gt.size.x {
+            grid_texture_set_cell(gt, x, y, .Empty)
         }
     }
 }
 
-grid_texture_sync_from_grid :: proc(grid: ^Grid) {
+grid_texture_sync_from_grid :: proc(gt: ^GridTexture, grid: ^Grid) {
     for y in 0..<grid.height {
         for x in 0..<grid.width {
             tile := grid_get(grid^, x, y)
@@ -524,7 +523,7 @@ grid_texture_sync_from_grid :: proc(grid: ^Grid) {
                 color = .Red
             }
 
-            grid_texture_set_cell(x, y, color)
+            grid_texture_set_cell(gt, x, y, color)
         }
     }
 }
