@@ -88,6 +88,7 @@ grid_init_floor :: proc(grid : ^Grid, floor_transform : Cmp_Primitive)
 	    }
     }
     grid_texture_init(grid, 36, {0,255,255,255})
+    data_texture_update()
 }
 
 grid_set :: proc{grid_set_i16, grid_set_vec2i}
@@ -429,7 +430,7 @@ can_see_target :: proc(grid: Grid, viewer_pos: vec2i, viewer_facing: Direction, 
 
 GridTexture :: struct {
     size: vec2i,
-    cell_size: f32,
+    cell_size: vec2f,
     line_thickness: f32,
     line_color: [4]u8,
 }
@@ -456,22 +457,42 @@ GRID_COLOR_TABLE := [8][4]u8{
     {255, 255, 255, 255},  // White
 }
 
+float_to_bytes :: proc(f:f32) -> [4]u8 {
+    bits := transmute(u32)f
+    return [4]u8{
+        u8(bits & 0xFF),
+        u8((bits >> 8) & 0xFF),
+        u8((bits >> 16) & 0xFF),
+        u8((bits >> 24) & 0xFF),
+    }
+}
+
 grid_texture_init :: proc(grid: ^Grid, line_thickness: f32, line_color: [4]u8) {
     grid.texture.size = {grid.width, grid.height}
-    grid.texture.cell_size = grid.scale.x
+    grid.texture.cell_size = grid.scale.xy
     grid.texture.line_thickness = line_thickness
     grid.texture.line_color = line_color
     grid_texture_sync_to_gpu(&grid.texture)
 }
 
+// grid_texture_sync_to_gpu :: proc(gt: ^GridTexture) {
+//     cell_byte := u8(gt.cell_size * 25.0)
+//     line_byte := u8(gt.line_thickness * 1000.0)
+//     data_texture_set({0, 0}, {u8(gt.size.x), u8(gt.size.y), cell_byte, line_byte})
+//     data_texture_set({0, 1}, {gt.line_color[0], gt.line_color[1], gt.line_color[2], gt.line_color[3]})
+// }
+
 grid_texture_sync_to_gpu :: proc(gt: ^GridTexture) {
-    cell_byte := u8(gt.cell_size * 25.0)
-    line_byte := u8(gt.line_thickness * 1000.0)
-    data_texture_set({0, 0}, {u8(gt.size.x), u8(gt.size.y), cell_byte, line_byte})
-    data_texture_set({0, 1}, {gt.line_color[0], gt.line_color[1], gt.line_color[2], gt.line_color[3]})
+    data_texture_set({0, 0}, {u8(gt.size.x), 0, 0, 0})
+    data_texture_set({0, 1}, {u8(gt.size.y), 0, 0, 0})
+    data_texture_set({0, 2}, {u8(gt.cell_size.x), 0, 0, 0})
+    data_texture_set({0, 3}, {u8(gt.cell_size.y), 0, 0, 0})
+    data_texture_set({0, 4}, {u8(gt.line_thickness * 255.0), 0, 0, 0})
+    data_texture_set({0, 5}, {gt.line_color[0], gt.line_color[1], gt.line_color[2], gt.line_color[3]})
+    data_texture_update()
 }
 
-grid_texture_set_cell_size :: proc(gt: ^GridTexture, cell_size: f32) {
+grid_texture_set_cell_size :: proc(gt: ^GridTexture, cell_size: vec2f) {
     gt.cell_size = cell_size
     grid_texture_sync_to_gpu(gt)
 }
