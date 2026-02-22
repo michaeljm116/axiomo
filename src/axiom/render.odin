@@ -1245,27 +1245,23 @@ texture_update_descriptor :: proc(texture: ^Texture) {
 DATA_TEXTURE_SIZE :: 32
 DataTexture :: struct{
     texture: Texture,
-    pixels: [^]byte,
+    pixels: [^]f32,  // Float pixels for precise values
     staging_buffer:vk.Buffer,
     staging_allocation: vma.Allocation,
 }
-
 
 data_texture_create :: proc(alloc: mem.Allocator) -> ^DataTexture {
     data_texture := new(DataTexture)
     data_texture.texture.height = DATA_TEXTURE_SIZE
     data_texture.texture.width = DATA_TEXTURE_SIZE
-    data_texture.pixels = make([^]byte, DATA_TEXTURE_SIZE * DATA_TEXTURE_SIZE * 4, alloc)
+    data_texture.pixels = make([^]f32, DATA_TEXTURE_SIZE * DATA_TEXTURE_SIZE * 4, alloc)
 
-    // Create texture with default white
-    ok := texture_create_w_pixels(&data_texture.texture, data_texture.pixels)
-    if !ok do log.panic("ERROR CREATING DATA TEXTURE")
-
-    // Create persistent staging buffer
-    buffer_size := (DATA_TEXTURE_SIZE * DATA_TEXTURE_SIZE * 4)
+    // Create float texture (R32G32B32A32_SFLOAT)
+    image_size := vk.DeviceSize(DATA_TEXTURE_SIZE * DATA_TEXTURE_SIZE * 4 * 4)  // 4 floats per pixel
+    
     staging_buffer_info := vk.BufferCreateInfo {
         sType = .BUFFER_CREATE_INFO,
-        size = vk.DeviceSize(buffer_size),
+        size = image_size,
         usage = {.TRANSFER_SRC},
         sharingMode = .EXCLUSIVE,
     }
@@ -1278,11 +1274,49 @@ data_texture_create :: proc(alloc: mem.Allocator) -> ^DataTexture {
         log.error("Failed to create data texture staging buffer!")
     }
 
+    // Create image with R32G32B32A32_SFLOAT format
+    image_info := vk.ImageCreateInfo {
+        sType = .IMAGE_CREATE_INFO,
+        imageType = .D2,
+        extent = {width = DATA_TEXTURE_SIZE, height = DATA_TEXTURE_SIZE, depth = 1},
+        mipLevels = 1,
+        arrayLayers = 1,
+        format = .R32G32B32A32_SFLOAT,
+        tiling = .OPTIMAL,
+        initialLayout = .UNDEFINED,
+        usage = {.TRANSFER_DST, .SAMPLED},
+        samples = {._1},
+        sharingMode = .EXCLUSIVE,
+    }
+    image_alloc_info := vma.AllocationCreateInfo {
+        usage = .AUTO,
+    }
+    result = vma.CreateImage(g_renderbase.vma_allocator, &image_info, &image_alloc_info, &data_texture.texture.image, &data_texture.texture.image_allocation, nil)
+    
+    transition_image_layout(data_texture.texture.image, .R32G32B32A32_SFLOAT, .UNDEFINED, .TRANSFER_DST_OPTIMAL)
+    copy_buffer_to_image(data_texture.staging_buffer, data_texture.texture.image, DATA_TEXTURE_SIZE, DATA_TEXTURE_SIZE)
+    transition_image_layout(data_texture.texture.image, .R32G32B32A32_SFLOAT, .TRANSFER_DST_OPTIMAL, .SHADER_READ_ONLY_OPTIMAL)
+
+    data_texture.texture.view = create_image_view(data_texture.texture.image, .R32G32B32A32_SFLOAT, {.COLOR})
+
+    sampler_info := vk.SamplerCreateInfo {
+        sType = .SAMPLER_CREATE_INFO,
+        magFilter = .NEAREST,
+        minFilter = .NEAREST,
+        addressModeU = .CLAMP_TO_EDGE,
+        addressModeV = .CLAMP_TO_EDGE,
+        addressModeW = .CLAMP_TO_EDGE,
+    }
+    vk.CreateSampler(g_renderbase.device, &sampler_info, nil, &data_texture.texture.sampler)
+
+    data_texture.texture.image_layout = .SHADER_READ_ONLY_OPTIMAL
+    texture_update_descriptor(&data_texture.texture)
+
     return data_texture
 }
 
 
-data_texture_set :: proc(dt: ^DataTexture, pos: vec2i, pixel: [4]byte) {
+data_texture_set :: proc(dt: ^DataTexture, pos: vec2i, pixel: [4]f32) {
     assert(pos.x >= 0 && pos.x < i32(DATA_TEXTURE_SIZE) && pos.y >= 0 && pos.y < i32(DATA_TEXTURE_SIZE))
     idx := (pos.y * DATA_TEXTURE_SIZE + pos.x) * 4
     dt.pixels[idx + 0] = pixel[0]  // R
@@ -1291,21 +1325,22 @@ data_texture_set :: proc(dt: ^DataTexture, pos: vec2i, pixel: [4]byte) {
     dt.pixels[idx + 3] = pixel[3]  // A
 }
 
-data_texture_get :: proc(dt : ^DataTexture, pos : vec2i) -> [4]byte
+data_texture_get :: proc(dt : ^DataTexture, pos : vec2i) -> [4]f32
 {
     assert(pos.x >= 0 && pos.x < i32(DATA_TEXTURE_SIZE) && pos.y >= 0 && pos.y < i32(DATA_TEXTURE_SIZE))
-    return dt.pixels[pos.y * i32(DATA_TEXTURE_SIZE) + pos.x]
+    idx := (pos.y * DATA_TEXTURE_SIZE + pos.x) * 4
+    return [4]f32{dt.pixels[idx + 0], dt.pixels[idx + 1], dt.pixels[idx + 2], dt.pixels[idx + 3]}
 }
 
 data_texture_upload :: proc(dt: ^DataTexture) {
     // 1. Copy pixels to staging buffer
     data: rawptr
     vma.MapMemory(g_renderbase.vma_allocator, dt.staging_allocation, &data)
-    mem.copy(data, dt.pixels, DATA_TEXTURE_SIZE * DATA_TEXTURE_SIZE * 4)
+    mem.copy(data, dt.pixels, DATA_TEXTURE_SIZE * DATA_TEXTURE_SIZE * 4 * 4)  // 4 floats per pixel
     vma.UnmapMemory(g_renderbase.vma_allocator, dt.staging_allocation)
 
     // 2. Transition image to TRANSFER_DST
-    transition_image_layout(dt.texture.image, .R8G8B8A8_UNORM, .SHADER_READ_ONLY_OPTIMAL, .TRANSFER_DST_OPTIMAL)
+    transition_image_layout(dt.texture.image, .R32G32B32A32_SFLOAT, .SHADER_READ_ONLY_OPTIMAL, .TRANSFER_DST_OPTIMAL)
 
     // 3. Copy buffer to image
     region := vk.BufferImageCopy {
@@ -1321,7 +1356,7 @@ data_texture_upload :: proc(dt: ^DataTexture) {
     end_single_time_commands(&cmd)
 
     // 4. Transition back to SHADER_READ_ONLY
-    transition_image_layout(dt.texture.image, .R8G8B8A8_UNORM, .TRANSFER_DST_OPTIMAL, .SHADER_READ_ONLY_OPTIMAL)
+    transition_image_layout(dt.texture.image, .R32G32B32A32_SFLOAT, .TRANSFER_DST_OPTIMAL, .SHADER_READ_ONLY_OPTIMAL)
 }
 
 data_texture_destroy :: proc(dt: ^DataTexture) {

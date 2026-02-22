@@ -193,12 +193,12 @@ game_controller_is_running :: #force_inline proc() -> bool {
     return game_controller_held(.Run) || game_controller_pressed(.Run)
 }
 
-data_texture_set :: proc(pos: vec2i, pixel: [4]byte)
+data_texture_set :: proc(pos: vec2i, pixel: [4]f32)
 {
    axiom.data_texture_set(axiom.g_raytracer.data_texture, pos, pixel)
 }
 
-data_texture_get :: proc(pos: vec2i) -> [4]byte
+data_texture_get :: proc(pos: vec2i) -> [4]f32
 {
    return axiom.data_texture_get(axiom.g_raytracer.data_texture, pos)
 }

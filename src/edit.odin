@@ -315,7 +315,7 @@ handle_battle_cheat_mode :: proc()
 
     // WASD controls for grid texture
     cell_speed :: vec2f{0.02, 0.02}
-    line_speed :: 0.2
+    line_speed :: 0.001
     if is_key_pressed(glfw.KEY_W) {
         if is_key_pressed(glfw.KEY_LEFT_SHIFT) do g.battle.grid.texture.cell_size.x = min(15.0, g.battle.grid.texture.cell_size.x + cell_speed.x)
         else do g.battle.grid.texture.cell_size.y = min(15.0, g.battle.grid.texture.cell_size.y + cell_speed.y)
@@ -329,7 +329,7 @@ handle_battle_cheat_mode :: proc()
         fmt.printf("cell_size: %v\n", g.battle.grid.texture.cell_size)
     }
     if is_key_pressed(glfw.KEY_D) {
-        g.battle.grid.texture.line_thickness = min(10.0, g.battle.grid.texture.line_thickness + line_speed)
+        g.battle.grid.texture.line_thickness = min(0.5, g.battle.grid.texture.line_thickness + line_speed)
         grid_texture_sync_to_gpu(&g.battle.grid.texture)
         fmt.printf("line_thickness: %.1f\n", g.battle.grid.texture.line_thickness)
     }

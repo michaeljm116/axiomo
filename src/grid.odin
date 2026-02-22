@@ -87,7 +87,7 @@ grid_init_floor :: proc(grid : ^Grid, floor_transform : Cmp_Primitive)
       		// grid_set(grid, x,y, Tile{center = center})
 	    }
     }
-    grid_texture_init(grid, 36, {0,255,255,255})
+    grid_texture_init(grid, 0.05, {0,255,255,255})
     data_texture_update()
 }
 
@@ -446,7 +446,7 @@ GridColor :: enum u8 {
     White   = 7,
 }
 
-GRID_COLOR_TABLE := [8][4]u8{
+GRID_COLOR_TABLE := [8][4]f32{
     {0,   0,   0,   0},   // Empty   - transparent
     {255, 0,   0,   255},  // Red
     {0,   0,   255, 255},  // Blue
@@ -483,12 +483,12 @@ grid_texture_init :: proc(grid: ^Grid, line_thickness: f32, line_color: [4]u8) {
 // }
 
 grid_texture_sync_to_gpu :: proc(gt: ^GridTexture) {
-    data_texture_set({0, 0}, {u8(gt.size.x), 0, 0, 0})
-    data_texture_set({0, 1}, {u8(gt.size.y), 0, 0, 0})
-    data_texture_set({0, 2}, {u8(gt.cell_size.x), 0, 0, 0})
-    data_texture_set({0, 3}, {u8(gt.cell_size.y), 0, 0, 0})
-    data_texture_set({0, 4}, {u8(gt.line_thickness), 0, 0, 0})
-    data_texture_set({0, 5}, {gt.line_color[0], gt.line_color[1], gt.line_color[2], gt.line_color[3]})
+    data_texture_set({0, 0}, {f32(gt.size.x), 0, 0, 0})
+    data_texture_set({0, 1}, {f32(gt.size.y), 0, 0, 0})
+    data_texture_set({0, 2}, {gt.cell_size.x, 0, 0, 0})
+    data_texture_set({0, 3}, {gt.cell_size.y, 0, 0, 0})
+    data_texture_set({0, 4}, {gt.line_thickness, 0, 0, 0})
+    data_texture_set({0, 5}, {f32(gt.line_color[0])/255.0, f32(gt.line_color[1])/255.0, f32(gt.line_color[2])/255.0, f32(gt.line_color[3])/255.0})
     data_texture_update()
 }
 

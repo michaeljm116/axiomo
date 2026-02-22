@@ -33,8 +33,8 @@ GridInfo getGridInfo()
     vec4 p5 = texture(data_texture, uv5);
 
     GridInfo info;
-    info.size = vec2(p0.r * 255.0, p1.r * 255.0);
-    info.cell_size = vec2(p2.r * 255.0, p3.r * 255.0);
+    info.size = vec2(p0.r, p1.r);
+    info.cell_size = vec2(p2.r, p3.r);
     info.line_thickness = p4.r;
     info.line_color = p5;
     return info;
@@ -55,15 +55,14 @@ vec4 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color)
     vec2 coord = vec2(u, v);
 
     // ---- Grid settings ----
-    // vec2 cellSize = vec2(7, 5); //grid_info.cell_size;
-    vec2 cellSize = grid_info.size.xy * grid_info.cell_size;
-    float lineWidth = 0.03;
+    vec2 cellSize = grid_info.cell_size;
+    float lineWidth = grid_info.line_thickness;
     coord /= cellSize;
 
     // ---- Core grid math ----
     vec2 grid = abs(fract(coord) - 0.5);
     float line = min(grid.x, grid.y);
-    float mask = step(line, grid_info.line_thickness);
+    float mask = step(line, lineWidth);
 
     return mix(color, grid_info.line_color, mask);
 }
