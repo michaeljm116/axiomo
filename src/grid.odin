@@ -77,17 +77,24 @@ grid_init_floor :: proc(grid : ^Grid, floor_transform : Cmp_Primitive)
 
     // Calculate floor bottom-left corner (floor center - floor extents)
     floor_bottom_left := vec2f{floor_pos.x - floor_ext.x, floor_pos.z - floor_ext.z}
+    // Include tile interval offset so origin matches where tile centers actually are
+    grid.texture.origin = floor_bottom_left + grid.scale * 0.5
 
     for x in 0..<grid.width {
     	for y in 0..<grid.height {
-      		rc := vec2f{f32(x),f32(y)}
-      		center := rc * grid.scale + tile_interval + floor_bottom_left
+       		rc := vec2f{f32(x),f32(y)}
+       		center := rc * grid.scale + tile_interval + floor_bottom_left
             grid_get_mut(grid, x, y).center = center
 
-      		// grid_set(grid, x,y, Tile{center = center})
+            // Store first tile center as texture origin
+            if x == 0 && y == 0 {
+                grid.texture.origin = center
+            }
+
+       		// grid_set(grid, x,y, Tile{center = center})
 	    }
     }
-    grid_texture_init(grid, 0.05, {0,255,255,255})
+    grid_texture_init(grid, 0.05, {0,1,1,.3})
     data_texture_update()
 }
 
@@ -432,7 +439,8 @@ GridTexture :: struct {
     size: vec2i,
     cell_size: vec2f,
     line_thickness: f32,
-    line_color: [4]u8,
+    line_color: [4]f32,
+    origin: vec2f,
 }
 
 GridColor :: enum u8 {
@@ -448,13 +456,13 @@ GridColor :: enum u8 {
 
 GRID_COLOR_TABLE := [8][4]f32{
     {0,   0,   0,   0},   // Empty   - transparent
-    {255, 0,   0,   255},  // Red
-    {0,   0,   255, 255},  // Blue
-    {0,   255, 0,   255},  // Green
-    {255, 255, 0,   255},  // Yellow
-    {128, 0,   128, 255},  // Purple
-    {0,   255, 255, 255},  // Cyan
-    {255, 255, 255, 255},  // White
+    {1.0, 0,   0,   1.0},  // Red
+    {0,   0,   1.0, 1.0},  // Blue
+    {0,   1.0, 0,   1.0},  // Green
+    {1.0, 1.0, 0,   1.0},  // Yellow
+    {0.5, 0,   0.5, 1.0},  // Purple
+    {0,   1.0, 1.0, 1.0},  // Cyan
+    {1.0, 1.0, 1.0, 1.0},  // White
 }
 
 float_to_bytes :: proc(f:f32) -> [4]u8 {
@@ -467,7 +475,7 @@ float_to_bytes :: proc(f:f32) -> [4]u8 {
     }
 }
 
-grid_texture_init :: proc(grid: ^Grid, line_thickness: f32, line_color: [4]u8) {
+grid_texture_init :: proc(grid: ^Grid, line_thickness: f32, line_color: [4]f32) {
     grid.texture.size = {grid.width, grid.height}
     grid.texture.cell_size = grid.scale.xy
     grid.texture.line_thickness = line_thickness
@@ -483,12 +491,13 @@ grid_texture_init :: proc(grid: ^Grid, line_thickness: f32, line_color: [4]u8) {
 // }
 
 grid_texture_sync_to_gpu :: proc(gt: ^GridTexture) {
-    data_texture_set({0, 0}, {f32(gt.size.x), 0, 0, 0})
-    data_texture_set({0, 1}, {f32(gt.size.y), 0, 0, 0})
-    data_texture_set({0, 2}, {gt.cell_size.x, 0, 0, 0})
+    wr_offset := f32(gt.size.x) + 1.0
+    data_texture_set({0, 0}, {f32(gt.size.x), wr_offset, 0, 0})
+    data_texture_set({0, 1}, {f32(gt.size.y), gt.origin.x, 0, 0})
+    data_texture_set({0, 2}, {gt.cell_size.x, gt.origin.y, 0, 0})
     data_texture_set({0, 3}, {gt.cell_size.y, 0, 0, 0})
     data_texture_set({0, 4}, {gt.line_thickness, 0, 0, 0})
-    data_texture_set({0, 5}, {f32(gt.line_color[0])/255.0, f32(gt.line_color[1])/255.0, f32(gt.line_color[2])/255.0, f32(gt.line_color[3])/255.0})
+    data_texture_set({0, 5}, {gt.line_color[0], gt.line_color[1], gt.line_color[2], gt.line_color[3]})
     data_texture_update()
 }
 
@@ -502,7 +511,7 @@ grid_texture_set_line_thickness :: proc(gt: ^GridTexture, line_thickness: f32) {
     grid_texture_sync_to_gpu(gt)
 }
 
-grid_texture_set_line_color :: proc(gt: ^GridTexture, color :[4]u8) {
+grid_texture_set_line_color :: proc(gt: ^GridTexture, color :[4]f32) {
     gt.line_color = color
     grid_texture_sync_to_gpu(gt)
 }
@@ -546,6 +555,17 @@ grid_texture_sync_from_grid :: proc(gt: ^GridTexture, grid: ^Grid) {
             }
 
             grid_texture_set_cell(gt, x, y, color)
+        }
+    }
+
+    wr_x := gt.size.x + 1
+    for y in 0..<grid.height {
+        for x in 0..<grid.width {
+            tile := grid_get(grid^, x, y)
+            // Debug: all cells red to see the area
+            color: [4]f32 = {1.0, 0.0, 0.0, 0.4}
+
+            data_texture_set({wr_x + x, y}, color)
         }
     }
 }

@@ -154,6 +154,8 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
         case .Start:
             data_texture_update()
             refresh_player_reachability(grid, player.pos)
+            grid_texture_sync_from_grid(&grid.texture, grid)
+            data_texture_update()
             battle_turn_start_visibility(battle)
         	if check_end_condition(battle) do break
          	state = .Continue
