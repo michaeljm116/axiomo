@@ -542,7 +542,36 @@ grid_texture_clear :: proc(gt: ^GridTexture) {
     }
 }
 
+// grid_texture_sync_from_grid :: proc(gt: ^GridTexture, grid: ^Grid) {
+//     for y in 0..<grid.height {
+//         for x in 0..<grid.width {
+//             tile := grid_get(grid^, x, y)
+//             color: GridColor = .Empty
+
+//             if .Wall in tile.flags {
+//                 color = .White
+//             } else if .Obstacle in tile.flags {
+//                 color = .Red
+//             }
+
+//             grid_texture_set_cell(gt, x, y, color)
+//         }
+//     }
+
+//     wr_x := gt.size.x + 1
+//     for y in 0..<grid.height {
+//         for x in 0..<grid.width {
+//             tile := grid_get(grid^, x, y)
+//             // Debug: all cells red to see the area
+//             color: [4]f32 = {1.0, 0.0, 0.0, 0.4}
+
+//             data_texture_set({wr_x + x, y}, color)
+//         }
+//     }
+// }
+
 grid_texture_sync_from_grid :: proc(gt: ^GridTexture, grid: ^Grid) {
+    // Existing: Set main grid cells for walls/obstacles
     for y in 0..<grid.height {
         for x in 0..<grid.width {
             tile := grid_get(grid^, x, y)
@@ -558,14 +587,22 @@ grid_texture_sync_from_grid :: proc(gt: ^GridTexture, grid: ^Grid) {
         }
     }
 
+    // Updated: Set WR area based on Walkable/Runnable flags
     wr_x := gt.size.x + 1
     for y in 0..<grid.height {
         for x in 0..<grid.width {
             tile := grid_get(grid^, x, y)
-            // Debug: all cells red to see the area
-            color: [4]f32 = {1.0, 0.0, 0.0, 0.4}
+            color: [4]f32 = {0.0, 0.0, 0.0, 0.0} // Default: transparent
+
+            // Green for Runnable (priority over Walkable)
+            if .Runnable in tile.flags {
+                color = {0.0, 1.0, 0.0, 0.4} // Green with alpha for blending
+            } else if .Walkable in tile.flags {
+                color = {0.0, 0.0, 1.0, 0.4} // Blue with alpha
+            }
 
             data_texture_set({wr_x + x, y}, color)
         }
     }
+    data_texture_update() // Ensure this flushes to GPU
 }

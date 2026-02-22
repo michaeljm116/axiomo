@@ -7,17 +7,31 @@
 #include "../constants.glsl"
 #include "../intersect/main-intersect.glsl"
 
-struct GridInfo
-{
+struct GridInfo {
     vec2 size;
     vec2 cell_size;
     float line_thickness;
     vec4 line_color;
     float wr_offset; // offset to walkable/runnable grid
+    vec2 origin;     // NEW: Add this
 };
 
-GridInfo getGridInfo()
+vec4 getWalkableRunnableColor(GridInfo info, vec2 cellCoord)
 {
+    if (cellCoord.x < 0.0 || cellCoord.x >= info.size.x ||
+            cellCoord.y < 0.0 || cellCoord.y >= info.size.y) {
+        return vec4(0.0);
+    }
+
+    float texel = 1.0 / 32.0;
+    float wr_x = info.size.x + 1.0 + cellCoord.x + 0.5;
+    float wr_y = cellCoord.y + 0.5;
+    vec2 uv = vec2(wr_x, wr_y) * texel;
+
+    return texture(data_texture, uv);
+}
+
+GridInfo getGridInfo() {
     float texel = 1.0 / 32.0;
     vec2 uv0 = vec2(0.5, 0.5) * texel;
     vec2 uv1 = vec2(0.5, 1.5) * texel;
@@ -39,51 +53,72 @@ GridInfo getGridInfo()
     info.line_thickness = p4.r;
     info.line_color = p5;
     info.wr_offset = p0.g;
+    info.origin = vec2(p1.g, p2.g); // NEW: Read origin here
     return info;
 }
 
-vec4 getWalkableRunnableColor(GridInfo info, vec2 cellCoord)
-{
+// Existing getWalkableRunnableColor is fine
+
+// Optional: Add this if you want to mix main cell colors (walls/obstacles)
+vec4 getCellColor(GridInfo info, vec2 cellCoord) {
     if (cellCoord.x < 0.0 || cellCoord.x >= info.size.x ||
-            cellCoord.y < 0.0 || cellCoord.y >= info.size.y) {
+        cellCoord.y < 0.0 || cellCoord.y >= info.size.y) {
         return vec4(0.0);
     }
 
     float texel = 1.0 / 32.0;
-    float wr_x = info.size.x + 1.0 + cellCoord.x + 0.5;
-    float wr_y = cellCoord.y + 0.5;
-    vec2 uv = vec2(wr_x, wr_y) * texel;
+    float cell_x = 1.0 + cellCoord.x + 0.5;
+    float cell_y = cellCoord.y + 0.5;
+    vec2 uv = vec2(cell_x, cell_y) * texel;
 
     return texture(data_texture, uv);
 }
 
-vec4 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color)
-{
+// Updated shadeGrid (merge in shadeGrid2 logic)
+vec4 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color) {
     GridInfo grid_info = getGridInfo();
 
     // ---- Build tangent basis from normal ----
     vec3 N = normalize(info.normal);
-    vec3 T = normalize(abs(N.y) < 0.999 ? cross(N, vec3(0.0, 1.0, 0.0)) : cross(N, vec3(1.0, 0.0, 0.0)));
-    vec3 B = cross(N, T);
+    vec3 arb = abs(N.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);  // FIXED: Use Z (0,0,1) instead of X (1,0,0) for vertical normals
+    vec3 T = normalize(cross(N, arb));
+    vec3 B = -cross(N, T);  // FIXED: Flip B to make it positive (ensures right-handed, no negation)
 
     // ---- Project world position onto tangent plane ----
     float u = dot(ray_pos, T);
     float v = dot(ray_pos, B);
-    vec2 coord = vec2(u, v);
+    vec2 worldPos = vec2(u, v);
 
     // ---- Grid settings ----
     vec2 cellSize = grid_info.cell_size;
     float lineWidth = grid_info.line_thickness;
-    coord /= cellSize;
 
-    // ---- Core grid math ----
+    // FIXED: Offset by grid origin and divide by cell size to get cell coordinates
+    vec2 coord = (worldPos - grid_info.origin) / cellSize;
+
+    // ---- Core grid line math ----
     vec2 grid = abs(fract(coord) - 0.5);
     float line = min(grid.x, grid.y);
     float mask = step(line, lineWidth);
 
     vec4 gridColor = grid_info.line_color;
     float blend = mask * gridColor.a;
-    return mix(color, vec4(gridColor.rgb, color.a), blend);
+    color = mix(color, vec4(gridColor.rgb, color.a), blend);
+
+    // NEW: Compute integer cell coord for sampling
+    vec2 cellCoord = floor(coord);
+
+    // NEW: Mix walkable/runnable colors (blue/green)
+    vec4 wrColor = getWalkableRunnableColor(grid_info, cellCoord);
+    float wrBlend = wrColor.a;
+    color = mix(color, vec4(wrColor.rgb, color.a), wrBlend);
+
+    // Optional: Mix main cell colors (e.g., red for obstacles, white for walls)
+    // vec4 cellColor = getCellColor(grid_info, cellCoord);
+    // float cellBlend = cellColor.a;
+    // color = mix(color, vec4(cellColor.rgb, color.a), cellBlend);
+
+    return color;
 }
 
 // vec4 shadeGrid2(HitInfo info, vec3 ray_pos, vec4 color)
