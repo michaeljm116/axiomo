@@ -77,6 +77,7 @@ vec4 getCellColor(GridInfo info, vec2 cellCoord) {
 // Updated shadeGrid (merge in shadeGrid2 logic)
 vec4 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color, SurfaceData sd) {
     GridInfo grid_info = getGridInfo();
+    Primitive prim = primitives[info.prim_type == TYPE_BOX ? info.face_id : info.prim_id];
 
     // ---- Project position to tangent plane using SurfaceData ----
     vec2 tangent_pos = projectToTangent(sd, ray_pos);
@@ -85,8 +86,21 @@ vec4 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color, SurfaceData sd) {
     vec2 cellSize = grid_info.cell_size;
     float lineWidth = grid_info.line_thickness;
 
+    // For object-space, use actual cell size from texture normalized to object
+    if (sd.use_object_space) {
+        vec2 extents = prim.extents.xy;
+        tangent_pos = tangent_pos / extents * 0.5 + 0.5;  // normalize to 0 to 1 range
+        
+        // Use actual cell_size but scaled to object
+        cellSize = cellSize / extents * 2.0;
+        lineWidth = lineWidth / extents.x * 2.0;  // normalize line width
+    }
+
+    // Use zero origin for object-space, otherwise use stored origin for world-space
+    vec2 origin = sd.use_object_space ? vec2(0.0) : grid_info.origin;
+
     // Offset by grid origin and divide by cell size to get cell coordinates
-    vec2 coord = (tangent_pos - grid_info.origin) / cellSize;
+    vec2 coord = (tangent_pos - origin) / cellSize;
 
     // ---- Core grid line math ----
     vec2 grid = abs(fract(coord) - 0.5);

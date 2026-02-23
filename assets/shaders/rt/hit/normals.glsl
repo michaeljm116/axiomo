@@ -83,12 +83,18 @@ mat3 buildTangentBasis(vec3 N) {
 SurfaceData buildSurfaceData(HitInfo info, vec3 world_pos, uint flags) {
     SurfaceData sd;
 
-    Primitive prim = primitives[info.prim_id];
+    int prim_id = info.prim_type == TYPE_BOX ? info.face_id : info.prim_id;
+    Primitive prim = primitives[prim_id];
     sd.inv_world = inverse(prim.world);
     sd.local_pos = sd.inv_world * vec4(world_pos, 1.0);
-    // sd.TBN = buildTangentBasis((transpose(mat3(sd.inv_world)) * info.normal));
-    sd.TBN = buildTangentBasis(info.normal);
     sd.use_object_space = (flags & MATERIAL_FLAG_PROC_OBJECT_SPACE) != 0u;
+
+    if (sd.use_object_space) {
+        vec3 object_normal = normalize(transpose(mat3(sd.inv_world)) * info.normal);
+        sd.TBN = buildTangentBasis(object_normal);
+    } else {
+        sd.TBN = buildTangentBasis(info.normal);
+    }
 
     return sd;
 }
