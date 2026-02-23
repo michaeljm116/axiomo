@@ -8,8 +8,8 @@
 #include "../intersect/main-intersect.glsl"
 
 struct GridInfo {
-    vec2 size;
-    vec2 cell_size;
+    vec2 size; // 7 x 5
+    vec2 cell_size; // 16 x 10
     float line_thickness;
     vec4 line_color;
     float wr_offset; // offset to walkable/runnable grid
@@ -87,14 +87,19 @@ vec4 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color, SurfaceData sd) {
     float lineWidth = grid_info.line_thickness;
 
     // For object-space, use actual cell size from texture normalized to object
-    if (sd.use_object_space) {
-        vec2 extents = prim.extents.xy;
-        tangent_pos = tangent_pos / extents * 0.5 + 0.5;  // normalize to 0 to 1 range
-        
-        // Use actual cell_size but scaled to object
-        cellSize = cellSize / extents * 2.0;
-        lineWidth = lineWidth / extents.x * 2.0;  // normalize line width
-    }
+    // if (sd.use_object_space) {
+    //     // vec2 extents = prim.extents.xy;
+    //     // tangent_pos = tangent_pos / extents * 0.5 + 0.5;  // normalize to 0 to 1 range
+    //     // // Use actual cell_size but scaled to object
+    //     // cellSize = cellSize / extents * 2.0;
+    //     // lineWidth = lineWidth / extents.x * 2.0;  // normalize line width
+
+    //     tangent_pos = tangent_pos / cellSize * 0.5 + 0.5;  // normalize to 0 to 1 range
+
+    //     // Use actual cell_size but scaled to object
+    //     cellSize = cellSize / cellSize * 2.0;
+    //     lineWidth = lineWidth / extents.x * 2.0;  // normalize line width
+    // }
 
     // Use zero origin for object-space, otherwise use stored origin for world-space
     vec2 origin = sd.use_object_space ? vec2(0.0) : grid_info.origin;
@@ -105,14 +110,14 @@ vec4 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color, SurfaceData sd) {
     // ---- Core grid line math ----
     vec2 grid = abs(fract(coord) - 0.5);
     float line = min(grid.x, grid.y);
-    float mask = step(line, lineWidth);
+    float mask = 1 - smoothstep(lineWidth - 0.025, lineWidth + 0.025, line);
 
     vec4 gridColor = grid_info.line_color;
     float blend = mask * gridColor.a;
     color = mix(color, vec4(gridColor.rgb, color.a), blend);
 
     // NEW: Compute integer cell coord for sampling
-    vec2 cellCoord = floor(coord);
+    vec2 cellCoord = floor(vec2(coord.x + .5, coord.y + 1.5));
 
     // NEW: Mix walkable/runnable colors (blue/green)
     vec4 wrColor = getWalkableRunnableColor(grid_info, cellCoord);
