@@ -75,26 +75,18 @@ vec4 getCellColor(GridInfo info, vec2 cellCoord) {
 }
 
 // Updated shadeGrid (merge in shadeGrid2 logic)
-vec4 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color) {
+vec4 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color, SurfaceData sd) {
     GridInfo grid_info = getGridInfo();
 
-    // ---- Build tangent basis from normal ----
-    vec3 N = normalize(info.normal);
-    vec3 arb = abs(N.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);  // FIXED: Use Z (0,0,1) instead of X (1,0,0) for vertical normals
-    vec3 T = normalize(cross(N, arb));
-    vec3 B = -cross(N, T);  // FIXED: Flip B to make it positive (ensures right-handed, no negation)
-
-    // ---- Project world position onto tangent plane ----
-    float u = dot(ray_pos, T);
-    float v = dot(ray_pos, B);
-    vec2 worldPos = vec2(u, v);
+    // ---- Project position to tangent plane using SurfaceData ----
+    vec2 tangent_pos = projectToTangent(sd, ray_pos);
 
     // ---- Grid settings ----
     vec2 cellSize = grid_info.cell_size;
     float lineWidth = grid_info.line_thickness;
 
-    // FIXED: Offset by grid origin and divide by cell size to get cell coordinates
-    vec2 coord = (worldPos - grid_info.origin) / cellSize;
+    // Offset by grid origin and divide by cell size to get cell coordinates
+    vec2 coord = (tangent_pos - grid_info.origin) / cellSize;
 
     // ---- Core grid line math ----
     vec2 grid = abs(fract(coord) - 0.5);
@@ -121,46 +113,4 @@ vec4 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color) {
     return color;
 }
 
-// vec4 shadeGrid2(HitInfo info, vec3 ray_pos, vec4 color)
-// {
-//     GridInfo grid_info = getGridInfo();
-
-//     // ---- Build tangent basis from normal ----
-//     vec3 N = normalize(info.normal);
-//     vec3 T = normalize(abs(N.y) < 0.999 ? cross(N, vec3(0.0, 1.0, 0.0)) : cross(N, vec3(1.0, 0.0, 0.0)));
-//     vec3 B = cross(N, T);
-
-//     // ---- Project world position onto tangent plane ----
-//     float u = dot(ray_pos, T);
-//     float v = dot(ray_pos, B);
-//     vec2 worldPos = vec2(u, v);
-
-//     // ---- Grid settings ----
-//     vec2 cellSize = grid_info.cell_size;
-//     vec2 origin = grid_info.origin;
-//     float lineWidth = grid_info.line_thickness;
-
-//     // Offset by grid origin and divide by cell size to get cell coordinates
-//     vec2 coord = (worldPos - origin) / cellSize;
-
-//     // ---- Core grid line math ----
-//     vec2 grid = abs(fract(coord) - 0.5);
-//     float line = min(grid.x, grid.y);
-//     float lineMask = step(line, lineWidth);
-
-//     vec4 lineColor = grid_info.line_color;
-//     float lineBlend = lineMask * lineColor.a;
-//     color = mix(color, vec4(lineColor.rgb, color.a), lineBlend);
-
-//     // ---- Walkable/Runnable grid (filled squares) ----
-//     vec2 cellCoord = floor(coord);
-
-//     // Debug: show cell coordinates as color
-//     // vec4 wrColor = vec4(cellCoord.x * 0.1, cellCoord.y * 0.1, 0.0, 1.0);
-//     vec4 wrColor = getWalkableRunnableColor(grid_info, cellCoord);
-//     float wrBlend = wrColor.a;
-//     color = mix(color, vec4(wrColor.rgb, color.a), wrBlend);
-
-//     return color;
-// }
 #endif

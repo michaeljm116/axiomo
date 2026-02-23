@@ -4,10 +4,11 @@
 #define FLT_MAX 3.402823466e+38
 #define FLT_MIN 1.175494351e-38
 
-#define MATERIAL_FLAG_GRID     (1u << 0)
-#define MATERIAL_FLAG_EMISSION  (1u << 1)
-#define MATERIAL_FLAG_SSS       (1u << 2)
-#define MATERIAL_FLAG_ALPHA_CUT (1u << 3)
+#define MATERIAL_FLAG_GRID              (1u << 0)
+#define MATERIAL_FLAG_EMISSION          (1u << 1)
+#define MATERIAL_FLAG_SSS               (1u << 2)
+#define MATERIAL_FLAG_ALPHA_CUT         (1u << 3)
+#define MATERIAL_FLAG_PROC_OBJECT_SPACE (1u << 4)
 
 struct Ray {
     vec3 o;
@@ -130,6 +131,13 @@ struct HitInfo
     int prim_id;
     int face_id;
     int node_id;
+};
+
+struct SurfaceData {
+    mat4 inv_world;
+    mat3 TBN;
+    vec4 local_pos;
+    bool use_object_space;
 };
 
 #endif

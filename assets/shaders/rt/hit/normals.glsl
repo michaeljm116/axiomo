@@ -71,4 +71,31 @@ void set_normals(inout HitInfo info, in vec3 ray_pos){
             break;
     }
 }
+
+mat3 buildTangentBasis(vec3 N) {
+    N = normalize(N);
+    vec3 arb = abs(N.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
+    vec3 T = normalize(cross(N, arb));
+    vec3 B = -cross(N, T);
+    return mat3(T, B, N);
+}
+
+SurfaceData buildSurfaceData(HitInfo info, vec3 world_pos, uint flags) {
+    SurfaceData sd;
+
+    Primitive prim = primitives[info.prim_id];
+    sd.inv_world = inverse(prim.world);
+    sd.local_pos = sd.inv_world * vec4(world_pos, 1.0);
+    // sd.TBN = buildTangentBasis((transpose(mat3(sd.inv_world)) * info.normal));
+    sd.TBN = buildTangentBasis(info.normal);
+    sd.use_object_space = (flags & MATERIAL_FLAG_PROC_OBJECT_SPACE) != 0u;
+
+    return sd;
+}
+
+vec2 projectToTangent(SurfaceData sd, vec3 world_pos) {
+    vec3 pos = sd.use_object_space ? sd.local_pos.xyz : world_pos;
+    return vec2(dot(pos, sd.TBN[0]), dot(pos, sd.TBN[1]));
+}
+
 #endif
