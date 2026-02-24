@@ -94,7 +94,7 @@ grid_init_floor :: proc(grid : ^Grid, floor_transform : Cmp_Primitive)
        		// grid_set(grid, x,y, Tile{center = center})
 	    }
     }
-    grid_texture_init(grid, 0.05, {0,1,1,.3})
+    grid_texture_init(grid, 0.01, {0,1,1,.25})
     data_texture_update()
 }
 
@@ -437,6 +437,7 @@ can_see_target :: proc(grid: Grid, viewer_pos: vec2i, viewer_facing: Direction, 
 
 GridTexture :: struct {
     size: vec2i,
+    start: vec2i,
     cell_size: vec2f,
     line_thickness: f32,
     line_color: [4]f32,
@@ -480,6 +481,7 @@ grid_texture_init :: proc(grid: ^Grid, line_thickness: f32, line_color: [4]f32) 
     grid.texture.cell_size = grid.scale.xy
     grid.texture.line_thickness = line_thickness
     grid.texture.line_color = line_color
+    grid.texture.start = {1,0}
     grid_texture_sync_to_gpu(&grid.texture)
 }
 
@@ -516,11 +518,17 @@ grid_texture_set_line_color :: proc(gt: ^GridTexture, color :[4]f32) {
     grid_texture_sync_to_gpu(gt)
 }
 
-grid_texture_set_cell :: proc(gt: ^GridTexture, x, y: i32, color: GridColor) {
-    tex_x := 1 + x
-    tex_y := y
-    data_texture_set({tex_x, tex_y}, GRID_COLOR_TABLE[color])
+grid_texture_set_cell_grid_color :: proc(gt: ^GridTexture, x, y: i32, color: GridColor) {
+    grid_texture_set_cell_color(gt, x, y, GRID_COLOR_TABLE[color])
 }
+
+grid_texture_set_cell_color :: proc(gt: ^GridTexture, x, y: i32, color: [4]f32) {
+    tex_x := gt.start.x + x
+    tex_y := gt.start.y + y
+    data_texture_set({tex_x, tex_y}, color)
+}
+
+grid_texture_set_cell :: proc{grid_texture_set_cell_color, grid_texture_set_cell_grid_color}
 
 grid_texture_get_cell :: proc(gt: ^GridTexture, x, y: i32) -> GridColor {
     tex_x := 1 + x
@@ -537,72 +545,28 @@ grid_texture_get_cell :: proc(gt: ^GridTexture, x, y: i32) -> GridColor {
 grid_texture_clear :: proc(gt: ^GridTexture) {
     for y in 0..<gt.size.y {
         for x in 0..<gt.size.x {
-            grid_texture_set_cell(gt, x, y, .Empty)
+            grid_texture_set_cell(gt, x, y, GridColor.Empty)
         }
     }
 }
 
-// grid_texture_sync_from_grid :: proc(gt: ^GridTexture, grid: ^Grid) {
-//     for y in 0..<grid.height {
-//         for x in 0..<grid.width {
-//             tile := grid_get(grid^, x, y)
-//             color: GridColor = .Empty
-
-//             if .Wall in tile.flags {
-//                 color = .White
-//             } else if .Obstacle in tile.flags {
-//                 color = .Red
-//             }
-
-//             grid_texture_set_cell(gt, x, y, color)
-//         }
-//     }
-
-//     wr_x := gt.size.x + 1
-//     for y in 0..<grid.height {
-//         for x in 0..<grid.width {
-//             tile := grid_get(grid^, x, y)
-//             // Debug: all cells red to see the area
-//             color: [4]f32 = {1.0, 0.0, 0.0, 0.4}
-
-//             data_texture_set({wr_x + x, y}, color)
-//         }
-//     }
-// }
-
 grid_texture_sync_from_grid :: proc(gt: ^GridTexture, grid: ^Grid) {
-    // Existing: Set main grid cells for walls/obstacles
+    for x in 0..<grid.width  {
     for y in 0..<grid.height {
-        for x in 0..<grid.width {
-            tile := grid_get(grid^, x, y)
-            color: GridColor = .Empty
-
-            if .Wall in tile.flags {
-                color = .White
-            } else if .Obstacle in tile.flags {
-                color = .Red
-            }
-
-            grid_texture_set_cell(gt, x, y, color)
+        tile := grid_get(grid^, x, y)
+        color :[4]f32= GRID_COLOR_TABLE[GridColor.Empty]
+        if .Entity in tile.flags {
+            color = GRID_COLOR_TABLE[GridColor.Yellow]
+        } else if .Wall in tile.flags {
+            color = GRID_COLOR_TABLE[GridColor.White]
+        } else if .Obstacle in tile.flags {
+            color = GRID_COLOR_TABLE[GridColor.Red]
+        } else if .Runnable in tile.flags {
+            color = {0.0, 1.0, 0.0, 0.4}
+        } else if .Walkable in tile.flags {
+            color = {0.0, 0.0, 1.0, 0.4}
         }
-    }
-
-    // Updated: Set WR area based on Walkable/Runnable flags
-    wr_x := gt.size.x + 1
-    for y in 0..<grid.height {
-        for x in 0..<grid.width {
-            tile := grid_get(grid^, x, y)
-            color: [4]f32 = {0.0, 0.0, 0.0, 0.0} // Default: transparent
-
-            // Green for Runnable (priority over Walkable)
-            if .Runnable in tile.flags {
-                color = {0.0, 1.0, 0.0, 0.4} // Green with alpha for blending
-            } else if .Walkable in tile.flags {
-                color = {0.0, 0.0, 1.0, 0.4} // Blue with alpha
-            }
-
-            data_texture_set({wr_x + x, y}, color)
-        }
-    }
-    data_texture_update() // Ensure this flushes to GPU
+        grid_texture_set_cell(gt, x, y, color)
+    }}
+    data_texture_update()
 }

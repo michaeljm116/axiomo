@@ -12,21 +12,21 @@ struct GridInfo {
     vec2 cell_size; // 16 x 10
     float line_thickness;
     vec4 line_color;
-    float wr_offset; // offset to walkable/runnable grid
+    float offset; // offset to walkable/runnable grid
     vec2 origin;     // NEW: Add this
 };
 
-vec4 getWalkableRunnableColor(GridInfo info, vec2 cellCoord)
+vec4 getGridCellColor(GridInfo info, vec2 cellCoord)
 {
     if (cellCoord.x < 0.0 || cellCoord.x >= info.size.x ||
-            cellCoord.y < 0.0 || cellCoord.y >= info.size.y) {
+        cellCoord.y < 0.0 || cellCoord.y >= info.size.y) {
         return vec4(0.0);
     }
 
     float texel = 1.0 / 32.0;
-    float wr_x = info.size.x + 1.0 + cellCoord.x + 0.5;
-    float wr_y = cellCoord.y + 0.5;
-    vec2 uv = vec2(wr_x, wr_y) * texel;
+    float x = cellCoord.x + 1.5;
+    float y = cellCoord.y + 0.5;
+    vec2 uv = vec2(x, y) * texel;
 
     return texture(data_texture, uv);
 }
@@ -52,26 +52,9 @@ GridInfo getGridInfo() {
     info.cell_size = vec2(p2.r, p3.r);
     info.line_thickness = p4.r;
     info.line_color = p5;
-    info.wr_offset = p0.g;
+    info.offset = p0.g;
     info.origin = vec2(p1.g, p2.g); // NEW: Read origin here
     return info;
-}
-
-// Existing getWalkableRunnableColor is fine
-
-// Optional: Add this if you want to mix main cell colors (walls/obstacles)
-vec4 getCellColor(GridInfo info, vec2 cellCoord) {
-    if (cellCoord.x < 0.0 || cellCoord.x >= info.size.x ||
-        cellCoord.y < 0.0 || cellCoord.y >= info.size.y) {
-        return vec4(0.0);
-    }
-
-    float texel = 1.0 / 32.0;
-    float cell_x = 1.0 + cellCoord.x + 0.5;
-    float cell_y = cellCoord.y + 0.5;
-    vec2 uv = vec2(cell_x, cell_y) * texel;
-
-    return texture(data_texture, uv);
 }
 
 // Updated shadeGrid (merge in shadeGrid2 logic)
@@ -108,9 +91,9 @@ vec4 shadeGrid(HitInfo info, vec3 ray_pos, vec4 color, SurfaceData sd) {
     color = mix(color, vec4(gridColor.rgb, color.a), blend);
 
     vec2 cellCoord = floor(vec2(coord.x - .5, coord.y - .5));
-    vec4 wrColor = getWalkableRunnableColor(grid_info, cellCoord);
-    float wrBlend = wrColor.a;
-    color = mix(color, vec4(wrColor.rgb, color.a), wrBlend);
+    vec4 gridCellColor = getGridCellColor(grid_info, cellCoord);
+    float gridBlend = gridCellColor.a;
+    color = mix(color, vec4(gridCellColor.rgb, color.a), gridBlend);
 
     return color;
 }
