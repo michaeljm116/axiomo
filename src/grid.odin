@@ -1,7 +1,8 @@
 package game
 
 import "core:mem"
-
+import "core:math"
+import "core:math/linalg"
 //----------------------------------------------------------------------------\\
 // /Grid
 //----------------------------------------------------------------------------\\
@@ -315,16 +316,18 @@ four_dirs := [4]vec2i{
     { 0, -1},  // down
 }
 
-refresh_player_reachability :: proc(grid: ^Grid, pos: vec2i) {
-    // Step 1: Clear old reachability flags everywhere
+refresh_grid :: proc(grid: ^Grid, battle: ^Battle) {
+    // Clear grid of dynamic flags
     for y in 0..<grid.height {
         for x in 0..<grid.width {
             pos := vec2i{x, y}
             t := &grid_get_mut(grid, pos).flags
-            t^ -= {.Walkable, .Runnable}
+            t^ -= {.Walkable, .Runnable, .Entity}
         }
     }
 
+    // Flag walkable/runnables
+    pos := battle.player.pos
     for d in four_dirs {
         // 1 step away
         one := pos + d
@@ -341,6 +344,10 @@ refresh_player_reachability :: proc(grid: ^Grid, pos: vec2i) {
         }
     }
 
+    //Flag ENtitiesa
+    grid_set_flags(grid, pos, {.Entity})
+    for b in battle.bees do grid_set_flags(grid, b.pos, {.Entity})
+
     t_player := &grid_get_mut(grid, pos).flags
     t_player^ += {.Walkable}
 }
@@ -355,7 +362,7 @@ refresh_visibility :: proc(battle: ^Battle) {
             continue
         }
 
-        if can_see_target(battle.grid^, bee.pos, bee.facing, player_pos) {
+        if can_see_target(battle.grid, bee.pos, player_pos, &bee ) {
             bee.added += {.Alert}
         } else {
             bee.removed += {.Alert}
@@ -363,36 +370,33 @@ refresh_visibility :: proc(battle: ^Battle) {
     }
 }
 
-// Returns true if (tx,ty) is inside the 90° cone of the viewer facing
-in_fov_cone :: proc(sx, sy, tx, ty: i32, facing: Direction, max_range: i32 = 12) -> bool {
-    dx := tx - sx
-    dy := ty - sy
-    manhattan := abs(dx) + abs(dy)
-    if manhattan == 0 do return true
-    if manhattan > max_range {
-        return false
-    }
+in_fov_cone :: proc(viewer_pos: vec2i, target_pos: vec2i, viewer_yaw: f32, fov_degrees: f32 = 180, max_range: i32 = 12) -> bool {
+    dx := f32(target_pos.x - viewer_pos.x)
+    dy := f32(target_pos.y - viewer_pos.y)
 
-    switch facing {
-        case .Right: return dx >= 0 && abs(dy) <= dx      // 90° right quadrant
-        case .Left:  return dx <= 0 && abs(dy) <= -dx
-        case .Down:  return dy >= 0 && abs(dx) <= dy
-        case .Up:    return dy <= 0 && abs(dx) <= -dy
-        case .None: return true
-    }
-    return true
+    if dx == 0 && dy == 0 do return true
+    if abs(dx) + abs(dy) > f32(max_range) do return false
+
+    forward_x := math.cos(viewer_yaw)
+    forward_y := math.sin(viewer_yaw)
+
+    dot := forward_x * dx + forward_y * dy
+    cos_threshold := math.cos(math.to_radians(fov_degrees / 2))
+
+    return dot >= cos_threshold
 }
 
 // Bresenham's Line Algorithm - Grid LOS
-has_clear_los :: proc(grid: Grid, sx, sy, tx, ty: i32) -> bool {
+has_clear_los :: proc(grid: ^Grid, sx, sy, tx, ty: i32, debug_color : [4]f32) -> bool {
     if sx == tx && sy == ty {
         return true
     }
+    diff := vec2i{tx - sx, ty - sy}
+    dx := abs(diff.x)
+    dy := abs(diff.y)
 
-    dx := abs(tx - sx)
-    dy := abs(ty - sy)
-    x_step :i32= tx > sx ? 1 : -1
-    y_step :i32= ty > sy ? 1 : -1
+    x_step := math.sign(diff.x)//i32= tx > sx ? 1 : -1
+    y_step := math.sign(diff.y)//i32= ty > sy ? 1 : -1
 
     err := dx - dy
     x, y := sx, sy
@@ -418,13 +422,14 @@ has_clear_los :: proc(grid: Grid, sx, sy, tx, ty: i32) -> bool {
         if .Wall in tile.flags || .Obstacle in tile.flags {
             return false
         }
+        grid_texture_set_cell(grid, x, y, debug_color)
     }
 }
 
 // Combined check
-can_see_target :: proc(grid: Grid, viewer_pos: vec2i, viewer_facing: Direction, target_pos: vec2i, max_range := i32(12)) -> bool {
-    return in_fov_cone(viewer_pos.x, viewer_pos.y, target_pos.x, target_pos.y, viewer_facing, max_range) &&
-           has_clear_los(grid, viewer_pos.x, viewer_pos.y, target_pos.x, target_pos.y)
+can_see_target :: proc(grid: ^Grid, viewer_pos, target_pos : vec2i, c : ^Character, max_range := i32(12), debug_color := [4]f32{0,0,0,0}) -> bool {
+    return in_fov_cone(viewer_pos, target_pos, get_entity_yaw(c.entity), 180, max_range) &&
+           has_clear_los(grid, viewer_pos.x, viewer_pos.y, target_pos.x, target_pos.y, debug_color)
 }
 
 //----------------------------------------------------------------------------\\
@@ -518,17 +523,21 @@ grid_texture_set_line_color :: proc(gt: ^GridTexture, color :[4]f32) {
     grid_texture_sync_to_gpu(gt)
 }
 
+
+grid_texture_set_cell :: proc{grid_texture_set_cell_color, grid_texture_set_cell_grid_color, grid_texture_set_cell_grid}
+
+grid_texture_set_cell_grid :: proc(grid: ^Grid, x, y: i32, color: [4]f32)
+{
+	grid_texture_set_cell_color(&grid.texture, x, y, color)
+}
 grid_texture_set_cell_grid_color :: proc(gt: ^GridTexture, x, y: i32, color: GridColor) {
     grid_texture_set_cell_color(gt, x, y, GRID_COLOR_TABLE[color])
 }
-
 grid_texture_set_cell_color :: proc(gt: ^GridTexture, x, y: i32, color: [4]f32) {
     tex_x := gt.start.x + x
     tex_y := gt.start.y + y
     data_texture_set({tex_x, tex_y}, color)
 }
-
-grid_texture_set_cell :: proc{grid_texture_set_cell_color, grid_texture_set_cell_grid_color}
 
 grid_texture_get_cell :: proc(gt: ^GridTexture, x, y: i32) -> GridColor {
     tex_x := 1 + x

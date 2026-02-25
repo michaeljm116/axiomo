@@ -64,6 +64,9 @@ add_component :: axiom.add_component
 has :: axiom.has
 entity_exists :: axiom.entity_exists
 
+get_entity_yaw :: axiom.transform_get_entity_yaw
+
+
 update_gui :: #force_inline proc(gui:^Cmp_Gui){
     axiom.update_gui(gui)
 }

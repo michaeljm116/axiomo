@@ -20,12 +20,12 @@ kanban-plugin: board
 
 ## In Progress
 
-- [ ] Line of Sight
-- [ ] Visual Grid
 
 
 ## Complete
 
+- [ ] Visual Grid
+- [ ] Line of Sight
 - [ ] Bee: Grounded vs Flying
 - [ ] Run option: Shift + WASD
 - [ ] Fly/Ground Simple

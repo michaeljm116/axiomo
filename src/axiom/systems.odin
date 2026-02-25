@@ -152,6 +152,14 @@ geometry_transform_converter :: proc(nc: ^Cmp_Node) {
     }
 }
 
+transform_get_entity_yaw :: proc(entity: Entity) -> f32 {
+    trans := get_component(entity, Cmp_Transform)
+    if trans == nil { return 0 }  // Default to right
+    angle, axis := linalg.angle_axis_from_quaternion(trans.local.rot)
+    if math.abs(axis.y) >= .9 do return angle * math.sign(axis.y)
+    return 0
+}
+
 //----------------------------------------------------------------------------\\
 // /BVH System
 //----------------------------------------------------------------------------\\

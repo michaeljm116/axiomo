@@ -416,7 +416,7 @@ test_refresh_player_reachability_basic :: proc(t: ^testing.T) {
 
     player_pos := game.vec2i{2, 2}  // center
 
-    game.refresh_player_reachability(grid, player_pos)
+    game.refresh_grid(grid, player_pos)
 
     // Current position should be Walkable
     current_tile := game.grid_get(grid^, player_pos).flags
@@ -480,7 +480,7 @@ test_refresh_player_reachability_with_wall :: proc(t: ^testing.T) {
     // Block down direction at 2-step (but 1-step open)
     game.grid_set_flags(grid, game.vec2i{2, 0}, game.TileFlags{.Wall})
 
-    game.refresh_player_reachability(grid, player_pos)
+    game.refresh_grid(grid, player_pos)
 
     // Right 1-step: Wall → should NOT be Walkable
     right_one := game.grid_get(grid^, game.vec2i{3, 2}).flags
@@ -527,7 +527,7 @@ test_refresh_player_reachability_clears_old_flags :: proc(t: ^testing.T) {
     player_pos := game.vec2i{1, 1}
 
     // Call refresh - should clear all first
-    game.refresh_player_reachability(grid, player_pos)
+    game.refresh_grid(grid, player_pos)
 
     // Check a non-reachable position (corner, not adjacent)
     corner := game.grid_get(grid^, game.vec2i{0, 0}).flags
@@ -559,7 +559,7 @@ test_refresh_player_reachability_current_pos :: proc(t: ^testing.T) {
 
     player_pos := game.vec2i{1, 1}
 
-    game.refresh_player_reachability(grid, player_pos)
+    game.refresh_grid(grid, player_pos)
 
     current_tile := game.grid_get(grid^, player_pos).flags
     testing.expect(t, .Walkable in current_tile, "Player's current position should be marked Walkable")
@@ -598,7 +598,7 @@ test_a_star_respects_reachability_flags_but_allows_them :: proc(t: ^testing.T) {
     goal  := game.vec2i{4, 0}
 
     // Simulate player reachability from goal (common real-world case)
-    game.refresh_player_reachability(grid, goal)
+    game.refresh_grid(grid, goal)
 
     path := game.path_a_star_find(start, goal, {5,5}, grid^)
 
