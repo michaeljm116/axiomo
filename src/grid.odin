@@ -371,18 +371,19 @@ refresh_visibility :: proc(battle: ^Battle) {
 }
 
 in_fov_cone :: proc(viewer_pos: vec2i, target_pos: vec2i, viewer_yaw: f32, fov_degrees: f32 = 180, max_range: i32 = 12) -> bool {
+    yaw := math.to_degrees(viewer_yaw)
 	switch {
 	// Facing Right
-	case viewer_yaw > 85 && viewer_yaw < 95:
+	case yaw > 85.0 && yaw < 95.0 :
 		return viewer_pos.x < target_pos.x
 	// Facing Down
-	case viewer_yaw > 175 && viewer_yaw < 185:
+	case yaw > 175.0 && yaw < 185.0 :
 		return viewer_pos.y > target_pos.y
 	// Facing Left
-	case viewer_yaw > 265 && viewer_yaw < 275:
+	case yaw > 265.0 && yaw < 275.0 :
 		return viewer_pos.x > target_pos.x
 	// Facing Up
-	case viewer_yaw > 355 || viewer_yaw < 5:
+	case yaw > 355.0 || yaw < 5.0 :
 		return viewer_pos.y < target_pos.y
 	case:
 		return false
