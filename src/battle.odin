@@ -79,10 +79,10 @@ battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
 battle_turn_start_visibility :: proc(btl: ^Battle) {
     for &bee in btl.bees {
         if .Dead in bee.flags { continue }
-        if can_see_target(btl.grid, btl.player.pos, bee.pos, &btl.player, debug_color = {.1,3,9,1}){ bee.added += {.PlayerSeesMe}
-            fmt.println("You face: ", btl.player.facing, " and see Bee: ", bee.name,)
-        }
-        if can_see_target(btl.grid, bee.pos, btl.player.pos, &bee, debug_color = {.5,0.7,1,0}){ bee.added += {.ISeePlayer}
+        // if can_see_target(btl.grid, btl.player.pos, bee.pos, &btl.player, debug_color = {.1,3,9,1}){ bee.added += {.PlayerSeesMe}
+        //     fmt.println("You face: ", btl.player.facing, " and see Bee: ", bee.name,)
+        // }
+        if can_see_target(btl.grid, bee.pos, btl.player.pos, &bee, debug_color = {.5,0.7,1,1}){ bee.added += {.ISeePlayer}
             fmt.println("Bee: ", bee.name, " face: ", bee.facing, " and see's you: ")
         }
     }

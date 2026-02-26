@@ -371,6 +371,25 @@ refresh_visibility :: proc(battle: ^Battle) {
 }
 
 in_fov_cone :: proc(viewer_pos: vec2i, target_pos: vec2i, viewer_yaw: f32, fov_degrees: f32 = 180, max_range: i32 = 12) -> bool {
+	switch {
+	// Facing Right
+	case viewer_yaw > 85 && viewer_yaw < 95:
+		return viewer_pos.x < target_pos.x
+	// Facing Down
+	case viewer_yaw > 175 && viewer_yaw < 185:
+		return viewer_pos.y > target_pos.y
+	// Facing Left
+	case viewer_yaw > 265 && viewer_yaw < 275:
+		return viewer_pos.x > target_pos.x
+	// Facing Up
+	case viewer_yaw > 355 || viewer_yaw < 5:
+		return viewer_pos.y < target_pos.y
+	case:
+		return false
+	}
+}
+
+in_fov_cone_2 :: proc(viewer_pos: vec2i, target_pos: vec2i, viewer_yaw: f32, fov_degrees: f32 = 180, max_range: i32 = 12) -> bool {
     dx := f32(target_pos.x - viewer_pos.x)
     dy := f32(target_pos.y - viewer_pos.y)
 
@@ -428,7 +447,7 @@ has_clear_los :: proc(grid: ^Grid, sx, sy, tx, ty: i32, debug_color : [4]f32) ->
 
 // Combined check
 can_see_target :: proc(grid: ^Grid, viewer_pos, target_pos : vec2i, c : ^Character, max_range := i32(12), debug_color := [4]f32{0,0,0,0}) -> bool {
-    return in_fov_cone(viewer_pos, target_pos, get_entity_yaw(c.entity), 180, max_range) &&
+    return in_fov_cone(viewer_pos, target_pos, get_entity_yaw(c.entity), 120, max_range) &&
            has_clear_los(grid, viewer_pos.x, viewer_pos.y, target_pos.x, target_pos.y, debug_color)
 }
 

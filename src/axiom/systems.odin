@@ -152,12 +152,65 @@ geometry_transform_converter :: proc(nc: ^Cmp_Node) {
     }
 }
 
+transform_get_entity_yaw_mini :: proc(entity: Entity) -> f32 {
+    trans := get_component(entity, Cmp_Transform)
+    if trans == nil do return 0 //Face RIght
+    angle, axis := linalg.angle_axis_from_quaternion(trans.local.rot)
+    if math.abs(axis.y) >= .98 do return angle * math.sign(axis.y)
+    return 0
+}
+
+transform_get_entity_yaw_2 :: proc(entity: Entity) -> f32 {
+    trans := get_component(entity, Cmp_Transform)
+    if trans == nil { return 0 }
+
+    q := trans.local.rot
+    angle, axis := linalg.angle_axis_from_quaternion(q)
+
+    if math.abs(axis.y) >= 0.98 {  // tighter than 0.9 to avoid noise
+        yaw := angle * math.sign(axis.y)  // exactly like yours
+        fmt.println("Angle: ", math.to_degrees(yaw))
+        return yaw  // in radians; convert to deg if needed
+    }
+
+    // Fallback: forward vector (robust to small tilt)
+    base_forward := vec3f{0, 0, 1}  // ← TRY THIS FIRST (if model forward = +Z)
+    // base_forward := vec3f32{1, 0, 0}  // or this if +X
+
+    fwd3 := quaternion_mul_vec3_f32(q, base_forward)  // use your f32 helper
+    ret := math.atan2_f32(fwd3.z, fwd3.x)
+    fmt.println("Fallback Angle: ", math.to_degrees(ret))
+    return 359.8   // yaw from XZ
+}
+
 transform_get_entity_yaw :: proc(entity: Entity) -> f32 {
     trans := get_component(entity, Cmp_Transform)
-    if trans == nil { return 0 }  // Default to right
-    angle, axis := linalg.angle_axis_from_quaternion(trans.local.rot)
-    if math.abs(axis.y) >= .9 do return angle * math.sign(axis.y)
-    return 0
+    if trans == nil { return 0 }
+
+    q := trans.local.rot
+    angle, axis := linalg.angle_axis_from_quaternion(q)
+
+    yaw: f32
+    if math.abs(axis.y) >= 0.98 {
+        yaw = angle * math.sign(axis.y)
+    } else {
+        base_forward := linalg.Vector3f32{1, 0, 0}  // or {1,0,0} — keep what worked
+        fwd3 := quaternion_mul_vec3_f32(q, base_forward)
+        yaw = math.atan2_f32(fwd3.z, fwd3.x)
+    }
+
+    // Normalize to [0, 360) — this eliminates negative angles entirely
+    yaw = math.mod(yaw + math.TAU, math.TAU)  // TAU = 2π
+    if yaw == 0 do yaw = math.to_radians_f32(359.999)
+    fmt.println("Normalized yaw deg:", math.to_degrees(yaw))
+    return yaw
+}
+
+// Rotates a 3D vector by a unit quaternion (f32 version)
+quaternion_mul_vec3_f32 :: proc "contextless" (q: linalg.Quaternionf32, v: linalg.Vector3f32) -> linalg.Vector3f32 {
+    q_vec := linalg.Vector3f32{q.x, q.y, q.z}
+    t := 2 * linalg.vector_cross3(q_vec, v)
+    return v + q.w * t + linalg.vector_cross3(q_vec, t)
 }
 
 //----------------------------------------------------------------------------\\
