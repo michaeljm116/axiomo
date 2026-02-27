@@ -19,7 +19,7 @@ LOS WORKS WOO but only for 180deg rn
 	* Then move towards, away is only for when you see player
 * ## Complexity Analysis:
 	* ### Conclusion:
-[[Line of sight]]
+[[Line of sight - Effects]]
 	* ####  ALERT RUNS
 			* instead of alerting all bee's when running only 
 			* difficuilty in alerting bee's du to both requiring players only

@@ -8,6 +8,8 @@ import "core:math"
 import "core:math/rand"
 import "core:container/queue"
 
+import p_stack "axiom/container/priority_stack"
+
 import "base:intrinsics"
 import "vendor:glfw"
 import xxh2"axiom/extensions/xxhash2"
@@ -522,6 +524,7 @@ Bee :: struct
     using base : Character,
     type : BeeType,
     state: BeeState,
+    target_stack : p_stack.Priority_Stack(BeeTarget)
 }
 
 BeeAction :: enum
@@ -538,6 +541,15 @@ BeeState :: enum{
     Deciding,
     Acting,
     Finishing,
+}
+
+// Priority = Player, Attraction, Random
+BeeTargetType :: enum{
+	Random, Attraction, Player
+}
+BeeTarget :: struct{
+	type : BeeTargetType,
+	pos : vec2i,
 }
 
 BeeActionPriority_Aggressive :: [BeeAction]int{
