@@ -15,7 +15,6 @@ import xxh2"axiom/extensions/xxhash2"
 import "axiom"
 import lex"lexicon"
 
-
 Battle :: struct
 {
     player : Player,
@@ -79,12 +78,24 @@ battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
 battle_turn_start_visibility :: proc(btl: ^Battle) {
     for &bee in btl.bees {
         if .Dead in bee.flags { continue }
-        // if can_see_target(btl.grid, btl.player.pos, bee.pos, &btl.player, debug_color = {.1,3,9,1}){ bee.added += {.PlayerSeesMe}
-        //     fmt.println("You face: ", btl.player.facing, " and see Bee: ", bee.name,)
-        // }
+        if can_see_target(btl.grid, btl.player.pos, bee.pos, &btl.player, debug_color = {.1,3,9,1}){ bee.added += {.PlayerSeesMe}
+            fmt.println("You face: ", btl.player.facing, " and see Bee: ", bee.name,)
+        }
         if can_see_target(btl.grid, bee.pos, btl.player.pos, &bee, debug_color = {.5,0.7,1,1}){ bee.added += {.ISeePlayer}
             fmt.println("Bee: ", bee.name, " face: ", bee.facing, " and see's you: ")
         }
+        bee_hiding_showing(&bee)
+    }
+}
+
+bee_hiding_showing :: proc (bee : ^Bee)
+{
+	if .PlayerSeesMe not_in bee.added {
+       	hide_entity(bee.entity)
+    }
+    else {
+        bt := get_component(bee.entity, Cmp_Transform)
+        if bt != nil do bt.local.sca = 1
     }
 }
 
@@ -494,8 +505,9 @@ BeeType :: enum
 
 init_bee_entity :: proc(bee: ^Bee)
 {
-    switch bee.type {
-case .Normal:
+    switch bee.type
+    {
+		case .Normal:
             bee.entity = load_prefab(lex.PREFAB_BEE)
         case .Aggressive:
             bee.entity = load_prefab(lex.PREFAB_AGGRESSIVE_BEE)
@@ -571,9 +583,10 @@ set_dead_bee :: proc(bee : ^Bee)
     tc.local.rot = linalg.quaternion_angle_axis_f32(179, {0,0,1})
 }
 
-alert_all_bees :: proc(battle : ^Battle)
+alert_all_bees :: #force_inline proc(battle : ^Battle)
 {
-	for &bee in battle.bees do bee.added += {.Alert}
+	battle_turn_start_visibility(battle)
+	for &bee in battle.bees do if .ISeePlayer in bee.flags do bee.added += {.Alert}
 }
 //----------------------------------------------------------------------------\\
 // /Deck
@@ -927,7 +940,7 @@ place_chest_on_grid :: proc(pos : vec2i, battle : ^Battle)
 // Death occurs when health = 0
 // Bee's only attack when alerted
 //----------------------------------------------------------------------------\\
-GameFlag :: enum
+GameFlag :: enum u32
 {
 	Crawling,
     Flying,
@@ -1864,7 +1877,6 @@ ves_event_finish :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Ba
     }
 }
 
-
 ves_update_all :: proc(battle : ^Battle, ves : ^VisualEventData, dt : f32)
 {
     ves_process_queue(battle, ves, dt)
@@ -1936,7 +1948,8 @@ ves_update_visuals :: proc(battle : ^Battle)
 
 ves_update_event :: proc(battle : ^Battle)
 {
-    if .Running in battle.player.added do alert_all_bees(battle)
+	if .Running in battle.player.added 	 do alert_all_bees(battle)
+    if .Running in battle.player.removed do alert_all_bees(battle)
 }
 
 ves_animate_bee :: #force_inline proc(bee : ^Bee, dt : f32) -> bool
@@ -2000,8 +2013,8 @@ ves_animate_player_end :: #force_inline proc(p : ^Player){
     p.anim.timer = 0
     ac := get_component(p.entity, Cmp_Animation)
     animate_idle(ac, lex.PREFAB_FROKU, p.move_anim)
-    p.removed +=  {.Running}
-    p.removed += {.Attack}
+    if .Running in p.flags do p.removed +=  {.Running}
+    if .Attack in p.flags do p.removed += {.Attack}
 }
 
 // Push proc (your #3–5)
