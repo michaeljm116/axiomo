@@ -109,7 +109,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
             overworld_start()
         }
 	case .Game:
-		run_battle(&g.battle, &g.ves)
+		run_battle(&g.battle, &g.ves, dt)
 		ves_update_all(&g.battle, &g.ves, dt)
 		if (g.battle.player.health <= 0){
 			state^ = .GameOver

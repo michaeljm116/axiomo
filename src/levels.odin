@@ -19,6 +19,9 @@ battle_setup_1 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocat
     player = {name ='p', pos = vec2i{0,2}, health = 1, weapon = WeaponsDB[.Hand], added = {}, removed = {}, flags = {}}
     bees[0] = Bee{name = 'a', pos = vec2i{6,2}, target = vec2i{6,2}, health = 100, type = .Aggressive, flags = {}}
     bees[1] = Bee{name = 'n', pos = vec2i{6,3}, target = vec2i{6,3}, health = 100, type = .Normal, flags = {}}
+
+    bees[0].timer.max = 5
+    bees[1].timer.max = 6
 }
 
 battle_setup_2 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocator)

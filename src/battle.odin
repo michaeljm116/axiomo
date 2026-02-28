@@ -159,7 +159,7 @@ set_game_start :: proc(){
 //----------------------------------------------------------------------------\\
 // /Run Game
 //----------------------------------------------------------------------------\\
-run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
+run_battle :: proc(battle : ^Battle, ves : ^VisualEventData, dt : f32)
 {
     using battle
     switch state
@@ -174,7 +174,7 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
         case .Continue:
         	switch v in queue.front(&battle_queue).variant{
          		case ^Player:
-        			run_players_turn(battle, ves)
+        			run_players_turn(battle, ves, dt)
            		case ^Bee:
              		run_bee_turn(v, battle, ves, f32(g.frame.physics_time_step))
              }
@@ -182,7 +182,7 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData)
 	        if check_end_condition(battle) do break
 			battle_turn_end_visibility(battle)
 	        curr := queue.pop_front(&battle_queue)
-	        if .Dead not_in curr.flags do queue.push(&battle_queue, curr)
+	        if .Dead not_in curr.flags && .Interrupt not_in curr.flags do queue.push(&battle_queue, curr)
 			state = .Start
     }
 }
@@ -216,9 +216,10 @@ check_status_effect_bee :: proc(bee : ^Bee)
 {
 }
 
-run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^PlayerInputState, battle_state : ^BattleState, player : ^Player, bees : ^[dynamic]Bee, bee_selection : ^int, bee_is_near : ^bool)
+run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData, dt : f32)
 {
     if ves_is_busy(ves) do return
+    bee_timer_update(battle, ves, dt)
     using battle
     //Check if victory:
     victory := check_win_condition(battle)
@@ -227,7 +228,6 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
         ves_clear_screens(ves)
     }
     top := ves_top_screen(ves)
-
     switch top{
     	case .None:
 	   		ves_screen_push(ves, .SelectCharacter)
@@ -260,6 +260,7 @@ run_players_turn :: proc(battle: ^Battle, ves : ^VisualEventData)//state : ^Play
             return
     }
 }
+
 
 check_action_attack :: proc(battle : ^Battle, ves : ^VisualEventData) -> bool{
     if !battle.bee_is_near || !game_controller_just_pressed(.Select) do return false
@@ -337,6 +338,8 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
         state = .End
         return
     }
+    if .Interrupt in bee.flags do bee.removed += {.Interrupt}
+
     switch bee.state {
     case .Deciding:
         card := run_bee_decision(bee, &deck)  // Selects action, sets state/flags in bee_action_selecperform
@@ -530,7 +533,8 @@ Bee :: struct
     using base : Character,
     type : BeeType,
     state: BeeState,
-    target_stack : p_stack.Priority_Stack(BeeTarget)
+    target_stack : p_stack.Priority_Stack(BeeTarget),
+    timer : CurrMax,
 }
 
 BeeAction :: enum
@@ -742,6 +746,28 @@ deck_choose_card :: proc(cards : [dynamic]BeeAction, priority : [BeeAction]int) 
 //----------------------------------------------------------------------------\\
 // /BA Bee Actions
 //----------------------------------------------------------------------------\\
+bee_timer_update :: proc(battle : ^Battle, ves : ^VisualEventData, dt : f32)
+{
+   for &b in battle.bees {
+      b.timer.curr += dt
+      if b.timer.curr >= b.timer.max {
+          b.timer.curr = 0
+          b.added += {.Interrupt}
+          queue.push_front(&battle.battle_queue, &b.base)
+          ves_clear_screens(ves)
+          fmt.println("BEE ", b.name, " IS INTERRUPRTING PLAYER")
+      }
+   }
+}
+
+bee_timer_reset :: #force_inline proc(battle : ^Battle)
+{
+    for &b in battle.bees{
+        b.timer.curr = 0
+        b.removed += {.Interrupt}
+    }
+}
+
 bee_action_perform :: proc(action : BeeAction, bee : ^Bee, target : BeeTarget, player : ^Player, grid : Grid)
 {
     switch action{
@@ -1013,6 +1039,7 @@ GameFlag :: enum u32
     Overlapping,
     ISeePlayer,
     PlayerSeesMe,
+    Interrupt
 }
 GameFlags :: bit_set[GameFlag; u32]
 
@@ -1054,14 +1081,13 @@ move_player :: proc(p : ^Player, axis : MoveAxis , grid : ^Grid)
             }
         }
     }
-
     queue.push(&g.ves.event_queue, ev)
 }
 
 weap_check :: proc(p : vec2i, grid : ^Grid) -> bool{
     // Tile is a bitset; check membership
     tile := grid_get(grid, p)
-    if .Weapon in tile.flags {
+        if .Weapon in tile.flags {
         grid_set(grid,p, {})
         return true
     }
@@ -1878,6 +1904,7 @@ ves_event_start :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Bat
         switch c in event.character{
   		case ^Player:
             ves_animate_player_start(c)
+            bee_timer_reset(battle)
   		case ^Bee:
             ves_animate_bee_start(c)
         }
