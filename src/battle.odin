@@ -86,7 +86,7 @@ battle_turn_start_visibility :: proc(btl: ^Battle) {
         if can_see_target(btl.grid, bee.pos, btl.player.pos, &bee, debug_color = {.5,0.7,1,1}){ bee.added += {.ISeePlayer}
             fmt.println("Bee: ", bee.name, " face: ", bee.facing, " and see's you: ")
         }
-        bee_hiding_showing(&bee)
+        // TODO: I DONT LIKE THIS bee_hiding_showing(&bee)
     }
 }
 
