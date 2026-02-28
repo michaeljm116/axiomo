@@ -30,7 +30,7 @@ Battle :: struct
     // input_state : PlayerInputState,
 
     current_bee: int,
-    attack_bar : AttackBar,
+    attack_qte : AttackQTE,
     dodge_qte : DodgeQTE,
     // bee_selection : int,
     bee_is_near : bool,
@@ -1585,7 +1585,7 @@ CurrMax :: axiom.CurrMax
 //----------------------------------------------------------------------------\\
 // /Attack Bar System
 //----------------------------------------------------------------------------\\
-AttackBar :: struct {
+AttackQTE :: struct {
     num : i8,
     time : CurrMax,
     interval : CurrMax,
@@ -1598,7 +1598,7 @@ AttackBar :: struct {
     center : f32,
 }
 
-attack_qte_init :: proc(ab : ^AttackBar, gui_map : ^map[string]Entity)
+attack_qte_init :: proc(ab : ^AttackQTE, gui_map : ^map[string]Entity)
 {
     ab.bar = get_component(gui_map[lex.ATTACK_BAR], Cmp_Gui)
     ab.bee = get_component(gui_map[lex.ATTACK_BAR_BEE], Cmp_Gui)
@@ -1612,7 +1612,7 @@ attack_qte_init :: proc(ab : ^AttackBar, gui_map : ^map[string]Entity)
     // Init position and default values
 }
 
-attack_qte_start :: proc(bar : ^AttackBar)
+attack_qte_start :: proc(bar : ^AttackQTE)
 {
     using bar
     // Set the Bee at a random distance to the right max = right most bar width
@@ -1628,7 +1628,7 @@ attack_qte_start :: proc(bar : ^AttackBar)
     update_gui(bee)
 }
 
-attack_qte_update :: proc(bar : ^AttackBar, dt : f32) -> bool
+attack_qte_update :: proc(bar : ^AttackQTE, dt : f32) -> bool
 {
     bar.bee.min.x -= dt * bar.speed
     update_gui(bar.box)
@@ -1639,10 +1639,13 @@ attack_qte_update :: proc(bar : ^AttackBar, dt : f32) -> bool
     return true
 }
 
-attack_qte_finish :: proc(bar : ^AttackBar)
+attack_qte_finish :: proc(bar : ^AttackQTE, battle: ^Battle)
 {
     using bar
-    if bee.min.x > box.min.x && bee.min.x < (box.min.x + box.extents.x) do fmt.println(lex.MSG_YOU_KILLT_IT)
+    if bee.min.x > box.min.x && bee.min.x < (box.min.x + box.extents.x){
+    	battle.curr_sel.character.added += {.Dead}
+     	fmt.println("Bee Kilt!")
+    }
 }
 
 attack_qte_hide :: proc()
@@ -1659,7 +1662,7 @@ attack_qte_show :: proc()
     ToggleUI(lex.ATTACK_BAR_SLIDER,true)
 }
 
-attack_qte_vis :: proc(ab : ^AttackBar, dt : f32)
+attack_qte_vis :: proc(ab : ^AttackQTE, dt : f32)
 {
     if ab == nil { return }
     if ab.bar == nil || ab.box == nil || ab.bee == nil { return }
@@ -1795,9 +1798,13 @@ dodge_qte_handle_pause :: proc(qte : ^DodgeQTE) -> bool
     return true
 }
 
-dodge_qte_finish :: proc(qte : ^DodgeQTE)
+dodge_qte_finish :: proc(qte : ^DodgeQTE, battle : ^Battle)
 {
     if qte.success do fmt.println("DODGED")
+    else {
+	    battle.player.added += {.Dead}
+	    fmt.println("Player Kilt!")
+	}
     clear(&qte.dodges)
 }
 
@@ -1910,7 +1917,7 @@ ves_event_start :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Bat
         }
     case .AttackQTE:
         ves_screen_push(ves, .PlayerAttack)
-        attack_qte_start(&battle.attack_bar)
+        attack_qte_start(&battle.attack_qte)
     case .DodgeQTE:
         ves_screen_push(ves, .BeeAttack)
         dodge_qte_start(&battle.dodge_qte)
@@ -1929,7 +1936,7 @@ ves_event_update :: proc(event: ^VisualEvent, battle: ^Battle, dt: f32) -> bool 
             return ves_animate_bee(c, dt)
         }
     case .AttackQTE:
-        return attack_qte_update(&battle.attack_bar, dt)
+        return attack_qte_update(&battle.attack_qte, dt)
     case .DodgeQTE:
         return dodge_qte_update(&battle.dodge_qte, dt)
     case .VisualEffect:
@@ -1950,10 +1957,10 @@ ves_event_finish :: proc(event: ^VisualEvent, ves: ^VisualEventData, battle: ^Ba
 		ves_clear_screens(ves)
     case .AttackQTE:
         ves_screen_pop(ves)
-	   	attack_qte_finish(&battle.attack_bar)
+	   	attack_qte_finish(&battle.attack_qte, battle)
     case .DodgeQTE:
         ves_screen_pop(ves)
-        dodge_qte_finish(&battle.dodge_qte)
+        dodge_qte_finish(&battle.dodge_qte, battle)
     case .VisualEffect:
 	    break
     }

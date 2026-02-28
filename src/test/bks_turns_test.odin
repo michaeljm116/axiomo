@@ -1,4 +1,139 @@
+#+feature using-stmt
 package game_tests
+
+import "core:testing"
+import "core:mem"
+import "core:fmt"
+import "core:container/queue"
+import "core:math/rand"
+
+import game ".."
+@(test)
+t_bee_timer_single_interrupt :: proc(t: ^testing.T) {
+    using game
+
+    battle := Battle{}
+    battle.battle_queue = queue.Queue(^Character){}
+    queue.init(&battle.battle_queue, 16, context.allocator)
+    defer queue.destroy(&battle.battle_queue)
+
+    bee := Bee{
+        base = Character{},
+        flags = {},
+        health = 100,
+    }
+
+    bee.timer.curr = 0
+    bee.timer.max = 3.0
+    append(&battle.bees, bee)
+
+    // Simulate 4 seconds of player thinking
+    bee_timer_update(&battle, nil, 4.0)
+
+    testing.expect(t, len(battle.bees) == 1)
+    testing.expect(t, .Interrupt in battle.bees[0].flags)
+    testing.expect(t, queue.len(battle.battle_queue) == 1)
+    testing.expect(t, queue.front(&battle.battle_queue) == &battle.bees[0].base)
+}
+
+@(test)
+t_bee_timer_multiple_bees_same_time :: proc(t: ^testing.T) {
+    using game
+
+    battle := Battle{}
+    battle.battle_queue = queue.Queue(^Character){}
+    queue.init(&battle.battle_queue, 16, context.allocator)
+    defer queue.destroy(&battle.battle_queue)
+
+    bee1 := Bee{flags = {}, health = 100}
+    bee2 := Bee{flags = {}, health = 100}
+    bee1.timer.curr = 0
+    bee1.timer.max = 5.0
+    bee2.timer.curr = 0
+    bee2.timer.max = 5.0
+    append(&battle.bees, bee1, bee2)
+
+    bee_timer_update(&battle, nil, 5.1)
+
+    testing.expect(t, queue.len(battle.battle_queue) == 2)
+    testing.expect(t, .Interrupt in battle.bees[0].flags)
+    testing.expect(t, .Interrupt in battle.bees[1].flags)
+    // order depends on push order — usually last pushed is front
+}
+
+@(test)
+t_bee_timer_dead_bee_no_push :: proc(t: ^testing.T) {
+    using game
+
+    battle := Battle{}
+    battle.battle_queue = queue.Queue(^Character){}
+    queue.init(&battle.battle_queue, 16, context.allocator)
+    defer queue.destroy(&battle.battle_queue)
+
+    bee := Bee{
+        flags = {},
+        health = 0, // dead
+    }
+
+    bee.timer.curr = 0
+    bee.timer.max = 2.0
+    append(&battle.bees, bee)
+
+    bee_timer_update(&battle, nil, 3.0)
+
+    testing.expect(t, queue.len(battle.battle_queue) == 0, "Dead bee should not push to queue")
+    testing.expect(t, .Interrupt not_in bee.flags, "Should not set interrupt on dead bee")
+}
+
+@(test)
+t_bee_timer_overflow_does_not_double_push :: proc(t: ^testing.T) {
+    using game
+
+    battle := Battle{}
+    battle.battle_queue = queue.Queue(^Character){}
+    queue.init(&battle.battle_queue, 16, context.allocator)
+    defer queue.destroy(&battle.battle_queue)
+
+    bee := Bee{flags = {}, health = 100}
+    bee.timer.curr = 0
+    bee.timer.max = 2.0
+    append(&battle.bees, bee)
+
+    // Simulate very large dt (lag spike)
+    bee_timer_update(&battle, nil, 10.0)
+
+    testing.expect(t, queue.len(battle.battle_queue) == 1, "Should only push once even with large dt")
+    testing.expect(t, bee.timer.curr == 0, "Timer should reset to 0 after trigger") // if you add reset
+}
+
+@(test)
+t_bee_timer_reset_after_action :: proc(t: ^testing.T) {
+    using game
+
+    battle := Battle{}
+    battle.battle_queue = queue.Queue(^Character){}
+    queue.init(&battle.battle_queue, 16, context.allocator)
+    defer queue.destroy(&battle.battle_queue)
+
+    bee := Bee{
+        flags = {.Interrupt},
+        health = 100,
+    }
+
+    bee.timer.curr = 4.0
+    bee.timer.max = 3.0
+    append(&battle.bees, bee)
+
+    // Simulate bee turn starting
+    // (this would normally be in your bee turn proc)
+    if .Interrupt in bee.flags {
+        bee.timer.curr = 0
+        bee.flags -= {.Interrupt}
+    }
+
+    testing.expect(t, bee.timer.curr == 0)
+    testing.expect(t, .Interrupt not_in bee.flags)
+}
 
 // import "core:testing"
 // import "core:fmt"

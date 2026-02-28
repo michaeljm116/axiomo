@@ -55,12 +55,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/February 28, 2026, Sat.md",
+                "file": "BeeKillingsInn/Code/DeathOrVictory.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "February 28, 2026, Sat"
+              "title": "DeathOrVictory"
             }
           },
           {
@@ -135,7 +135,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "right": {
     "id": "c0dba331d38e27d5",
@@ -230,8 +231,9 @@
   },
   "active": "763ec8751c05f55d",
   "lastOpenFiles": [
-    "DailyNotes/February 27, 2026, Fri.md",
     "DailyNotes/February 28, 2026, Sat.md",
+    "BeeKillingsInn/Code/DeathOrVictory.md",
+    "DailyNotes/February 27, 2026, Fri.md",
     "BeeKillingsInn/Production/Steam Next Fest 2026.md",
     "BeeKillingsInn/Production/!kb_Mechanics.md",
     "BeeKillingsInn/Production/Mechanics/Action - Attack.md",

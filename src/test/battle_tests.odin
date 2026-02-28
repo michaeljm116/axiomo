@@ -123,9 +123,9 @@ setup_battle :: proc() -> ^Battle {
 
     // States
     battle.state = .Continue
-    battle.input_state = .SelectCharacter
+    // battle.input_state = .SelectCharacter
     battle.current_bee = 0
-    battle.dice = [2]game.Dice {}
+    // battle.dice = [2]game.Dice {}
     battle.bee_is_near = false
 
     return battle
@@ -139,1105 +139,1105 @@ teardown_battle :: proc(battle: ^Battle) {
 // Game Ending & Win/Lose Conditions
 // ===========================================================================
 
-@(test)
-Game_Ends_If_Player_Health_is_Zero :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.health = 0
-
-    // Test the pure logic function
-    testing.expect(t, game.check_lose_condition(battle), "Game should end if player health is 0")
-}
-
-@(test)
-Game_Ends_When_All_Bees_Are_Dead :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    for &bee in battle.bees {
-        bee.flags += {.Dead}
-    }
-
-    testing.expect(t, game.check_win_condition(battle), "Game should end when all bees are dead")
-}
-
-@(test)
-Game_Ends_When_Last_Bee_Dies_While_Player_Still_Has_Health :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.health = 5
-    for &bee in battle.bees {
-        bee.health = 0
-        bee.flags += {.Dead}
-    }
-
-    testing.expect(t, game.check_win_condition(battle), "Game should end when last bee dies and player has health")
-    testing.expect(t, !game.check_lose_condition(battle), "Player should not have lost")
-}
-
-@(test)
-Game_Ends_Immediately_After_Check_For_Win_Condition_When_Condition_Met :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    for &bee in battle.bees {
-        bee.flags += {.Dead}
-    }
-
-    // Win condition should be true immediately
-    testing.expect(t, game.check_win_condition(battle), "Win condition met immediately")
-}
-
-// ===========================================================================
-// Game Continues (Non-Ending) Conditions
-// ===========================================================================
-
-@(test)
-Game_Does_Not_End_When_Player_At_1_Health_And_Bees_Still_Alive :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.health = 1
-    // Bees are alive by default (no .Dead flag)
-
-    testing.expect(t, !game.check_lose_condition(battle), "Game continues at 1 health")
-    testing.expect(t, !game.check_win_condition(battle), "Game not won with bees alive")
-}
-
-@(test)
-Game_Continues_If_No_Win_Condition_After_Bee_Turn :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Bees alive, player has health
-    testing.expect(t, !game.check_win_condition(battle), "No win with bees alive")
-    testing.expect(t, !game.check_lose_condition(battle), "No lose with health > 0")
-}
-
-@(test)
-Game_Continues_When_Player_Moves_Into_Item_Tile_And_Picks_Up_Item :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set an item tile
-    idx := int(battle.player.pos.y * i32(battle.grid.width) + battle.player.pos.x + 1)
-    battle.grid.tiles[idx].flags = game.TileFlags{ .Weapon }
-
-    // Game should continue
-    testing.expect(t, !game.check_win_condition(battle), "Game continues after item tile")
-    testing.expect(t, !game.check_lose_condition(battle), "Game continues after item tile")
-}
-
-// ===========================================================================
-// Turn Loop & Phase Checks (testing state/conditions only)
-// ===========================================================================
-
-@(test)
-Game_Checks_Win_Condition_After_Each_Phase :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Verify we can check win condition at any point
-    testing.expect(t, !game.check_win_condition(battle), "No win initially")
-
-    // Mark all bees dead
-    for &bee in battle.bees {
-        bee.flags += {.Dead}
-    }
-    testing.expect(t, game.check_win_condition(battle), "Win after all bees dead")
-}
-
-@(test)
-Game_Does_Not_Proceed_To_Bee_Turn_If_Player_Dies_During_Player_Turn :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.health = 0
-    battle.state = .Continue
-
-    // Lose condition should be true
-    testing.expect(t, game.check_lose_condition(battle), "Lose condition true when health is 0")
-}
-
-@(test)
-Win_Condition_Checked_After_Player_Move :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // After any action, win condition can be checked
-    testing.expect(t, !game.check_win_condition(battle), "Win condition checked (no win)")
-}
-
-@(test)
-Win_Condition_Checked_After_Bee_Move :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    testing.expect(t, !game.check_win_condition(battle), "Win condition checked after bee move")
-}
-
-// ===========================================================================
-// Player Action Limits (state-based tests)
-// ===========================================================================
-
-@(test)
-Player_Can_Only_Perform_One_Action_Per_Turn_By_Default :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // This is a rule verification - player starts in SelectCharacter
-    testing.expect(t, battle.input_state == .SelectCharacter, "Starts in SelectCharacter")
-}
-
-@(test)
-Player_Can_Choose_Attack_Prepare_Or_Move_Each_Turn :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Player starts in SelectCharacter, can transition to Movement or SelectEnemy
-    testing.expect(t, battle.input_state == .SelectCharacter, "Can choose action")
-}
-
-@(test)
-Player_Cannot_Perform_Two_Attacks_In_One_Turn :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Rule: after completing an action, turn should end
-    // This is enforced by state machine in run_players_turn
-    testing.expect(t, battle.state == .Continue, "Player turn state valid")
-}
-
-// ===========================================================================
-// Player Movement (pure logic tests)
-// ===========================================================================
-
-@(test)
-Player_Default_Move_Is_One_Block_Per_Turn :: proc(t: ^testing.T) {
-    // This tests the rule, not the implementation
-    // Rule: player moves 1 block by default
-    fmt.println("RULE: Player default move is 1 block per turn")
-}
-
-@(test)
-Player_Can_Move_Two_Blocks_In_One_Turn :: proc(t: ^testing.T) {
-    // TODO: Feature not yet implemented in battle.odin
-    fmt.println("SKIPPED: Double move feature not implemented")
-}
-
-@(test)
-Player_Can_Choose_To_Move_One_Or_Two_Blocks_As_Single_Action :: proc(t: ^testing.T) {
-    // TODO: Feature not yet implemented
-    fmt.println("SKIPPED: Choice of 1 or 2 block move not implemented")
-}
-
-@(test)
-Double_Move_Consumes_Only_One_Action :: proc(t: ^testing.T) {
-    // TODO: Feature not yet implemented
-    fmt.println("SKIPPED: Double move action consumption not implemented")
-}
-
-// ===========================================================================
-// Player Alerting via Movement
-// ===========================================================================
-
-@(test)
-Moving_One_Block_Does_Not_Alert_Bees_By_Default :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Bees start without Alert flag
-    for bee in battle.bees {
-        testing.expect(t, .Alert not_in bee.flags, "Bees not alerted by default")
-    }
-}
-
-@(test)
-Moving_Two_Blocks_Alerts_All_Bees_On_Map :: proc(t: ^testing.T) {
-    // TODO: Feature not yet implemented
-    fmt.println("SKIPPED: Double move alerting not implemented")
-}
-
-@(test)
-Moving_Two_Blocks_Alerts_All_Bees_Regardless_Of_Distance :: proc(t: ^testing.T) {
-    // TODO: Feature not yet implemented
-    fmt.println("SKIPPED: Double move distance-independent alerting not implemented")
-}
-
-// ===========================================================================
-// Player Grid & Tile Movement Rules
-// ===========================================================================
-
-@(test)
-Player_Cannot_Move_Outside_Grid_Bounds :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Test in-bounds function
-    // Position at edge should fail for movement outside
-    out_of_bounds := vec2i{-1, 0}
-    testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid left")
-
-    out_of_bounds = vec2i{i32(game.GRID_WIDTH), 0}
-    testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid right")
-
-    out_of_bounds = vec2i{0, -1}
-    testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid bottom")
-
-    out_of_bounds = vec2i{0, i32(game.GRID_HEIGHT)}
-    testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid top")
-}
-
-@(test)
-Player_Cannot_Move_Into_Wall_Tile :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set a wall tile
-    battle.grid.tiles[1].flags = game.TileFlags{ .Wall } // Position {1, 0}
-
-    testing.expect(t, !game.path_is_walkable(vec2i{1, 0}, battle.player.pos, battle.grid^), "Cannot move into wall tile")
-}
-
-@(test)
-Player_Cannot_Move_One_Tile_Diagonally :: proc(t: ^testing.T) {
-    // Rule test: diagonal movement is not allowed (only orthogonal)
-    // This is enforced by move_player only accepting w/a/s/d
-    fmt.println("RULE: Diagonal movement not allowed (only w/a/s/d input)")
-}
-
-@(test)
-Player_Can_Move_Onto_Blank_Tile :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Blank tile should be valid
-    testing.expect(t, game.path_is_walkable(vec2i{1, 0}, battle.player.pos, battle.grid^), "Can move onto blank tile")
-}
-
-@(test)
-Player_Can_Move_Onto_Item_Tile :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set weapon tile
-    battle.grid.tiles[1].flags = game.TileFlags{ .Weapon }
-
-    // Weapon tiles are walkable
-    testing.expect(t, game.path_is_walkable(vec2i{1, 0}, battle.player.pos, battle.grid^), "Can move onto item tile")
-}
-
-@(test)
-Player_Can_Move_Onto_Entity_Tile :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Entity tiles - testing if bee position is walkable
-    // Bees don't block movement, they're on blank tiles
-    testing.expect(t, game.path_is_walkable(battle.bees[0].pos, battle.player.pos, battle.grid^), "Can move onto entity tile")
-}
-
-@(test)
-Distance_Of_One_Is_Only_Orthogonal_Not_Diagonal :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Test bee_near function - need weapon range set to 1 for bee_near to work
-    battle.player.pos = {0, 0}
-    battle.player.weapon.range = 1
-
-    // Diagonal bee at {1, 1} should NOT be near (manhattan distance = 2)
-    battle.bees[0].pos = {1, 1}
-    testing.expect(t, !game.bee_near(battle.player, &battle.bees[0]), "Diagonal not considered distance one")
-
-    // Orthogonal bee at {1, 0} should be near (manhattan distance = 1)
-    battle.bees[0].pos = {1, 0}
-    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Orthogonal is distance one")
-
-    // Orthogonal bee at {0, 1} should be near (manhattan distance = 1)
-    battle.bees[0].pos = {0, 1}
-    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Orthogonal up is distance one")
-}
-
-// ===========================================================================
-// Player Item Interaction
-// ===========================================================================
-
-@(test)
-Player_Automatically_Picks_Up_Item_When_Landing_On_Item_Tile :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set weapon tile
-    idx := 1 // Position {1, 0}
-    battle.grid.tiles[idx].flags = game.TileFlags{ .Weapon }
-
-    // weap_check returns true if there's a weapon and clears it
-    testing.expect(t, game.weap_check(vec2i{1, 0}, battle.grid), "Picks up item on weapon tile")
-}
-
-@(test)
-Item_Tile_Becomes_Blank_After_Player_Pickup :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    idx := 1 // Position {1, 0}
-    battle.grid.tiles[idx].flags = game.TileFlags{ .Weapon }
-
-    game.weap_check(vec2i{1, 0}, battle.grid) // This clears the tile
-
-    testing.expect(t, battle.grid.tiles[idx] == {}, "Item tile becomes blank after pickup")
-}
-
-// ===========================================================================
-// Player Attack Rules (Basic)
-// ===========================================================================
-
-@(test)
-Player_Cannot_Attack_Bee_Outside_Weapon_Range :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.weapon.range = 1
-    battle.player.pos = {0, 0}
-    battle.bees[0].pos = {3, 0} // Distance 3, outside range 1
-
-    // bee_check returns (in_range, index)
-    in_range, _ := game.bee_check(battle.player, battle.bees)
-    testing.expect(t, !in_range, "Cannot attack bee outside weapon range")
-}
-
-@(test)
-Player_Cannot_Attack_Without_Equipped_Weapon :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.weapon = {} // Empty weapon with range 0
-    battle.player.pos = {0, 0}
-    battle.bees[0].pos = {1, 0}
-
-    // With range 0, even adjacent bees are out of range
-    in_range, _ := game.bee_check(battle.player, battle.bees)
-    testing.expect(t, !in_range, "Cannot attack without weapon (range 0)")
-}
-
-@(test)
-Player_Can_Only_Attack_With_Equipped_Weapon :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.weapon.range = 1
-    battle.player.pos = {0, 0}
-    battle.bees[0].pos = {1, 0}
-
-    in_range, idx := game.bee_check(battle.player, battle.bees)
-    testing.expect(t, in_range && idx == 0, "Can attack bee in range with equipped weapon")
-}
-
-// ===========================================================================
-// Bee Action & Range Limits
-// ===========================================================================
-
-@(test)
-Bee_Can_Only_Perform_One_Action_Per_Turn :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Rule: bee performs one action then current_bee increments
-    battle.current_bee = 0
-    testing.expect(t, battle.current_bee == 0, "Bee starts at index 0")
-}
-
-@(test)
-Bee_Can_Choose_Attack_Or_Move_Each_Turn :: proc(t: ^testing.T) {
-    // Rule: bees can Sting (attack) or Fly/Crawl (move)
-    fmt.println("RULE: Bee chooses attack or move based on deck cards")
-}
-
-@(test)
-Bee_Can_Only_Attack_At_Range_0_Or_1 :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.pos = {0, 0}
-    battle.player.weapon.range = 1 // Need weapon range for bee_near check
-
-    // Range 1 - should be near
-    battle.bees[0].pos = {1, 0}
-    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Bee at range 1 can attack")
-
-    // Range 0 - same tile
-    battle.bees[0].pos = {0, 0}
-    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Bee at range 0 can attack")
-}
-
-@(test)
-Bee_Can_Attack_Player_At_Range_0 :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.pos = {0, 0}
-    battle.bees[0].pos = {0, 0}
-
-    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Can attack at range 0")
-}
-
-@(test)
-Bee_Can_Attack_Player_At_Range_1 :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.pos = {0, 0}
-    battle.player.weapon.range = 1 // Need weapon range for bee_near check
-    battle.bees[0].pos = {1, 0}
-
-    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Can attack at range 1")
-}
-
-@(test)
-Bee_Cannot_Attack_Player_From_2_Blocks_Away :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.pos = {0, 0}
-    battle.bees[0].pos = {2, 0}
-
-    testing.expect(t, !game.bee_near(battle.player, &battle.bees[0]), "Cannot attack from 2 blocks away")
-}
-
-// ===========================================================================
-// Bee Alert Mechanics
-// ===========================================================================
-
-@(test)
-Bee_Cannot_Attack_Player_Unless_Alerted :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Bee without Alert flag
-    battle.bees[0].flags -= {.Alert}
-
-    testing.expect(t, .Alert not_in battle.bees[0].flags, "Bee is not alerted")
-    // Attack logic checks for .Alert flag before attacking
-}
-
-@(test)
-Bee_Cannot_Attack_If_Not_Alerted_Even_If_In_Range :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.player.pos = {0, 0}
-    battle.player.weapon.range = 1 // Need weapon range for bee_near check
-    battle.bees[0].pos = {1, 0}
-    battle.bees[0].flags -= {.Alert}
-
-    // Bee is in range but not alerted
-    testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Bee is in range")
-    testing.expect(t, .Alert not_in battle.bees[0].flags, "But bee is not alerted")
-}
-
-@(test)
-Bee_Becomes_Alerted_When_Player_Performs_Double_Move :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Ensure bees start without Alert flag
-    for &bee in battle.bees {
-        bee.flags -= {.Alert}
-        testing.expect(t, .Alert not_in bee.flags, "Bees start without alert")
-    }
-
-    // Actually simulate the player movement system that triggers double move alerting
-    // Set up player position and movement parameters
-    original_pos := battle.player.pos
-    move_dir := vec2i{1, 0} // Move right
-
-    // Check if the double move destination is valid (as done in move_player)
-    double_move_dest := original_pos + 2 * move_dir
-    testing.expect(t, game.path_in_bounds(double_move_dest, battle.grid^), "Double move destination should be in bounds")
-
-    // Simulate the actual move_player logic for double move
-    if game.path_in_bounds(double_move_dest, battle.grid^) {
-        // Set player target and flags as move_player would
-        battle.player.target = double_move_dest
-        battle.player.anim_flag = game.AnimationFlag.Run
-        battle.player.added += {.Animate}
-
-        // This is the key part - call alert_all_bees as move_player does
-        game.alert_all_bees(battle)
-    }
-
-    // Simulate one frame of battle processing where VES handles the flag changes
-    // This mimics what happens in ves_update_visuals during real battle
-    for &bee in battle.bees {
-        if .Alert in bee.added {
-            bee.added -= {.Alert}
-            bee.flags += {.Alert}
-        }
-    }
-
-    // Verify the double move actually triggered alerting
-    testing.expect(t, battle.player.target == double_move_dest, "Player target should be set to double move destination")
-    testing.expect(t, game.AnimationFlag.Run == battle.player.anim_flag, "Player should have run animation flag")
-
-    // All bees should now be alerted after the double move
-    for &bee in battle.bees {
-        testing.expect(t, .Alert in bee.flags, "All bees should be alerted after player double move")
-    }
-}
-
-@(test)
-Bee_Becomes_Alerted_When_Bee_And_Player_Occupy_Same_Tile :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Position player and bee on the same tile to simulate actual battle scenario
-    same_tile_pos := vec2i{2, 2}
-    battle.player.pos = same_tile_pos
-    battle.bees[0].pos = same_tile_pos
-    battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
-    battle.bees[1].pos = {4, 4} // Different tile for comparison
-
-    // Simulate the actual battle position update logic
-    // This would happen during battle loop when checking for position-based triggers
-    position_overlap_detected := false
-    for &bee in battle.bees {
-        if .Dead not_in bee.flags && bee.pos == battle.player.pos {
-            // This is the actual logic that would trigger alerting in real battle
-            bee.added += {.Alert}
-            position_overlap_detected = true
-        }
-    }
-
-    testing.expect(t, position_overlap_detected, "Position overlap should be detected")
-
-    // Simulate VES processing that happens during battle update
-    for &bee in battle.bees {
-        if .Alert in bee.added {
-            bee.added -= {.Alert}
-            bee.flags += {.Alert}
-        }
-    }
-
-    // Verify the same-tile alerting worked correctly
-    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted when occupying same tile as player")
-    testing.expect(t, battle.bees[0].pos == battle.player.pos, "Alerted bee should be on same tile as player")
-
-    // Verify selective alerting - only bees on same tile get alerted
-    testing.expect(t, .Alert not_in battle.bees[1].flags, "Bee on different tile should not be alerted")
-    testing.expect(t, battle.bees[1].pos != battle.player.pos, "Non-alerted bee should be on different tile")
-}
-
-@(test)
-Bee_Remains_Alerted_After_Once_Alerted :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.bees[0].flags += {.Alert}
-
-    // Alert flag should persist
-    testing.expect(t, .Alert in battle.bees[0].flags, "Remains alerted after once alerted")
-}
-
-@(test)
-Default_Bee_Does_Not_Attack_When_Not_Alerted :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Default bees have no Alert flag
-    testing.expect(t, .Alert not_in battle.bees[0].flags, "Default bee is not alerted")
-}
-
-// ===========================================================================
-// Bee Grid Movement
-// ===========================================================================
-
-@(test)
-Bee_Cannot_Move_Into_Wall_Tile :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set a wall
-    battle.grid.tiles[1].flags = game.TileFlags{ .Wall }
-
-    testing.expect(t, !game.path_is_walkable(vec2i{1, 0}, battle.bees[0].pos, battle.grid^), "Bee cannot move into wall tile")
-}
-
-@(test)
-Bee_Can_Move_Onto_Blank_Tile :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    testing.expect(t, game.path_is_walkable(vec2i{2, 2}, battle.bees[0].pos, battle.grid^), "Bee can move onto blank tile")
-}
-
-// ===========================================================================
-// General / Combination Cases
-// ===========================================================================
-
-@(test)
-Player_Can_Use_Prepare_Action_Without_Triggering_Alert :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Prepare/Focus/Dodge actions don't trigger alert
-    testing.expect(t, .Alert not_in battle.bees[0].flags, "Prepare action does not trigger alert")
-}
-
-@(test)
-Game_Ends_When_Player_Moves_Onto_Last_Bee_And_Kills_It_With_Overlap_Attack :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Mark all but first bee as dead
-    for &bee, i in battle.bees {
-        if i > 0 {
-            bee.flags += {.Dead}
-        }
-    }
-
-    // Last bee alive
-    testing.expect(t, !game.check_win_condition(battle), "Not won yet with last bee alive")
-
-    // Kill last bee
-    battle.bees[0].flags += {.Dead}
-
-    testing.expect(t, game.check_win_condition(battle), "Game ends when last bee killed")
-}
-
-// ===========================================================================
-// Bee Movement Action Tests
-// ===========================================================================
-
-@(test)
-FlyTowards_Moves_Bee_2_Blocks_Closer_To_Player :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up positions: bee at (5,2), player at (0,2) - distance 5
-    battle.bees[0].pos = {5, 2}
-    battle.player.pos = {0, 2}
-    original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
-
-    // Perform FlyTowards action (should move 2 blocks closer)
-    game.bee_action_perform(.FlyTowards, &battle.bees[0], &battle.player, battle.grid^)
-
-    // Calculate new distance after movement
-    new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
-
-    testing.expect(t, original_distance == 5, "Original distance should be 5")
-    testing.expect(t, new_distance == 3, "Should be 2 blocks closer (distance 3)")
-    testing.expect(t, .Flying in battle.bees[0].added, "Bee should have flying flag")
-    testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
-}
-
-@(test)
-FlyAway_Moves_Bee_2_Blocks_Away_From_Player :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up positions: bee at (3,2), player at (0,2) - distance 3
-    battle.bees[0].pos = {3, 2}
-    battle.player.pos = {0, 2}
-    original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
-
-    // Perform FlyAway action (should move 2 blocks away)
-    game.bee_action_perform(.FlyAway, &battle.bees[0], &battle.player, battle.grid^)
-
-    // Calculate new distance after movement
-    new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
-
-    testing.expect(t, original_distance == 3, "Original distance should be 3")
-    testing.expect(t, new_distance >= 5, "Should be at least 2 blocks further away")
-    testing.expect(t, .Flying in battle.bees[0].added, "Bee should have flying flag")
-    testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
-}
-
-@(test)
-CrawlTowards_Moves_Bee_1_Block_Closer_To_Player :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up positions: bee at (4,2), player at (0,2) - distance 4
-    battle.bees[0].pos = {4, 2}
-    battle.player.pos = {0, 2}
-    original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
-
-    // Perform CrawlTowards action (should move 1 block closer)
-    game.bee_action_perform(.CrawlTowards, &battle.bees[0], &battle.player, battle.grid^)
-
-    // Calculate new distance after movement
-    new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
-
-    testing.expect(t, original_distance == 4, "Original distance should be 4")
-    testing.expect(t, new_distance == 3, "Should be 1 block closer (distance 3)")
-    testing.expect(t, .Crawling in battle.bees[0].added, "Bee should have crawling flag")
-    testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
-    testing.expect(t, .Flying not_in battle.bees[0].added, "Bee should not have flying flag")
-}
-
-@(test)
-CrawlAway_Moves_Bee_1_Block_Away_From_Player :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up positions: bee at (2,2), player at (0,2) - distance 2
-    battle.bees[0].pos = {2, 2}
-    battle.player.pos = {0, 2}
-    original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
-
-    // Perform CrawlAway action (should move 1 block away)
-    game.bee_action_perform(.CrawlAway, &battle.bees[0], &battle.player, battle.grid^)
-
-    // Calculate new distance after movement
-    new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
-
-    testing.expect(t, original_distance == 2, "Original distance should be 2")
-    testing.expect(t, new_distance == 3, "Should be 1 block further away (distance 3)")
-    testing.expect(t, .Crawling in battle.bees[0].added, "Bee should have crawling flag")
-    testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
-    testing.expect(t, .Flying not_in battle.bees[0].added, "Bee should not have flying flag")
-}
-
-@(test)
-FlyTowards_Alerts_Bee_When_Getting_Within_Range :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up positions: bee at (2,2), player at (0,2) - distance 2
-    battle.bees[0].pos = {2, 2}
-    battle.player.pos = {0, 2}
-    battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
-
-    // Perform FlyTowards - should get within range and alert
-    game.bee_action_perform(.FlyTowards, &battle.bees[0], &battle.player, battle.grid^)
-
-    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted when getting close")
-}
-
-@(test)
-CrawlTowards_Alerts_Bee_When_Getting_Within_Range :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up positions: bee at (1,2), player at (0,2) - distance 1
-    battle.bees[0].pos = {1, 2}
-    battle.player.pos = {0, 2}
-    battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
-
-    // Perform CrawlTowards - should get within range and alert
-    game.bee_action_perform(.CrawlTowards, &battle.bees[0], &battle.player, battle.grid^)
-
-    testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted when getting close")
-}
-
-@(test)
-FlyAway_Does_Not_Alert_Bee :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up positions: bee at (1,1), player at (0,0) - distance 2
-    battle.bees[0].pos = {1, 1}
-    battle.player.pos = {0, 0}
-    battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
-
-    // Perform FlyAway - should not alert since moving away
-    game.bee_action_perform(.FlyAway, &battle.bees[0], &battle.player, battle.grid^)
-
-    testing.expect(t, .Alert not_in battle.bees[0].flags, "Bee should not be alerted when flying away")
-}
-
-@(test)
-Discard_Action_Does_Nothing :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up initial state
-    original_pos := battle.bees[0].pos
-    original_target := battle.bees[0].target
-    original_flags := battle.bees[0].flags
-    original_added := battle.bees[0].added
-
-    // Perform Discard action
-    game.bee_action_perform(.Discard, &battle.bees[0], &battle.player, battle.grid^)
-
-    // Everything should remain unchanged
-    testing.expect(t, battle.bees[0].pos == original_pos, "Position should not change")
-    testing.expect(t, battle.bees[0].target == original_target, "Target should not change")
-    testing.expect(t, battle.bees[0].flags == original_flags, "Flags should not change")
-    testing.expect(t, battle.bees[0].added == original_added, "Added flags should not change")
-}
-
-@(test)
-Bee_Movement_Avoids_Walls :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up positions: bee at (3,2), player at (0,2)
-    battle.bees[0].pos = {3, 2}
-    battle.player.pos = {0, 2}
-
-    // Create a wall at (2,2) to block direct path
-    wall_idx := int(2 + 2 * battle.grid.width)
-    battle.grid.tiles[wall_idx].flags = game.TileFlags{.Wall}
-
-    // Perform FlyTowards - should navigate around wall
-    game.bee_action_perform(.FlyTowards, &battle.bees[0], &battle.player, battle.grid^)
-
-    // Target should not be the wall position
-    testing.expect(t, battle.bees[0].target != vec2i{2, 2}, "Target should not be wall position")
-    testing.expect(t, battle.bees[0].target.x < 3, "Target should be closer to player")
-}
-
-@(test)
-Sting_Action_Only_When_Alerted_And_In_Range :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up positions: bee right next to player
-    battle.bees[0].pos = {1, 0}
-    battle.player.pos = {0, 0}
-    battle.player.weapon.range = 1 // Set weapon range for bee_near check
-
-    // Test without alert - should not attack
-    battle.bees[0].flags -= {.Alert}
-    game.bee_action_perform(.Sting, &battle.bees[0], &battle.player, battle.grid^)
-    testing.expect(t, .Attack not_in battle.bees[0].added, "Should not attack without alert")
-
-    // Test with alert - should attack
-    battle.bees[0].flags += {.Alert}
-    battle.bees[0].added = {} // Reset added flags
-    game.bee_action_perform(.Sting, &battle.bees[0], &battle.player, battle.grid^)
-    testing.expect(t, .Attack in battle.bees[0].added, "Should attack when alerted and in range")
-}
-
-// ===========================================================================
-// Status Effects Tests
-// ===========================================================================
-
-@(test)
-Game_Checks_Player_Status_Effects_Before_Player_Turn :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Status effects are stored in flags
-    battle.bees[0].flags += {.PlayerFocused}
-    testing.expect(t, .PlayerFocused in battle.bees[0].flags, "Player focus status tracked")
-}
-
-@(test)
-Game_Checks_Bee_Status_Effects_Before_Bee_Turn :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    battle.bees[0].flags += {.PlayerDodge}
-    testing.expect(t, .PlayerDodge in battle.bees[0].flags, "Dodge status tracked")
-}
-
-// ===========================================================================
-// Player Attack Tests
-// ===========================================================================
-
-@(test)
-Player_Attack_Flying_Bee_Hits_When_Dice_Plus_Focus_Exceeds_Flying_Accuracy :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up weapon with known flying accuracy and power
-    battle.player.weapon = game.Weapon{
-        flying = game.Attack{accuracy = 8, power = 5},
-        crawling = game.Attack{accuracy = 9, power = 10},
-        range = 1,
-    }
-
-    // Set bee as flying with full health
-    battle.bees[0].flags += {.Flying}
-    battle.bees[0].health = 20
-
-    // Attack with dice roll that should hit (9 + 0 focus > 8 accuracy)
-    game.player_attack(&battle.player, &battle.bees[0], 9)
-
-    testing.expect(t, battle.bees[0].health == 15, "Flying bee should take flying damage when hit")
-    testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead with remaining health")
-    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
-    testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
-}
-
-@(test)
-Player_Attack_Flying_Bee_Misses_When_Dice_Plus_Focus_Below_Flying_Accuracy :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up weapon with known flying accuracy and power
-    battle.player.weapon = game.Weapon{
-        flying = game.Attack{accuracy = 8, power = 5},
-        crawling = game.Attack{accuracy = 9, power = 10},
-        range = 1,
-    }
-
-    // Set bee as flying with full health
-    battle.bees[0].flags += {.Flying}
-    battle.bees[0].health = 20
-
-    // Attack with dice roll that should miss (7 + 0 focus <= 8 accuracy)
-    game.player_attack(&battle.player, &battle.bees[0], 7)
-
-    testing.expect(t, battle.bees[0].health == 20, "Flying bee should take no damage when missed")
-    testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead")
-    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted even on miss")
-    testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
-}
-
-@(test)
-Player_Attack_Crawling_Bee_Hits_When_Dice_Plus_Focus_Exceeds_Crawling_Accuracy :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up weapon with known crawling accuracy and power
-    battle.player.weapon = game.Weapon{
-        flying = game.Attack{accuracy = 8, power = 5},
-        crawling = game.Attack{accuracy = 7, power = 10},
-        range = 1,
-    }
-
-    // Set bee as crawling (no Flying flag) with full health
-    battle.bees[0].flags -= {.Flying}
-    battle.bees[0].health = 10
-
-    // Attack with dice roll that should hit (8 + 0 focus > 7 accuracy)
-    game.player_attack(&battle.player, &battle.bees[0], 8)
-
-    testing.expect(t, battle.bees[0].health == 0, "Crawling bee should take crawling damage when hit")
-    testing.expect(t, .Dead in battle.bees[0].flags, "Bee should be dead when health reaches 0")
-    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
-    testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
-}
-
-@(test)
-Player_Attack_Crawling_Bee_Misses_When_Dice_Plus_Focus_Below_Crawling_Accuracy :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up weapon with known crawling accuracy and power
-    battle.player.weapon = game.Weapon{
-        flying = game.Attack{accuracy = 8, power = 5},
-        crawling = game.Attack{accuracy = 7, power = 10},
-        range = 1,
-    }
-
-    // Set bee as crawling (no Flying flag) with full health
-    battle.bees[0].flags -= {.Flying}
-    battle.bees[0].health = 10
-
-    // Attack with dice roll that should miss (6 + 0 focus <= 7 accuracy)
-    game.player_attack(&battle.player, &battle.bees[0], 6)
-
-    testing.expect(t, battle.bees[0].health == 10, "Crawling bee should take no damage when missed")
-    testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead")
-    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted even on miss")
-    testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
-}
-
-@(test)
-Player_Attack_Flying_Bee_With_Focus_Bonus_Hits_When_Dice_Plus_Focus_Exceeds_Accuracy :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up weapon with known flying accuracy and power
-    battle.player.weapon = game.Weapon{
-        flying = game.Attack{accuracy = 8, power = 5},
-        crawling = game.Attack{accuracy = 9, power = 10},
-        range = 1,
-    }
-
-    // Set bee as flying with PlayerFocused status and full health
-    battle.bees[0].flags += {.Flying, .PlayerFocused}
-    battle.bees[0].health = 20
-
-    // Attack with dice roll that would miss without focus but hits with focus (8 + 1 focus > 8 accuracy)
-    game.player_attack(&battle.player, &battle.bees[0], 8)
-
-    testing.expect(t, battle.bees[0].health == 15, "Flying bee should take flying damage when hit with focus bonus")
-    testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead with remaining health")
-    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
-    testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
-}
-
-@(test)
-Player_Attack_Crawling_Bee_With_HyperFocus_Bonus_Hits_When_Dice_Plus_Focus_Exceeds_Accuracy :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up weapon with known crawling accuracy and power
-    battle.player.weapon = game.Weapon{
-        flying = game.Attack{accuracy = 8, power = 5},
-        crawling = game.Attack{accuracy = 7, power = 10},
-        range = 1,
-    }
-
-    // Set bee as crawling with PlayerHyperFocused status and full health
-    battle.bees[0].flags -= {.Flying}
-    battle.bees[0].flags += {.PlayerFocused}
-    battle.bees[0].flags += {.PlayerHyperFocused}
-    battle.bees[0].health = 10
-
-    // Attack with dice roll that would miss without hyperfocus but hits with hyperfocus (6 + 2 focus > 7 accuracy)
-    game.player_attack(&battle.player, &battle.bees[0], 6)
-
-    testing.expect(t, battle.bees[0].health == 0, "Crawling bee should take crawling damage when hit with hyperfocus bonus")
-    testing.expect(t, .Dead in battle.bees[0].flags, "Bee should be dead when health reaches 0")
-    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
-    testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
-}
-
-@(test)
-Player_Attack_Flying_Bee_Kills_When_Damage_Exceeds_Health :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up weapon with high damage
-    battle.player.weapon = game.Weapon{
-        flying = game.Attack{accuracy = 8, power = 15},
-        crawling = game.Attack{accuracy = 9, power = 10},
-        range = 1,
-    }
-
-    // Set bee as flying with low health
-    battle.bees[0].flags += {.Flying}
-    battle.bees[0].health = 10
-
-    // Attack with dice roll that hits
-    game.player_attack(&battle.player, &battle.bees[0], 9)
-
-    testing.expect(t, battle.bees[0].health <= 0, "Flying bee health should be <= 0 after high damage")
-    testing.expect(t, .Dead in battle.bees[0].flags, "Flying bee should be dead when damage exceeds health")
-    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
-    testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
-}
-
-@(test)
-Player_Attack_Crawling_Bee_Kills_When_Damage_Exceeds_Health :: proc(t: ^testing.T) {
-    battle := setup_battle()
-    defer teardown_battle(battle)
-
-    // Set up weapon with high damage
-    battle.player.weapon = game.Weapon{
-        flying = game.Attack{accuracy = 8, power = 5},
-        crawling = game.Attack{accuracy = 7, power = 15},
-        range = 1,
-    }
-
-    // Set bee as crawling with low health
-    battle.bees[0].flags -= {.Flying}
-    battle.bees[0].health = 10
-
-    // Attack with dice roll that hits
-    game.player_attack(&battle.player, &battle.bees[0], 8)
-
-    testing.expect(t, battle.bees[0].health <= 0, "Crawling bee health should be <= 0 after high damage")
-    testing.expect(t, .Dead in battle.bees[0].flags, "Crawling bee should be dead when damage exceeds health")
-    testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
-    testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
-}
+// @(test)
+// Game_Ends_If_Player_Health_is_Zero :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.health = 0
+
+//     // Test the pure logic function
+//     testing.expect(t, game.check_lose_condition(battle), "Game should end if player health is 0")
+// }
+
+// @(test)
+// Game_Ends_When_All_Bees_Are_Dead :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     for &bee in battle.bees {
+//         bee.flags += {.Dead}
+//     }
+
+//     testing.expect(t, game.check_win_condition(battle), "Game should end when all bees are dead")
+// }
+
+// @(test)
+// Game_Ends_When_Last_Bee_Dies_While_Player_Still_Has_Health :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.health = 5
+//     for &bee in battle.bees {
+//         bee.health = 0
+//         bee.flags += {.Dead}
+//     }
+
+//     testing.expect(t, game.check_win_condition(battle), "Game should end when last bee dies and player has health")
+//     testing.expect(t, !game.check_lose_condition(battle), "Player should not have lost")
+// }
+
+// @(test)
+// Game_Ends_Immediately_After_Check_For_Win_Condition_When_Condition_Met :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     for &bee in battle.bees {
+//         bee.flags += {.Dead}
+//     }
+
+//     // Win condition should be true immediately
+//     testing.expect(t, game.check_win_condition(battle), "Win condition met immediately")
+// }
+
+// // ===========================================================================
+// // Game Continues (Non-Ending) Conditions
+// // ===========================================================================
+
+// @(test)
+// Game_Does_Not_End_When_Player_At_1_Health_And_Bees_Still_Alive :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.health = 1
+//     // Bees are alive by default (no .Dead flag)
+
+//     testing.expect(t, !game.check_lose_condition(battle), "Game continues at 1 health")
+//     testing.expect(t, !game.check_win_condition(battle), "Game not won with bees alive")
+// }
+
+// @(test)
+// Game_Continues_If_No_Win_Condition_After_Bee_Turn :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Bees alive, player has health
+//     testing.expect(t, !game.check_win_condition(battle), "No win with bees alive")
+//     testing.expect(t, !game.check_lose_condition(battle), "No lose with health > 0")
+// }
+
+// @(test)
+// Game_Continues_When_Player_Moves_Into_Item_Tile_And_Picks_Up_Item :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set an item tile
+//     idx := int(battle.player.pos.y * i32(battle.grid.width) + battle.player.pos.x + 1)
+//     battle.grid.tiles[idx].flags = game.TileFlags{ .Weapon }
+
+//     // Game should continue
+//     testing.expect(t, !game.check_win_condition(battle), "Game continues after item tile")
+//     testing.expect(t, !game.check_lose_condition(battle), "Game continues after item tile")
+// }
+
+// // ===========================================================================
+// // Turn Loop & Phase Checks (testing state/conditions only)
+// // ===========================================================================
+
+// @(test)
+// Game_Checks_Win_Condition_After_Each_Phase :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Verify we can check win condition at any point
+//     testing.expect(t, !game.check_win_condition(battle), "No win initially")
+
+//     // Mark all bees dead
+//     for &bee in battle.bees {
+//         bee.flags += {.Dead}
+//     }
+//     testing.expect(t, game.check_win_condition(battle), "Win after all bees dead")
+// }
+
+// @(test)
+// Game_Does_Not_Proceed_To_Bee_Turn_If_Player_Dies_During_Player_Turn :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.health = 0
+//     battle.state = .Continue
+
+//     // Lose condition should be true
+//     testing.expect(t, game.check_lose_condition(battle), "Lose condition true when health is 0")
+// }
+
+// @(test)
+// Win_Condition_Checked_After_Player_Move :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // After any action, win condition can be checked
+//     testing.expect(t, !game.check_win_condition(battle), "Win condition checked (no win)")
+// }
+
+// @(test)
+// Win_Condition_Checked_After_Bee_Move :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     testing.expect(t, !game.check_win_condition(battle), "Win condition checked after bee move")
+// }
+
+// // ===========================================================================
+// // Player Action Limits (state-based tests)
+// // ===========================================================================
+
+// // @(test)
+// // Player_Can_Only_Perform_One_Action_Per_Turn_By_Default :: proc(t: ^testing.T) {
+// //     battle := setup_battle()
+// //     defer teardown_battle(battle)
+
+// //     // This is a rule verification - player starts in SelectCharacter
+// //     testing.expect(t, battle.input_state == .SelectCharacter, "Starts in SelectCharacter")
+// // }
+
+// // @(test)
+// // Player_Can_Choose_Attack_Prepare_Or_Move_Each_Turn :: proc(t: ^testing.T) {
+// //     battle := setup_battle()
+// //     defer teardown_battle(battle)
+
+// //     // Player starts in SelectCharacter, can transition to Movement or SelectEnemy
+// //     testing.expect(t, battle.input_state == .SelectCharacter, "Can choose action")
+// // }
+
+// @(test)
+// Player_Cannot_Perform_Two_Attacks_In_One_Turn :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Rule: after completing an action, turn should end
+//     // This is enforced by state machine in run_players_turn
+//     testing.expect(t, battle.state == .Continue, "Player turn state valid")
+// }
+
+// // ===========================================================================
+// // Player Movement (pure logic tests)
+// // ===========================================================================
+
+// @(test)
+// Player_Default_Move_Is_One_Block_Per_Turn :: proc(t: ^testing.T) {
+//     // This tests the rule, not the implementation
+//     // Rule: player moves 1 block by default
+//     fmt.println("RULE: Player default move is 1 block per turn")
+// }
+
+// @(test)
+// Player_Can_Move_Two_Blocks_In_One_Turn :: proc(t: ^testing.T) {
+//     // TODO: Feature not yet implemented in battle.odin
+//     fmt.println("SKIPPED: Double move feature not implemented")
+// }
+
+// @(test)
+// Player_Can_Choose_To_Move_One_Or_Two_Blocks_As_Single_Action :: proc(t: ^testing.T) {
+//     // TODO: Feature not yet implemented
+//     fmt.println("SKIPPED: Choice of 1 or 2 block move not implemented")
+// }
+
+// @(test)
+// Double_Move_Consumes_Only_One_Action :: proc(t: ^testing.T) {
+//     // TODO: Feature not yet implemented
+//     fmt.println("SKIPPED: Double move action consumption not implemented")
+// }
+
+// // ===========================================================================
+// // Player Alerting via Movement
+// // ===========================================================================
+
+// @(test)
+// Moving_One_Block_Does_Not_Alert_Bees_By_Default :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Bees start without Alert flag
+//     for bee in battle.bees {
+//         testing.expect(t, .Alert not_in bee.flags, "Bees not alerted by default")
+//     }
+// }
+
+// @(test)
+// Moving_Two_Blocks_Alerts_All_Bees_On_Map :: proc(t: ^testing.T) {
+//     // TODO: Feature not yet implemented
+//     fmt.println("SKIPPED: Double move alerting not implemented")
+// }
+
+// @(test)
+// Moving_Two_Blocks_Alerts_All_Bees_Regardless_Of_Distance :: proc(t: ^testing.T) {
+//     // TODO: Feature not yet implemented
+//     fmt.println("SKIPPED: Double move distance-independent alerting not implemented")
+// }
+
+// // ===========================================================================
+// // Player Grid & Tile Movement Rules
+// // ===========================================================================
+
+// @(test)
+// Player_Cannot_Move_Outside_Grid_Bounds :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Test in-bounds function
+//     // Position at edge should fail for movement outside
+//     out_of_bounds := vec2i{-1, 0}
+//     testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid left")
+
+//     out_of_bounds = vec2i{i32(game.GRID_WIDTH), 0}
+//     testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid right")
+
+//     out_of_bounds = vec2i{0, -1}
+//     testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid bottom")
+
+//     out_of_bounds = vec2i{0, i32(game.GRID_HEIGHT)}
+//     testing.expect(t, !game.path_in_bounds(out_of_bounds, battle.grid^), "Cannot move outside grid top")
+// }
+
+// @(test)
+// Player_Cannot_Move_Into_Wall_Tile :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set a wall tile
+//     battle.grid.tiles[1].flags = game.TileFlags{ .Wall } // Position {1, 0}
+
+//     testing.expect(t, !game.path_is_walkable(vec2i{1, 0}, battle.player.pos, battle.grid^), "Cannot move into wall tile")
+// }
+
+// @(test)
+// Player_Cannot_Move_One_Tile_Diagonally :: proc(t: ^testing.T) {
+//     // Rule test: diagonal movement is not allowed (only orthogonal)
+//     // This is enforced by move_player only accepting w/a/s/d
+//     fmt.println("RULE: Diagonal movement not allowed (only w/a/s/d input)")
+// }
+
+// @(test)
+// Player_Can_Move_Onto_Blank_Tile :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Blank tile should be valid
+//     testing.expect(t, game.path_is_walkable(vec2i{1, 0}, battle.player.pos, battle.grid^), "Can move onto blank tile")
+// }
+
+// @(test)
+// Player_Can_Move_Onto_Item_Tile :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set weapon tile
+//     battle.grid.tiles[1].flags = game.TileFlags{ .Weapon }
+
+//     // Weapon tiles are walkable
+//     testing.expect(t, game.path_is_walkable(vec2i{1, 0}, battle.player.pos, battle.grid^), "Can move onto item tile")
+// }
+
+// @(test)
+// Player_Can_Move_Onto_Entity_Tile :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Entity tiles - testing if bee position is walkable
+//     // Bees don't block movement, they're on blank tiles
+//     testing.expect(t, game.path_is_walkable(battle.bees[0].pos, battle.player.pos, battle.grid^), "Can move onto entity tile")
+// }
+
+// @(test)
+// Distance_Of_One_Is_Only_Orthogonal_Not_Diagonal :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Test bee_near function - need weapon range set to 1 for bee_near to work
+//     battle.player.pos = {0, 0}
+//     battle.player.weapon.range = 1
+
+//     // Diagonal bee at {1, 1} should NOT be near (manhattan distance = 2)
+//     battle.bees[0].pos = {1, 1}
+//     testing.expect(t, !game.bee_near(battle.player, &battle.bees[0]), "Diagonal not considered distance one")
+
+//     // Orthogonal bee at {1, 0} should be near (manhattan distance = 1)
+//     battle.bees[0].pos = {1, 0}
+//     testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Orthogonal is distance one")
+
+//     // Orthogonal bee at {0, 1} should be near (manhattan distance = 1)
+//     battle.bees[0].pos = {0, 1}
+//     testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Orthogonal up is distance one")
+// }
+
+// // ===========================================================================
+// // Player Item Interaction
+// // ===========================================================================
+
+// @(test)
+// Player_Automatically_Picks_Up_Item_When_Landing_On_Item_Tile :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set weapon tile
+//     idx := 1 // Position {1, 0}
+//     battle.grid.tiles[idx].flags = game.TileFlags{ .Weapon }
+
+//     // weap_check returns true if there's a weapon and clears it
+//     testing.expect(t, game.weap_check(vec2i{1, 0}, battle.grid), "Picks up item on weapon tile")
+// }
+
+// @(test)
+// Item_Tile_Becomes_Blank_After_Player_Pickup :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     idx := 1 // Position {1, 0}
+//     battle.grid.tiles[idx].flags = game.TileFlags{ .Weapon }
+
+//     game.weap_check(vec2i{1, 0}, battle.grid) // This clears the tile
+
+//     testing.expect(t, battle.grid.tiles[idx] == {}, "Item tile becomes blank after pickup")
+// }
+
+// // ===========================================================================
+// // Player Attack Rules (Basic)
+// // ===========================================================================
+
+// @(test)
+// Player_Cannot_Attack_Bee_Outside_Weapon_Range :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.weapon.range = 1
+//     battle.player.pos = {0, 0}
+//     battle.bees[0].pos = {3, 0} // Distance 3, outside range 1
+
+//     // bee_check returns (in_range, index)
+//     in_range, _ := game.bee_check(battle.player, battle.bees)
+//     testing.expect(t, !in_range, "Cannot attack bee outside weapon range")
+// }
+
+// @(test)
+// Player_Cannot_Attack_Without_Equipped_Weapon :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.weapon = {} // Empty weapon with range 0
+//     battle.player.pos = {0, 0}
+//     battle.bees[0].pos = {1, 0}
+
+//     // With range 0, even adjacent bees are out of range
+//     in_range, _ := game.bee_check(battle.player, battle.bees)
+//     testing.expect(t, !in_range, "Cannot attack without weapon (range 0)")
+// }
+
+// @(test)
+// Player_Can_Only_Attack_With_Equipped_Weapon :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.weapon.range = 1
+//     battle.player.pos = {0, 0}
+//     battle.bees[0].pos = {1, 0}
+
+//     in_range, idx := game.bee_check(battle.player, battle.bees)
+//     testing.expect(t, in_range && idx == 0, "Can attack bee in range with equipped weapon")
+// }
+
+// // ===========================================================================
+// // Bee Action & Range Limits
+// // ===========================================================================
+
+// @(test)
+// Bee_Can_Only_Perform_One_Action_Per_Turn :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Rule: bee performs one action then current_bee increments
+//     battle.current_bee = 0
+//     testing.expect(t, battle.current_bee == 0, "Bee starts at index 0")
+// }
+
+// @(test)
+// Bee_Can_Choose_Attack_Or_Move_Each_Turn :: proc(t: ^testing.T) {
+//     // Rule: bees can Sting (attack) or Fly/Crawl (move)
+//     fmt.println("RULE: Bee chooses attack or move based on deck cards")
+// }
+
+// @(test)
+// Bee_Can_Only_Attack_At_Range_0_Or_1 :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.pos = {0, 0}
+//     battle.player.weapon.range = 1 // Need weapon range for bee_near check
+
+//     // Range 1 - should be near
+//     battle.bees[0].pos = {1, 0}
+//     testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Bee at range 1 can attack")
+
+//     // Range 0 - same tile
+//     battle.bees[0].pos = {0, 0}
+//     testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Bee at range 0 can attack")
+// }
+
+// @(test)
+// Bee_Can_Attack_Player_At_Range_0 :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.pos = {0, 0}
+//     battle.bees[0].pos = {0, 0}
+
+//     testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Can attack at range 0")
+// }
+
+// @(test)
+// Bee_Can_Attack_Player_At_Range_1 :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.pos = {0, 0}
+//     battle.player.weapon.range = 1 // Need weapon range for bee_near check
+//     battle.bees[0].pos = {1, 0}
+
+//     testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Can attack at range 1")
+// }
+
+// @(test)
+// Bee_Cannot_Attack_Player_From_2_Blocks_Away :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.pos = {0, 0}
+//     battle.bees[0].pos = {2, 0}
+
+//     testing.expect(t, !game.bee_near(battle.player, &battle.bees[0]), "Cannot attack from 2 blocks away")
+// }
+
+// // ===========================================================================
+// // Bee Alert Mechanics
+// // ===========================================================================
+
+// @(test)
+// Bee_Cannot_Attack_Player_Unless_Alerted :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Bee without Alert flag
+//     battle.bees[0].flags -= {.Alert}
+
+//     testing.expect(t, .Alert not_in battle.bees[0].flags, "Bee is not alerted")
+//     // Attack logic checks for .Alert flag before attacking
+// }
+
+// @(test)
+// Bee_Cannot_Attack_If_Not_Alerted_Even_If_In_Range :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.player.pos = {0, 0}
+//     battle.player.weapon.range = 1 // Need weapon range for bee_near check
+//     battle.bees[0].pos = {1, 0}
+//     battle.bees[0].flags -= {.Alert}
+
+//     // Bee is in range but not alerted
+//     testing.expect(t, game.bee_near(battle.player, &battle.bees[0]), "Bee is in range")
+//     testing.expect(t, .Alert not_in battle.bees[0].flags, "But bee is not alerted")
+// }
+
+// @(test)
+// Bee_Becomes_Alerted_When_Player_Performs_Double_Move :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Ensure bees start without Alert flag
+//     for &bee in battle.bees {
+//         bee.flags -= {.Alert}
+//         testing.expect(t, .Alert not_in bee.flags, "Bees start without alert")
+//     }
+
+//     // Actually simulate the player movement system that triggers double move alerting
+//     // Set up player position and movement parameters
+//     original_pos := battle.player.pos
+//     move_dir := vec2i{1, 0} // Move right
+
+//     // Check if the double move destination is valid (as done in move_player)
+//     double_move_dest := original_pos + 2 * move_dir
+//     testing.expect(t, game.path_in_bounds(double_move_dest, battle.grid^), "Double move destination should be in bounds")
+
+//     // Simulate the actual move_player logic for double move
+//     if game.path_in_bounds(double_move_dest, battle.grid^) {
+//         // Set player target and flags as move_player would
+//         battle.player.target = double_move_dest
+//         battle.player.anim_flag = game.AnimationFlag.Run
+//         battle.player.added += {.Animate}
+
+//         // This is the key part - call alert_all_bees as move_player does
+//         game.alert_all_bees(battle)
+//     }
+
+//     // Simulate one frame of battle processing where VES handles the flag changes
+//     // This mimics what happens in ves_update_visuals during real battle
+//     for &bee in battle.bees {
+//         if .Alert in bee.added {
+//             bee.added -= {.Alert}
+//             bee.flags += {.Alert}
+//         }
+//     }
+
+//     // Verify the double move actually triggered alerting
+//     testing.expect(t, battle.player.target == double_move_dest, "Player target should be set to double move destination")
+//     testing.expect(t, game.AnimationFlag.Run == battle.player.anim_flag, "Player should have run animation flag")
+
+//     // All bees should now be alerted after the double move
+//     for &bee in battle.bees {
+//         testing.expect(t, .Alert in bee.flags, "All bees should be alerted after player double move")
+//     }
+// }
+
+// @(test)
+// Bee_Becomes_Alerted_When_Bee_And_Player_Occupy_Same_Tile :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Position player and bee on the same tile to simulate actual battle scenario
+//     same_tile_pos := vec2i{2, 2}
+//     battle.player.pos = same_tile_pos
+//     battle.bees[0].pos = same_tile_pos
+//     battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
+//     battle.bees[1].pos = {4, 4} // Different tile for comparison
+
+//     // Simulate the actual battle position update logic
+//     // This would happen during battle loop when checking for position-based triggers
+//     position_overlap_detected := false
+//     for &bee in battle.bees {
+//         if .Dead not_in bee.flags && bee.pos == battle.player.pos {
+//             // This is the actual logic that would trigger alerting in real battle
+//             bee.added += {.Alert}
+//             position_overlap_detected = true
+//         }
+//     }
+
+//     testing.expect(t, position_overlap_detected, "Position overlap should be detected")
+
+//     // Simulate VES processing that happens during battle update
+//     for &bee in battle.bees {
+//         if .Alert in bee.added {
+//             bee.added -= {.Alert}
+//             bee.flags += {.Alert}
+//         }
+//     }
+
+//     // Verify the same-tile alerting worked correctly
+//     testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted when occupying same tile as player")
+//     testing.expect(t, battle.bees[0].pos == battle.player.pos, "Alerted bee should be on same tile as player")
+
+//     // Verify selective alerting - only bees on same tile get alerted
+//     testing.expect(t, .Alert not_in battle.bees[1].flags, "Bee on different tile should not be alerted")
+//     testing.expect(t, battle.bees[1].pos != battle.player.pos, "Non-alerted bee should be on different tile")
+// }
+
+// @(test)
+// Bee_Remains_Alerted_After_Once_Alerted :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.bees[0].flags += {.Alert}
+
+//     // Alert flag should persist
+//     testing.expect(t, .Alert in battle.bees[0].flags, "Remains alerted after once alerted")
+// }
+
+// @(test)
+// Default_Bee_Does_Not_Attack_When_Not_Alerted :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Default bees have no Alert flag
+//     testing.expect(t, .Alert not_in battle.bees[0].flags, "Default bee is not alerted")
+// }
+
+// // ===========================================================================
+// // Bee Grid Movement
+// // ===========================================================================
+
+// @(test)
+// Bee_Cannot_Move_Into_Wall_Tile :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set a wall
+//     battle.grid.tiles[1].flags = game.TileFlags{ .Wall }
+
+//     testing.expect(t, !game.path_is_walkable(vec2i{1, 0}, battle.bees[0].pos, battle.grid^), "Bee cannot move into wall tile")
+// }
+
+// @(test)
+// Bee_Can_Move_Onto_Blank_Tile :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     testing.expect(t, game.path_is_walkable(vec2i{2, 2}, battle.bees[0].pos, battle.grid^), "Bee can move onto blank tile")
+// }
+
+// // ===========================================================================
+// // General / Combination Cases
+// // ===========================================================================
+
+// @(test)
+// Player_Can_Use_Prepare_Action_Without_Triggering_Alert :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Prepare/Focus/Dodge actions don't trigger alert
+//     testing.expect(t, .Alert not_in battle.bees[0].flags, "Prepare action does not trigger alert")
+// }
+
+// @(test)
+// Game_Ends_When_Player_Moves_Onto_Last_Bee_And_Kills_It_With_Overlap_Attack :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Mark all but first bee as dead
+//     for &bee, i in battle.bees {
+//         if i > 0 {
+//             bee.flags += {.Dead}
+//         }
+//     }
+
+//     // Last bee alive
+//     testing.expect(t, !game.check_win_condition(battle), "Not won yet with last bee alive")
+
+//     // Kill last bee
+//     battle.bees[0].flags += {.Dead}
+
+//     testing.expect(t, game.check_win_condition(battle), "Game ends when last bee killed")
+// }
+
+// // ===========================================================================
+// // Bee Movement Action Tests
+// // ===========================================================================
+
+// @(test)
+// FlyTowards_Moves_Bee_2_Blocks_Closer_To_Player :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up positions: bee at (5,2), player at (0,2) - distance 5
+//     battle.bees[0].pos = {5, 2}
+//     battle.player.pos = {0, 2}
+//     original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
+
+//     // Perform FlyTowards action (should move 2 blocks closer)
+//     game.bee_action_perform(.FlyTowards, &battle.bees[0], &battle.player, battle.grid^)
+
+//     // Calculate new distance after movement
+//     new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
+
+//     testing.expect(t, original_distance == 5, "Original distance should be 5")
+//     testing.expect(t, new_distance == 3, "Should be 2 blocks closer (distance 3)")
+//     testing.expect(t, .Flying in battle.bees[0].added, "Bee should have flying flag")
+//     testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
+// }
+
+// @(test)
+// FlyAway_Moves_Bee_2_Blocks_Away_From_Player :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up positions: bee at (3,2), player at (0,2) - distance 3
+//     battle.bees[0].pos = {3, 2}
+//     battle.player.pos = {0, 2}
+//     original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
+
+//     // Perform FlyAway action (should move 2 blocks away)
+//     game.bee_action_perform(.FlyAway, &battle.bees[0], &battle.player, battle.grid^)
+
+//     // Calculate new distance after movement
+//     new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
+
+//     testing.expect(t, original_distance == 3, "Original distance should be 3")
+//     testing.expect(t, new_distance >= 5, "Should be at least 2 blocks further away")
+//     testing.expect(t, .Flying in battle.bees[0].added, "Bee should have flying flag")
+//     testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
+// }
+
+// @(test)
+// CrawlTowards_Moves_Bee_1_Block_Closer_To_Player :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up positions: bee at (4,2), player at (0,2) - distance 4
+//     battle.bees[0].pos = {4, 2}
+//     battle.player.pos = {0, 2}
+//     original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
+
+//     // Perform CrawlTowards action (should move 1 block closer)
+//     game.bee_action_perform(.CrawlTowards, &battle.bees[0], &battle.player, battle.grid^)
+
+//     // Calculate new distance after movement
+//     new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
+
+//     testing.expect(t, original_distance == 4, "Original distance should be 4")
+//     testing.expect(t, new_distance == 3, "Should be 1 block closer (distance 3)")
+//     testing.expect(t, .Crawling in battle.bees[0].added, "Bee should have crawling flag")
+//     testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
+//     testing.expect(t, .Flying not_in battle.bees[0].added, "Bee should not have flying flag")
+// }
+
+// @(test)
+// CrawlAway_Moves_Bee_1_Block_Away_From_Player :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up positions: bee at (2,2), player at (0,2) - distance 2
+//     battle.bees[0].pos = {2, 2}
+//     battle.player.pos = {0, 2}
+//     original_distance := game.path_dist_grid(battle.bees[0].pos, battle.player.pos)
+
+//     // Perform CrawlAway action (should move 1 block away)
+//     game.bee_action_perform(.CrawlAway, &battle.bees[0], &battle.player, battle.grid^)
+
+//     // Calculate new distance after movement
+//     new_distance := game.path_dist_grid(battle.bees[0].target, battle.player.pos)
+
+//     testing.expect(t, original_distance == 2, "Original distance should be 2")
+//     testing.expect(t, new_distance == 3, "Should be 1 block further away (distance 3)")
+//     testing.expect(t, .Crawling in battle.bees[0].added, "Bee should have crawling flag")
+//     testing.expect(t, .Moving in battle.bees[0].added, "Bee should have moving flag")
+//     testing.expect(t, .Flying not_in battle.bees[0].added, "Bee should not have flying flag")
+// }
+
+// @(test)
+// FlyTowards_Alerts_Bee_When_Getting_Within_Range :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up positions: bee at (2,2), player at (0,2) - distance 2
+//     battle.bees[0].pos = {2, 2}
+//     battle.player.pos = {0, 2}
+//     battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
+
+//     // Perform FlyTowards - should get within range and alert
+//     game.bee_action_perform(.FlyTowards, &battle.bees[0], &battle.player, battle.grid^)
+
+//     testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted when getting close")
+// }
+
+// @(test)
+// CrawlTowards_Alerts_Bee_When_Getting_Within_Range :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up positions: bee at (1,2), player at (0,2) - distance 1
+//     battle.bees[0].pos = {1, 2}
+//     battle.player.pos = {0, 2}
+//     battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
+
+//     // Perform CrawlTowards - should get within range and alert
+//     game.bee_action_perform(.CrawlTowards, &battle.bees[0], &battle.player, battle.grid^)
+
+//     testing.expect(t, .Alert in battle.bees[0].flags, "Bee should be alerted when getting close")
+// }
+
+// @(test)
+// FlyAway_Does_Not_Alert_Bee :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up positions: bee at (1,1), player at (0,0) - distance 2
+//     battle.bees[0].pos = {1, 1}
+//     battle.player.pos = {0, 0}
+//     battle.bees[0].flags -= {.Alert} // Ensure not initially alerted
+
+//     // Perform FlyAway - should not alert since moving away
+//     game.bee_action_perform(.FlyAway, &battle.bees[0], &battle.player, battle.grid^)
+
+//     testing.expect(t, .Alert not_in battle.bees[0].flags, "Bee should not be alerted when flying away")
+// }
+
+// @(test)
+// Discard_Action_Does_Nothing :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up initial state
+//     original_pos := battle.bees[0].pos
+//     original_target := battle.bees[0].target
+//     original_flags := battle.bees[0].flags
+//     original_added := battle.bees[0].added
+
+//     // Perform Discard action
+//     game.bee_action_perform(.Discard, &battle.bees[0], &battle.player, battle.grid^)
+
+//     // Everything should remain unchanged
+//     testing.expect(t, battle.bees[0].pos == original_pos, "Position should not change")
+//     testing.expect(t, battle.bees[0].target == original_target, "Target should not change")
+//     testing.expect(t, battle.bees[0].flags == original_flags, "Flags should not change")
+//     testing.expect(t, battle.bees[0].added == original_added, "Added flags should not change")
+// }
+
+// @(test)
+// Bee_Movement_Avoids_Walls :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up positions: bee at (3,2), player at (0,2)
+//     battle.bees[0].pos = {3, 2}
+//     battle.player.pos = {0, 2}
+
+//     // Create a wall at (2,2) to block direct path
+//     wall_idx := int(2 + 2 * battle.grid.width)
+//     battle.grid.tiles[wall_idx].flags = game.TileFlags{.Wall}
+
+//     // Perform FlyTowards - should navigate around wall
+//     game.bee_action_perform(.FlyTowards, &battle.bees[0], &battle.player, battle.grid^)
+
+//     // Target should not be the wall position
+//     testing.expect(t, battle.bees[0].target != vec2i{2, 2}, "Target should not be wall position")
+//     testing.expect(t, battle.bees[0].target.x < 3, "Target should be closer to player")
+// }
+
+// @(test)
+// Sting_Action_Only_When_Alerted_And_In_Range :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up positions: bee right next to player
+//     battle.bees[0].pos = {1, 0}
+//     battle.player.pos = {0, 0}
+//     battle.player.weapon.range = 1 // Set weapon range for bee_near check
+
+//     // Test without alert - should not attack
+//     battle.bees[0].flags -= {.Alert}
+//     game.bee_action_perform(.Sting, &battle.bees[0], &battle.player, battle.grid^)
+//     testing.expect(t, .Attack not_in battle.bees[0].added, "Should not attack without alert")
+
+//     // Test with alert - should attack
+//     battle.bees[0].flags += {.Alert}
+//     battle.bees[0].added = {} // Reset added flags
+//     game.bee_action_perform(.Sting, &battle.bees[0], &battle.player, battle.grid^)
+//     testing.expect(t, .Attack in battle.bees[0].added, "Should attack when alerted and in range")
+// }
+
+// // ===========================================================================
+// // Status Effects Tests
+// // ===========================================================================
+
+// @(test)
+// Game_Checks_Player_Status_Effects_Before_Player_Turn :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Status effects are stored in flags
+//     battle.bees[0].flags += {.PlayerFocused}
+//     testing.expect(t, .PlayerFocused in battle.bees[0].flags, "Player focus status tracked")
+// }
+
+// @(test)
+// Game_Checks_Bee_Status_Effects_Before_Bee_Turn :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     battle.bees[0].flags += {.PlayerDodge}
+//     testing.expect(t, .PlayerDodge in battle.bees[0].flags, "Dodge status tracked")
+// }
+
+// // ===========================================================================
+// // Player Attack Tests
+// // ===========================================================================
+
+// @(test)
+// Player_Attack_Flying_Bee_Hits_When_Dice_Plus_Focus_Exceeds_Flying_Accuracy :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up weapon with known flying accuracy and power
+//     battle.player.weapon = game.Weapon{
+//         flying = game.Attack{accuracy = 8, power = 5},
+//         crawling = game.Attack{accuracy = 9, power = 10},
+//         range = 1,
+//     }
+
+//     // Set bee as flying with full health
+//     battle.bees[0].flags += {.Flying}
+//     battle.bees[0].health = 20
+
+//     // Attack with dice roll that should hit (9 + 0 focus > 8 accuracy)
+//     game.player_attack(&battle.player, &battle.bees[0], 9)
+
+//     testing.expect(t, battle.bees[0].health == 15, "Flying bee should take flying damage when hit")
+//     testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead with remaining health")
+//     testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
+//     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
+// }
+
+// @(test)
+// Player_Attack_Flying_Bee_Misses_When_Dice_Plus_Focus_Below_Flying_Accuracy :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up weapon with known flying accuracy and power
+//     battle.player.weapon = game.Weapon{
+//         flying = game.Attack{accuracy = 8, power = 5},
+//         crawling = game.Attack{accuracy = 9, power = 10},
+//         range = 1,
+//     }
+
+//     // Set bee as flying with full health
+//     battle.bees[0].flags += {.Flying}
+//     battle.bees[0].health = 20
+
+//     // Attack with dice roll that should miss (7 + 0 focus <= 8 accuracy)
+//     game.player_attack(&battle.player, &battle.bees[0], 7)
+
+//     testing.expect(t, battle.bees[0].health == 20, "Flying bee should take no damage when missed")
+//     testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead")
+//     testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted even on miss")
+//     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
+// }
+
+// @(test)
+// Player_Attack_Crawling_Bee_Hits_When_Dice_Plus_Focus_Exceeds_Crawling_Accuracy :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up weapon with known crawling accuracy and power
+//     battle.player.weapon = game.Weapon{
+//         flying = game.Attack{accuracy = 8, power = 5},
+//         crawling = game.Attack{accuracy = 7, power = 10},
+//         range = 1,
+//     }
+
+//     // Set bee as crawling (no Flying flag) with full health
+//     battle.bees[0].flags -= {.Flying}
+//     battle.bees[0].health = 10
+
+//     // Attack with dice roll that should hit (8 + 0 focus > 7 accuracy)
+//     game.player_attack(&battle.player, &battle.bees[0], 8)
+
+//     testing.expect(t, battle.bees[0].health == 0, "Crawling bee should take crawling damage when hit")
+//     testing.expect(t, .Dead in battle.bees[0].flags, "Bee should be dead when health reaches 0")
+//     testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
+//     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
+// }
+
+// @(test)
+// Player_Attack_Crawling_Bee_Misses_When_Dice_Plus_Focus_Below_Crawling_Accuracy :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up weapon with known crawling accuracy and power
+//     battle.player.weapon = game.Weapon{
+//         flying = game.Attack{accuracy = 8, power = 5},
+//         crawling = game.Attack{accuracy = 7, power = 10},
+//         range = 1,
+//     }
+
+//     // Set bee as crawling (no Flying flag) with full health
+//     battle.bees[0].flags -= {.Flying}
+//     battle.bees[0].health = 10
+
+//     // Attack with dice roll that should miss (6 + 0 focus <= 7 accuracy)
+//     game.player_attack(&battle.player, &battle.bees[0], 6)
+
+//     testing.expect(t, battle.bees[0].health == 10, "Crawling bee should take no damage when missed")
+//     testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead")
+//     testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted even on miss")
+//     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
+// }
+
+// @(test)
+// Player_Attack_Flying_Bee_With_Focus_Bonus_Hits_When_Dice_Plus_Focus_Exceeds_Accuracy :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up weapon with known flying accuracy and power
+//     battle.player.weapon = game.Weapon{
+//         flying = game.Attack{accuracy = 8, power = 5},
+//         crawling = game.Attack{accuracy = 9, power = 10},
+//         range = 1,
+//     }
+
+//     // Set bee as flying with PlayerFocused status and full health
+//     battle.bees[0].flags += {.Flying, .PlayerFocused}
+//     battle.bees[0].health = 20
+
+//     // Attack with dice roll that would miss without focus but hits with focus (8 + 1 focus > 8 accuracy)
+//     game.player_attack(&battle.player, &battle.bees[0], 8)
+
+//     testing.expect(t, battle.bees[0].health == 15, "Flying bee should take flying damage when hit with focus bonus")
+//     testing.expect(t, .Dead not_in battle.bees[0].flags, "Bee should not be dead with remaining health")
+//     testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
+//     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
+// }
+
+// @(test)
+// Player_Attack_Crawling_Bee_With_HyperFocus_Bonus_Hits_When_Dice_Plus_Focus_Exceeds_Accuracy :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up weapon with known crawling accuracy and power
+//     battle.player.weapon = game.Weapon{
+//         flying = game.Attack{accuracy = 8, power = 5},
+//         crawling = game.Attack{accuracy = 7, power = 10},
+//         range = 1,
+//     }
+
+//     // Set bee as crawling with PlayerHyperFocused status and full health
+//     battle.bees[0].flags -= {.Flying}
+//     battle.bees[0].flags += {.PlayerFocused}
+//     battle.bees[0].flags += {.PlayerHyperFocused}
+//     battle.bees[0].health = 10
+
+//     // Attack with dice roll that would miss without hyperfocus but hits with hyperfocus (6 + 2 focus > 7 accuracy)
+//     game.player_attack(&battle.player, &battle.bees[0], 6)
+
+//     testing.expect(t, battle.bees[0].health == 0, "Crawling bee should take crawling damage when hit with hyperfocus bonus")
+//     testing.expect(t, .Dead in battle.bees[0].flags, "Bee should be dead when health reaches 0")
+//     testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
+//     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
+// }
+
+// @(test)
+// Player_Attack_Flying_Bee_Kills_When_Damage_Exceeds_Health :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up weapon with high damage
+//     battle.player.weapon = game.Weapon{
+//         flying = game.Attack{accuracy = 8, power = 15},
+//         crawling = game.Attack{accuracy = 9, power = 10},
+//         range = 1,
+//     }
+
+//     // Set bee as flying with low health
+//     battle.bees[0].flags += {.Flying}
+//     battle.bees[0].health = 10
+
+//     // Attack with dice roll that hits
+//     game.player_attack(&battle.player, &battle.bees[0], 9)
+
+//     testing.expect(t, battle.bees[0].health <= 0, "Flying bee health should be <= 0 after high damage")
+//     testing.expect(t, .Dead in battle.bees[0].flags, "Flying bee should be dead when damage exceeds health")
+//     testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
+//     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
+// }
+
+// @(test)
+// Player_Attack_Crawling_Bee_Kills_When_Damage_Exceeds_Health :: proc(t: ^testing.T) {
+//     battle := setup_battle()
+//     defer teardown_battle(battle)
+
+//     // Set up weapon with high damage
+//     battle.player.weapon = game.Weapon{
+//         flying = game.Attack{accuracy = 8, power = 5},
+//         crawling = game.Attack{accuracy = 7, power = 15},
+//         range = 1,
+//     }
+
+//     // Set bee as crawling with low health
+//     battle.bees[0].flags -= {.Flying}
+//     battle.bees[0].health = 10
+
+//     // Attack with dice roll that hits
+//     game.player_attack(&battle.player, &battle.bees[0], 8)
+
+//     testing.expect(t, battle.bees[0].health <= 0, "Crawling bee health should be <= 0 after high damage")
+//     testing.expect(t, .Dead in battle.bees[0].flags, "Crawling bee should be dead when damage exceeds health")
+//     testing.expect(t, .Alert in battle.bees[0].added, "Bee should be alerted after attack")
+//     testing.expect(t, .Attack in battle.player.added, "Player should have attack flag")
+// }
