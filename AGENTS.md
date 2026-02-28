@@ -118,12 +118,6 @@ import (
 
 ## Development Workflow
 
-### Hot Reload Development
-- Use `./build_hot_reload.bat run` for rapid iteration
-- Game logic reloads automatically when rebuilt
-- Debug with logging to file system
-- Test changes immediately without restart
-
 ### Debugging
 - Use RAD Debugger integration: `./build_debug.bat rad`
 - Enable logging for troubleshooting

@@ -49,8 +49,8 @@ init_battle :: proc(battle : ^Battle, alloc : mem.Allocator)
     battle_selection_init(battle, &battle.curr_sel, alloc)
 }
 
-init_battle_visuals :: proc(battle : ^Battle){
-	for &bee in battle.bees do init_bee_entity(&bee)
+init_battle_visuals :: proc(battle : ^Battle, alloc : mem.Allocator){
+	for &bee in battle.bees do init_bee_entity(&bee, alloc)
     add_component(battle.player.entity, Cmp_Visual)
     attack_qte_init(&battle.attack_bar, &g_gui)
     dodge_qte_init(&battle.dodge_qte, &g_gui)

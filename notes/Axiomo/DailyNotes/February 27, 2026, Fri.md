@@ -1,0 +1,3 @@
+Oh yeah sooo going back to notes 2 days before... you want to finish things asap so you can' start doing content
+so lets think bout dis....
+* s*

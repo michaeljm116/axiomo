@@ -408,9 +408,6 @@ in_fov_cone_2 :: proc(viewer_pos: vec2i, target_pos: vec2i, viewer_yaw: f32, fov
 
 // Bresenham's Line Algorithm - Grid LOS
 has_clear_los :: proc(grid: ^Grid, sx, sy, tx, ty: i32, debug_color : [4]f32) -> bool {
-    if sx == tx && sy == ty {
-        return true
-    }
     diff := vec2i{tx - sx, ty - sy}
     dx := abs(diff.x)
     dy := abs(diff.y)
@@ -439,7 +436,7 @@ has_clear_los :: proc(grid: ^Grid, sx, sy, tx, ty: i32, debug_color : [4]f32) ->
 
         // Check blocking tile
         tile := grid_get(grid, x, y)
-        if .Wall in tile.flags || .Obstacle in tile.flags {
+        if .Wall in tile.flags {
             return false
         }
         grid_texture_set_cell(grid, x, y, debug_color)
@@ -447,7 +444,8 @@ has_clear_los :: proc(grid: ^Grid, sx, sy, tx, ty: i32, debug_color : [4]f32) ->
 }
 
 // Combined check
-can_see_target :: proc(grid: ^Grid, viewer_pos, target_pos : vec2i, c : ^Character, max_range := i32(12), debug_color := [4]f32{0,0,0,0}) -> bool {
+can_see_target :: proc(grid: ^Grid, viewer_pos, target_pos : vec2i, c : ^Character, max_range := i32(16), debug_color := [4]f32{0,0,0,0}) -> bool {
+    if viewer_pos == target_pos do return true
     return in_fov_cone(viewer_pos, target_pos, get_entity_yaw(c.entity), 120, max_range) &&
            has_clear_los(grid, viewer_pos.x, viewer_pos.y, target_pos.x, target_pos.y, debug_color)
 }

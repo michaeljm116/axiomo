@@ -191,3 +191,11 @@ peek :: proc(pq: $Q/Priority_Stack($T), loc := #caller_location) -> (res: T) {
 	}
 	return
 }
+
+peek_ptr :: proc(pq: $Q/Priority_Stack($T), loc := #caller_location) -> (res: ^T) {
+	assert(condition=builtin.len(pq.internal_stack)>0, loc=loc)
+	if builtin.len(pq.internal_stack) > 0 {
+		return &pq.internal_stack[0].value
+	}
+	return
+}

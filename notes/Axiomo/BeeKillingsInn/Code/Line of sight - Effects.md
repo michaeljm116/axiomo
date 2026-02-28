@@ -12,3 +12,11 @@
 * #### Bee alert on player run
 	* alert_all_bees() -> for all bees if .CanSeePlayer in flag
 
+## Additional thoughts
+* Possible bug of beetarget not being a pointer to player position but a copy
+	* Possible feature too
+	* because then it only updates if looking at
+* LOS soooo transforms this
+* 
+
+

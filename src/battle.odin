@@ -113,7 +113,7 @@ start_game :: proc(){
     face_left(&g.battle.player)
 
     init_battle(&g.battle, g.mem_game.alloc)
-    init_battle_visuals(&g.battle)
+    init_battle_visuals(&g.battle, g.mem_game.alloc)
     grid_init_floor(g.battle.grid, find_floor_prim()^)
 
     set_entity_on_tile(g.battle.grid^, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y, &g.battle.player.ground)
@@ -341,7 +341,12 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
     case .Deciding:
         card := run_bee_decision(bee, &deck)  // Selects action, sets state/flags in bee_action_selecperform
         bee.state = .Acting
-        bee_action_perform(card, bee, &player, grid^)
+
+        // Get bee target:
+        target := bee_target_get(bee, battle.grid^)
+        if .ISeePlayer in bee.flags do bee_target_player(bee, player, battle.grid^)
+        // Perform Action
+        bee_action_perform(card, bee, target^, &player, battle.grid^)
     case .Acting:
             bee.state = .Finishing
             if .Attack in bee.flags {
@@ -505,7 +510,7 @@ BeeType :: enum
     Passive,
 }
 
-init_bee_entity :: proc(bee: ^Bee)
+init_bee_entity :: proc(bee: ^Bee, alloc : mem.Allocator)
 {
     switch bee.type
     {
@@ -517,6 +522,7 @@ init_bee_entity :: proc(bee: ^Bee)
             bee.entity = load_prefab(lex.PREFAB_BEE)
     }
     add_component(bee.entity, Cmp_Visual)
+    p_stack.init(&bee.target_stack, less = bee_target_less, swap = p_stack.default_swap_proc(BeeTarget), allocator = alloc)
 }
 
 Bee :: struct
@@ -544,13 +550,49 @@ BeeState :: enum{
 }
 
 // Priority = Player, Attraction, Random
-BeeTargetType :: enum{
-	Random, Attraction, Player
+BeeTargetType :: enum {
+    Player,     // 0: highest prio
+    Attraction, // 1: medium
+    Random,     // 2: lowest
 }
+
 BeeTarget :: struct{
 	type : BeeTargetType,
 	pos : vec2i,
 }
+
+bee_target_less :: proc(a, b: BeeTarget) -> bool {
+    return a.type < b.type
+}
+
+//Gets top of stack, if empty make a new random and refill stack
+bee_target_get :: proc(bee : ^Bee, grid : Grid) -> ^BeeTarget
+{
+	target, ok := p_stack.peek_safe(bee.target_stack)
+	if !ok{
+		pos : vec2i
+		for {
+			pos = vec2i{rand.int32_range(0, grid.width), rand.int32_range(0, grid.height)}
+			tile := grid_get(grid, pos)
+			if .Wall not_in tile.flags && pos != bee.pos {
+				break
+			}
+		}
+		target = BeeTarget{type = .Random, pos = pos}
+		p_stack.push(&bee.target_stack, target)
+	}
+	return p_stack.peek_ptr(bee.target_stack)
+}
+
+bee_target_player :: proc(bee : ^Bee, player : Player, grid : Grid){
+	top := bee_target_get(bee, grid)
+	if top.type == .Player do top.pos = player.pos
+	else {
+		p_stack.push(&bee.target_stack, BeeTarget{pos = player.pos, type = .Player})
+	}
+}
+
+// Init stays the same, passing this less
 
 BeeActionPriority_Aggressive :: [BeeAction]int{
     .FlyTowards = 1,
@@ -700,28 +742,28 @@ deck_choose_card :: proc(cards : [dynamic]BeeAction, priority : [BeeAction]int) 
 //----------------------------------------------------------------------------\\
 // /BA Bee Actions
 //----------------------------------------------------------------------------\\
-bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player, grid : Grid)
+bee_action_perform :: proc(action : BeeAction, bee : ^Bee, target : BeeTarget, player : ^Player, grid : Grid)
 {
     switch action{
         case .Discard: return
         case .FlyTowards:
-            // Fly's 2 blocks towards player, if path overlaps player, alert!
+            // Fly's 2 blocks towards target, if path overlaps target, alert!
             bee.added += {.Flying, .Moving}
-            bee_action_move_towards(bee, player, 2, grid)
+            bee_action_move_towards(bee, target, 2, grid)
         case .FlyAway:
-            // Fly 2 blocks away from player, try to avoid walls
+            // Fly 2 blocks away from target, try to avoid walls
             bee.added += {.Flying, .Moving}
-            bee_action_move_away(bee, player, 2, grid)
+            bee_action_move_away(bee, target, 2, grid)
         case .CrawlTowards:
-            // crawl towards player, if path overlaps player, alert!
+            // crawl towards target, if path overlaps target, alert!
             bee.removed += {.Flying}
             bee.added += {.Crawling, .Moving}
-            bee_action_move_towards(bee, player, 1, grid)
+            bee_action_move_towards(bee, target, 1, grid)
         case .CrawlAway:
-            // crawl away from player, if path overlaps player, alert!
+            // crawl away from target, if path overlaps target, alert!
             bee.removed += {.Flying}
             bee.added += {.Crawling, .Moving}
-            bee_action_move_away(bee, player, 1, grid)
+            bee_action_move_away(bee, target, 1, grid)
         case .Sting:
             // If player is near, attack! else do nuffin
             if bee_near(player^, bee) && .Alert in bee.flags{
@@ -738,7 +780,8 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player, gri
     // move_entity_to_tile(bee.entity, g.battle.grid_scale, bee.pos)
     // if bee is hovering player, turn on alert
     if .Moving in bee.added{
-        ev := VisualEvent{type = .AnimateMove, state = .Pending, character = &bee.variant}
+        ev := VisualEvent{
+	        type = .AnimateMove, state = .Pending, character = &bee.variant}
         queue.push(&g.ves.event_queue, ev)
     }
     if .Attack in bee.added{
@@ -747,13 +790,13 @@ bee_action_perform :: proc(action : BeeAction, bee : ^Bee, player : ^Player, gri
     }
 }
 
-bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int, grid: Grid){
+bee_action_move_towards :: proc(bee : ^Bee, target : BeeTarget, target_dist : int, grid: Grid){
     assert(target_dist > 0)
-    dist := path_dist_grid(bee.pos, player.pos)
+    dist := path_dist_grid(bee.pos, target.pos)
     fly_over_obstacles := .Flying in bee.flags
     if dist > target_dist
     {
-        path := path_a_star_find(bee.pos, player.pos, {grid.width, grid.height}, grid, fly_over_obstacles)
+        path := path_a_star_find(bee.pos, target.pos, {grid.width, grid.height}, grid, fly_over_obstacles)
         // TODO: possibly insecure and bug prone if there's no valid distance due to walls
         if len(path) > target_dist do bee.target = path[target_dist]
         else {if len(path) == target_dist do bee.target = path[target_dist - 1]}
@@ -763,28 +806,28 @@ bee_action_move_towards :: proc(bee : ^Bee, player : ^Player, target_dist : int,
         bee.flags |= {.Alert}
 
         if dist == target_dist {
-            path := path_a_star_find(bee.pos, player.pos, {grid.width, grid.height}, grid, fly_over_obstacles)
+            path := path_a_star_find(bee.pos, target.pos, {grid.width, grid.height}, grid, fly_over_obstacles)
             if len(path) > 1 do bee.target = path[1]
         }
     }
 }
 
-bee_action_move_away :: proc(bee : ^Bee, player : ^Player, target_dist : int, grid: Grid){
+bee_action_move_away :: proc(bee : ^Bee, target : BeeTarget, target_dist : int, grid: Grid){
     assert(target_dist > 0)
-    current_dist := path_dist_grid(bee.pos, player.pos)
+    current_dist := path_dist_grid(bee.pos, target.pos)
     required_dist := current_dist + target_dist
     fly_over_obstacles := .Flying in bee.flags
-    target_path := find_best_target_away(bee, player, required_dist, fly_over_obstacles, grid)
+    target_path := find_best_target_away(bee, target, required_dist, fly_over_obstacles, grid)
     if len(target_path) > 0 do bee.target = target_path[len(target_path) - 1]
     else{
        best := bee.pos
-       bestd := path_dist_grid(bee.pos, player.pos)
+       bestd := path_dist_grid(bee.pos, target.pos)
        dirs := [4]vec2i{ vec2i{1,0}, vec2i{-1,0}, vec2i{0,1}, vec2i{0,-1} }
        for d in dirs {
             n := vec2i{ bee.pos[0] + d[0], bee.pos[1] + d[1] }
             if !path_in_bounds(n, grid) { continue }
             if !path_is_walkable_internal(n, n, fly_over_obstacles, grid) { continue }
-            nd := path_dist_grid(n, player.pos)
+            nd := path_dist_grid(n, target.pos)
             if nd > bestd {
                 best = n
                 bestd = nd
@@ -1054,14 +1097,14 @@ BattleState :: enum
     End
 }
 
-find_best_target_away :: proc(bee : ^Bee, player : ^Player, min_dist : int, fly_over_obstacles : bool, grid: Grid) -> [dynamic]vec2i
+find_best_target_away :: proc(bee : ^Bee, target : BeeTarget, min_dist : int, fly_over_obstacles : bool, grid: Grid) -> [dynamic]vec2i
 {
     // iterate all possible tiles, pick reachable tile with dist to player >= min_dist and shortest path length from bee
     best_path := make([dynamic]vec2i, context.temp_allocator)
     best_len := 999999
     for x in 0..<grid.width do for y in 0..<grid.height {
         p := vec2i{i32(x), i32(y)}
-        if path_dist_grid(p, player.pos) < min_dist { continue }
+        if path_dist_grid(p, target.pos) < min_dist { continue }
         if !path_is_walkable_internal(p, p, fly_over_obstacles, grid) { continue } // p must be a valid standable tile
         path := path_a_star_find(bee.pos, p, {grid.width, grid.height}, grid, fly_over_obstacles)
         if len(path) == 0 { continue }
@@ -1987,6 +2030,11 @@ ves_animate_bee_end :: #force_inline proc(bee : ^Bee)
     move_entity_to_tile(g.battle.grid^, bee.entity, bee.target)
     bee.pos = bee.target
     bee.anim.timer = 0
+
+	top := p_stack.peek(bee.target_stack)
+	if top.type != .Player && bee.pos == top.pos{
+		p_stack.pop(&bee.target_stack)
+    }
 }
 
 ves_animate_player :: #force_inline proc(p : ^Player, dt : f32) -> bool{
