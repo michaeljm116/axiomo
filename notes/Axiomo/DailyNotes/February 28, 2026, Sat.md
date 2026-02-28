@@ -39,4 +39,9 @@
 		* reset timer at .Start from run_battle
 		* wait no... cuase then other bee's will also get reset 
 		* So the timer should only be at the start of a player turn and reset at the end of the player turn
-		* 
+	yay it works, must verify edge cases tho:
+	
+## Edge cases
+* Bee 1 moves, Reset happens, Bee 2 Never moves
+* Bee 1 Moves, Player Moves, .Interrupt Never resets, Bee 1 Turn forever lost
+* 
