@@ -30,7 +30,7 @@ t_bee_timer_single_interrupt :: proc(t: ^testing.T) {
     bee_timer_update(battle, ves, 4.0)
 
     testing.expect(t, len(battle.bees) == 1)
-    testing.expect(t, .Interrupt in b.flags)
+    testing.expect(t, .Interrupt in b.added)
     testing.expect(t, queue.len(battle.battle_queue) == 1)
     testing.expect(t, queue.front(&battle.battle_queue) == &b.base)
 }
@@ -42,8 +42,8 @@ t_bee_timer_multiple_bees_same_time :: proc(t: ^testing.T) {
     defer teardown_battle(battle)
 
     // Add two bees
-    append(&battle.bees, Bee{flags = {}, health = 100})
-    append(&battle.bees, Bee{flags = {}, health = 100})
+    append(&battle.bees, Bee{added = {}, health = 100})
+    append(&battle.bees, Bee{added = {}, health = 100})
 
     battle.bees[0].timer.curr = 0
     battle.bees[0].timer.max = 5.0
@@ -53,8 +53,8 @@ t_bee_timer_multiple_bees_same_time :: proc(t: ^testing.T) {
     bee_timer_update(battle, ves, 5.1)
 
     testing.expect(t, queue.len(battle.battle_queue) == 2)
-    testing.expect(t, .Interrupt in battle.bees[0].flags)
-    testing.expect(t, .Interrupt in battle.bees[1].flags)
+    testing.expect(t, .Interrupt in battle.bees[0].added)
+    testing.expect(t, .Interrupt in battle.bees[1].added)
 }
 
 @(test)
@@ -64,8 +64,8 @@ t_bee_timer_dead_bee_no_push :: proc(t: ^testing.T) {
     defer teardown_battle(battle)
 
     append(&battle.bees, Bee{
-        flags = {},
-        health = 0, // dead
+        added = {},
+        flags = {.Dead}
     })
 
     b := &battle.bees[0]
@@ -75,7 +75,7 @@ t_bee_timer_dead_bee_no_push :: proc(t: ^testing.T) {
     bee_timer_update(battle, ves, 3.0)
 
     testing.expect(t, queue.len(battle.battle_queue) == 0, "Dead bee shouldn't push")
-    testing.expect(t, .Interrupt not_in b.flags)
+    testing.expect(t, .Interrupt not_in b.added)
 }
 
 @(test)
@@ -84,7 +84,7 @@ t_bee_timer_overflow_does_not_double_push :: proc(t: ^testing.T) {
     battle := setup_battle()
     defer teardown_battle(battle)
 
-    append(&battle.bees, Bee{flags = {}, health = 100})
+    append(&battle.bees, Bee{added = {}, health = 100})
     b := &battle.bees[0]
     b.timer.curr = 0
     b.timer.max = 2.0

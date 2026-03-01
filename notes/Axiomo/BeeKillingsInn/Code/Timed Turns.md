@@ -44,4 +44,13 @@
 ## Edge cases
 * Bee 1 moves, Reset happens, Bee 2 Never moves
 * Bee 1 Moves, Player Moves, .Interrupt Never resets, Bee 1 Turn forever lost
+* ^^^^ thats happening
+* Bee gets added to queue same frame as player turn may actually be a prollem
 * 
+
+### EC analy
+* update only occurs on bee timer update aka interupt added only on player turn*
+	* when its added it IMMEDIATELY goes to flags like that'll be its next step
+		* except for the possibility of same framing
+	* oh and hwen its added the ves clear screen WILL happen
+	* 

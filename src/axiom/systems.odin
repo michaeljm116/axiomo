@@ -202,7 +202,6 @@ transform_get_entity_yaw :: proc(entity: Entity) -> f32 {
     // Normalize to [0, 360) — this eliminates negative angles entirely
     yaw = math.mod(yaw + math.TAU, math.TAU)  // TAU = 2π
     if yaw == 0 do yaw = math.to_radians_f32(359.999)
-    fmt.println("Normalized yaw deg:", math.to_degrees(yaw))
     return yaw
 }
 

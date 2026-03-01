@@ -55,12 +55,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Code/DeathOrVictory.md",
+                "file": "BeeKillingsInn/Code/Timed Turns.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "DeathOrVictory"
+              "title": "Timed Turns"
             }
           },
           {
@@ -135,8 +135,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "c0dba331d38e27d5",
@@ -231,8 +230,8 @@
   },
   "active": "763ec8751c05f55d",
   "lastOpenFiles": [
-    "DailyNotes/February 28, 2026, Sat.md",
     "BeeKillingsInn/Code/DeathOrVictory.md",
+    "DailyNotes/February 28, 2026, Sat.md",
     "DailyNotes/February 27, 2026, Fri.md",
     "BeeKillingsInn/Production/Steam Next Fest 2026.md",
     "BeeKillingsInn/Production/!kb_Mechanics.md",

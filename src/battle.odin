@@ -81,10 +81,10 @@ battle_turn_start_visibility :: proc(btl: ^Battle) {
     for &bee in btl.bees {
         if .Dead in bee.flags { continue }
         if can_see_target(btl.grid, btl.player.pos, bee.pos, &btl.player, debug_color = {.1,3,9,1}){ bee.added += {.PlayerSeesMe}
-            fmt.println("You face: ", btl.player.facing, " and see Bee: ", bee.name,)
+            // fmt.println("You face: ", btl.player.facing, " and see Bee: ", bee.name,)
         }
         if can_see_target(btl.grid, bee.pos, btl.player.pos, &bee, debug_color = {.5,0.7,1,1}){ bee.added += {.ISeePlayer}
-            fmt.println("Bee: ", bee.name, " face: ", bee.facing, " and see's you: ")
+            // fmt.println("Bee: ", bee.name, " face: ", bee.facing, " and see's you: ")
         }
         // TODO: I DONT LIKE THIS bee_hiding_showing(&bee)
     }
@@ -183,10 +183,27 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData, dt : f32)
 			battle_turn_end_visibility(battle)
 	        curr := queue.pop_front(&battle_queue)
 	        if .Dead not_in curr.flags && .Interrupt not_in curr.flags do queue.push(&battle_queue, curr)
+			else if .Interrupt in curr.flags do curr.removed += {.Interrupt}
 			state = .Start
+			print_battle_queue(battle)
     }
 }
 
+print_battle_queue :: proc(battle : ^Battle){
+	fmt.println("----------------------------")
+	fmt.println("BattleQueue: ")
+	for i in 0..<queue.len(battle.battle_queue)
+	{
+		switch v in queue.get(&battle.battle_queue,i).variant
+		{
+		case ^Player:
+			fmt.printf("Player_%i--",i)
+		case ^Bee:
+			fmt.printf("Bee_%i--",i)
+		}
+	}
+	fmt.println("\n----------------------------")
+}
 // On Players turn, wait for input of 1-3 if any of those then set action to move,attack or ability
 // if move then go to movement state and check for wasd movement
 // else you're in... select enemy state oops
@@ -338,7 +355,6 @@ run_bee_turn :: proc(bee: ^Bee, battle : ^Battle, ves : ^VisualEventData, dt: f3
         state = .End
         return
     }
-    if .Interrupt in bee.flags do bee.removed += {.Interrupt}
 
     switch bee.state {
     case .Deciding:
@@ -749,14 +765,16 @@ deck_choose_card :: proc(cards : [dynamic]BeeAction, priority : [BeeAction]int) 
 bee_timer_update :: proc(battle : ^Battle, ves : ^VisualEventData, dt : f32)
 {
    for &b in battle.bees {
-      b.timer.curr += dt
-      if b.timer.curr >= b.timer.max {
-          b.timer.curr = 0
-          b.added += {.Interrupt}
-          queue.push_front(&battle.battle_queue, &b.base)
-          ves_clear_screens(ves)
-          fmt.println("BEE ", b.name, " IS INTERRUPRTING PLAYER")
-      }
+       if .Dead in b.flags do continue
+       b.timer.curr += dt
+       if b.timer.curr >= b.timer.max {
+           b.timer.curr = 0
+           b.added += {.Interrupt}
+           queue.push_front(&battle.battle_queue, &b.base)
+           ves_clear_screens(ves)
+           if .Dead in b.flags do fmt.println("DEAD BEE WALKIN")
+           fmt.println("BEE ", b.name, " IS INTERRUPRTING PLAYER")
+       }
    }
 }
 
