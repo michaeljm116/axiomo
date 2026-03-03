@@ -41,7 +41,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/February 27, 2026, Fri.md",
+                "file": "DailyNotes/2026 - February/February 27, 2026, Fri.md",
                 "mode": "source",
                 "source": false
               },
@@ -55,12 +55,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BeeKillingsInn/Code/Timed Turns.md",
+                "file": "DailyNotes/March 03, 2026, Tue.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Timed Turns"
+              "title": "March 03, 2026, Tue"
             }
           },
           {
@@ -230,15 +230,21 @@
   },
   "active": "763ec8751c05f55d",
   "lastOpenFiles": [
+    "DailyNotes/March 02, 2026, Mon.md",
+    "DailyNotes/March 03, 2026, Tue.md",
     "BeeKillingsInn/Code/DeathOrVictory.md",
-    "DailyNotes/February 28, 2026, Sat.md",
-    "DailyNotes/February 27, 2026, Fri.md",
+    "BeeKillingsInn/Code/Line of sight - Effects.md",
+    "BeeKillingsInn/Production/Mechanics/Run.md",
+    "BeeKillingsInn/Production/Mechanics/Visual Grid.md",
+    "DailyNotes/2026 - February/February 28, 2026, Sat.md",
+    "DailyNotes/2026 - February/February 27, 2026, Fri.md",
+    "DailyNotes/2026 - February/February 01, 2026, Sun.md",
+    "DailyNotes/2026 - February",
+    "BeeKillingsInn/Code/Timed Turns.md",
     "BeeKillingsInn/Production/Steam Next Fest 2026.md",
     "BeeKillingsInn/Production/!kb_Mechanics.md",
     "BeeKillingsInn/Production/Mechanics/Action - Attack.md",
     "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
-    "BeeKillingsInn/Production/Mechanics/Run.md",
-    "BeeKillingsInn/Production/Mechanics/Visual Grid.md",
     "Photos/{0DA3E792-94E9-46F5-B6DE-8EDBEA4E55CD}.png",
     "05_Clash2.webp",
     "09_Capes.webp",
@@ -247,21 +253,16 @@
     "Untitled.base",
     "Untitled.md",
     "tales-tactics.avif",
-    "BeeKillingsInn/Code/Timed Turns.md",
-    "DailyNotes/February 25, 2026, Wed.md",
-    "BeeKillingsInn/Code/Line of sight - Effects.md",
-    "DailyNotes/February 26, 2026, Thu.md",
+    "DailyNotes/2026 - February/February 25, 2026, Wed.md",
+    "DailyNotes/2026 - February/February 26, 2026, Thu.md",
     "BeeKillingsInn/Production/Epics.md",
     "BeeKillingsInn/Production/!kb_Showcase.md",
     "BeeKillingsInn/Production/!kb_demo.md",
-    "DailyNotes/February 24, 2026, Tue.md",
+    "DailyNotes/2026 - February/February 24, 2026, Tue.md",
     "BeeKillingsInn/Production/!kb_Kanban.md",
     "BeeKillingsInn/Helpers.md",
     "BeeKillingsInn/Production/Reminders.md",
     "BeeKillingsInn/Production/Prototype.md",
-    "DailyNotes/February 20, 2026, Fri.md",
-    "DailyNotes/February 19, 2026, Thu.md",
-    "DailyNotes/February 16, 2026, Mon.md",
-    "DailyNotes/February 18, 2026, Wed.md"
+    "DailyNotes/2026 - February/February 20, 2026, Fri.md"
   ]
 }

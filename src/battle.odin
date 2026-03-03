@@ -80,10 +80,12 @@ battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
 battle_turn_start_visibility :: proc(btl: ^Battle) {
     for &bee in btl.bees {
         if .Dead in bee.flags { continue }
-        if can_see_target(btl.grid, btl.player.pos, bee.pos, &btl.player, debug_color = {.1,3,9,1}){ bee.added += {.PlayerSeesMe}
+        if can_see_target(btl.grid, btl.player.pos, bee.pos, &btl.player, debug_color = {.1,3,9,1}){
+	        bee.added += {.PlayerSeesMe}
             // fmt.println("You face: ", btl.player.facing, " and see Bee: ", bee.name,)
         }
-        if can_see_target(btl.grid, bee.pos, btl.player.pos, &bee, debug_color = {.5,0.7,1,1}){ bee.added += {.ISeePlayer}
+        if can_see_target(btl.grid, bee.pos, btl.player.pos, &bee, debug_color = {.5,0.7,1,1}){
+	        bee.added += {.ISeePlayer}
             // fmt.println("Bee: ", bee.name, " face: ", bee.facing, " and see's you: ")
         }
         // TODO: I DONT LIKE THIS bee_hiding_showing(&bee)
@@ -185,7 +187,7 @@ run_battle :: proc(battle : ^Battle, ves : ^VisualEventData, dt : f32)
 	        if .Dead not_in curr.flags && .Interrupt not_in curr.flags do queue.push(&battle_queue, curr)
 			else if .Interrupt in curr.flags do curr.removed += {.Interrupt}
 			state = .Start
-			print_battle_queue(battle)
+			// print_battle_queue(battle)
     }
 }
 
@@ -1660,6 +1662,7 @@ attack_qte_update :: proc(bar : ^AttackQTE, dt : f32) -> bool
 attack_qte_finish :: proc(bar : ^AttackQTE, battle: ^Battle)
 {
     using bar
+    fmt.println("Attempted Kill : bee:", bee.min.x, "Box: (", box.min.x,",",box.min.x + box.extents.x,")")
     if bee.min.x > box.min.x && bee.min.x < (box.min.x + box.extents.x){
     	battle.curr_sel.character.added += {.Dead}
      	fmt.println("Bee Kilt!")
@@ -1821,6 +1824,7 @@ dodge_qte_finish :: proc(qte : ^DodgeQTE, battle : ^Battle)
     if qte.success do fmt.println("DODGED")
     else {
 	    battle.player.added += {.Dead}
+		battle.player.health = 0
 	    fmt.println("Player Kilt!")
 	}
     clear(&qte.dodges)

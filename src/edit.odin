@@ -346,4 +346,9 @@ handle_battle_cheat_mode :: proc()
         ev := VisualEvent{type = .DodgeQTE, state = .Pending, character = &g.battle.bees[0].variant}
         queue.push(&g.ves.event_queue, ev)
     }
+
+    if is_key_just_pressed(glfw.KEY_ENTER) {
+   		for &b in g.battle.bees do b.health = 0
+    }
+
 }
