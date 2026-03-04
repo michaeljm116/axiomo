@@ -81,3 +81,37 @@ init_battle_queue :: proc(battle : ^Battle, alloc : mem.Allocator)
        queue.push(&battle.battle_queue, &b)
    }
 }
+
+LevelBit :: enum u64
+{
+    Level_1,
+    Level_2,
+    Level_3,
+    Level_4,
+    Level_5,
+    Level_6,
+    Level_7,
+    Level_8,
+    Level_9,
+    Level_10,
+}
+LevelSet :: bit_set[LevelBit; u64]
+ComponentFlags :: bit_set[ComponentFlag; u32]
+
+get_level_sum :: proc(ls : LevelSet)
+{
+    sum := 0
+    for i in 0..<size_of(LevelBit)
+    {
+        sum +=
+    }
+}
+
+SaveFile :: struct
+{
+   levels_completed : LevelSet
+}
+save_level :: proc()
+{
+
+}

@@ -348,7 +348,7 @@ handle_battle_cheat_mode :: proc()
     }
 
     if is_key_just_pressed(glfw.KEY_ENTER) {
-   		for &b in g.battle.bees do b.health = 0
+   		for &b in g.battle.bees do b.added += {.Dead}
     }
 
 }
