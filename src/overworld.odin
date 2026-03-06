@@ -1,21 +1,26 @@
-#+feature using-stmt
 package game
 
-import "core:fmt"
-import "core:mem"
 import "core:math"
 import "core:math/linalg"
 import "vendor:glfw"
 import "axiom"
-import "axiom/resource"
 import "core:log"
 import b2 "vendor:box2d"
 
 Room :: struct
 {
 	using entrance : AreaEntry,
-	battle : Battle,
+	battle_setup : BattleName,
 	is_battle : bool,
+	flag : RoomFlag
+}
+
+RoomFlag :: enum
+{
+	Locked,
+	Open,
+	Visited,
+	Completed
 }
 
 Floor :: struct
@@ -48,9 +53,8 @@ AreaType :: enum{Inn, Floor, Room}
 
 overworld_detect_area_change :: proc(player_transform : Cmp_Transform, trigger : AreaTrigger) -> bool
 {
-    using player_transform.local
-    px := pos.x
-    py := pos.y
+    px := player_transform.local.pos.x
+    py := player_transform.local.pos.y
     tx := trigger.pos.x
     ty := trigger.pos.y
     tl := trigger.len
@@ -122,7 +126,7 @@ overworld_update :: proc(dt : f32){
 overworld_end :: proc()
 {
     app_restart()
-    g.app_state = .Game
+    g.app_state = .Battle
     ToggleMenuUI(&g.app_state)
     battle_start()
     start_game()

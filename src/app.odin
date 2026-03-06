@@ -15,10 +15,10 @@ import lex"lexicon"
 AppState :: enum{
     TitleScreen,
     MainMenu,
-    Game,
     Pause,
-    GameOver,
-    Victory,
+    Battle,
+    BattleLost,
+    BattleWon,
     Overworld
 }
 
@@ -97,7 +97,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
 	case .MainMenu:
     	if is_key_just_pressed(glfw.KEY_ENTER){
             app_restart()
-            state^ = .Game
+            state^ = .Battle
             ToggleMenuUI(state)
             battle_start()
             start_game()
@@ -108,15 +108,15 @@ app_run :: proc(dt: f32, state: ^AppState) {
             ToggleMenuUI(state)
             overworld_start()
         }
-	case .Game:
+	case .Battle:
 		run_battle(&g.battle, &g.ves, dt)
 		ves_update_all(&g.battle, &g.ves, dt)
 		if (g.battle.player.health <= 0){
-			state^ = .GameOver
+			state^ = .BattleLost
  			ToggleMenuUI(state)
 		}
 	    else if (len(g.battle.bees) <= 0){
-    		state^ = .Victory
+    		state^ = .BattleWon
             ToggleMenuUI(state)
 		}
         else if (is_key_just_pressed(glfw.KEY_P)){
@@ -126,15 +126,15 @@ app_run :: proc(dt: f32, state: ^AppState) {
         ves_cleanup(&g.battle)
 	case .Pause:
         if is_key_just_pressed(glfw.KEY_ENTER){
-            state^ = .Game
+            state^ = .Battle
             ToggleMenuUI(state)
         }
-	case .GameOver:
+	case .BattleLost:
     	if is_key_just_pressed(glfw.KEY_ENTER){
             state^ = .MainMenu
             ToggleMenuUI(state)
         }
-	case .Victory:
+	case .BattleWon:
     	if is_key_just_pressed(glfw.KEY_ENTER){
      		app_restart()
             state^ = .Overworld
@@ -193,12 +193,12 @@ menu_run_title :: proc(dt : f32, state : ^AppState){
 
 // menu_run_main :: proc(dt : f32, state : ^AppState)
 // {
-//     if is_key_just_pressed(glfw.KEY_ENTER) do state^ = .Game
+//     if is_key_just_pressed(glfw.KEY_ENTER) do state^ = .Battle
 //     // Wait for player to press enter, if so then start the anim and go to GameState
 //     if game_started{
 //         if menu_run_anim(g.main_menu, &g.main_menuAnim, dt) == .Finished{
 //             battle_start()
-//             state^ = .Game
+//             state^ = .Battle
 //             return
 //         }
 //     }
@@ -289,16 +289,16 @@ case .MainMenu:
         ToggleUI (lex.UI_GAME_OVER, false)
         ToggleUI(lex.UI_VICTORY, false)
         ToggleUI(lex.UI_PAUSED, false)
-case .Game, .Overworld:
+case .Battle, .Overworld:
         ToggleUI(lex.UI_TITLE, false)
         ToggleUI(lex.UI_BACKGROUND, false)
         ToggleUI(lex.UI_START_GAME, false)
         ToggleUI(lex.UI_PAUSED, false)
 case .Pause:
         ToggleUI(lex.UI_PAUSED, true)
-    case .GameOver:
+    case .BattleLost:
         ToggleUI (lex.UI_GAME_OVER, true)
-    case .Victory:
+    case .BattleWon:
         ToggleUI(lex.UI_VICTORY, true)
     }
 }

@@ -4,42 +4,96 @@ import "core:mem"
 import "axiom"
 import queue "core:container/queue"
 
-battle_setup_1 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocator)
+BattleSetup :: struct
 {
-    using battle
-    // Clear and initialize grid contiguously
-    battle.grid = grid_create({7, 5}, alloc)
-    grid_set_flags(grid,2,0,{.Weapon})
-    grid_set_flags(grid,4,3,{.Weapon})
-    grid_set_flags(grid,3,2,{.Obstacle})
-    grid_set_flags(grid,1,0,{.Wall})
-    grid_set_flags(grid,5,4,{.Wall})
-    // Initialize Player and Bee
-    bees = make([dynamic]Bee, 2, alloc)
-    player = {name ='p', pos = vec2i{0,2}, health = 1, weapon = WeaponsDB[.Hand], added = {}, removed = {}, flags = {}}
-    bees[0] = Bee{name = 'a', pos = vec2i{6,2}, target = vec2i{6,2}, health = 100, type = .Aggressive, flags = {}}
-    bees[1] = Bee{name = 'n', pos = vec2i{6,3}, target = vec2i{6,3}, health = 100, type = .Normal, flags = {}}
-
-    bees[0].timer.max = 5
-    bees[1].timer.max = 6
+	grid_size : vec2i,
+	player : PlayerSetup,
+	tiles : []TileSetup,
+	bees : []BeeSetup,
+}
+TileSetup :: struct
+{
+	pos : vec2i,
+	flags : TileFlags
+}
+PlayerSetup :: struct
+{
+	pos : vec2i,
+	health : i8,
+	weapon : WeaponType
+}
+BeeSetup :: struct
+{
+	name : rune,
+	pos : vec2i,
+	health : i8,
+	type : BeeType,
+	timer : f32
 }
 
-battle_setup_2 :: proc(battle : ^Battle, alloc : mem.Allocator = context.allocator)
+battle_setup :: proc(battle: ^Battle, name : BattleName, alloc : mem.Allocator)
 {
-    // add somethings to the grid
-    using battle
-    grid = grid_create({7, 5}, alloc)
-    grid_set_flags(grid,3,0,{.Weapon})
-    grid_set_flags(grid,2,3,{.Weapon})
-    grid_set_flags(grid,4,0,{.Wall})
+	// Get Battle Setup
+	bdb := BattleDB
+	setup := bdb[name]
+	//Set up Grid
+	battle.grid = grid_create(setup.grid_size, alloc)
+	for tile in setup.tiles do grid_set_flags(battle.grid, tile.pos, tile.flags)
 
-    // Initialize Player and Bee
-    player = {name = 'p', pos = vec2i{0,2}, health = 1, weapon = WeaponsDB[.Hand]}
-    bees = make([dynamic]Bee, 3)
-    bees[0] = Bee{name = 'a', pos = vec2i{6,2}, target = vec2i{6,2}, health = 100, type = .Aggressive, flags = {}}
-    bees[1] = Bee{name = 'n', pos = vec2i{6,3}, target = vec2i{6,3}, health = 100, type = .Normal, flags = {}}
-    bees[0] = Bee{name = '2', pos = vec2i{6,4}, target = vec2i{6,2}, health = 100, type = .Aggressive, flags = {}}
+	//Set up bees
+	battle.bees = make([dynamic]Bee, len(setup.bees), alloc)
+	for bee,i in setup.bees{
+		battle.bees[i] = Bee{name = bee.name, pos = bee.pos, health = bee.health, type = bee.type}
+		battle.bees[i].timer.max = bee.timer
+	}
+
+	// Set up Player
+	db := WeaponsDB
+	battle.player = {
+		name = 'p',
+		pos = setup.player.pos,
+		health = setup.player.health,
+		weapon = db[setup.player.weapon],
+	}
 }
+
+BattleName :: enum
+{
+	Battle1,
+	Battle2,
+}
+
+BattleDB :: [BattleName]BattleSetup{
+	.Battle1 = BattleSetup{
+		grid_size = {7,5},
+		tiles = {
+			TileSetup{{2,0},{.Weapon}},
+			TileSetup{{4,3},{.Weapon}},
+			TileSetup{{3,2},{.Obstacle}},
+			TileSetup{{1,0},{.Wall}},
+			TileSetup{{5,4},{.Wall}},
+		},
+		bees = {
+			BeeSetup{'a', vec2i{6,2}, 100, .Aggressive, 5},
+			BeeSetup{'n', vec2i{6,3}, 100, .Normal, 6}
+		},
+		player = PlayerSetup{vec2i{0,2}, 1, .Hand}
+	},
+	.Battle2 = BattleSetup{
+		grid_size = {7,5},
+		tiles = {
+			TileSetup{{3,0},{.Weapon}},
+			TileSetup{{2,3},{.Weapon}},
+			TileSetup{{4,0},{.Wall}},
+		},
+		bees = {
+			BeeSetup{'a', vec2i{6,2}, 100, .Aggressive, 5},
+			BeeSetup{'n', vec2i{6,3}, 100, .Normal, 6}
+		},
+		player = PlayerSetup{vec2i{0,2}, 1, .Hand}
+	}
+}
+
 
 init_battle :: proc(battle : ^Battle, alloc : mem.Allocator)
 {
@@ -82,35 +136,6 @@ init_battle_queue :: proc(battle : ^Battle, alloc : mem.Allocator)
    }
 }
 
-LevelBit :: enum u64
-{
-    Level_1,
-    Level_2,
-    Level_3,
-    Level_4,
-    Level_5,
-    Level_6,
-    Level_7,
-    Level_8,
-    Level_9,
-    Level_10,
-}
-LevelSet :: bit_set[LevelBit; u64]
-ComponentFlags :: bit_set[ComponentFlag; u32]
-
-get_level_sum :: proc(ls : LevelSet)
-{
-    sum := 0
-    for i in 0..<size_of(LevelBit)
-    {
-        sum +=
-    }
-}
-
-SaveFile :: struct
-{
-   levels_completed : LevelSet
-}
 save_level :: proc()
 {
 

@@ -40,6 +40,8 @@ Battle :: struct
     curr_sel : BattleSelection,
 }
 
+
+
 //----------------------------------------------------------------------------\\
 // /Start UP
 //----------------------------------------------------------------------------\\
@@ -110,7 +112,7 @@ battle_turn_end_visibility :: #force_inline proc(btl: ^Battle) {
 start_game :: proc(){
     g.battle.state = .Start //NOTE: Why is this in repeat?
     ves_screen_push(&g.ves, .None)
-    battle_setup_1(&g.battle,g.mem_game.alloc) //NOTE: The actual initialize of the battle
+    battle_setup(&g.battle, .Battle1, g.mem_game.alloc)
     g.battle.player.entity = g.player
     face_left(&g.battle.player)
 
@@ -144,7 +146,7 @@ set_game_over :: proc(){
 set_game_victory :: proc(){
 	clear(&g.battle.bees)
 	// fmt.println("destroying game")
-	//     g.app_state = .Victory
+	//     g.app_state = .BattleWon
 	//     destroy_level1()
 	//     overworld_start()
 	//     load_scene("Overworld")
@@ -153,7 +155,7 @@ set_game_victory :: proc(){
 
 set_game_start :: proc(){
     fmt.println(lex.MSG_STARTING_GAME)
-    g.app_state = .Game
+    g.app_state = .Battle
     ToggleMenuUI(&g.app_state)
     start_game()
 }
