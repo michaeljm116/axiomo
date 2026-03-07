@@ -5,67 +5,13 @@ import "axiom"
 import queue "core:container/queue"
 import "core:encoding/json"
 import "core:fmt"
+import "core:os"
 
-BattleSetup :: struct
-{
-	grid_size : vec2i,
-	player : PlayerSetup,
-	tiles : []TileSetup,
-	bees : []BeeSetup,
-}
-TileSetup :: struct
-{
-	pos : vec2i,
-	flags : TileFlags
-}
-PlayerSetup :: struct
-{
-	pos : vec2i,
-	health : i8,
-	weapon : WeaponType
-}
-BeeSetup :: struct
-{
-	name : rune,
-	pos : vec2i,
-	health : i8,
-	type : BeeType,
-	timer : f32
-}
-
-battle_setup :: proc(battle: ^Battle, name : BattleName, alloc : mem.Allocator)
-{
-	// Get Battle Setup
-	bdb := BattleDB
-	setup := bdb[name]
-	//Set up Grid
-	battle.grid = grid_create(setup.grid_size, alloc)
-	for tile in setup.tiles do grid_set_flags(battle.grid, tile.pos, tile.flags)
-
-	//Set up bees
-	battle.bees = make([dynamic]Bee, len(setup.bees), alloc)
-	for bee,i in setup.bees{
-		battle.bees[i] = Bee{name = bee.name, pos = bee.pos, health = bee.health, type = bee.type}
-		battle.bees[i].timer.max = bee.timer
-	}
-
-	// Set up Player
-	db := WeaponsDB
-	battle.player = {
-		name = 'p',
-		pos = setup.player.pos,
-		health = setup.player.health,
-		weapon = db[setup.player.weapon],
-	}
-}
-
-BattleName :: enum
-{
-	Battle1,
-	Battle2,
-}
-
+//----------------------------------------------------------------------------\\
+// /Database /db
+//----------------------------------------------------------------------------\\
 BattleDB :: [BattleName]BattleSetup{
+    .None = {},
 	.Battle1 = BattleSetup{
 		grid_size = {7,5},
 		tiles = {
@@ -96,6 +42,120 @@ BattleDB :: [BattleName]BattleSetup{
 	}
 }
 
+RoomsDB :: [RoomName]RoomDBColumn{
+    .FirstRoom = {.FirstFloor, .Battle1, {}},
+    .SecondRoom = {.FirstFloor, .Battle2, {}}
+}
+FloorsDB :: [FloorName]FloorDBColumn{
+    .FirstFloor = {}
+}
+
+//----------------------------------------------------------------------------\\
+// /Enums
+//----------------------------------------------------------------------------\\
+AreaType :: enum{Inn, Floor, Room,}
+RoomFlag :: enum{Locked,Open,Visited,Completed,}
+
+BattleName :: enum{None,Battle1,Battle2,}
+RoomName :: enum u32{FirstRoom = 0,SecondRoom = 1,}
+FloorName :: enum u32{FirstFloor = 0,}
+
+//----------------------------------------------------------------------------\\
+// /Strcts
+//----------------------------------------------------------------------------\\
+
+BattleSetup :: struct
+{
+	grid_size : vec2i,
+	player : PlayerSetup,
+	tiles : []TileSetup,
+	bees : []BeeSetup,
+}
+TileSetup :: struct
+{
+	pos : vec2i,
+	flags : TileFlags
+}
+PlayerSetup :: struct
+{
+	pos : vec2i,
+	health : i8,
+	weapon : WeaponType
+}
+BeeSetup :: struct
+{
+	name : rune,
+	pos : vec2i,
+	health : i8,
+	type : BeeType,
+	timer : f32
+}
+RoomDBColumn :: struct
+{
+    floor_name : FloorName,
+    battle_name : BattleName,
+    entrance : AreaEntry,
+}
+FloorDBColumn :: struct
+{
+    entrance : AreaEntry
+}
+Floor :: struct
+{
+	using entrance : AreaEntry,
+	rooms : map[RoomName]Room,
+}
+Inn :: struct
+{
+	floors : map[FloorName]Floor,
+}
+AreaEntry :: struct
+{
+	entry : AreaTrigger,
+	exit : AreaTrigger,
+}
+AreaTrigger :: struct
+{
+	dir : Direction,
+	can_enter : bool,
+	pos : vec2f,
+	len : f32,
+}
+Room :: struct
+{
+	using entrance : AreaEntry,
+	battle_setup : BattleName,
+	flag : RoomFlag
+}
+
+//----------------------------------------------------------------------------\\
+// /Setup /Inits
+//----------------------------------------------------------------------------\\
+battle_setup :: proc(battle: ^Battle, name : BattleName, alloc : mem.Allocator)
+{
+	// Get Battle Setup
+	bdb := BattleDB
+	setup := bdb[name]
+	//Set up Grid
+	battle.grid = grid_create(setup.grid_size, alloc)
+	for tile in setup.tiles do grid_set_flags(battle.grid, tile.pos, tile.flags)
+
+	//Set up bees
+	battle.bees = make([dynamic]Bee, len(setup.bees), alloc)
+	for bee,i in setup.bees{
+		battle.bees[i] = Bee{name = bee.name, pos = bee.pos, health = bee.health, type = bee.type}
+		battle.bees[i].timer.max = bee.timer
+	}
+
+	// Set up Player
+	db := WeaponsDB
+	battle.player = {
+		name = 'p',
+		pos = setup.player.pos,
+		health = setup.player.health,
+		weapon = db[setup.player.weapon],
+	}
+}
 
 init_battle :: proc(battle : ^Battle, alloc : mem.Allocator)
 {
@@ -138,102 +198,75 @@ init_battle_queue :: proc(battle : ^Battle, alloc : mem.Allocator)
    }
 }
 
-save_level :: proc()
-{
+init_inn :: proc(inn: ^Inn, alloc : mem.Allocator) {
+    // First make Floors
+    inn.floors = make(map[FloorName]Floor, 4, alloc)
+    for floor_data, floor_name in FloorsDB {
+        inn.floors[floor_name] = Floor{
+            entrance = floor_data.entrance,
+            rooms    = make(map[RoomName]Room, 8, alloc),
+        }
+    }
 
+    // Then make rooms on the floors
+    for room_data, room_name in RoomsDB {
+        if floor, ok := &inn.floors[room_data.floor_name]; ok {
+            floor.rooms[room_name] = Room{
+                entrance     = room_data.entrance,
+                battle_setup = room_data.battle_name,
+            }
+        }
+    }
 }
 
-
-Room :: struct
-{
-	using entrance : AreaEntry,
-	battle_setup : BattleName,
-	is_battle : bool,
-	flag : RoomFlag
-}
-
-RoomFlag :: enum
-{
-	Locked,
-	Open,
-	Visited,
-	Completed
-}
-
-RoomName :: enum u32
-{
-	FirstRoom = 1,
-	SecondRoom = 2,
-}
-
-FloorName :: enum u32
-{
-	FirstFloor = 1,
-}
-
+//----------------------------------------------------------------------------\\
+// /Serialize
+//----------------------------------------------------------------------------\\
 RoomSave :: struct
 {
 	fn : FloorName,
 	rn : RoomName,
 	flag : RoomFlag
 }
+GameSave :: struct{rooms : [RoomName]RoomSave,}
 
-GameSave :: struct
+save_inn :: proc(inn: Inn, filename := "assets/config/gamesave.json")
 {
-	// bees_killed : u32,
-	// last_room : RoomSave,
-	rooms : [RoomName]RoomSave,
-}
-
-// Basically you want a variable length grid to be saved and even t... wait... you do know one thing...
-// room number will always be constant, floor names dont really matter at all, only room numbers too
-save_inn :: proc(inn : Inn, gs : ^GameSave)
-{
-	assert(len(gs.rooms) == len(RoomName))
-	for k1, floor in inn.floors do for k2, room in floor.rooms{
+    // Set up gamesave data structure
+    gs := GameSave{}
+    assert(len(gs.rooms) == len(RoomName))
+	for k1, floor in inn.floors  {
+	for k2, room  in floor.rooms {
 		gs.rooms[k2] = RoomSave{k1, k2, room.flag}
-	}
-	data, marshal_err := json.marshal(gs, json.Marshal_Options{pretty = true}, allocator = context.temp_allocator)
-	if marshal_err != nil {
-		fmt.eprintf("Error Marshaling Levle Prefab '%s', : %v\n", "assets/config/gamesave.json", marshal_err)
-	}
+	}}
+
+	// Save data to file
+    data, err := json.marshal(gs, json.Marshal_Options{pretty = true})
+    if err != nil {
+        fmt.eprintf("Marshal error: %v\n", err)
+        return
+    }
+    if !os.write_entire_file(filename, data) {
+        fmt.eprintf("Failed to write save file\n")
+    }
 }
 
-load_inn :: proc(inn : ^Inn, gs : GameSave)
+load_inn :: proc(inn: ^Inn, filename := "assets/config/gamesave.json")
 {
-	// json_err := json.unmarshal()
-	for rs in gs.rooms{
-		fn := transmute(FloorName)rs.fn
-		rn := transmute(RoomName)rs.rn
-		room := &inn.floors[fn].rooms[rn]
-		room.flag = rs.flag
-	}
-}
+    //Load File
+    data, ok := os.read_entire_file(filename)
+    if !ok do fmt.panicf("Failed to load save file: %s", filename)
+    defer delete(data)
 
-Floor :: struct
-{
-	using entrance : AreaEntry,
-	rooms : map[RoomName]Room,
-}
+    // Unmarshal json
+    gs: GameSave
+    if json.unmarshal(data, &gs) != nil do fmt.panicf("Failed to unmarshal save file: %s", filename)
 
-Inn :: struct
-{
-	floors : map[FloorName]Floor,
+    //Load data into memory
+    for rs in gs.rooms {
+        if floor, floor_ok := &inn.floors[rs.fn];  floor_ok {
+        if room,  room_ok  := &floor.rooms[rs.rn]; room_ok {
+            room.flag = rs.flag
+        }}
+    }
 }
-
-AreaEntry :: struct
-{
-	entry : AreaTrigger,
-	exit : AreaTrigger,
-}
-
-AreaTrigger :: struct
-{
-	dir : Direction,
-	can_enter : bool,
-	pos : vec2f,
-	len : f32,
-}
-// Direction :: enum{Up,Down,Left,Right}
-
-AreaType :: enum{Inn, Floor, Room}

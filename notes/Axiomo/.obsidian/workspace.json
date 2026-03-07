@@ -69,12 +69,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/March 06, 2026, Fri.md",
+                "file": "DailyNotes/March 07, 2026, Sat.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "March 06, 2026, Fri"
+              "title": "March 07, 2026, Sat"
             }
           }
         ],
@@ -230,8 +230,9 @@
   },
   "active": "6a75017c8eae8bbc",
   "lastOpenFiles": [
-    "DailyNotes/March 05, 2026, Thu.md",
     "DailyNotes/March 06, 2026, Fri.md",
+    "DailyNotes/March 07, 2026, Sat.md",
+    "DailyNotes/March 05, 2026, Thu.md",
     "BeeKillingsInn/Production/!kb_Kanban.md",
     "BeeKillingsInn/Production/!kb_Mechanics.md",
     "BeeKillingsInn/Production/!kb_Showcase.md",
@@ -262,7 +263,6 @@
     "DailyNotes/2026 - February/February 25, 2026, Wed.md",
     "DailyNotes/2026 - February/February 26, 2026, Thu.md",
     "BeeKillingsInn/Production/Epics.md",
-    "DailyNotes/2026 - February/February 24, 2026, Tue.md",
-    "BeeKillingsInn/Helpers.md"
+    "DailyNotes/2026 - February/February 24, 2026, Tue.md"
   ]
 }
