@@ -199,6 +199,17 @@ init_battle_queue :: proc(battle : ^Battle, alloc : mem.Allocator)
    }
 }
 
+init_battle_chests :: proc(battle: ^Battle)
+{
+    for tile, i in battle.grid.tiles{
+        if .Weapon in tile.flags
+        {
+           pos := grid_get_pos(battle.grid^, i)
+           place_chest_on_grid(pos, battle)
+        }
+    }
+}
+
 //----------------------------------------------------------------------------\\
 // /Serialize
 //----------------------------------------------------------------------------\\

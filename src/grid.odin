@@ -155,6 +155,12 @@ grid_get_mut_vec2i :: proc(grid: ^Grid, p: vec2i) -> ^Tile {
 
 grid_get_mut :: proc{grid_get_mut_i16, grid_get_mut_vec2i}
 
+grid_get_pos :: proc(grid : Grid, i : int) -> vec2i
+{
+   return vec2i{i32(i) % grid.width, i32(i) / grid.width}
+}
+
+
 //Set the scale of the level to always match the size of the floor
 //So lets say you have a 3 x 3 grid but a 90 x 90 level, 1 grid block is 30
 

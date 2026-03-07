@@ -126,8 +126,7 @@ start_game :: proc(){
         face_right(&bee)
     }
 
-    place_chest_on_grid(vec2i{2,0}, &g.battle)
-    place_chest_on_grid(vec2i{4,3}, &g.battle)
+    init_battle_chests(&g.battle)
     add_animations()
     create_grid_entities(g.battle.grid^)
 

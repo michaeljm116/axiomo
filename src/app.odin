@@ -116,11 +116,11 @@ app_run :: proc(dt: f32, state: ^AppState) {
 	case .Battle:
 		run_battle(&g.battle, &g.ves, dt)
 		ves_update_all(&g.battle, &g.ves, dt)
-		if (g.battle.player.health <= 0){
+		if (check_lose_condition(&g.battle)){
 			state^ = .BattleLost
  			ToggleMenuUI(state)
 		}
-	    else if (len(g.battle.bees) <= 0){
+	    else if check_win_condition(&g.battle){
     		state^ = .BattleWon
             ToggleMenuUI(state)
 		}
@@ -136,8 +136,9 @@ app_run :: proc(dt: f32, state: ^AppState) {
         }
 	case .BattleLost:
     	if is_key_just_pressed(glfw.KEY_ENTER){
-            state^ = .MainMenu
+            state^ = .Overworld
             ToggleMenuUI(state)
+            overworld_start()
         }
 	case .BattleWon:
     	if is_key_just_pressed(glfw.KEY_ENTER){
