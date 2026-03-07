@@ -8,6 +8,7 @@ import ax"axiom"
 import "axiom/resource"
 import "core:log"
 import lex"lexicon"
+import "core:os/os2"
 
 //----------------------------------------------------------------------------\\
 // /APP - Things needed globally
@@ -30,6 +31,10 @@ app_start :: proc() {
     g.app_state = .TitleScreen
     init_game_ui(&g_gui, g_mem_core.alloc)
     ToggleUI(lex.UI_TITLE, true)
+
+    init_inn(&g.inn, g.mem_game.alloc)
+    filename := "assets/config/gamesave.json"
+    if os2.exists(filename) do load_inn(&g.inn, filename)
 }
 
 app_restart :: proc(){

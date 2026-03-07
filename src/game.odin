@@ -33,6 +33,7 @@ Game_Memory :: struct
     // BKS
     battle : Battle,
     ui_keys: [dynamic]string,
+    inn : Inn,
 
     app_state : AppState,
     title : Entity,

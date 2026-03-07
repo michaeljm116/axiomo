@@ -112,7 +112,7 @@ battle_turn_end_visibility :: #force_inline proc(btl: ^Battle) {
 start_game :: proc(){
     g.battle.state = .Start //NOTE: Why is this in repeat?
     ves_screen_push(&g.ves, .None)
-    battle_setup(&g.battle, .Battle1, g.mem_game.alloc)
+    setup_battle(&g.battle, .Battle1, g.mem_game.alloc)
     g.battle.player.entity = g.player
     face_left(&g.battle.player)
 

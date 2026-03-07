@@ -46,6 +46,7 @@ RoomsDB :: [RoomName]RoomDBColumn{
     .FirstRoom = {.FirstFloor, .Battle1, {}},
     .SecondRoom = {.FirstFloor, .Battle2, {}}
 }
+
 FloorsDB :: [FloorName]FloorDBColumn{
     .FirstFloor = {}
 }
@@ -56,9 +57,9 @@ FloorsDB :: [FloorName]FloorDBColumn{
 AreaType :: enum{Inn, Floor, Room,}
 RoomFlag :: enum{Locked,Open,Visited,Completed,}
 
-BattleName :: enum{None,Battle1,Battle2,}
-RoomName :: enum u32{FirstRoom = 0,SecondRoom = 1,}
-FloorName :: enum u32{FirstFloor = 0,}
+BattleName :: enum{None, Battle1, Battle2,}
+RoomName :: enum u32{FirstRoom = 0, SecondRoom = 1,}
+FloorName :: enum u32{FirstFloor,}
 
 //----------------------------------------------------------------------------\\
 // /Strcts
@@ -124,14 +125,14 @@ AreaTrigger :: struct
 Room :: struct
 {
 	using entrance : AreaEntry,
-	battle_setup : BattleName,
+	battle_name : BattleName,
 	flag : RoomFlag
 }
 
 //----------------------------------------------------------------------------\\
 // /Setup /Inits
 //----------------------------------------------------------------------------\\
-battle_setup :: proc(battle: ^Battle, name : BattleName, alloc : mem.Allocator)
+setup_battle :: proc(battle: ^Battle, name : BattleName, alloc : mem.Allocator)
 {
 	// Get Battle Setup
 	bdb := BattleDB
@@ -198,6 +199,66 @@ init_battle_queue :: proc(battle : ^Battle, alloc : mem.Allocator)
    }
 }
 
+//----------------------------------------------------------------------------\\
+// /Serialize
+//----------------------------------------------------------------------------\\
+RoomSave :: struct
+{
+	fn : FloorName,
+	rn : RoomName,
+	flag : RoomFlag
+}
+GameSave :: struct{rooms : [RoomName]RoomFlag,}
+
+save_inn :: proc(inn: Inn, filename := "assets/config/gamesave.json")
+{
+    // Set up gamesave data structure
+    gs := GameSave{}
+    assert(len(gs.rooms) == len(RoomName))
+	for k1, floor in inn.floors  {
+	for k2, room  in floor.rooms {
+		gs.rooms[k2] = room.flag
+	}}
+
+	// Save data to file
+    data, err := json.marshal(gs, json.Marshal_Options{pretty = true})
+    if err != nil {
+        fmt.eprintf("Marshal error: %v\n", err)
+        return
+    }
+    if !os.write_entire_file(filename, data) {
+        fmt.eprintf("Failed to write save file\n")
+    }
+    else do fmt.println("Saved game")
+}
+
+load_inn :: proc(inn: ^Inn, filename := "assets/config/gamesave.json")
+{
+    //Load File
+    data, ok := os.read_entire_file(filename)
+    if !ok do fmt.panicf("Failed to load save file: %s", filename)
+    defer delete(data)
+
+    // Unmarshal json
+    gs: GameSave
+    if json.unmarshal(data, &gs) != nil do fmt.panicf("Failed to unmarshal save file: %s", filename)
+
+    // Load data into memory
+    for saved_flag, saved_room_name in gs.rooms{
+        found := false
+        for _, &floor in inn.floors{
+            if room, ok := &floor.rooms[saved_room_name]; ok{
+                room.flag = saved_flag
+                found = true
+                break
+            }
+        }
+        if !found do fmt.printf("Warning: Saved room '%v' not found", saved_room_name)
+    }
+
+    for k,v in inn.floors[.FirstFloor].rooms do fmt.println("Room: ", k, " Flag: ", v.flag )
+}
+
 init_inn :: proc(inn: ^Inn, alloc : mem.Allocator) {
     // First make Floors
     inn.floors = make(map[FloorName]Floor, 4, alloc)
@@ -212,61 +273,9 @@ init_inn :: proc(inn: ^Inn, alloc : mem.Allocator) {
     for room_data, room_name in RoomsDB {
         if floor, ok := &inn.floors[room_data.floor_name]; ok {
             floor.rooms[room_name] = Room{
-                entrance     = room_data.entrance,
-                battle_setup = room_data.battle_name,
+                entrance    = room_data.entrance,
+                battle_name = room_data.battle_name,
             }
         }
-    }
-}
-
-//----------------------------------------------------------------------------\\
-// /Serialize
-//----------------------------------------------------------------------------\\
-RoomSave :: struct
-{
-	fn : FloorName,
-	rn : RoomName,
-	flag : RoomFlag
-}
-GameSave :: struct{rooms : [RoomName]RoomSave,}
-
-save_inn :: proc(inn: Inn, filename := "assets/config/gamesave.json")
-{
-    // Set up gamesave data structure
-    gs := GameSave{}
-    assert(len(gs.rooms) == len(RoomName))
-	for k1, floor in inn.floors  {
-	for k2, room  in floor.rooms {
-		gs.rooms[k2] = RoomSave{k1, k2, room.flag}
-	}}
-
-	// Save data to file
-    data, err := json.marshal(gs, json.Marshal_Options{pretty = true})
-    if err != nil {
-        fmt.eprintf("Marshal error: %v\n", err)
-        return
-    }
-    if !os.write_entire_file(filename, data) {
-        fmt.eprintf("Failed to write save file\n")
-    }
-}
-
-load_inn :: proc(inn: ^Inn, filename := "assets/config/gamesave.json")
-{
-    //Load File
-    data, ok := os.read_entire_file(filename)
-    if !ok do fmt.panicf("Failed to load save file: %s", filename)
-    defer delete(data)
-
-    // Unmarshal json
-    gs: GameSave
-    if json.unmarshal(data, &gs) != nil do fmt.panicf("Failed to unmarshal save file: %s", filename)
-
-    //Load data into memory
-    for rs in gs.rooms {
-        if floor, floor_ok := &inn.floors[rs.fn];  floor_ok {
-        if room,  room_ok  := &floor.rooms[rs.rn]; room_ok {
-            room.flag = rs.flag
-        }}
     }
 }
