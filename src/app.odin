@@ -32,7 +32,7 @@ app_start :: proc() {
     init_game_ui(&g_gui, g_mem_core.alloc)
     ToggleUI(lex.UI_TITLE, true)
 
-    init_inn(&g.inn, g.mem_game.alloc)
+    init_inn(&g.inn, g_mem_core.alloc)
     filename := "assets/config/gamesave.json"
     if os2.exists(filename) do load_inn(&g.inn, filename)
 }

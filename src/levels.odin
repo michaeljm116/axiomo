@@ -46,8 +46,42 @@ BattleDB :: [BattleName]BattleSetup{
 }
 
 RoomsDB :: [RoomName]RoomDBColumn{
-    .FirstRoom = {.FirstFloor, .Battle1, {}},
-    .SecondRoom = {.FirstFloor, .Battle2, {}}
+    .FirstRoom = {
+        .FirstFloor,
+        .Battle1,
+        AreaEntry{
+            entry = AreaTrigger{
+                dir = .Right,
+                can_enter = true,
+                pos = {20, 0},
+                len = 5
+            },
+            exit = AreaTrigger{
+                dir = .Left,
+                can_enter = true,
+                pos = {18, 0},
+                len = 5
+            }
+        }
+    },
+    .SecondRoom = {
+        .FirstFloor,
+        .Battle2,
+        AreaEntry{
+            entry = AreaTrigger{
+                dir = .Left,
+                can_enter = true,
+                pos = {-20, 0},
+                len = 5
+            },
+            exit = AreaTrigger{
+                dir = .Right,
+                can_enter = true,
+                pos = {-18, 0},
+                len = 5
+            }
+        }
+    }
 }
 
 FloorsDB :: [FloorName]FloorDBColumn{
@@ -58,7 +92,7 @@ FloorsDB :: [FloorName]FloorDBColumn{
 // /Enums
 //----------------------------------------------------------------------------\\
 AreaType :: enum{Inn, Floor, Room,}
-RoomFlag :: enum{Locked,Open,Visited,Completed,}
+RoomFlag :: enum u8{Locked,Open,Visited,Completed,}
 
 BattleName :: enum{None, Battle1, Battle2,}
 RoomName :: enum u32{FirstRoom = 0, SecondRoom = 1,}
@@ -286,10 +320,12 @@ init_inn :: proc(inn: ^Inn, alloc : mem.Allocator) {
             floor.rooms[room_name] = Room{
                 entrance    = room_data.entrance,
                 battle_name = room_data.battle_name,
+                flag        = room_name == .FirstRoom ? .Open : .Locked,
             }
         }
     }
 
+    for k,v in inn.floors do for rk, rv in v.rooms do fmt.println("Room: ", rk, " Flag: ", rv.flag )
     inn.curr = .FirstRoom
 }
 
@@ -300,10 +336,9 @@ RoomAndFloor :: struct {
 }
 
 find_room_and_floor :: proc(inn: ^Inn, room_name: RoomName) -> (^Room, ^Floor) {
-    for _, &floor in inn.floors {
-        if room, ok := &floor.rooms[room_name]; ok {
-            return room, &floor
-        }
+    for key, &floor in inn.floors {
+        room, ok := &floor.rooms[room_name]
+        if ok do return room, &floor
     }
     return nil, nil
 }

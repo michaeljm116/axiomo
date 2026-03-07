@@ -6,11 +6,12 @@ import "vendor:glfw"
 import "axiom"
 import "core:log"
 import b2 "vendor:box2d"
+import "core:fmt"
 
 overworld_detect_area_change :: proc(player_transform : Cmp_Transform, trigger : AreaTrigger) -> bool
 {
     px := player_transform.local.pos.x
-    py := player_transform.local.pos.y
+    py := player_transform.local.pos.z
     tx := trigger.pos.x
     ty := trigger.pos.y
     tl := trigger.len
@@ -60,6 +61,16 @@ overworld_start :: proc() {
 	find_camera_entity()
 	find_floor_entities()
 
+    // room, _ := find_room_and_floor(&g.inn, g.inn.curr)
+    // if room != nil {
+    //     exit_pos := room.exit.pos
+    //     pt := get_component(g.player, Cmp_Transform)
+    //     if pt != nil {
+    //         pt.local.pos.x = exit_pos.x
+    //         pt.local.pos.y = exit_pos.y
+    //     }
+    // }
+
 	overworld_place_entity_on_floor(g.player, g.floor)
 	overworld_setup_col_player(axiom.g_physics)
 	overworld_setup_col_floor(axiom.g_physics)
@@ -76,7 +87,26 @@ overworld_update :: proc(dt : f32){
         log.error("transform not found")
         return
     }
-    if trans.local.pos.x >= 20 do overworld_end()
+
+    _, floor := find_room_and_floor(&g.inn, g.inn.curr)
+    if floor == nil do return
+    for name, &room in &floor.rooms
+    {
+        if room.flag  == .Locked do return
+        if overworld_detect_area_change(trans^, room.entry){
+           room.flag = advance_room_flag(room.flag, .Visited)
+           g.inn.curr =name
+           overworld_end()
+           return
+        }
+    }
+}
+
+advance_room_flag :: proc(current: RoomFlag, target: RoomFlag) -> RoomFlag {
+    if transmute(u8)target > transmute(u8)current {
+        return target
+    }
+    return current
 }
 
 overworld_end :: proc()
