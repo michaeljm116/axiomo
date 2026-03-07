@@ -100,6 +100,7 @@ overworld_update :: proc(dt : f32){
            room.flag = advance_room_flag(room.flag, .Visited)
            g.inn.curr =name
            overworld_end()
+           save_inn(g.inn)
            return
         }
     }
