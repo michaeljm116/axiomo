@@ -68,15 +68,74 @@ destroy_level1 :: proc() {
     // assert(axiom.entity_exists(g.floor))
 }
 
-battle_start :: proc(){ //NOTE: This doesn't actually start the battle....
+battle_start :: proc(battle_name : BattleName){ //NOTE: This doesn't actually start the battle....
+    db := BattleDB
     g.battle.state = .Start
     g.battle.current_bee = 0
-	load_scene(lex.BEE_KILLINGS_INN)
+
+    // Basics Data loading
+	load_scene(db[battle_name].scene)
 	g.player = axiom.load_prefab(lex.PREFAB_FROKU, g.mem_game.alloc)
 	find_camera_entity()
-    find_light_entity()
-    find_player_entity()
+
     axiom.sys_trans_process_ecs()
+
+    // setup step
+    ves_screen_push(&g.ves, .None)
+
+    // This actually sets up the battle
+    setup_battle(&g.battle, battle_name, g.mem_game.alloc)
+
+    // back to setup step... hmmm wonder why its here ecs not needed for these nvm its neededd for visuals player not leeded tho?
+    init_battle(&g.battle, g.mem_game.alloc)
+    init_battle_visuals(&g.battle, g.mem_game.alloc)
+
+    // ECS grid init actually the rest are grid ecs things, shoulr probably be last because
+    // it assumes a grid created and entities loaded or will be loaded and need to place down
+    grid_init_floor(g.battle.grid, find_floor_prim()^)
+
+    // Entity assigning First player
+    g.battle.player.entity = g.player
+    face_left(&g.battle.player)
+    set_entity_on_tile(g.battle.grid^, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y, &g.battle.player.ground)
+
+    //Then bees nd other assets
+    for &bee in g.battle.bees{
+        set_entity_on_tile(g.battle.grid^, bee.entity, g.battle, bee.pos.x, bee.pos.y, &bee.ground)
+        face_right(&bee)
+    }
+    init_battle_chests(&g.battle)
+    create_grid_entities(g.battle.grid^)
+
+    // MISC.. prolly miscatetorized
+    add_animations()
+    queue.init(&g.ves.event_queue, 16, g.mem_game.alloc)
+}
+
+set_game_over :: proc(){
+	g.battle.player.health = 0
+    // fmt.println("destroying game")
+    // g.app_state = .GameOver
+    // destroy_level1()
+    // load_scene("Empty")
+	// ToggleMenuUI(&g.app_state)
+}
+
+set_game_victory :: proc(){
+	clear(&g.battle.bees)
+	// fmt.println("destroying game")
+	//     g.app_state = .BattleWon
+	//     destroy_level1()
+	//     overworld_start()
+	//     load_scene("Overworld")
+	// ToggleMenuUI(&g.app_state)
+}
+
+set_game_start :: proc(){
+    fmt.println(lex.MSG_STARTING_GAME)
+    g.app_state = .Battle
+    ToggleMenuUI(&g.app_state)
+    battle_start(get_curr_battle_name(&g.inn))
 }
 
 battle_turn_start_visibility :: proc(btl: ^Battle) {
@@ -107,56 +166,6 @@ bee_hiding_showing :: proc (bee : ^Bee)
 
 battle_turn_end_visibility :: #force_inline proc(btl: ^Battle) {
     for &c in btl.curr_sel.selectables do c.removed |= {.PlayerSeesMe, .ISeePlayer}
-}
-
-start_game :: proc(){
-    g.battle.state = .Start //NOTE: Why is this in repeat?
-    ves_screen_push(&g.ves, .None)
-    setup_battle(&g.battle, .Battle1, g.mem_game.alloc)
-    g.battle.player.entity = g.player
-    face_left(&g.battle.player)
-
-    init_battle(&g.battle, g.mem_game.alloc)
-    init_battle_visuals(&g.battle, g.mem_game.alloc)
-    grid_init_floor(g.battle.grid, find_floor_prim()^)
-
-    set_entity_on_tile(g.battle.grid^, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y, &g.battle.player.ground)
-    for &bee in g.battle.bees{
-        set_entity_on_tile(g.battle.grid^, bee.entity, g.battle, bee.pos.x, bee.pos.y, &bee.ground)
-        face_right(&bee)
-    }
-
-    init_battle_chests(&g.battle)
-    add_animations()
-    create_grid_entities(g.battle.grid^)
-
-    queue.init(&g.ves.event_queue, 16, g.mem_game.alloc)
-}
-
-set_game_over :: proc(){
-	g.battle.player.health = 0
-    // fmt.println("destroying game")
-    // g.app_state = .GameOver
-    // destroy_level1()
-    // load_scene("Empty")
-	// ToggleMenuUI(&g.app_state)
-}
-
-set_game_victory :: proc(){
-	clear(&g.battle.bees)
-	// fmt.println("destroying game")
-	//     g.app_state = .BattleWon
-	//     destroy_level1()
-	//     overworld_start()
-	//     load_scene("Overworld")
-	// ToggleMenuUI(&g.app_state)
-}
-
-set_game_start :: proc(){
-    fmt.println(lex.MSG_STARTING_GAME)
-    g.app_state = .Battle
-    ToggleMenuUI(&g.app_state)
-    start_game()
 }
 
 //----------------------------------------------------------------------------\\
@@ -1024,15 +1033,6 @@ player_attack :: proc(player : ^Player, bee : ^Bee, acc : i8){
            if bee.health <= 0 do bee.flags += {.Dead}
        }
     }
-}
-
-place_chest_on_grid :: proc(pos : vec2i, battle : ^Battle)
-{
-    chest := load_prefab(lex.PREFAB_CHEST)
-    context.allocator = g.mem_game.alloc
-    f : f32
-    set_entity_on_tile(battle.grid^, chest, battle^, pos.x, pos.y, &f)
-    append(&battle.grid_weapons, WeaponGrid{pos, chest})
 }
 
 //----------------------------------------------------------------------------\\
@@ -2224,4 +2224,13 @@ create_grid_entities :: proc(grid : Grid)
         if .Wall in t.flags do create_grid_entity("WoodPillar", grid, t)
         else if .Obstacle in t.flags do create_grid_entity("Barrel", grid, t)
     }
+}
+
+create_grid_chest :: proc(pos : vec2i, battle : ^Battle)
+{
+    chest := load_prefab(lex.PREFAB_CHEST)
+    context.allocator = g.mem_game.alloc
+    f : f32
+    set_entity_on_tile(battle.grid^, chest, battle^, pos.x, pos.y, &f)
+    append(&battle.grid_weapons, WeaponGrid{pos, chest})
 }

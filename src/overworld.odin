@@ -84,8 +84,7 @@ overworld_end :: proc()
     app_restart()
     g.app_state = .Battle
     ToggleMenuUI(&g.app_state)
-    battle_start()
-    start_game()
+    battle_start(get_curr_battle_name(&g.inn))
 }
 
 overworld_point_camera_at_2 :: proc(entity: Entity){

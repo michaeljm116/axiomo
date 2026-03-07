@@ -104,8 +104,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
             app_restart()
             state^ = .Battle
             ToggleMenuUI(state)
-            battle_start()
-            start_game()
+            battle_start(get_curr_battle_name(&g.inn))
         }
         else if is_key_just_pressed(glfw.KEY_SPACE){
             app_restart()

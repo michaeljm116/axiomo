@@ -6,6 +6,7 @@ import queue "core:container/queue"
 import "core:encoding/json"
 import "core:fmt"
 import "core:os"
+import lex"lexicon"
 
 //----------------------------------------------------------------------------\\
 // /Database /db
@@ -13,6 +14,7 @@ import "core:os"
 BattleDB :: [BattleName]BattleSetup{
     .None = {},
 	.Battle1 = BattleSetup{
+	    scene = lex.BEE_KILLINGS_INN,
 		grid_size = {7,5},
 		tiles = {
 			TileSetup{{2,0},{.Weapon}},
@@ -28,6 +30,7 @@ BattleDB :: [BattleName]BattleSetup{
 		player = PlayerSetup{vec2i{0,2}, 1, .Hand}
 	},
 	.Battle2 = BattleSetup{
+	    scene = lex.BEE_KILLINGS_INN,
 		grid_size = {7,5},
 		tiles = {
 			TileSetup{{3,0},{.Weapon}},
@@ -71,6 +74,7 @@ BattleSetup :: struct
 	player : PlayerSetup,
 	tiles : []TileSetup,
 	bees : []BeeSetup,
+	scene : string
 }
 TileSetup :: struct
 {
@@ -108,6 +112,7 @@ Floor :: struct
 }
 Inn :: struct
 {
+    curr : RoomName,
 	floors : map[FloorName]Floor,
 }
 AreaEntry :: struct
@@ -205,7 +210,7 @@ init_battle_chests :: proc(battle: ^Battle)
         if .Weapon in tile.flags
         {
            pos := grid_get_pos(battle.grid^, i)
-           place_chest_on_grid(pos, battle)
+           create_grid_chest(pos, battle)
         }
     }
 }
@@ -256,17 +261,12 @@ load_inn :: proc(inn: ^Inn, filename := "assets/config/gamesave.json")
 
     // Load data into memory
     for saved_flag, saved_room_name in gs.rooms{
-        found := false
-        for _, &floor in inn.floors{
-            if room, ok := &floor.rooms[saved_room_name]; ok{
-                room.flag = saved_flag
-                found = true
-                break
-            }
-        }
-        if !found do fmt.printf("Warning: Saved room '%v' not found", saved_room_name)
+        room, _ := find_room_and_floor(inn, saved_room_name)
+        if room != nil do room.flag = saved_flag
+        else do fmt.printf("Warning: Saved room '%v' not found", saved_room_name)
     }
 
+    //print out floors
     for k,v in inn.floors[.FirstFloor].rooms do fmt.println("Room: ", k, " Flag: ", v.flag )
 }
 
@@ -289,4 +289,27 @@ init_inn :: proc(inn: ^Inn, alloc : mem.Allocator) {
             }
         }
     }
+
+    inn.curr = .FirstRoom
+}
+
+RoomAndFloor :: struct {
+    floor: ^Floor,
+    room:  ^Room,
+    found: bool,
+}
+
+find_room_and_floor :: proc(inn: ^Inn, room_name: RoomName) -> (^Room, ^Floor) {
+    for _, &floor in inn.floors {
+        if room, ok := &floor.rooms[room_name]; ok {
+            return room, &floor
+        }
+    }
+    return nil, nil
+}
+
+get_curr_battle_name :: proc(inn: ^Inn) -> BattleName
+{
+    rd := RoomsDB
+    return rd[inn.curr].battle_name
 }
