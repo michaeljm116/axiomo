@@ -336,6 +336,7 @@ RoomAndFloor :: struct {
 }
 
 find_room_and_floor :: proc(inn: ^Inn, room_name: RoomName) -> (^Room, ^Floor) {
+    assert(len(inn.floors) == len(FloorName))
     for key, &floor in inn.floors {
         room, ok := &floor.rooms[room_name]
         if ok do return room, &floor
