@@ -3,6 +3,8 @@ package game
 import "core:mem"
 import "axiom"
 import queue "core:container/queue"
+import "core:encoding/json"
+import "core:fmt"
 
 BattleSetup :: struct
 {
@@ -140,3 +142,98 @@ save_level :: proc()
 {
 
 }
+
+
+Room :: struct
+{
+	using entrance : AreaEntry,
+	battle_setup : BattleName,
+	is_battle : bool,
+	flag : RoomFlag
+}
+
+RoomFlag :: enum
+{
+	Locked,
+	Open,
+	Visited,
+	Completed
+}
+
+RoomName :: enum u32
+{
+	FirstRoom = 1,
+	SecondRoom = 2,
+}
+
+FloorName :: enum u32
+{
+	FirstFloor = 1,
+}
+
+RoomSave :: struct
+{
+	fn : FloorName,
+	rn : RoomName,
+	flag : RoomFlag
+}
+
+GameSave :: struct
+{
+	// bees_killed : u32,
+	// last_room : RoomSave,
+	rooms : [RoomName]RoomSave,
+}
+
+// Basically you want a variable length grid to be saved and even t... wait... you do know one thing...
+// room number will always be constant, floor names dont really matter at all, only room numbers too
+save_inn :: proc(inn : Inn, gs : ^GameSave)
+{
+	assert(len(gs.rooms) == len(RoomName))
+	for k1, floor in inn.floors do for k2, room in floor.rooms{
+		gs.rooms[k2] = RoomSave{k1, k2, room.flag}
+	}
+	data, marshal_err := json.marshal(gs, json.Marshal_Options{pretty = true}, allocator = context.temp_allocator)
+	if marshal_err != nil {
+		fmt.eprintf("Error Marshaling Levle Prefab '%s', : %v\n", "assets/config/gamesave.json", marshal_err)
+	}
+}
+
+load_inn :: proc(inn : ^Inn, gs : GameSave)
+{
+	// json_err := json.unmarshal()
+	for rs in gs.rooms{
+		fn := transmute(FloorName)rs.fn
+		rn := transmute(RoomName)rs.rn
+		room := &inn.floors[fn].rooms[rn]
+		room.flag = rs.flag
+	}
+}
+
+Floor :: struct
+{
+	using entrance : AreaEntry,
+	rooms : map[RoomName]Room,
+}
+
+Inn :: struct
+{
+	floors : map[FloorName]Floor,
+}
+
+AreaEntry :: struct
+{
+	entry : AreaTrigger,
+	exit : AreaTrigger,
+}
+
+AreaTrigger :: struct
+{
+	dir : Direction,
+	can_enter : bool,
+	pos : vec2f,
+	len : f32,
+}
+// Direction :: enum{Up,Down,Left,Right}
+
+AreaType :: enum{Inn, Floor, Room}

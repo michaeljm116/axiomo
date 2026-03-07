@@ -7,50 +7,6 @@ import "axiom"
 import "core:log"
 import b2 "vendor:box2d"
 
-Room :: struct
-{
-	using entrance : AreaEntry,
-	battle_setup : BattleName,
-	is_battle : bool,
-	flag : RoomFlag
-}
-
-RoomFlag :: enum
-{
-	Locked,
-	Open,
-	Visited,
-	Completed
-}
-
-Floor :: struct
-{
-	using entrance : AreaEntry,
-	rooms : map[string]Room,
-}
-
-Inn :: struct
-{
-	levels : map[u32]Floor,
-}
-
-AreaEntry :: struct
-{
-	entry : AreaTrigger,
-	exit : AreaTrigger,
-}
-
-AreaTrigger :: struct
-{
-	dir : Direction,
-	can_enter : bool,
-	pos : vec2f,
-	len : f32,
-}
-// Direction :: enum{Up,Down,Left,Right}
-
-AreaType :: enum{Inn, Floor, Room}
-
 overworld_detect_area_change :: proc(player_transform : Cmp_Transform, trigger : AreaTrigger) -> bool
 {
     px := player_transform.local.pos.x

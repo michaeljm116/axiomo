@@ -69,12 +69,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/March 05, 2026, Thu.md",
+                "file": "DailyNotes/March 06, 2026, Fri.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "March 05, 2026, Thu"
+              "title": "March 06, 2026, Fri"
             }
           }
         ],
@@ -135,8 +135,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "c0dba331d38e27d5",
@@ -231,12 +230,17 @@
   },
   "active": "6a75017c8eae8bbc",
   "lastOpenFiles": [
-    "BeeKillingsInn/Production/Steam Next Fest 2026.md",
     "DailyNotes/March 05, 2026, Thu.md",
+    "DailyNotes/March 06, 2026, Fri.md",
+    "BeeKillingsInn/Production/!kb_Kanban.md",
+    "BeeKillingsInn/Production/!kb_Mechanics.md",
+    "BeeKillingsInn/Production/!kb_Showcase.md",
+    "BeeKillingsInn/Production/!kb_demo.md",
+    "BeeKillingsInn/Code/DeathOrVictory.md",
+    "BeeKillingsInn/Production/Steam Next Fest 2026.md",
     "DailyNotes/March 04, 2026, Wed.md",
     "DailyNotes/March 03, 2026, Tue.md",
     "DailyNotes/March 02, 2026, Mon.md",
-    "BeeKillingsInn/Code/DeathOrVictory.md",
     "BeeKillingsInn/Code/Line of sight - Effects.md",
     "BeeKillingsInn/Production/Mechanics/Run.md",
     "BeeKillingsInn/Production/Mechanics/Visual Grid.md",
@@ -245,7 +249,6 @@
     "DailyNotes/2026 - February/February 01, 2026, Sun.md",
     "DailyNotes/2026 - February",
     "BeeKillingsInn/Code/Timed Turns.md",
-    "BeeKillingsInn/Production/!kb_Mechanics.md",
     "BeeKillingsInn/Production/Mechanics/Action - Attack.md",
     "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
     "Photos/{0DA3E792-94E9-46F5-B6DE-8EDBEA4E55CD}.png",
@@ -259,11 +262,7 @@
     "DailyNotes/2026 - February/February 25, 2026, Wed.md",
     "DailyNotes/2026 - February/February 26, 2026, Thu.md",
     "BeeKillingsInn/Production/Epics.md",
-    "BeeKillingsInn/Production/!kb_Showcase.md",
-    "BeeKillingsInn/Production/!kb_demo.md",
     "DailyNotes/2026 - February/February 24, 2026, Tue.md",
-    "BeeKillingsInn/Production/!kb_Kanban.md",
-    "BeeKillingsInn/Helpers.md",
-    "BeeKillingsInn/Production/Reminders.md"
+    "BeeKillingsInn/Helpers.md"
   ]
 }
