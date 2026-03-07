@@ -31,3 +31,10 @@
 * Overall arch...
 	* wow so there's like... multiple places where the battle can be lost this is horribad
 	* maybe just do check win/lose condition in the app.odin and do eveyrthing in app.
+
+
+## Pause
+* okay now you have a way to finish a room and set the next one except you need to iterate on curr now except now you realize you can't really do that because curr is like... not curr
+* so you need to now take over the overworld so that it starts detecting areas and also make sure its fin*
+* you already have a detect area changes but its not used once its used then bam you done right now its just overworld update hardcode to 20
+* 

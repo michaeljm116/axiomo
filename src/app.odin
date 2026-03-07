@@ -142,6 +142,13 @@ app_run :: proc(dt: f32, state: ^AppState) {
 	case .BattleWon:
     	if is_key_just_pressed(glfw.KEY_ENTER){
      		app_restart()
+
+            // Complete Room & unlock next
+            room,floor := find_room_and_floor(&g.inn, g.inn.curr)
+            room.flag = .Completed
+            unlock_next_room(&g.inn)
+
+            // go to the overworld
             state^ = .Overworld
             ToggleMenuUI(state)
             overworld_start()

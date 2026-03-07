@@ -313,3 +313,12 @@ get_curr_battle_name :: proc(inn: ^Inn) -> BattleName
     rd := RoomsDB
     return rd[inn.curr].battle_name
 }
+
+unlock_next_room :: proc(inn : ^Inn)
+{
+   next := transmute(u32)inn.curr + 1
+   if next >= len(RoomName) do return
+
+   next_room, floor := find_room_and_floor(inn, transmute(RoomName)next)
+   next_room.flag = .Open
+}
