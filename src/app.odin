@@ -34,7 +34,7 @@ app_start :: proc() {
 
     init_inn(&g.inn, g_mem_core.alloc)
     filename := "assets/config/gamesave.json"
-    if os2.exists(filename) do load_inn(&g.inn, filename)
+    if os2.exists(filename) do load_inn(&g.inn, filename, g_mem_core.alloc)
 }
 
 app_restart :: proc(){
@@ -147,7 +147,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
             room,floor := find_room_and_floor(&g.inn, g.inn.curr)
             room.flag = .Completed
             unlock_next_room(&g.inn)
-
+            save_inn(g.inn)
             // go to the overworld
             state^ = .Overworld
             ToggleMenuUI(state)

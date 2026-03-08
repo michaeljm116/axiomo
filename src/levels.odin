@@ -282,7 +282,7 @@ save_inn :: proc(inn: Inn, filename := "assets/config/gamesave.json")
     else do fmt.println("Saved game")
 }
 
-load_inn :: proc(inn: ^Inn, filename := "assets/config/gamesave.json")
+load_inn :: proc(inn: ^Inn, filename : string, alloc : mem.Allocator)
 {
     //Load File
     data, ok := os.read_entire_file(filename)
@@ -291,7 +291,7 @@ load_inn :: proc(inn: ^Inn, filename := "assets/config/gamesave.json")
 
     // Unmarshal json
     gs: GameSave
-    if json.unmarshal(data, &gs) != nil do fmt.panicf("Failed to unmarshal save file: %s", filename)
+    if json.unmarshal(data, &gs, allocator = alloc) != nil do fmt.panicf("Failed to unmarshal save file: %s", filename)
 
     // Load data into memory
     for saved_flag, saved_room_name in gs.rooms{

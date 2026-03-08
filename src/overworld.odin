@@ -93,8 +93,6 @@ overworld_update :: proc(dt : f32){
     i := 0
     for name, &room in &floor.rooms
     {
-        i += 1
-        assert(len(floor.rooms) == len(RoomName)) // for now assert his while you have 1 floor
         if room.flag  == .Locked do return
         if overworld_detect_area_change(trans^, room.entry){
            room.flag = advance_room_flag(room.flag, .Visited)
@@ -104,7 +102,6 @@ overworld_update :: proc(dt : f32){
            return
         }
     }
-    assert(i == len(RoomName)) // also assert for now
 }
 
 advance_room_flag :: proc(current: RoomFlag, target: RoomFlag) -> RoomFlag {
