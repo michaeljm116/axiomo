@@ -146,7 +146,7 @@ init_vulkan :: proc()
 		dbg_create_info := vk.DebugUtilsMessengerCreateInfoEXT {
 			sType           = .DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
 			messageSeverity = severity,
-			messageType     = {.GENERAL, .VALIDATION, .PERFORMANCE, .DEVICE_ADDRESS_BINDING}, // all of them.
+			messageType     = {.GENERAL, .VALIDATION, .PERFORMANCE}, // all of them.
 			pfnUserCallback = vk_messenger_callback,
 		}
 		create_info.pNext = &dbg_create_info
@@ -1258,7 +1258,7 @@ data_texture_create :: proc(alloc: mem.Allocator) -> ^DataTexture {
 
     // Create float texture (R32G32B32A32_SFLOAT)
     image_size := vk.DeviceSize(DATA_TEXTURE_SIZE * DATA_TEXTURE_SIZE * 4 * 4)  // 4 floats per pixel
-    
+
     staging_buffer_info := vk.BufferCreateInfo {
         sType = .BUFFER_CREATE_INFO,
         size = image_size,
@@ -1292,7 +1292,7 @@ data_texture_create :: proc(alloc: mem.Allocator) -> ^DataTexture {
         usage = .AUTO,
     }
     result = vma.CreateImage(g_renderbase.vma_allocator, &image_info, &image_alloc_info, &data_texture.texture.image, &data_texture.texture.image_allocation, nil)
-    
+
     transition_image_layout(data_texture.texture.image, .R32G32B32A32_SFLOAT, .UNDEFINED, .TRANSFER_DST_OPTIMAL)
     copy_buffer_to_image(data_texture.staging_buffer, data_texture.texture.image, DATA_TEXTURE_SIZE, DATA_TEXTURE_SIZE)
     transition_image_layout(data_texture.texture.image, .R32G32B32A32_SFLOAT, .TRANSFER_DST_OPTIMAL, .SHADER_READ_ONLY_OPTIMAL)
@@ -1543,7 +1543,7 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     sttt.InitFont(&info, raw_data(ttf_data), offset)
 
     // Bake atlas (ASCII 32-126 for simplicity; extend for Unicode)
-    bitmap_width, bitmap_height :: 512, 512  // Adjust if too small/large
+    bitmap_width, bitmap_height :: 513, 513  // Adjust if too small/large
     bitmap := make([]byte, bitmap_width * bitmap_height)
     defer delete(bitmap)
 
@@ -1587,8 +1587,8 @@ bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
     //
     if(texture_create(&g_raytracer.font.atlas_texture, raw_data(rgba_data))){
         append(&g_raytracer.bindless_textures, g_raytracer.font.atlas_texture)
-        g_texture_indexes["Deutsch.ttf"] = i32(len(g_texture_indexes))
-        log.infof("Font atlas created: %dx%d, texture index: %d",
+        g_texture_indexes["Deutsch.ttf"] = i32(len(g_texture_indexes)) - 1
+        fmt.printf("Font atlas created: %dx%d, texture index: %d",
                  bitmap_width, bitmap_height, g_texture_indexes["Deutsch.ttf"])
     }
     texture_update_descriptor(&g_raytracer.font.atlas_texture)
@@ -3349,6 +3349,8 @@ cleanup_vulkan :: proc() {
     texture_destroy(&g_raytracer.compute_texture, g_renderbase.device, &g_renderbase.vma_allocator)
     // for &tex in g_raytracer.data_textures do texture_destroy(&tex, g_renderbase.device, &g_renderbase.vma_allocator)
     data_texture_destroy(g_raytracer.data_texture)
+    texture_destroy(&g_raytracer.data_textures[0], g_renderbase.device, &g_renderbase.vma_allocator)
+
     for &tex in g_raytracer.bindless_textures do texture_destroy(&tex, g_renderbase.device, &g_renderbase.vma_allocator)
     texture_destroy(&g_raytracer.font.atlas_texture, g_renderbase.device, &g_renderbase.vma_allocator)
     delete(g_raytracer.font.char_data)
