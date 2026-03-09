@@ -32,6 +32,7 @@ Game_Memory :: struct
 
     // BKS
     battle : Battle,
+    ves : VisualEventData,
     ui_keys: [dynamic]string,
     inn : Inn,
 
@@ -42,7 +43,6 @@ Game_Memory :: struct
     main_menuAnim : MenuAnimation,
     controller : GameController,
     game_started : bool,
-    ves : VisualEventData,
     mem_game : ax.MemoryStack,                   // This holds game data, reset upon restarting of a game, ecs goes here
     mem_frame : ax.MemoryArena,                  // Mostly for BVH or anything that exist for a single frame
 }
@@ -71,7 +71,7 @@ game_init :: proc() {
     ax.init_vulkan()
     ax.set_camera()
 
-    g = new(Game_Memory)
+    g = new(Game_Memory, g_mem_core.alloc)
     set_up_game_arenas()
 	ax.g_renderbase.ctx = context
 	init_game_controller(&ax.g_controller)
@@ -191,6 +191,7 @@ game_shutdown :: proc(){
     ax.bvh_system_destroy(ax.g_bvh)
     destroy_all_arenas()
     free_all(context.temp_allocator)
+    free(g)
 }
 
 @(export)

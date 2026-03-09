@@ -87,6 +87,7 @@ battle_start :: proc(battle_name : BattleName){ //NOTE: This doesn't actually st
     setup_battle(&g.battle, battle_name, g.mem_game.alloc)
 
     // back to setup step... hmmm wonder why its here ecs not needed for these nvm its neededd for visuals player not leeded tho?
+    g.battle.player.entity = g.player
     init_battle(&g.battle, g.mem_game.alloc)
     init_battle_visuals(&g.battle, g.mem_game.alloc)
 
@@ -95,7 +96,6 @@ battle_start :: proc(battle_name : BattleName){ //NOTE: This doesn't actually st
     grid_init_floor(g.battle.grid, find_floor_prim()^)
 
     // Entity assigning First player
-    g.battle.player.entity = g.player
     face_left(&g.battle.player)
     set_entity_on_tile(g.battle.grid^, g.player, g.battle, g.battle.player.pos.x, g.battle.player.pos.y, &g.battle.player.ground)
 
