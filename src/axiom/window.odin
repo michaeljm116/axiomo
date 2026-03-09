@@ -11,6 +11,15 @@ import "base:runtime"
 //----------------------------------------------------------------------------\\
 // /Window
 //----------------------------------------------------------------------------\\
+Window :: struct{
+    handle : glfw.WindowHandle,
+    primary_monitor : glfw.MonitorHandle,
+    mode : ^glfw.VidMode,
+    width : c.int,
+    height : c.int,
+    ctx : runtime.Context,
+}
+
 window_init :: proc(ctx : runtime.Context){
     if !glfw.Init() {log.panic("glfw: could not be initialized")}
 

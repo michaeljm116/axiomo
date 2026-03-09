@@ -35,11 +35,15 @@ app_start :: proc() {
     init_inn(&g.inn, g_mem_core.alloc)
     filename := "assets/config/gamesave.json"
     if os2.exists(filename) do load_inn(&g.inn, filename, g_mem_core.alloc)
+    else {
+	    r := g.inn.floors[.FirstFloor].rooms[.FirstRoom]
+	    r.flag = .Open
+    }
 }
 
 app_restart :: proc(){
     destroy_world()
-    create_world()
+    reset_world()
 
     sys_visual_init(g.mem_game.alloc)
     init_game_ui(&g_gui, g_mem_core.alloc)
@@ -47,7 +51,7 @@ app_restart :: proc(){
 
 // Cleanup
 app_destroy :: proc() {
-    defer destroy_world()
+    // defer destroy_world()
     // Reset callbacks
     glfw.SetKeyCallback(ax.g_window.handle, nil)
     glfw.SetCursorPosCallback(ax.g_window.handle, nil)

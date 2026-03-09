@@ -202,7 +202,7 @@ init_battle :: proc(battle : ^Battle, alloc : mem.Allocator)
 	//Shuffle bee BeeDeck
     deck_init_attacky(&battle.deck, 36)
 
-    init_weapons(battle)
+    init_weapons(battle, alloc)
     init_variants(battle)
     init_battle_queue(battle, alloc)
     battle_selection_init(battle, &battle.curr_sel, alloc)
@@ -215,9 +215,9 @@ init_battle_visuals :: proc(battle : ^Battle, alloc : mem.Allocator){
     dodge_qte_init(&battle.dodge_qte, &g_gui)
 }
 
-init_weapons :: #force_inline proc(battle : ^Battle){
+init_weapons :: #force_inline proc(battle : ^Battle, alloc : mem.Allocator){
     db := WeaponsDB
-    battle.weapons = make([]Weapon, len(db))
+    battle.weapons = make([]Weapon, len(db), alloc)
     for i, w in db do battle.weapons[w] = i
 }
 

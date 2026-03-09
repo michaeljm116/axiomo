@@ -31,15 +31,6 @@ ENABLE_VALIDATION_LAYERS :: #config(ENABLE_VALIDATION_LAYERS, ODIN_DEBUG)
 MAX_FRAMES_IN_FLIGHT :: 1
 MAX_SWAPCHAIN_IMAGES := 3
 
-Window :: struct{
-    handle : glfw.WindowHandle,
-    primary_monitor : glfw.MonitorHandle,
-    mode : ^glfw.VidMode,
-    width : c.int,
-    height : c.int,
-    ctx : runtime.Context,
-}
-
 RenderBase :: struct{
     dbg_messenger: vk.DebugUtilsMessengerEXT,
 	ctx: runtime.Context,
@@ -1251,7 +1242,7 @@ DataTexture :: struct{
 }
 
 data_texture_create :: proc(alloc: mem.Allocator) -> ^DataTexture {
-    data_texture := new(DataTexture)
+    data_texture := new(DataTexture, alloc)
     data_texture.texture.height = DATA_TEXTURE_SIZE
     data_texture.texture.width = DATA_TEXTURE_SIZE
     data_texture.pixels = make([^]f32, DATA_TEXTURE_SIZE * DATA_TEXTURE_SIZE * 4, alloc)
@@ -1314,7 +1305,6 @@ data_texture_create :: proc(alloc: mem.Allocator) -> ^DataTexture {
 
     return data_texture
 }
-
 
 data_texture_set :: proc(dt: ^DataTexture, pos: vec2i, pixel: [4]f32) {
     assert(pos.x >= 0 && pos.x < i32(DATA_TEXTURE_SIZE) && pos.y >= 0 && pos.y < i32(DATA_TEXTURE_SIZE))
@@ -1463,75 +1453,7 @@ render_string_to_bitmap :: proc(text: string, scale: f32) -> ([]u8, i32, i32) {
     return bitmap, bitmap_width, bitmap_height
 }
 
-create_texture_from_bitmap :: proc(bitmap: []u8, width, height: i32) -> Texture {
-    tex: Texture
-    tex.width = u32(width)
-    tex.height = u32(height)
-    image_size := vk.DeviceSize(width * height * 4)
-
-    // Staging buffer (copy from bake_font_atlas)
-    staging_buffer: vk.Buffer
-    staging_allocation: vma.Allocation
-    staging_buffer_info := vk.BufferCreateInfo {
-        sType = .BUFFER_CREATE_INFO,
-        size = image_size,
-        usage = {.TRANSFER_SRC},
-        sharingMode = .EXCLUSIVE,
-    }
-    staging_alloc_info := vma.AllocationCreateInfo {
-        flags = {.HOST_ACCESS_SEQUENTIAL_WRITE},
-        usage = .AUTO,
-    }
-    must(vma.CreateBuffer(g_renderbase.vma_allocator, &staging_buffer_info, &staging_alloc_info, &staging_buffer, &staging_allocation, nil))
-
-    data: rawptr
-    vma.MapMemory(g_renderbase.vma_allocator, staging_allocation, &data)
-    mem.copy(data, raw_data(bitmap), int(image_size))
-    vma.UnmapMemory(g_renderbase.vma_allocator, staging_allocation)
-
-    // Image
-    image_info := vk.ImageCreateInfo {
-        sType = .IMAGE_CREATE_INFO,
-        imageType = .D2,
-        extent = {u32(width), u32(height), 1},
-        mipLevels = 1,
-        arrayLayers = 1,
-        format = .R8G8B8A8_UNORM,
-        tiling = .OPTIMAL,
-        initialLayout = .UNDEFINED,
-        usage = {.TRANSFER_DST, .SAMPLED},
-        samples = {._1},
-        sharingMode = .EXCLUSIVE,
-    }
-    alloc_info := vma.AllocationCreateInfo { usage = .AUTO }
-    must(vma.CreateImage(g_renderbase.vma_allocator, &image_info, &alloc_info, &tex.image, &tex.image_allocation, nil))
-
-    transition_image_layout(tex.image, .R8G8B8A8_UNORM, .UNDEFINED, .TRANSFER_DST_OPTIMAL)
-    copy_buffer_to_image(staging_buffer, tex.image, u32(width), u32(height))
-    transition_image_layout(tex.image, .R8G8B8A8_UNORM, .TRANSFER_DST_OPTIMAL, .SHADER_READ_ONLY_OPTIMAL)
-
-    tex.view = create_image_view(tex.image, .R8G8B8A8_UNORM, {.COLOR})
-
-    sampler_info := vk.SamplerCreateInfo {
-        sType = .SAMPLER_CREATE_INFO,
-        magFilter = .LINEAR,
-        minFilter = .LINEAR,
-        addressModeU = .CLAMP_TO_EDGE,
-        addressModeV = .CLAMP_TO_EDGE,
-        addressModeW = .CLAMP_TO_EDGE,
-    }
-    must(vk.CreateSampler(g_renderbase.device, &sampler_info, nil, &tex.sampler))
-
-    tex.image_layout = .SHADER_READ_ONLY_OPTIMAL
-    texture_update_descriptor(&tex)
-
-    // Cleanup staging
-    vma.DestroyBuffer(g_renderbase.vma_allocator, staging_buffer, staging_allocation)
-
-    return tex
-}
-
-bake_font_atlas :: proc(font_path: string, pixel_height: f32) {
+bake_font_atlas_x :: proc(font_path: string, pixel_height: f32) {
     // Load TTF (e.g., "../assets/fonts/arial.ttf")
     ttf_data, ok := os.read_entire_file(font_path)
     if !ok { log.panic("Failed to load font", font_path) }
@@ -2513,7 +2435,7 @@ start_up_raytracer :: proc(alloc: mem.Allocator)
    map_models_to_gpu(alloc)
    map_materials_to_gpu(alloc)
    // Initialize font system for compute raytracer
-   bake_font_atlas("assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
+   // bake_font_atlas("assets/textures/fonts/Deutsch.ttf", 32.0)  // 32px height
    log.info("Font system initialized for compute raytracer")
 }
 
@@ -3349,10 +3271,10 @@ cleanup_vulkan :: proc() {
     texture_destroy(&g_raytracer.compute_texture, g_renderbase.device, &g_renderbase.vma_allocator)
     // for &tex in g_raytracer.data_textures do texture_destroy(&tex, g_renderbase.device, &g_renderbase.vma_allocator)
     data_texture_destroy(g_raytracer.data_texture)
-    texture_destroy(&g_raytracer.data_textures[0], g_renderbase.device, &g_renderbase.vma_allocator)
+    // texture_destroy(&g_raytracer.data_textures[0], g_renderbase.device, &g_renderbase.vma_allocator)
 
     for &tex in g_raytracer.bindless_textures do texture_destroy(&tex, g_renderbase.device, &g_renderbase.vma_allocator)
-    texture_destroy(&g_raytracer.font.atlas_texture, g_renderbase.device, &g_renderbase.vma_allocator)
+    // texture_destroy(&g_raytracer.font.atlas_texture, g_renderbase.device, &g_renderbase.vma_allocator)
     delete(g_raytracer.font.char_data)
 
     // Destroy all dynamic objects

@@ -56,15 +56,28 @@ init_memory_stack :: proc(ms : ^MemoryStack, size : u64){
    ms.alloc = mem.rollback_stack_allocator(&ms.stack)
 }
 
-destroy_memory_stack :: proc(ms : ^MemoryStack){
-    mem.rollback_stack_destroy(&ms.stack)
-}
 destroy_memory_arena :: proc(ma : ^MemoryArena){
     vmem.arena_destroy(&ma.arena)
 }
-reset_memory_stack :: proc(ms: ^MemoryStack){
-    mem.rollback_stack_destroy(&ms.stack)
-    delete(ms.buffer)
+
+// Reset: wipe allocs, reuse buffer (call in app_restart after destroy_world)
+reset_memory_stack :: proc(ms: ^MemoryStack) {
+    if len(ms.buffer) == 0 do return
+    fmt.printf("RESET '%s' - wipe & reuse %p len %v\n", ms.name, raw_data(ms.buffer), len(ms.buffer))
+    mem.rollback_stack_destroy(&ms.stack)  // per docs: frees blocks, resets head
+    mem.rollback_stack_init_buffered(&ms.stack, ms.buffer)  // re-init on same buffer
+}
+
+// Destroy: final free (call in destroy_all_arenas only)
+destroy_memory_stack :: proc(ms: ^MemoryStack) {
+    fmt.printf("DESTROY '%s' %p len %v\n", ms.name, raw_data(ms.buffer), len(ms.buffer))
+    mem.rollback_stack_destroy(&ms.stack)  // frees blocks
+    if len(ms.buffer) > 0 {
+        fmt.printf(" FINAL FREE %p\n", raw_data(ms.buffer))
+        delete(ms.buffer)  // only here, per reuse goal
+    }
+    ms.buffer = nil
+    ms^ = {}  // zero struct, prevent bugs
 }
 
 destroy_memory :: proc{destroy_memory_arena, destroy_memory_stack}

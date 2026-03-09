@@ -69,12 +69,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/March 07, 2026, Sat.md",
+                "file": "DailyNotes/March 09, 2026, Mon.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "March 07, 2026, Sat"
+              "title": "March 09, 2026, Mon"
             }
           }
         ],
@@ -228,10 +228,13 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "6a75017c8eae8bbc",
+  "active": "ba34b9fe5af2d42a",
   "lastOpenFiles": [
-    "DailyNotes/March 06, 2026, Fri.md",
+    "BeeKillingsInn/Code/Texture.md",
+    "DailyNotes/March 04, 2026, Wed.md",
+    "DailyNotes/March 09, 2026, Mon.md",
     "DailyNotes/March 07, 2026, Sat.md",
+    "DailyNotes/March 06, 2026, Fri.md",
     "DailyNotes/March 05, 2026, Thu.md",
     "BeeKillingsInn/Production/!kb_Kanban.md",
     "BeeKillingsInn/Production/!kb_Mechanics.md",
@@ -239,7 +242,6 @@
     "BeeKillingsInn/Production/!kb_demo.md",
     "BeeKillingsInn/Code/DeathOrVictory.md",
     "BeeKillingsInn/Production/Steam Next Fest 2026.md",
-    "DailyNotes/March 04, 2026, Wed.md",
     "DailyNotes/March 03, 2026, Tue.md",
     "DailyNotes/March 02, 2026, Mon.md",
     "BeeKillingsInn/Code/Line of sight - Effects.md",
@@ -261,8 +263,6 @@
     "Untitled.md",
     "tales-tactics.avif",
     "DailyNotes/2026 - February/February 25, 2026, Wed.md",
-    "DailyNotes/2026 - February/February 26, 2026, Thu.md",
-    "BeeKillingsInn/Production/Epics.md",
-    "DailyNotes/2026 - February/February 24, 2026, Tue.md"
+    "DailyNotes/2026 - February/February 26, 2026, Thu.md"
   ]
 }

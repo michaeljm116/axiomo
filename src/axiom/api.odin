@@ -81,6 +81,20 @@ create_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World {
     return g_world
 }
 
+reset_world :: #force_inline proc(mem_stack : ^MemoryStack) -> ^World {
+    // init_memory(mem_stack, mem.Megabyte * 50)
+    g_world = new(World, mem_stack.alloc)
+    g_world.tables = make(map[typeid]rawptr, mem_stack.alloc)
+    g_world.cap = g_cap
+    tag_root = new(ecs.Tag_Table, mem_stack.alloc)
+    g_world.db = new(Database, mem_stack.alloc)
+    ecs.init(g_world.db, entities_cap=g_cap, allocator = mem_stack.alloc)
+    g_world.entity = add_entity()
+    g_world.alloc = mem_stack.alloc
+    create_main_tables(g_world)
+    init_views(g_world.alloc)
+    return g_world
+}
 create_main_tables :: proc(world : ^World)
 {
     //Tables needed for views
@@ -105,7 +119,7 @@ init_views :: proc(alloc : mem.Allocator){
     sys_bvh_init(alloc)
     sys_anim_init(alloc)
     sys_physics_init(alloc)
-    sys_text_init(alloc)
+    // sys_text_init(alloc)
 }
 
 destroy_world :: #force_inline proc(mem_stack : ^MemoryStack) {

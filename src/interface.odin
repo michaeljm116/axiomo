@@ -50,6 +50,9 @@ Cmp_Collision2D :: axiom.Cmp_Collision2D
 create_world :: #force_inline proc() -> ^World{
    return axiom.create_world(&g.mem_game)
 }
+reset_world :: #force_inline proc() -> ^World{
+   return axiom.reset_world(&g.mem_game)
+}
 destroy_world :: #force_inline proc(){
    axiom.destroy_world(&g.mem_game)
 }
