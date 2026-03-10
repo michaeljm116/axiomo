@@ -1,5 +1,5 @@
 package scene
-import "core:os"
+import os"core:os/old"
 import "core:fmt"
 import "core:encoding/json"
 import path2 "../../extensions/filepath2"

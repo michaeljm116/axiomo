@@ -8,7 +8,8 @@ import ax"axiom"
 import "axiom/resource"
 import "core:log"
 import lex"lexicon"
-import "core:os/os2"
+import os"core:os/old"
+import os2"core:os"
 
 //----------------------------------------------------------------------------\\
 // /APP - Things needed globally

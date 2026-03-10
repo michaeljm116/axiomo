@@ -8,7 +8,7 @@ package main
 import "core:dynlib"
 import "core:fmt"
 import "core:c/libc"
-import "core:os"
+import os"core:os/old"
 import "core:os/os2"
 import "core:log"
 import "core:mem"

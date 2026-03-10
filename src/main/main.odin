@@ -5,7 +5,7 @@ For making a release exe that does not use hot reload.
 package main_release
 
 import "core:log"
-import "core:os"
+import os"core:os/old"
 import "core:path/filepath"
 import "core:mem"
 import game ".."

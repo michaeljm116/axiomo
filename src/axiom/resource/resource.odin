@@ -3,7 +3,7 @@ package resource
 import math "core:math/linalg"
 import "core:strings"
 import "core:log"
-import "core:os"
+import os"core:os/old"
 import "core:io"
 import "core:fmt"
 import xml "core:encoding/xml"

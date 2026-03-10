@@ -5,7 +5,7 @@ import "axiom"
 import queue "core:container/queue"
 import "core:encoding/json"
 import "core:fmt"
-import "core:os"
+import os"core:os/old"
 import lex"lexicon"
 
 //----------------------------------------------------------------------------\\

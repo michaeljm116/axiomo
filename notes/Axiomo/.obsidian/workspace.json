@@ -69,12 +69,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/March 09, 2026, Mon.md",
+                "file": "DailyNotes/March 10, 2026, Tue.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "March 09, 2026, Mon"
+              "title": "March 10, 2026, Tue"
             }
           }
         ],
@@ -228,11 +228,12 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "ba34b9fe5af2d42a",
+  "active": "6a75017c8eae8bbc",
   "lastOpenFiles": [
+    "DailyNotes/March 09, 2026, Mon.md",
+    "DailyNotes/March 10, 2026, Tue.md",
     "BeeKillingsInn/Code/Texture.md",
     "DailyNotes/March 04, 2026, Wed.md",
-    "DailyNotes/March 09, 2026, Mon.md",
     "DailyNotes/March 07, 2026, Sat.md",
     "DailyNotes/March 06, 2026, Fri.md",
     "DailyNotes/March 05, 2026, Thu.md",
@@ -262,7 +263,6 @@
     "Untitled.base",
     "Untitled.md",
     "tales-tactics.avif",
-    "DailyNotes/2026 - February/February 25, 2026, Wed.md",
-    "DailyNotes/2026 - February/February 26, 2026, Thu.md"
+    "DailyNotes/2026 - February/February 25, 2026, Wed.md"
   ]
 }

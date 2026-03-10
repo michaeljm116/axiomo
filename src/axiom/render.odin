@@ -7,7 +7,7 @@ import "core:slice"
 import "core:log"
 import "external/vma"
 import "core:c"
-import "core:os"
+import os"core:os/old"
 import "core:math"
 import "core:math/linalg"
 import "core:math/rand"
@@ -1216,6 +1216,17 @@ texture_create_device :: proc(texture: ^Texture, pixels : [^]byte, device: vk.De
     }
     must(vk.CreateSampler(device, &sampler_info, nil, &texture.sampler))
 
+    path_cstr := strings.clone_to_cstring(texture.path, context.temp_allocator)
+    // defer free(raw_data(path_cstr), context.temp_allocator)  // only if not using temp
+
+    // now use path_cstr
+    vk.SetDebugUtilsObjectNameEXT(device, &vk.DebugUtilsObjectNameInfoEXT{
+        sType        = .DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+        objectType   = .IMAGE,
+        objectHandle = u64(texture.image),
+        pObjectName  = path_cstr,
+    })
+
     texture.image_layout = .SHADER_READ_ONLY_OPTIMAL
     texture_update_descriptor(texture)
 
@@ -1536,6 +1547,7 @@ destroy_vulkan :: proc()
     vk.DestroyDebugUtilsMessengerEXT(g_renderbase.instance, g_renderbase.dbg_messenger, nil)
     vk.DestroyInstance(g_renderbase.instance, nil)
     glfw.DestroyWindow(g_window.handle)
+    glfw.SetErrorCallback(nil)
     glfw.Terminate()
 }
 
@@ -2531,10 +2543,10 @@ map_models_to_gpu :: proc(alloc : mem.Allocator)
 
     // Similarly for data_textures if needed, but since it's fixed array, perhaps initialize with a default texture or handle differently
     // For now, assume data_textures are critical, so check in loop
-    for &t, i in g_raytracer.data_textures {
-        t = Texture{path = g_raytracer.texture_paths[i]}
-        if !texture_create(&t) do log.errorf("Failed to create GUI texture for path: %s", g_raytracer.texture_paths[i])
-    }
+    // for &t, i in g_raytracer.data_textures {
+    //     t = Texture{path = g_raytracer.texture_paths[i]}
+    //     if !texture_create(&t) do log.errorf("Failed to create GUI texture for path: %s", g_raytracer.texture_paths[i])
+    // }
     g_raytracer.data_texture = data_texture_create(alloc)
     g_raytracer.data_textures[0] = g_raytracer.data_texture.texture
 }

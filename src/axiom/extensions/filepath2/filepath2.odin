@@ -1,5 +1,5 @@
 package filepath2
-import "core:os"
+import os"core:os/old"
 import "core:fmt"
 import "core:mem"
 import "core:strings"
@@ -13,7 +13,7 @@ get_dir_files :: proc (directory: string) -> []os.File_Info {
     defer os.close(dir_handle)
 
     entries, read_err := os.read_dir(dir_handle, 64, context.allocator)
-    if read_err != 0 {
+    if read_err != {} {
         fmt.println("Error reading directory:", read_err)
         return nil
     }
