@@ -67,6 +67,9 @@ add_component :: axiom.add_component
 has :: axiom.has
 entity_exists :: axiom.entity_exists
 
+// curr_max_union
+CurrMax :: axiom.CurrMax
+PrevCurrNext :: axiom.PrevCurrNext
 get_entity_yaw :: axiom.transform_get_entity_yaw
 
 

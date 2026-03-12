@@ -1366,6 +1366,7 @@ animate_run :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes
 animate_attack :: proc(ac : ^Cmp_Animation, prefab_name : string, a : AttackTimes ){
     set_animation(ac, a.stab_time, prefab_name, lex.STAB_START, lex.STAB_END, axiom.AnimFlags{loop = true, force_start = true, force_end = false});
 }
+
 animate_chest :: proc(chest : Entity){
    axiom.flatten_entity(chest)
    ac := axiom.animation_component_with_names(1,lex.PREFAB_CHEST,"",lex.CHEST_OPEN, axiom.AnimFlags{active = 1, loop = false, force_start = true, force_end = true})
@@ -1599,8 +1600,6 @@ hide_visuals :: proc(visuals : ^Cmp_Visual, flags : VisualFlags)
     visuals.flags -= flags
 }
 
-// curr_max_union
-CurrMax :: axiom.CurrMax
 
 
 //----------------------------------------------------------------------------\\
@@ -2108,6 +2107,7 @@ ves_animate_player_start :: #force_inline proc(p : ^Player){
         p.anim.timer = 1
         p.anim.rot_timer = .5
         ac := get_component(p.entity, Cmp_Animation)
+        ac.state = .DEFAULT
         if .Walk == p.anim_flag{
             animate_walk(ac, lex.PREFAB_FROKU, p.move_anim)
         }
@@ -2129,6 +2129,7 @@ ves_animate_player_end :: #force_inline proc(p : ^Player){
     p.pos = p.target
     p.anim.timer = 0
     ac := get_component(p.entity, Cmp_Animation)
+    ac.state = .DEFAULT
     animate_idle(ac, lex.PREFAB_FROKU, p.move_anim)
     if .Running in p.flags do p.removed +=  {.Running}
     if .Attack in p.flags do p.removed += {.Attack}

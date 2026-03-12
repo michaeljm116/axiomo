@@ -140,6 +140,7 @@ app_run :: proc(dt: f32, state: ^AppState) {
         }
 	case .BattleLost:
     	if is_key_just_pressed(glfw.KEY_ENTER){
+		    app_restart()
             state^ = .Overworld
             ToggleMenuUI(state)
             overworld_start()

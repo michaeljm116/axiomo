@@ -1,5 +1,7 @@
 package game
 
+import "vendor:windows/XAudio2"
+import "core:container/small_array"
 import "core:math"
 import "core:math/linalg"
 import "vendor:glfw"
@@ -7,6 +9,8 @@ import "axiom"
 import "core:log"
 import b2 "vendor:box2d"
 import "core:fmt"
+import lex"lexicon"
+import xxh"axiom/extensions/xxhash2"
 
 overworld_detect_area_change :: proc(player_transform : Cmp_Transform, trigger : AreaTrigger) -> bool
 {
@@ -55,9 +59,174 @@ g_contact_identifier := ContactDensities {
 	Wall        = 800.0
 }
 
+MovementState :: enum
+{
+	Idle, Walk, Run
+}
+CharacaterState :: struct
+{
+	movement_type : MovementState,
+	name_hash : u32,
+	start_transition_time : f32,
+	end_transition_time : f32,
+}
+MAX_CHARACTER_STATES :: 3
+Cmp_Character :: struct {
+	using movement : Cmp_Movement,
+	prefab_name : int,
+	states : [MovementState]CharacaterState,
+	curr_state : CharacaterState,
+	in_trans : bool,
+	trans_time : CurrMax,
+}
+
+Cmp_Movement :: struct {
+	curr_speed : f32,
+	curr_time : f32,
+	walk_speed : f32,
+	run_speed : f32,
+
+	prev_y : f32,
+
+	forward_dir : vec2f,
+	right_dir : vec2f,
+	move_dir : vec2f,
+
+	is_grounded : bool,
+	times : MovementTimes,
+}
+
+init_character :: proc(c : ^Cmp_Character, e : Entity)
+{
+	c.prefab_name = 0
+	c.states[.Idle] = {.Idle, xxh.str_to_u32("Idle"), 0, 0}
+	c.states[.Walk] = {.Walk, xxh.str_to_u32("Walk"), 0, 0}
+	c.states[.Run] = {.Run,  xxh.str_to_u32("Run"),  0, 0}
+	c.curr_state = c.states[.Idle]
+
+	init_cmp_movement(&c.movement)
+
+    axiom.flatten_entity(e)
+    ac := axiom.animation_component_with_names(2,lex.ENTITY_FROKU, lex.IDLE_START, lex.IDLE_END, axiom.AnimFlags{ active = 1, loop = true, force_start = true, force_end = true})
+    add_component(e, ac)
+    axiom.sys_anim_add(e)
+    // animate_idle(&ac, prefab, c.move_anim)
+}
+
+init_cmp_movement :: proc(m : ^Cmp_Movement){
+	m.curr_speed = 0
+	m.curr_time = 0
+	m.walk_speed = 5.0
+	m.run_speed = 20.0
+	m.prev_y = 0.0
+	m.times = MovementTimes{
+        idle_time = 1.5,
+        walk_time = 0.25,
+        run_time = 0.4,
+        jump_time = 0.25
+    }
+}
+
+o_character : Cmp_Character
+ow_cc_update :: proc(player : Entity, cm : ^Cmp_Character, dt : f32)
+{
+	fmt.println("MovementState : ", cm.curr_state.movement_type)
+	switch cm.curr_state.movement_type
+	{
+	case .Idle: ow_cc_update_idle(player, cm, dt)
+	case .Walk: ow_cc_update_walk(player, cm, dt)
+	case .Run: ow_cc_update_run(player, cm, dt)
+	}
+}
+
+ow_cc_update_idle :: proc(player : Entity, cm : ^Cmp_Character, dt : f32){
+	if game_controller_is_moving(){
+		ac := get_component(player, Cmp_Animation)
+		ac.state = .DEFAULT
+		animate_walk(ac, lex.PREFAB_FROKU, cm.times)
+		cm.curr_state.movement_type = .Walk
+		cm.curr_speed = cm.walk_speed
+		// ow_cc_update_walk(player, cm, dt)
+	}
+}
+
+transition_time :: 0.5
+ow_cc_update_walk :: proc(player : Entity, cm : ^Cmp_Character, dt : f32){
+	// Setup
+	ac := get_component(player, Cmp_Animation)
+	cc := get_component(player, Cmp_Collision2D)
+
+	cm.curr_speed = ow_calculate_speed(cm^, dt)
+	if cm.curr_speed >= cm.run_speed{
+		ac.state = .DEFAULT
+		animate_run(ac, lex.PREFAB_FROKU, cm.times)
+	}
+	if cm.curr_speed <= 0{
+		ac.state = .DEFAULT
+		animate_idle(ac, lex.PREFAB_FROKU, cm.times)
+	}
+	// Actuallly move the character now
+	ow_move_character(cm^, cc.bodyid)
+}
+
+ow_cc_update_run :: proc(player : Entity, cm : ^Cmp_Character, dt : f32){
+	// Setup
+	ac := get_component(player, Cmp_Animation)
+	cc := get_component(player, Cmp_Collision2D)
+
+	// calculate Acceleration
+	cm.curr_speed = ow_calculate_speed(cm^, dt)
+
+	//keep running or transition based on speed
+	half_way := (cm.run_speed - cm.walk_speed) * .5 + cm.walk_speed
+	if cm.curr_speed <= half_way{
+		cm.curr_state = cm.states[.Walk]
+		animate_walk(ac, lex.PREFAB_FROKU, cm.times)
+	}
+	ow_move_character(cm^, cc.bodyid)
+}
+
+ow_move_character :: #force_inline proc(cm : Cmp_Character, body : b2.BodyId)
+{
+	movement := cm.forward_dir * .42 * cm.curr_speed
+	b2.Body_SetLinearVelocity(body, movement)
+}
+
+ow_calculate_speed :: proc(cm : Cmp_Character, dt : f32) -> f32
+{
+	change_in_speed := cm.run_speed - cm.walk_speed
+	accleration := change_in_speed / transition_time * dt
+	speed := cm.curr_speed
+	if game_controller_is_moving() do speed += accleration
+	else do speed -= 2 * accleration
+	return linalg.clamp(speed, 0, cm.run_speed)
+}
+
+ow_calc_dir :: proc(cm : ^Cmp_Character, rot : quat){
+	dir := linalg.yaw_from_quaternion(rot);
+	cosdir := linalg.cos(dir) * linalg.cos(linalg.pitch_from_quaternion(rot));
+	sindir := linalg.sin(dir);
+
+	cm.forward_dir = vec2f{sindir, cosdir};
+	cm.right_dir = vec2f{cosdir, -sindir};
+}
+ow_calc_rot :: proc(cm : ^Cmp_Character, rot : ^quat, body : b2.BodyId){
+		d := eight_deg_rot_convert(game_controller_move_axis().as_int)
+		fmt.println("ROT: ", d)
+		quat_to_rotate_towards := eight_degree_quat[d]
+
+		// Perform and update the rotation
+		rot^ = linalg.quaternion_slerp(rot^, quat_to_rotate_towards, f32(0.15))
+		bt := b2.Body_GetTransform(body)
+		bt.q = {cm.forward_dir.y, cm.forward_dir.x}
+		b2.Body_SetTransform(body, bt.p, bt.q)
+}
+
 overworld_start :: proc() {
-	load_scene("Overworld")
-	g.player = axiom.load_prefab("Froku", g.mem_game.alloc)
+	load_scene(lex.SCENE_OVERWORLD)
+	g.player = axiom.load_prefab(lex.ENTITY_FROKU, g.mem_game.alloc)
+	init_character(&o_character, g.player)
+
 	find_camera_entity()
 	find_floor_entities()
 
@@ -79,10 +248,15 @@ overworld_start :: proc() {
 }
 
 overworld_update :: proc(dt : f32){
-    overworld_update_player_movement(g.player, dt)
+	trans := get_component(g.player, Cmp_Transform)
+	col := get_component(g.player, Cmp_Collision2D)
+
+	ow_calc_rot(&o_character, &trans.local.rot, col.bodyid)
+	ow_calc_dir(&o_character, trans.local.rot)
+	ow_cc_update(g.player, &o_character, dt)
+    // overworld_update_player_movement(g.player, dt)
     overworld_point_camera_at_2(g.player)
 
-    trans := get_component(g.player, Cmp_Transform)
     if trans == nil {
         log.error("transform not found")
         return
@@ -332,6 +506,85 @@ overworld_look_at_player_fixed :: proc(ct: ^Cmp_Transform, pt: ^Cmp_Transform, p
 
     // Match GLM yawPitchRoll order: .YXZ (yaw Y, pitch X, roll Z)
     ct.local.rot = linalg.quaternion_from_euler_angles_f32(yaw_rad, pitch_rad, 0.0, .YXZ)
+}
+
+
+//----------------------------------------------------------------------------\\
+// /8 Degree rotation
+//----------------------------------------------------------------------------\\
+/*
+-1 1   0 1   1 1
+
+-1 0   0 0   1 0
+
+-1-1   0-1   1-1
+
+02 12 22
+01 11 21
+00 10 20
+
+0010 0110 1010
+0001 0101 1001
+0000 0100 1000
+
+2 6 10
+1 5 9
+0 4 8
+
+default = 5,
+up = 6,
+upleft = 2,
+left = 1,
+downleft = 0,
+down = 4,
+downright = 8,
+right = 9,
+upright = 10
+
+*/
+RotationDir :: enum {
+	downleft,
+	left,
+	upleft,
+	null1,
+	down,
+	none,
+	up,
+	null2,
+	downright,
+	right,
+	upright
+}
+
+eight_deg_rot_convert :: proc(axis : vec2i) -> RotationDir {
+	axis_c := axis + 1
+	res := axis_c.y
+	res |= axis_c.x << 2
+	return RotationDir(res)
+}
+
+rot_epsilon :f32= 0.01
+eight_degree_float :[11]f32= {
+	225 + rot_epsilon,
+	270 + rot_epsilon,
+	315 + rot_epsilon,
+	0,
+	180 + rot_epsilon,
+	0,
+	360 - rot_epsilon,
+	0,
+	135 + rot_epsilon,
+	90 + rot_epsilon,
+	45 + rot_epsilon
+}
+
+eight_degree_quat : [11]quat
+@(init)
+init_eight_degree_quats :: proc "contextless" () {
+    for deg, i in eight_degree_float {
+        rad := math.to_radians_f32(deg)
+        eight_degree_quat[i] = linalg.quaternion_angle_axis_f32(rad, {0, 1, 0})
+    }
 }
 
 // barrel : Entity

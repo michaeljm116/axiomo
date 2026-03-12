@@ -78,6 +78,7 @@ UI_HIGH_LAYER_TEXT :: "HighLayerText"
 
 // Scene and Entity Constants
 SCENE_EMPTY :: "Empty"
+SCENE_OVERWORLD :: "Overworld"
 
 // Debug messages
 DEBUG_FOUND_PLAYER :: "Found Player"

@@ -927,23 +927,29 @@ sys_anim_update :: proc(entity : Entity, delta_time: f32)
     ac := get_component(entity, Cmp_Animation)
     switch ac.state {
     case .DEFAULT:
+    	// fmt.println(ac.prefab_name, " = Default Animation State")
         break
     case .TRANSITION:
+	    fmt.println(ac.prefab_name, " = Transition Animation State")
         if ac.trans != 0 do sys_anim_transition(entity)
         ac.state = .TRANSITION_TO_START
     case .TRANSITION_TO_START:
+	    fmt.println(ac.prefab_name, " = TransitionToSTART Animation State")
         ac.trans_timer += delta_time
         if ac.trans_timer > ac.trans_time do ac.state = .START
     case .START:
+	    fmt.println(ac.prefab_name, " = START Animation State")
         ac.start = ac.trans
         ac.end = ac.trans_end
         ac.trans_timer = 0.0
         ac.state = .TRANSITION_TO_END
         sys_anim_add(entity)
     case .TRANSITION_TO_END:
+	    fmt.println(ac.prefab_name, " = TransitionToEND Animation State")
         ac.trans_timer += delta_time
         if ac.trans_timer > ac.time do ac.state = .END
     case .END:
+	    fmt.println(ac.prefab_name, " = END Animation State")
         ac.state = .DEFAULT
     }
 }
@@ -971,7 +977,11 @@ sys_anim_process :: proc(entity: Entity, ac : ^Cmp_Animate, tc : ^Cmp_Transform,
             temp := ac.start
             ac.start = ac.end
             ac.end = temp
-        } else do remove_component(entity, Cmp_Animate)
+        }
+        else {
+       		ac.flags.active = 0
+	        // remove_component(entity, Cmp_Animate)
+        }
     }
 }
 

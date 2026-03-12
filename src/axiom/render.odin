@@ -2302,7 +2302,6 @@ prepare_compute :: proc() {
     must(vk.CreateFence(g_renderbase.device, &fence_info, nil, &g_raytracer.compute.fence))
 
     create_compute_command_buffer()
-
 }
 
 create_compute_command_buffer :: proc() {

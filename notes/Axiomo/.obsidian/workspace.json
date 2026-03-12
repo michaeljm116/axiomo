@@ -55,12 +55,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/March 04, 2026, Wed.md",
+                "file": "DailyNotes/March 10, 2026, Tue.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "March 04, 2026, Wed"
+              "title": "March 10, 2026, Tue"
             }
           },
           {
@@ -69,16 +69,16 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DailyNotes/March 10, 2026, Tue.md",
+                "file": "DailyNotes/March 12, 2026, Thu.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "March 10, 2026, Tue"
+              "title": "March 12, 2026, Thu"
             }
           }
         ],
-        "currentTab": 4
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -228,12 +228,20 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "6a75017c8eae8bbc",
+  "active": "763ec8751c05f55d",
   "lastOpenFiles": [
-    "DailyNotes/March 09, 2026, Mon.md",
-    "DailyNotes/March 10, 2026, Tue.md",
-    "BeeKillingsInn/Code/Texture.md",
+    "DailyNotes/March 11, 2026, Wed.md",
     "DailyNotes/March 04, 2026, Wed.md",
+    "DailyNotes/March 12, 2026, Thu.md",
+    "DailyNotes/March 10, 2026, Tue.md",
+    "05_Clash2.webp",
+    "09_Capes.webp",
+    "Pasted image 20260124191542.png",
+    "Resolutions 2026.md",
+    "Excalidraw/HotelOverworld.excalidraw.md",
+    "BeeKillingsInn/GameDesign/!!! Rules !!!.md",
+    "DailyNotes/March 09, 2026, Mon.md",
+    "BeeKillingsInn/Code/Texture.md",
     "DailyNotes/March 07, 2026, Sat.md",
     "DailyNotes/March 06, 2026, Fri.md",
     "DailyNotes/March 05, 2026, Thu.md",
@@ -252,17 +260,9 @@
     "DailyNotes/2026 - February/February 27, 2026, Fri.md",
     "DailyNotes/2026 - February/February 01, 2026, Sun.md",
     "DailyNotes/2026 - February",
-    "BeeKillingsInn/Code/Timed Turns.md",
-    "BeeKillingsInn/Production/Mechanics/Action - Attack.md",
-    "BeeKillingsInn/Production/Mechanics/Fly_Ground_Obstacles.md",
     "Photos/{0DA3E792-94E9-46F5-B6DE-8EDBEA4E55CD}.png",
-    "05_Clash2.webp",
-    "09_Capes.webp",
-    "Pasted image 20260124191542.png",
     "Pasted image 20260124190313.png",
     "Untitled.base",
-    "Untitled.md",
-    "tales-tactics.avif",
-    "DailyNotes/2026 - February/February 25, 2026, Wed.md"
+    "tales-tactics.avif"
   ]
 }
