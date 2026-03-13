@@ -245,6 +245,10 @@ overworld_start :: proc() {
 	overworld_setup_col_floor(axiom.g_physics)
 
 	axiom.sys_trans_process_ecs()
+
+	ct := get_component(g.player, Cmp_Transform)
+	pt := get_component(g.camera_entity, Cmp_Transform)
+	overworld_follow_player(ct, pt)
 }
 
 overworld_update :: proc(dt : f32){
@@ -255,8 +259,9 @@ overworld_update :: proc(dt : f32){
 	ow_calc_dir(&o_character, trans.local.rot)
 	ow_cc_update(g.player, &o_character, dt)
     // overworld_update_player_movement(g.player, dt)
-    overworld_point_camera_at_2(g.player)
-
+    // overworld_point_camera_at_2(g.player)
+    ct := get_component(g.camera_entity, Cmp_Transform)
+    ow_look_at_player(ct, trans)
     if trans == nil {
         log.error("transform not found")
         return
@@ -306,7 +311,7 @@ overworld_point_camera_at_2 :: proc(entity: Entity){
         return
     }
 
-    overworld_follow_player(ct, pt)
+    // overworld_follow_player(ct, pt)
     overworld_look_at_player(ct, pt)
 }
 overworld_point_camera_at :: proc(entity: Entity){
@@ -462,7 +467,11 @@ overworld_setup_col_floor :: proc(physics : ^axiom.Sys_Physics){
 
     add_component(g.floor, col)
 }
-
+ow_look_at_player ::proc(ct: ^Cmp_Transform, pt: ^Cmp_Transform) {
+	target_dir := linalg.normalize(ct.local.pos - pt.local.pos)
+	target_quat := linalg.quaternion_from_pitch_yaw_roll_f32(target_dir.z, -target_dir.x, f32(0.0))
+	ct.local.rot = target_quat
+}
 overworld_look_at_player :: proc(ct: ^Cmp_Transform, pt: ^Cmp_Transform) {
     target_dir := linalg.normalize(ct.local.pos.xyz - pt.local.pos.xyz)
 
