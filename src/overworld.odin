@@ -144,7 +144,7 @@ ow_cc_update_idle :: proc(player : Entity, cm : ^Cmp_Character, dt : f32){
 		ac := get_component(player, Cmp_Animation)
 		ac.state = .DEFAULT
 		animate_walk(ac, lex.PREFAB_FROKU, cm.times)
-		cm.curr_state.movement_type = .Walk
+		cm.curr_state = cm.states[.Walk]
 		cm.curr_speed = cm.walk_speed
 		// ow_cc_update_walk(player, cm, dt)
 	}
@@ -159,10 +159,12 @@ ow_cc_update_walk :: proc(player : Entity, cm : ^Cmp_Character, dt : f32){
 	cm.curr_speed = ow_calculate_speed(cm^, dt)
 	if cm.curr_speed >= cm.run_speed{
 		ac.state = .DEFAULT
+		cm.curr_state = cm.states[.Run]
 		animate_run(ac, lex.PREFAB_FROKU, cm.times)
 	}
 	if cm.curr_speed <= 0{
 		ac.state = .DEFAULT
+		cm.curr_state = cm.states[.Idle]
 		animate_idle(ac, lex.PREFAB_FROKU, cm.times)
 	}
 	// Actuallly move the character now
@@ -197,7 +199,7 @@ ow_calculate_speed :: proc(cm : Cmp_Character, dt : f32) -> f32
 	change_in_speed := cm.run_speed - cm.walk_speed
 	accleration := change_in_speed / transition_time * dt
 	speed := cm.curr_speed
-	if game_controller_is_moving() do speed += accleration
+	if game_controller_is_moving() do speed += 2 * accleration
 	else do speed -= 2 * accleration
 	return linalg.clamp(speed, 0, cm.run_speed)
 }
@@ -212,6 +214,7 @@ ow_calc_dir :: proc(cm : ^Cmp_Character, rot : quat){
 }
 ow_calc_rot :: proc(cm : ^Cmp_Character, rot : ^quat, body : b2.BodyId){
 		d := eight_deg_rot_convert(game_controller_move_axis().as_int)
+		if d == .none do return
 		fmt.println("ROT: ", d)
 		quat_to_rotate_towards := eight_degree_quat[d]
 
