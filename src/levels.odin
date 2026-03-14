@@ -20,7 +20,7 @@ BattleDB :: [BattleName]BattleSetup{
 			TileSetup{{2,0},{.Weapon}},
 			TileSetup{{4,3},{.Weapon}},
 			TileSetup{{3,2},{.Obstacle}},
-			TileSetup{{1,0},{.Wall}},
+			TileSetup{{3,0},{.Wall}},
 			TileSetup{{5,4},{.Wall}},
 		},
 		bees = {

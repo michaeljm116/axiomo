@@ -485,3 +485,204 @@ destroy_animation :: proc(pl: ^Animation) {
     delete(pl.poses)
     delete(pl.name)
 }
+
+//----------------------------------------------------------------------------\\
+// /Debug
+//----------------------------------------------------------------------------\\
+// ────────────────────────────────────────────────
+// Print MATERIALS
+// ────────────────────────────────────────────────
+print_materials :: proc() {
+    using fmt
+    println("MATERIALS ───────────────────────────────────")
+    printf("Count: %d\n\n", len(materials))
+    for &mat, i in materials {
+        printf("[%2d] %-18s  ID:%8d  Tex:%-20s  Diffuse:%.2f %.2f %.2f  Rough:%.2f  Trans:%.2f\n",
+            i, mat.name, mat.unique_id, mat.texture,
+            mat.diffuse.x, mat.diffuse.y, mat.diffuse.z,
+            mat.roughness, mat.transparency)
+    }
+    println()
+}
+
+// ────────────────────────────────────────────────
+// Print MODELS
+// ────────────────────────────────────────────────
+print_models :: proc() {
+    using fmt
+    println("MODELS ───────────────────────────────────────")
+    printf("Count: %d\n\n", len(models))
+    for &m, i in models {
+        printf("[%2d] %-18s  ID:%8d  Meshes:%3d  Shapes:%3d  Tri:%v  Center:%.2f %.2f %.2f\n",
+            i, m.name, m.unique_id, len(m.meshes), len(m.shapes),
+            m.triangular, m.center.x, m.center.y, m.center.z)
+    }
+    println()
+}
+
+// ────────────────────────────────────────────────
+// Print PREFABS (regular scene prefabs)
+// ────────────────────────────────────────────────
+print_prefabs :: proc() {
+    using fmt
+    println("PREFABS ──────────────────────────────────────")
+    printf("Count: %d\n\n", len(prefabs))
+    for key, &node in prefabs {
+        child_count := len(node.children) if node.children != nil else 0
+        printf("%-28s  children:%3d\n", key, child_count)
+    }
+    println()
+}
+
+// ────────────────────────────────────────────────
+// Print UI PREFABS
+// ────────────────────────────────────────────────
+print_ui_prefabs :: proc() {
+    using fmt
+    println("UI PREFABS ───────────────────────────────────")
+    printf("Count: %d\n\n", len(ui_prefabs))
+    for key, &node in ui_prefabs {
+        child_count := len(node.children) if node.children != nil else 0
+        printf("%-28s  children:%3d\n", key, child_count)
+    }
+    println()
+}
+
+// ────────────────────────────────────────────────
+// Print ANIMATIONS
+// ────────────────────────────────────────────────
+print_animations :: proc() {
+    using fmt
+    println("ANIMATIONS ───────────────────────────────────")
+    printf("Count: %d\n\n", len(animations))
+    for hash, &anim in animations {
+        printf("0x%08X  %-20s  Poses:%3d\n", hash, anim.name, len(anim.poses))
+    }
+    println()
+}
+
+print_animations_w_poses :: proc() {
+    using fmt
+
+    println("ANIMATIONS WITH POSES ────────────────────────────────")
+    printf("Total animations: %d\n\n", len(animations))
+
+    if len(animations) == 0 {
+        println("  (no animations loaded)")
+        println()
+        return
+    }
+
+    for hash, &anim in animations {
+        printf("Animation 0x%08X  \"%s\"  (%d poses)\n", hash, anim.name, len(anim.poses))
+
+        if len(anim.poses) == 0 {
+            println("  └─ (empty)")
+        } else {
+            for key, pose in anim.poses {
+                printf("  ├─ Pose #%2d  0x%08X  \"%s\"\n", key, xxh2.str_to_u32(pose.name), pose.name)
+
+                // Optional: show transform count if you want deeper debug
+                if len(pose.pose) > 0 {
+                    printf("  │           transforms: %d\n", len(pose.pose))
+                } else {
+                    println("  │           (no transforms)")
+                }
+            }
+        }
+        println()
+    }
+
+    println("──────────────────────────────────────────────────────────")
+}
+
+print_animation_w_poses :: proc(anim : Animation) {
+    using fmt
+
+    println("ANIMATIONS WITH POSES ────────────────────────────────")
+    printf("Total animations: %d\n\n", len(animations))
+
+    if len(animations) == 0 {
+        println("  (no animations loaded)")
+        println()
+        return
+    }
+
+        printf("Animation 0x%08X  \"%s\"  (%d poses)\n", anim.name, len(anim.poses))
+
+        if len(anim.poses) == 0 {
+            println("  └─ (empty)")
+        } else {
+            for key, pose in anim.poses {
+                printf("  ├─ Pose #%2d  0x%08X  \"%s\"\n", key, xxh2.str_to_u32(pose.name), pose.name)
+
+                // Optional: show transform count if you want deeper debug
+                if len(pose.pose) > 0 {
+                    printf("  │           transforms: %d\n", len(pose.pose))
+                } else {
+                    println("  │           (no transforms)")
+                }
+            }
+        }
+        println()
+
+    println("──────────────────────────────────────────────────────────")
+}
+
+// ────────────────────────────────────────────────
+// Print SCENES
+// ────────────────────────────────────────────────
+print_scenes :: proc() {
+    using fmt
+    println("SCENES ───────────────────────────────────────")
+    printf("Count: %d\n\n", len(scenes))
+    for key, sc in scenes {
+        node_count := len(sc.Node) if sc != nil else 0
+        printf("%-28s  nodes:%3d\n", key, node_count)
+    }
+    println()
+}
+
+// ────────────────────────────────────────────────
+// Print SQT (Scale, Quaternion, Translation)
+// ────────────────────────────────────────────────
+print_sqt :: proc(sqt: Sqt, label := "SQT") {
+    using fmt
+    
+    // Convert quaternion to Euler angles
+    ax, ay, az := math.euler_angles_from_quaternion_f32(sqt.rot, .XYZ)
+    angles_rad := vec3{ax, ay, az}
+    angles_deg := math.to_degrees(angles_rad)
+    
+    println(label, " ───────────────────────────────────")
+    printf("  Position:  (%.2f, %.2f, %.2f)\n", sqt.pos.x, sqt.pos.y, sqt.pos.z)
+    printf("  Rotation:  (%.2f, %.2f, %.2f, %.2f) [Quat]\n", 
+            sqt.rot.x, sqt.rot.y, sqt.rot.z, sqt.rot.w)
+    printf("  Euler:     Pitch %.1f°, Yaw %.1f°, Roll %.1f°\n",
+            angles_deg.y, angles_deg.x, angles_deg.z)
+    printf("  Scale:     (%.2f, %.2f, %.2f)\n", 
+            sqt.sca.x, sqt.sca.y, sqt.sca.z)
+    println()
+}
+
+// ────────────────────────────────────────────────
+// Print POSE (collection of SQT transforms)
+// ────────────────────────────────────────────────
+print_pose :: proc(pose: Pose) {
+    using fmt
+    
+    println("POSE: ", pose.name)
+    printf("  Transform count: %d\n", len(pose.pose))
+    println()
+    
+    if len(pose.pose) == 0 {
+        println("  (no transforms)")
+        println()
+        return
+    }
+    
+    for pose_sqt, i in pose.pose {
+        printf("  Transform #%d (ID: %d)\n", i, pose_sqt.id)
+        print_sqt(pose_sqt.sqt_data, "    SQT")
+    }
+}

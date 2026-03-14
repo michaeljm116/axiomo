@@ -268,21 +268,21 @@ init_game_ui :: proc(game_ui : ^map[string]Entity, alloc : mem.Allocator){
         append(&g.ui_keys, key)
     }
 
-    // Create high-layer text object
-    text_cmp := Cmp_Gui{
-        min = {0.3, 0.7},           // Position (30% from left, 70% from top)
-        extents = {0.4, 0.1},       // Size (40% width, 10% height)
-        align_min = {0.5, 0.5},     // Center alignment
-        align_ext = {0.5, 0.5},
-        layer = 100,                // High layer value (higher = more on top)
-        id = "your_texture.png",    // Your text texture
-        alpha = 1.0,
-        update = true
-    }
+    // // Create high-layer text object
+    // text_cmp := Cmp_Gui{
+    //     min = {0.3, 0.7},           // Position (30% from left, 70% from top)
+    //     extents = {0.4, 0.1},       // Size (40% width, 10% height)
+    //     align_min = {0.5, 0.5},     // Center alignment
+    //     align_ext = {0.5, 0.5},
+    //     layer = 100,                // High layer value (higher = more on top)
+    //     id = "your_texture.png",    // Your text texture
+    //     alpha = 1.0,
+    //     update = true
+    // }
 
-    text_entity := ax.add_ui(text_cmp, lex.UI_HIGH_LAYER_TEXT)
-    game_ui[lex.UI_HIGH_LAYER_TEXT] = text_entity
-    append(&g.ui_keys, lex.UI_HIGH_LAYER_TEXT)
+    // text_entity := ax.add_ui(text_cmp, lex.UI_HIGH_LAYER_TEXT)
+    // game_ui[lex.UI_HIGH_LAYER_TEXT] = text_entity
+    // append(&g.ui_keys, lex.UI_HIGH_LAYER_TEXT)
 }
 
 ToggleUI :: proc(name : string, on : bool)

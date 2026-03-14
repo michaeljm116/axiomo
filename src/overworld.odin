@@ -11,6 +11,7 @@ import b2 "vendor:box2d"
 import "core:fmt"
 import lex"lexicon"
 import xxh"axiom/extensions/xxhash2"
+import res"axiom/resource"
 
 overworld_detect_area_change :: proc(player_transform : Cmp_Transform, trigger : AreaTrigger) -> bool
 {
@@ -107,10 +108,10 @@ init_character :: proc(c : ^Cmp_Character, e : Entity)
 	init_cmp_movement(&c.movement)
 
     axiom.flatten_entity(e)
-    ac := axiom.animation_component_with_names(2,lex.ENTITY_FROKU, lex.IDLE_START, lex.IDLE_END, axiom.AnimFlags{ active = 1, loop = true, force_start = true, force_end = true})
+    ac := axiom.animation_component_with_names(2,lex.ENTITY_FROKU, lex.IDLE_START, lex.IDLE_END, axiom.AnimFlags{ active = 1, loop = true, force_start = true, force_end = true}, 0.5)
     add_component(e, ac)
     axiom.sys_anim_add(e)
-    // animate_idle(&ac, prefab, c.move_anim)
+    // animate_idle(&ac, lex.PREFAB_FROKU, c.times)
 }
 
 init_cmp_movement :: proc(m : ^Cmp_Movement){
@@ -122,7 +123,7 @@ init_cmp_movement :: proc(m : ^Cmp_Movement){
 	m.times = MovementTimes{
         idle_time = 1.5,
         walk_time = 0.25,
-        run_time = 0.4,
+        run_time = 1.0,
         jump_time = 0.25
     }
 }
@@ -130,7 +131,7 @@ init_cmp_movement :: proc(m : ^Cmp_Movement){
 o_character : Cmp_Character
 ow_cc_update :: proc(player : Entity, cm : ^Cmp_Character, dt : f32)
 {
-	fmt.println("MovementState : ", cm.curr_state.movement_type)
+	// fmt.println("MovementState : ", cm.curr_state.movement_type)
 	switch cm.curr_state.movement_type
 	{
 	case .Idle: ow_cc_update_idle(player, cm, dt)
@@ -146,7 +147,7 @@ ow_cc_update_idle :: proc(player : Entity, cm : ^Cmp_Character, dt : f32){
 		animate_walk(ac, lex.PREFAB_FROKU, cm.times)
 		cm.curr_state = cm.states[.Walk]
 		cm.curr_speed = cm.walk_speed
-		// ow_cc_update_walk(player, cm, dt)
+		ow_cc_update_walk(player, cm, dt)
 	}
 }
 
@@ -215,7 +216,7 @@ ow_calc_dir :: proc(cm : ^Cmp_Character, rot : quat){
 ow_calc_rot :: proc(cm : ^Cmp_Character, rot : ^quat, body : b2.BodyId){
 		d := eight_deg_rot_convert(game_controller_move_axis().as_int)
 		if d == .none do return
-		fmt.println("ROT: ", d)
+		// fmt.println("ROT: ", d)
 		quat_to_rotate_towards := eight_degree_quat[d]
 
 		// Perform and update the rotation
@@ -229,6 +230,8 @@ overworld_start :: proc() {
 	load_scene(lex.SCENE_OVERWORLD)
 	g.player = axiom.load_prefab(lex.ENTITY_FROKU, g.mem_game.alloc)
 	init_character(&o_character, g.player)
+
+	res.print_animations_w_poses()
 
 	find_camera_entity()
 	find_floor_entities()

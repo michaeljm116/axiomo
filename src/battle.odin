@@ -1344,7 +1344,8 @@ AttackTimes :: struct{
 
 set_animation :: proc(ac : ^Cmp_Animation, time : f32, name : string, start : string, end : string, flags : axiom.AnimFlags){
     if ac.state != .DEFAULT do return
-    ac.trans = xxh2.str_to_u32(start)
+    ac.num_poses = 2
+    ac.trans_beg = xxh2.str_to_u32(start)
     ac.trans_end = xxh2.str_to_u32(end)
     ac.trans_timer = 0
     ac.trans_time = time * 0.25
@@ -1355,16 +1356,16 @@ set_animation :: proc(ac : ^Cmp_Animation, time : f32, name : string, start : st
 }
 
 animate_walk :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
-    set_animation(ac, m.walk_time, prefab_name, lex.WALK_START, lex.WALK_END, axiom.AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, m.walk_time, prefab_name, lex.WALK_START, lex.WALK_END, axiom.AnimFlags{active = 1, loop = true, force_start = true, force_end = false});
 }
 animate_idle :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
-    set_animation(ac, m.idle_time, prefab_name, lex.IDLE_START, lex.IDLE_END, axiom.AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, m.idle_time, prefab_name, lex.IDLE_START, lex.IDLE_END, axiom.AnimFlags{active = 1, loop = true, force_start = true, force_end = false});
 }
 animate_run :: proc(ac : ^Cmp_Animation, prefab_name : string, m : MovementTimes ){
-    set_animation(ac, m.run_time, prefab_name, lex.RUN_START, lex.RUN_END, axiom.AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, m.run_time, prefab_name, lex.RUN_START, lex.RUN_END, axiom.AnimFlags{active = 1, loop = true, force_start = true, force_end = false});
 }
 animate_attack :: proc(ac : ^Cmp_Animation, prefab_name : string, a : AttackTimes ){
-    set_animation(ac, a.stab_time, prefab_name, lex.STAB_START, lex.STAB_END, axiom.AnimFlags{loop = true, force_start = true, force_end = false});
+    set_animation(ac, a.stab_time, prefab_name, lex.STAB_START, lex.STAB_END, axiom.AnimFlags{active = 1, loop = true, force_start = true, force_end = false});
 }
 
 animate_chest :: proc(chest : Entity){
@@ -1374,7 +1375,7 @@ animate_chest :: proc(chest : Entity){
    axiom.sys_anim_add(chest)
 }
 
-add_animation :: proc(c : ^Character, prefab : string){
+add_animation :: proc(c : ^Character, prefab : string, start_anim := lex.IDLE_START, end_anim := lex.IDLE_END){
     c.move_anim = MovementTimes{
         idle_time = 1.5,
         walk_time = 0.25,
@@ -1386,14 +1387,14 @@ add_animation :: proc(c : ^Character, prefab : string){
     }
 
     axiom.flatten_entity(c.entity)
-    ac := axiom.animation_component_with_names(2,prefab, lex.IDLE_START, lex.IDLE_END, axiom.AnimFlags{ active = 1, loop = true, force_start = true, force_end = true})
+    ac := axiom.animation_component_with_names(2,prefab, start_anim, end_anim, axiom.AnimFlags{ active = 1, loop = true, force_start = true, force_end = true})
     add_component(c.entity, ac)
     axiom.sys_anim_add(c.entity)
-    // animate_idle(&ac, prefab, c.move_anim)
+    animate_idle(&ac, prefab, c.move_anim)
 }
 
 add_animations :: proc(){
-    add_animation(&g.battle.player.base, lex.PREFAB_FROKU)
+    add_animation(&g.battle.player.base, lex.PREFAB_FROKU, lex.RUN_START, lex.RUN_END)
     add_animation(&g.battle.bees[0].base, lex.PREFAB_AGGRESSIVE_BEE)
     add_animation(&g.battle.bees[1].base, lex.PREFAB_BEE)
 }

@@ -344,7 +344,7 @@ Cmp_Animation :: struct {
     prefab_name: u32,
     trans_timer: f32,
     trans_time: f32,
-    trans: u32,
+    trans_beg: u32,
     trans_end: u32,
     state: AnimationState,
 }
@@ -1267,7 +1267,7 @@ animation_component_default :: proc() -> Cmp_Animation {
         prefab_name = 0,
         trans_timer = 0.0,
         trans_time = 0.1,
-        trans = 0,
+        trans_beg = 0,
         trans_end = 0,
         state = .DEFAULT,
     }
@@ -1278,18 +1278,19 @@ animation_component_with_names :: proc(
     prefab: string,
     start_name: string,
     end_name: string,
-    flags: AnimFlags
+    flags: AnimFlags,
+    time :f32= 0.25
 ) -> Cmp_Animation {
     return Cmp_Animation{
         num_poses = num_poses,
         flags = flags,
-        time = 0.25,
+        time = time,
         start = xxh2.str_to_u32(start_name),
         end = xxh2.str_to_u32(end_name),
         prefab_name = xxh2.str_to_u32(prefab),
         trans_timer = 0.0,
         trans_time = 0.1,
-        trans = 0,
+        trans_beg = 0,
         trans_end = 0,
         state = .DEFAULT,
     }
@@ -1323,7 +1324,7 @@ animation_component_no_start :: proc(
         prefab_name = xxh2.str_to_u32(prefab),
         trans_timer = 0.0,
         trans_time = 0.1,
-        trans = 0,
+        trans_beg = 0,
         trans_end = 0,
         state = .DEFAULT,
     }
@@ -1345,7 +1346,7 @@ animation_component_with_hashes :: proc(
         prefab_name = prefab_hash,
         trans_timer = 0.0,
         trans_time = 0.1,
-        trans = 0,
+        trans_beg = 0,
         trans_end = 0,
         state = .DEFAULT,
     }
