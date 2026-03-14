@@ -17,32 +17,32 @@
     ".git**",
   ],
 
-  // "lsp": {
-  //   "ols": {
-  //     "binary": {
-  //       "path": "c:/dev/ols/ols.exe",
-  //       "arguments": []
-  //     }
-  //     // "initialization_options": {
-  //     //   "odin_command": "C:\\dev\\scoop\\apps\\odin\\current\\odin.exe",
-  //     //   "odin_root_override": "C:\\dev\\scoop\\apps\\odin\\current",
-  //     //   // Optional extras (uncomment if you want them; common for better UX)
-  //     //   // "enable_hover": true,
-  //     //   // "enable_snippets": true,
-  //     //   // "enable_procedure_snippet": true,
-  //     //   // "enable_format": true,
-  //     //   // "enable_document_symbols": true
-  //     // }
-  //   },
+  "lsp": {
+    "ols": {
+      "binary": {
+        "path": "c:/dev/ols/ols.exe",
+        "arguments": [],
+      },
+      // "initialization_options": {
+      //   "odin_command": "C:\\dev\\scoop\\apps\\odin\\current\\odin.exe",
+      //   "odin_root_override": "C:\\dev\\scoop\\apps\\odin\\current",
+      //   // Optional extras (uncomment if you want them; common for better UX)
+      //   // "enable_hover": true,
+      //   // "enable_snippets": true,
+      //   // "enable_procedure_snippet": true,
+      //   // "enable_format": true,
+      //   // "enable_document_symbols": true
+      // }
+    },
 
-  //   "glsl_analyzer": {
-  //     "binary": {
-  //       "path": "c:/dev/glsl_analyzer/glsl_analyzer.exe",
-  //       "arguments": []
-  //     }
-  //     // glsl_analyzer usually needs no initialization_options,
-  //     // but add here if you have custom ones (e.g. shader paths, validation rules)
-  //     // "initialization_options": { ... }
-  //   }
-  // }
+    "glsl_analyzer": {
+      "binary": {
+        "path": "c:/dev/glsl_analyzer/glsl_analyzer.exe",
+        "arguments": [],
+      },
+      // glsl_analyzer usually needs no initialization_options,
+      // but add here if you have custom ones (e.g. shader paths, validation rules)
+      // "initialization_options": { ... }
+    },
+  },
 }

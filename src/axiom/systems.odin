@@ -19,28 +19,7 @@ import "resource"
 import sdl_mixer "vendor:sdl2/mixer"
 import "vendor:glfw"
 
-// ────────────────────────────────────────────────
-// Local helper: Print SQT (Scale, Quaternion, Translation)
-// Matches resource.print_sqt formatting but works with axiom.Sqt
-// ────────────────────────────────────────────────
-print_sqt :: proc(sqt: Sqt, label := "SQT") {
-    using fmt
 
-    // Convert quaternion to Euler angles
-    ax, ay, az := linalg.euler_angles_from_quaternion_f32(sqt.rot, .XYZ)
-    angles_rad := vec3{ax, ay, az}
-    angles_deg := linalg.to_degrees(angles_rad)
-
-    println(label, " ───────────────────────────────────")
-    printf("  Position:  (%.2f, %.2f, %.2f)\n", sqt.pos.x, sqt.pos.y, sqt.pos.z)
-    printf("  Rotation:  (%.2f, %.2f, %.2f, %.2f) [Quat]\n",
-            sqt.rot.x, sqt.rot.y, sqt.rot.z, sqt.rot.w)
-    printf("  Euler:     Pitch %.1f°, Yaw %.1f°, Roll %.1f°\n",
-            angles_deg.y, angles_deg.x, angles_deg.z)
-    printf("  Scale:     (%.2f, %.2f, %.2f)\n",
-            sqt.sca.x, sqt.sca.y, sqt.sca.z)
-    println()
-}
 
 //----------------------------------------------------------------------------\\
 // /Transform System /ts
@@ -874,7 +853,6 @@ sys_anim_process_ecs :: proc(dt : f32)
 sys_anim_add :: proc(e : Entity){
 
     ac := get_component(e,Cmp_Animation)
-    fmt.println("Animation starting curr: ", ac.trans_timer, " max: ", ac.time, " dt: ")
     bfg := get_component(e,Cmp_BFGraph)
     // node := get_component(e, Cmp_Node)
     assert(ac != nil && bfg != nil, "Animation, BFGraph, and Node components are required")
@@ -905,10 +883,6 @@ sys_anim_add :: proc(e : Entity){
        comps := make(map[i32]Cmp_Animate, 0, context.temp_allocator)
        start_pose := animation.poses[ac.start]
 
-
-       res.print_pose(start_pose)
-       res.print_pose(end_pose)
-
        // All starts just instanly go inside the map
        for pose in start_pose.pose{
            a := Cmp_Animate{
@@ -925,7 +899,6 @@ sys_anim_add :: proc(e : Entity){
           if(ok){
               a.end = map_sqt(pose.sqt_data)
               a.flags.end_set = true
-              print_animate(a^, bfg.nodes[pose.id])
           }
           else {
             // a = Cmp_Animate{
@@ -956,16 +929,7 @@ sys_anim_add :: proc(e : Entity){
     }
 }
 
-print_animate :: proc(a : Cmp_Animate, entity : Entity)
-{
-	fmt.println("=== Animate Component Debug ===")
-    fmt.println("Entity ID:", entity.ix)
-    print_sqt(a.start, "Start")
-    print_sqt(a.end, "End")
-    fmt.println("Time:", a.time)
-    fmt.println("Flags - Active:", a.flags.active, "Loop:", a.flags.loop, "Force Start:", a.flags.force_start, "Force End:", a.flags.force_end)
-    fmt.println("================================")
-}
+
 
 // This keeps track of the transitions
 // Default state = you are free to animate
@@ -980,41 +944,30 @@ sys_anim_update :: proc(entity : Entity, delta_time: f32)
     case .DEFAULT:
         break
     case .TRANSITION:
-	    fmt.println(ac.prefab_name, " = Transition Animation State")
+	    // fmt.println(ac.prefab_name, " = Transition Animation State")
         if ac.trans_beg != 0 do sys_anim_transition(entity)
         ac.state = .TRANSITION_TO_START
     case .TRANSITION_TO_START:
-	    fmt.println(ac.prefab_name, " = TransitionToSTART Animation State")
+	    // fmt.println(ac.prefab_name, " = TransitionToSTART Animation State")
         ac.trans_timer += delta_time
         if ac.trans_timer > ac.trans_time do ac.state = .START
     case .START:
         ac.start = ac^.trans_beg
         ac.end = ac^.trans_end
-        fmt.println(ac.prefab_name, " = START Animation State", "End := ", ac.end, "Start := ", ac.start, "Num poses: ", ac.num_poses)
+        // fmt.println(ac.prefab_name, " = START Animation State", "End := ", ac.end, "Start := ", ac.start, "Num poses: ", ac.num_poses)
         ac.trans_timer = 0.0
         ac.state = .TRANSITION_TO_END
         sys_anim_add(entity)
     case .TRANSITION_TO_END:
-	    fmt.println(ac.prefab_name, " = TransitionToEND Animation State")
+	    // fmt.println(ac.prefab_name, " = TransitionToEND Animation State")
         ac.trans_timer += delta_time
         if ac.trans_timer > ac.time do ac.state = .END
     case .END:
-	    fmt.println(ac.prefab_name, " = END Animation State")
+	    // fmt.println(ac.prefab_name, " = END Animation State")
         ac.state = .DEFAULT
     }
 }
 
-print_quat_euler :: proc(q: quat, label := "Quat") {
-    ax,ay,az := linalg.euler_angles_from_quaternion_f32(q, .XYZ)
-    angles_rad := vec3f{ax, ay,az}
-    angles_deg := linalg.to_degrees(angles_rad)
-
-    fmt.printf("%s → Euler (deg): Pitch %.1f°, Yaw %.1f°, Roll %.1f°\n",
-        label,
-        angles_deg.y,   // usually pitch
-        angles_deg.x,   // usually yaw
-        angles_deg.z)   // usually roll
-}
 
 sys_anim_process :: proc(entity: Entity, ac : ^Cmp_Animate, tc : ^Cmp_Transform, dt : f32)
 {
@@ -1028,24 +981,12 @@ sys_anim_process :: proc(entity: Entity, ac : ^Cmp_Animate, tc : ^Cmp_Transform,
     tc.local.sca = linalg.mix(tc.local.sca, ac.end.sca, x)
     tc.local.rot = linalg.quaternion_slerp_f32(tc.local.rot, ac.end.rot, x)
 
-    if entity.ix == 74 {
-	    print_quat_euler(tc.local.rot, "Actual")
-		  fmt.println("POS ", tc.local.pos)
-		print_quat_euler(ac.end.rot, "End")
-		  fmt.println("POS ", ac.end.pos)
-		print_quat_euler(ac.start.rot, "Start")
-		  fmt.println("POS ", ac.start.pos)
-    }
-
     //End Animation if finished
     if ac.curr_time >= ac.time {
         if ac.flags.loop || ac.flags.force_end {
             temp := ac^.start
             ac.start = ac^.end
             ac.end = temp
-
-            if ac.flags.loop && entity.ix == 74 do fmt.println("Loop(Ent: ", entity.ix, ") start: ", ac.start.rot, " end: ", ac.end.rot, ac.curr_time, " max: ", ac.time, " time: ", glfw.GetTime())
-            else if entity.ix == 74 do fmt.println("Animation Ending curr: ", ac.curr_time, " max: ", ac.time, " dt: ", dt)
         }
         else {
 	        ac.flags.active = 0
@@ -1077,10 +1018,6 @@ sys_anim_transition :: proc(entity: Entity)
     start_pose := animation.poses[ac.start]
     end_pose   := animation.poses[ac.end]
     trans_pose := animation.poses[ac.trans_beg]
-
-    res.print_pose(start_pose)
-    res.print_pose(trans_pose)
-    res.print_pose(end_pose)
 
     //First place every Previous Pose in a hashset
     prev_pose := make(map[i32]bool, 0, context.temp_allocator)
@@ -1128,18 +1065,6 @@ sys_anim_transition :: proc(entity: Entity)
             parent_entity = entity,
         }
         a.flags.end_set = true
-
-        // Debug print for animation component
-        fmt.println("=== Animate Component Debug (sys_anim_transition) ===")
-        fmt.println("Entity ID:", bfg.nodes[id].ix)
-        print_sqt(a.start, "Start")
-        print_sqt(a.end, "End")
-        fmt.println("Time:", a.time)
-        fmt.println("Flags - Active:", a.flags.active, "Loop:", a.flags.loop, "Force Start:", a.flags.force_start, "Force End:", a.flags.force_end)
-        fmt.println("================================")
-
-        add_animate_component(bfg.nodes[id], a)
-        fmt.println("anim comp ",bfg.nodes[id], "== ", id)
     }
 
     //Turn off transition;
@@ -1154,7 +1079,6 @@ add_animate_component :: proc(ent: Entity, comp: Cmp_Animate)
     table_transform := get_table(Cmp_Transform)
     if(has(ent, Cmp_Animate)){
         ac := get_component(table_animate, ent)
-        fmt.println("reuse animate comp starting curr: ", comp.curr_time, " max: ", comp.time, " dt: ")
         ac^ = comp
         ac.flags.active = 1
         tc := get_component(table_transform, ent)
@@ -1166,7 +1090,6 @@ add_animate_component :: proc(ent: Entity, comp: Cmp_Animate)
     }
     else {
         add_component(ent, comp)
-        fmt.println("add animate comp starting curr: ", comp.curr_time, " max: ", comp.time, " dt: ")
         ac := get_component(table_animate, ent)
         tc := get_component(table_transform, ent)
         if ac == nil || tc == nil do return
@@ -1181,7 +1104,6 @@ deactivate_animate_component :: proc(e : Entity)
 {
     ac := get_component(get_table(Cmp_Animate),e)
 
-    fmt.println("remove animate comp starting curr: ", ac.curr_time, " max: ", ac.time, " dt: ")
     assert(ac != nil)
     ac.flags.active = 0
     if ac.flags.force_end == true{
@@ -1423,4 +1345,53 @@ sys_audio_process_ecs :: proc(dt: f32)
 			sound.play = false;
         }
     }
+}
+
+//----------------------------------------------------------------------------\\
+// /DEBUG
+//----------------------------------------------------------------------------\\
+// ────────────────────────────────────────────────
+// Local helper: Print SQT (Scale, Quaternion, Translation)
+// Matches resource.print_sqt formatting but works with axiom.Sqt
+// ────────────────────────────────────────────────
+print_sqt :: proc(sqt: Sqt, label := "SQT") {
+    using fmt
+
+    // Convert quaternion to Euler angles
+    ax, ay, az := linalg.euler_angles_from_quaternion_f32(sqt.rot, .XYZ)
+    angles_rad := vec3{ax, ay, az}
+    angles_deg := linalg.to_degrees(angles_rad)
+
+    println(label, " ───────────────────────────────────")
+    printf("  Position:  (%.2f, %.2f, %.2f)\n", sqt.pos.x, sqt.pos.y, sqt.pos.z)
+    printf("  Rotation:  (%.2f, %.2f, %.2f, %.2f) [Quat]\n",
+            sqt.rot.x, sqt.rot.y, sqt.rot.z, sqt.rot.w)
+    printf("  Euler:     Pitch %.1f°, Yaw %.1f°, Roll %.1f°\n",
+            angles_deg.y, angles_deg.x, angles_deg.z)
+    printf("  Scale:     (%.2f, %.2f, %.2f)\n",
+            sqt.sca.x, sqt.sca.y, sqt.sca.z)
+    println()
+}
+
+print_animate :: proc(a : Cmp_Animate, entity : Entity)
+{
+	fmt.println("=== Animate Component Debug ===")
+    fmt.println("Entity ID:", entity.ix)
+    print_sqt(a.start, "Start")
+    print_sqt(a.end, "End")
+    fmt.println("Time:", a.time)
+    fmt.println("Flags - Active:", a.flags.active, "Loop:", a.flags.loop, "Force Start:", a.flags.force_start, "Force End:", a.flags.force_end)
+    fmt.println("================================")
+}
+
+print_quat_euler :: proc(q: quat, label := "Quat") {
+    ax,ay,az := linalg.euler_angles_from_quaternion_f32(q, .XYZ)
+    angles_rad := vec3f{ax, ay,az}
+    angles_deg := linalg.to_degrees(angles_rad)
+
+    fmt.printf("%s → Euler (deg): Pitch %.1f°, Yaw %.1f°, Roll %.1f°\n",
+        label,
+        angles_deg.y,   // usually pitch
+        angles_deg.x,   // usually yaw
+        angles_deg.z)   // usually roll
 }
