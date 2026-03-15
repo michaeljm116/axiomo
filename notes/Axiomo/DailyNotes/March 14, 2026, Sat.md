@@ -48,3 +48,25 @@
 	* wait...
 	* endpose = confirmed to be the actual endpose eg. walk_end
 	* 
+
+# Friday
+* Today and tomorrow you're gonna speed run through a bunch of different things such as:
+* Text Rendering
+* %% Memory %%
+* %% Animations %%
+* Sounds
+* %% Overworld %%
+* %% Win/Lose Finishing %%
+* Dealing with any notable bugs
+* %% Tonight you finish persistence %% 
+
+Question with text rendering is....
+* Do you even want it?
+* Yes it would make things super helpful debugigng wise
+* also ui wise
+
+# Text rendering approach:
+* so there's a texture of fonts right
+* and then you'd want to make a ui that samples the texture multiple times
+* then creates a gui component that has the combination of all those samples into a single texture
+* is it something like that? idk lets ask opencode
